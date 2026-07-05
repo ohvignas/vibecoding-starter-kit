@@ -1,0 +1,137 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import process from 'node:process';
+import { pathToFileURL } from 'node:url';
+import { parseArgs, validateArgs } from './lib/args.mjs';
+import { resolveAssets } from './lib/matrix.mjs';
+import { renderProjectAgentsMd, toCursorMdc, toSkillMd } from './lib/templates.mjs';
+import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
+import { cloneRepo, pickFromClone, selectByTags, installCaveman } from './lib/external.mjs';
+import { formatReport } from './lib/report.mjs';
+import { meetsNode, ensureGit } from './lib/prereqs.mjs';
+
+export function buildRunPlan(args) {
+  const assets = resolveAssets(args.stack, args.assistant);
+  const projectDir = path.resolve(args.project);
+  return { assets, projectDir };
+}
+
+function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const errs = validateArgs(args);
+  if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
+  if (!meetsNode(process.version)) { console.error('Node ≥ 20.12 requis (voir guides/02-installer-les-outils.md)'); process.exit(1); }
+  if (!ensureGit()) { console.error('git requis (voir guides/02-installer-les-outils.md)'); process.exit(1); }
+
+  const { assets, projectDir } = buildRunPlan(args);
+  if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }
+
+  const done = [], failed = [];
+  const opt = { force: args.force };
+
+  ensureDir(projectDir);
+  const snip = (f) => { try { return fs.readFileSync(path.join(args.source, `templates/agents/${f}`), 'utf8'); } catch { return ''; } };
+  const agents = renderProjectAgentsMd({ ...args, commandsDir: assets.commandsDir, loopSection: snip('loop-section.md'), designRule: snip('design-rule.md'), memoryRules: snip('memory-rules.md') });
+  // Toujours écrire les DEUX (AGENTS.md pour Cursor/Codex, CLAUDE.md pour Claude Code) — projet portable quel que soit l'assistant.
+  fs.writeFileSync(path.join(projectDir, 'AGENTS.md'), agents);
+  fs.writeFileSync(path.join(projectDir, 'CLAUDE.md'), agents);
+  ensureDir(path.join(projectDir, 'maquette'));
+  done.push('AGENTS.md + CLAUDE.md + maquette/');
+
+  for (const c of assets.copies) {
+    try {
+      const src = path.join(args.source, c.from);
+      const dest = path.join(projectDir, c.to);
+      if (c.transform === 'dir') copyDirIfAbsent(src, dest, opt);
+      else if (c.transform === 'mdc') {
+        ensureDir(path.dirname(dest));
+        if (!fs.existsSync(dest) || args.force) fs.writeFileSync(dest, toCursorMdc({ description: c.description, body: fs.readFileSync(src, 'utf8') }));
+      } else copyIfAbsent(src, dest, opt);
+      done.push(c.to);
+    } catch (e) { failed.push(`${c.to} (${e.message})`); }
+  }
+
+  for (const cl of assets.clones) {
+    let tmp;
+    try {
+      tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-clone-'));
+      cloneRepo(cl.repo, tmp);
+      if (cl.picks) pickFromClone(tmp, cl.picks, projectDir);
+      else if (cl.matchTags) {
+        const rulesDir = path.join(tmp, 'rules');
+        for (const f of selectByTags(rulesDir, cl.matchTags)) copyIfAbsent(path.join(rulesDir, f), path.join(projectDir, cl.to, f), opt);
+      }
+      done.push(cl.repo);
+    } catch (e) { failed.push(`${cl.repo} (${e.message})`); }
+    finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
+  }
+
+  for (const cmd of ['new-project', 'new-feature', 'edit-design', 'doctor']) {
+    try {
+      const src = path.join(args.source, `templates/commands/${cmd}.md`);
+      if (args.assistant === 'cursor') {
+        const dest = path.join(projectDir, `.cursor/skills/${cmd}/SKILL.md`);
+        ensureDir(path.dirname(dest));
+        if (!fs.existsSync(dest) || args.force) fs.writeFileSync(dest, toSkillMd({ name: cmd, description: `Commande vibe-stack : ${cmd}`, body: fs.readFileSync(src, 'utf8') }));
+        done.push(`.cursor/skills/${cmd}/SKILL.md`);
+      } else {
+        copyIfAbsent(src, path.join(projectDir, assets.commandsDir, `${cmd}.md`), opt);
+        done.push(`${assets.commandsDir}/${cmd}.md`);
+      }
+    } catch (e) { failed.push(`commande ${cmd} (${e.message})`); }
+  }
+  try { copyDirIfAbsent(path.join(args.source, 'templates/memory'), path.join(projectDir, 'docs/memory'), opt); done.push('docs/memory/'); }
+  catch (e) { failed.push(`docs/memory (${e.message})`); }
+  try {
+    copyIfAbsent(path.join(args.source, 'templates/dream/dream.yml'), path.join(projectDir, '.github/workflows/dream.yml'), opt);
+    copyIfAbsent(path.join(args.source, 'templates/dream/DREAM.md'), path.join(projectDir, 'docs/DREAM.md'), opt);
+    done.push('dream (.github/workflows + docs/DREAM.md)');
+  } catch (e) { failed.push(`dream (${e.message})`); }
+
+  if (args.assistant === 'cursor') {
+    try {
+      copyIfAbsent(path.join(args.source, 'templates/cursor/hooks.json'), path.join(projectDir, '.cursor/hooks.json'), opt);
+      copyDirIfAbsent(path.join(args.source, 'templates/cursor/hooks'), path.join(projectDir, '.cursor/hooks'), opt);
+      copyIfAbsent(path.join(args.source, 'templates/cursor/cursorignore'), path.join(projectDir, '.cursorignore'), opt);
+      done.push('.cursor/hooks.json + .cursorignore (mémoire auto)');
+    } catch (e) { failed.push(`cursor extras (${e.message})`); }
+  }
+
+  // Sécurité (tous assistants) : .env.example par stack + scan de secrets gitleaks.
+  try { copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt); done.push('.env.example'); }
+  catch (e) { failed.push(`.env.example (${e.message})`); }
+  try { copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt); done.push('scan secrets (gitleaks)'); }
+  catch (e) { failed.push(`secrets (${e.message})`); }
+
+  // CI par stack + onboarding (tous assistants).
+  try { copyIfAbsent(path.join(args.source, `templates/ci/${args.stack}.yml`), path.join(projectDir, '.github/workflows/ci.yml'), opt); done.push('.github/workflows/ci.yml'); }
+  catch (e) { failed.push(`ci (${e.message})`); }
+  try { copyIfAbsent(path.join(args.source, 'templates/ONBOARDING.md'), path.join(projectDir, 'docs/ONBOARDING.md'), opt); done.push('docs/ONBOARDING.md'); }
+  catch (e) { failed.push(`onboarding (${e.message})`); }
+
+  try { copyDirIfAbsent(path.join(args.source, 'templates/agents/subagents'), path.join(projectDir, '.claude/agents'), opt); done.push('.claude/agents/ (code-reviewer + security-reviewer)'); }
+  catch (e) { failed.push(`agents (${e.message})`); }
+  try { copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt); done.push('.gitignore'); }
+  catch (e) { failed.push(`.gitignore (${e.message})`); }
+  try { copyIfAbsent(path.join(args.source, 'templates/memory-consolidate/consolidate.yml'), path.join(projectDir, '.github/workflows/memory-consolidate.yml'), opt); done.push('consolidation mémoire (hebdo)'); }
+  catch (e) { failed.push(`memory-consolidate (${e.message})`); }
+  try {
+    const hook = path.join(projectDir, '.githooks/pre-commit');
+    copyIfAbsent(path.join(args.source, 'templates/hooks/pre-commit'), hook, opt);
+    if (fs.existsSync(hook)) fs.chmodSync(hook, 0o755);
+    done.push('.githooks/pre-commit');
+  } catch (e) { failed.push(`pre-commit (${e.message})`); }
+  try { copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt); done.push('docs/examples/feature-exemple.md'); }
+  catch (e) { failed.push(`exemple (${e.message})`); }
+
+  if (args.caveman) {
+    try { installCaveman(); done.push('caveman (réduction des coûts)'); }
+    catch (e) { failed.push(`caveman (${e.message})`); }
+  }
+
+  console.log(formatReport({ project: args.project, stack: args.stack, assistant: args.assistant, done, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) main();

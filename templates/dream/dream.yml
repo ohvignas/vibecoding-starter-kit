@@ -1,0 +1,31 @@
+name: Dream Agent
+on:
+  schedule:
+    - cron: "0 */4 * * *"   # toutes les 4h (UTC). Pour un petit projet : "0 8 * * *" (1x/jour).
+  workflow_dispatch: {}
+permissions:
+  contents: write   # committer docs/DREAM.md uniquement. PAS de pull-requests/issues write : propose-only.
+jobs:
+  dream:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Tu es un agent "dream", PROPOSE-ONLY. Lis docs/DREAM.md (l'en-tête donne le dernier commit vu).
+            Lance `git log <dernier>..HEAD --stat`. S'il n'y a AUCUN nouveau commit, ne fais rien et sors (skip-if-quiet).
+            Sinon, examine les fichiers changés + la structure, puis propose AU PLUS 3 idées nouvelles
+            (FEATURE / BUG / TECH-DEBT / UX / SECURITY) : catégorie, confiance (low/medium/high),
+            evidence (hash de commit ou file:line), status: proposed. Ne répète RIEN de déjà présent (dédup).
+            Ajoute tes entrées datées sous un nouveau titre "## <date>", puis mets à jour l'en-tête
+            (last_run, last_commit_seen). N'édite QUE docs/DREAM.md.
+          claude_args: "--max-turns 6 --model claude-sonnet-5 --allowedTools Read,Bash(git log:*),Bash(git diff:*),Edit(docs/DREAM.md)"
+      - name: Commit proposals
+        run: |
+          git config user.name "dream-agent[bot]"
+          git config user.email "dream-agent@users.noreply.github.com"
+          git add docs/DREAM.md
+          git diff --cached --quiet || git commit -m "docs: propositions dream $(date -u +%Y-%m-%d)"
+          git push

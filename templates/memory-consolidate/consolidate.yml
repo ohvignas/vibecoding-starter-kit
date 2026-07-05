@@ -1,0 +1,27 @@
+name: Memory consolidate
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # tous les lundis 6h UTC
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Consolide docs/memory/ : fusionne les doublons dans gotchas.md/conventions.md/decisions.md,
+            déplace les entrées obsolètes vers archive.md (ne supprime pas), garde docs/memory/index.md
+            à jour et < 50 lignes. N'édite QUE les fichiers sous docs/memory/.
+          claude_args: "--max-turns 8 --model claude-sonnet-5 --allowedTools Read,Edit(docs/memory/*)"
+      - name: Commit
+        run: |
+          git config user.name "memory-bot"
+          git config user.email "memory-bot@users.noreply.github.com"
+          git add docs/memory
+          git diff --cached --quiet || git commit -m "chore: consolidation mémoire $(date -u +%Y-%m-%d)"
+          git push

@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+out/
+release/
+docs/memory/.edit-queue.log
+.DS_Store

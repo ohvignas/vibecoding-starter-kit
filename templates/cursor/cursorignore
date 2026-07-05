@@ -1,0 +1,16 @@
+# Secrets & env — ne pas indexer.
+# ⚠️ Ne bloque PAS l'accès terminal/MCP de l'agent : ne commit JAMAIS de secrets, c'est la vraie protection.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Générés / volumineux
+node_modules/
+dist/
+build/
+.output/
+convex/_generated/
+.expo/

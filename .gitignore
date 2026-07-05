@@ -1,0 +1,28 @@
+# Dépendances
+node_modules/
+
+# Secrets & environnement
+.env
+.env.local
+.env.*.local
+
+# Builds
+dist/
+build/
+out/
+.vite/
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Convex (local)
+.convex/
+
+# Note : le dossier ai-context/ EST volontairement suivi par git,
+# pour que le clone contienne déjà le contexte IA.
+# Relance scripts/download-ai-context.sh pour le mettre à jour.
