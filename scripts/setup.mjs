@@ -112,6 +112,11 @@ function main() {
   try { copyIfAbsent(path.join(args.source, 'templates/ONBOARDING.md'), path.join(projectDir, 'docs/ONBOARDING.md'), opt); done.push('docs/ONBOARDING.md'); }
   catch (e) { failed.push(`onboarding (${e.message})`); }
 
+  try { copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt); done.push('docs/ROADMAP.md (squelette)'); }
+  catch (e) { failed.push(`roadmap (${e.message})`); }
+  try { copyIfAbsent(path.join(args.source, `templates/run/${args.stack}.md`), path.join(projectDir, 'docs/RUN.md'), opt); done.push('docs/RUN.md'); }
+  catch (e) { failed.push(`run (${e.message})`); }
+
   try { copyDirIfAbsent(path.join(args.source, 'templates/agents/subagents'), path.join(projectDir, '.claude/agents'), opt); done.push('.claude/agents/ (code-reviewer + security-reviewer)'); }
   catch (e) { failed.push(`agents (${e.message})`); }
   try { copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt); done.push('.gitignore'); }
