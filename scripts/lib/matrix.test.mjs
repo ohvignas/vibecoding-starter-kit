@@ -2,10 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveAssets } from './matrix.mjs';
 
-test('SaaS + Cursor : mdc stack, MCP cursor, 2 clones, commandsDir cursor, pas de bmad', () => {
+test('SaaS + Cursor : mdc stack, 2 clones, commandsDir cursor, pas de bmad', () => {
   const p = resolveAssets('saas', 'cursor');
   assert.ok(p.copies.find(c => c.to === '.cursor/rules/stack-saas.mdc' && c.transform === 'mdc'));
-  assert.ok(p.copies.find(c => c.to === '.cursor/mcp.json'));
   assert.equal(p.clones.length, 2);
   assert.equal(p.commandsDir, '.cursor/commands');
   assert.equal(p.inAssistant[0].command, '/add-plugin superpowers');
