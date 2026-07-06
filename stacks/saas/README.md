@@ -59,18 +59,16 @@ npx @tanstack/cli@latest create
 - Email/mot de passe, **connexion sociale** (Google, GitHub, Apple… 40+ providers),
 - **2FA** (double authentification), sessions, gestion des **organisations** (multi-utilisateurs, rôles, permissions).
 
-**Self-hosted** : les données d'auth vivent dans **ta** base — tu restes propriétaire de tes utilisateurs, sans service tiers payant. Il **génère et migre le schéma** de base tout seul, et a un **écosystème de plugins** (passkeys, magic links, SSO…).
+**Self-hosted** : les données d'auth vivent dans **ta** base — tu restes propriétaire de tes utilisateurs, sans service tiers payant. Il **génère le schéma** d'auth tout seul, et a un **écosystème de plugins** (passkeys, magic links, SSO…).
 
 **Pourquoi pour un SaaS débutant :** vs « rouler sa propre auth », tu évites les failles classiques et tu gagnes des semaines ; vs un service payant (Auth0/Clerk), c'est **gratuit, open-source, et tu gardes le contrôle**.
 
 > Dans cette stack, Better Auth se branche à Convex via le **composant officiel `@convex-dev/better-auth`** (maintenu par Convex).
 
-**CLI :**
+**CLI (setup composant Convex) :**
 ```bash
-npx @better-auth/cli@latest generate   # génère le schéma d'auth
-npx @better-auth/cli@latest migrate    # l'applique à la base
+npx auth generate   # génère le schéma d'auth (Convex gère la base — pas de migrate séparé)
 ```
-*(Un nouveau CLI `npx auth@latest …` remplace progressivement `@better-auth/cli`.)*
 
 ---
 
