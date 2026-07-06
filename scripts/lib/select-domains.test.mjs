@@ -21,3 +21,10 @@ test('cas NÉGATIFS : pas de faux positif paiement/licence', () => {
 test('licence détectée sur un vrai signal', () => {
   assert.deepEqual(selectDomains('activation de licence et clé de licence', DOMAIN_TRIGGERS), ['licensing']);
 });
+
+test('robustesse apostrophe : droite ET courbe sélectionnent le domaine', () => {
+  const S = String.fromCharCode(0x27), C = String.fromCharCode(0x2019); // ' et '
+  assert.deepEqual(selectDomains('période d' + S + 'essai', DOMAIN_TRIGGERS), ['licensing']);
+  assert.deepEqual(selectDomains('période d' + C + 'essai', DOMAIN_TRIGGERS), ['licensing']);
+  assert.deepEqual(selectDomains('ajouter au panier d' + C + 'achat', DOMAIN_TRIGGERS), ['payment']);
+});
