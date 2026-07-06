@@ -29,7 +29,7 @@ npm run dev         # terminal 2
 ## Règles à respecter
 - **Convex** : logique serveur = `query`/`mutation`/`action`. Jamais d'API REST maison. Front réactif via `useQuery`. Règles : https://convex.link/convex_rules.txt
 - **TanStack Start** : routing fichiers type-safe (`src/routes`), server functions (`createServerFn`). Utilise son `llms.txt` : https://tanstack.com/start/latest/llms.txt
-- **Better Auth** : ⚠️ installe la **version de `better-auth` imposée par la doc Convex** (ex. `~1.6.x`), **pas** `@latest`. Génère le schéma via `npx @better-auth/cli@latest generate`.
+- **Better Auth** : ⚠️ installe la **version de `better-auth` imposée par la doc Convex** (ex. `~1.6.x`), **pas** `@latest`. Génère le schéma via `npx auth generate` (setup composant Convex).
 
 ## Pièges connus
 - ❌ Ne copie pas le `AGENTS.md` du dépôt GitHub TanStack (il vise les contributeurs du framework, pas l'app).

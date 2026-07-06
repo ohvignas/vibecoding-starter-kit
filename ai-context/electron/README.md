@@ -9,3 +9,6 @@ Electron ne publie **pas** de fichier `llms.txt` ni de serveur MCP officiel (les
 Voir `stacks/desktop/README.md` pour la liste complète et comment les déclencher.
 
 Doc officielle à donner à l'IA au besoin : https://www.electronjs.org/docs/latest
+
+Checklist sécurité officielle (à donner à l'IA pour toute app Electron) :
+https://www.electronjs.org/docs/latest/tutorial/security

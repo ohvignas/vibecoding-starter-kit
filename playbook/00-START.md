@@ -20,9 +20,9 @@ Exécute :
 Ajoute `--caveman` à la fin **uniquement** si l'élève a répondu oui à la question 5.
 Puis lis le rapport affiché.
 
-## Étape 4 — Étapes « dans l'assistant »
-Le rapport liste des commandes de plugin à lancer DANS ton assistant (superpowers). Lance-les.
-Détails et correspondances : `playbook/install-tooling.md`.
+## Étape 4 — Étapes « dans l'assistant » (SETUP-AI.md)
+Ouvre **`docs/SETUP-AI.md`** dans le projet généré : c'est la checklist des plugins, skills et MCP à installer/autoriser DANS ton assistant. Exécute chaque case, puis coche-la.
+Correspondances et détails : `playbook/install-tooling.md`.
 
 ## Étape 5 — Détails par stack
 Ouvre le fichier correspondant : `playbook/stack-saas.md` · `playbook/stack-mobile.md` · `playbook/stack-desktop.md`.

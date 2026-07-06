@@ -33,9 +33,9 @@ Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 ## Règles Better Auth
 - L'auth passe par le composant Convex **`@convex-dev/better-auth`**. Suis le guide officiel : https://labs.convex.dev/better-auth/framework-guides/tanstack-start
 - ⚠️ **Version épinglée** : installe la version de `better-auth` **indiquée par la doc Convex** (ex. `~1.6.x`), pas `@latest`, sinon incompatibilité.
-- Génère le schéma d'auth avec le CLI (`npx @better-auth/cli@latest generate`) plutôt qu'à la main.
+- Génère le schéma d'auth avec `npx auth generate` (setup composant Convex), pas `@better-auth/cli generate`.
 - Protège les routes privées côté serveur (vérifie la session avant de rendre la page).
 
 ## Sécurité & bonnes pratiques
-- Ne mets jamais de secret (clés API, tokens) dans le code client. Utilise les variables d'environnement Convex / `.env`.
+- Ne mets jamais de secret (clés API, tokens) dans le code client. Les secrets d'auth (`BETTER_AUTH_SECRET`, `SITE_URL`, OAuth) vont dans **Convex** via `npx convex env set …`, **pas** dans `.env`.
 - Commit Git après chaque étape qui fonctionne.
