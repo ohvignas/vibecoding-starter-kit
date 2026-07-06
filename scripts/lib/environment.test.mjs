@@ -51,3 +51,11 @@ test('package.json présent → scripts ajoutés sans écraser', () => {
   assert.equal(pkg.scripts.typecheck, 'garde', 'ne réécrit pas');
   assert.equal(pkg.scripts.lint, 'biome check .', 'ajoute le manquant');
 });
+
+test('DOMAINS.md est écrit avec le catalogue de la stack', () => {
+  const dir = project();
+  writeStackEnvironment({ projectDir: dir, source: SOURCE, stack: 'saas', assistant: 'claude-code' });
+  const dom = fs.readFileSync(path.join(dir, 'docs/DOMAINS.md'), 'utf8');
+  assert.match(dom, /Capacités métier/);
+  assert.match(dom, /@better-auth\/stripe/);
+});

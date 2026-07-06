@@ -4,6 +4,7 @@ import { resolveStackManifest, DESIGN_SKILLS } from './matrix.mjs';
 import { mergeMcpConfig } from './mcp.mjs';
 import { extendCursorHooks, claudeSettings, prePushScript, preCommitCheckLine } from './hooks.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
+import { renderDomains, SHARED_DOMAINS } from './domains.mjs';
 import { ensureDir } from './fsops.mjs';
 
 // Écrit l'environnement IA d'une stack dans un projet (déclaratif, additif, non destructif).
@@ -58,6 +59,10 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant }) 
   // 6. SETUP-AI.md
   try { write('docs/SETUP-AI.md', renderSetupAi({ stack, assistant, manifest, designSkills: DESIGN_SKILLS })); done.push('docs/SETUP-AI.md'); }
   catch (e) { failed.push(`SETUP-AI (${e.message})`); }
+
+  // 6b. DOMAINS.md (catalogue métier de la stack)
+  try { write('docs/DOMAINS.md', renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS })); done.push('docs/DOMAINS.md'); }
+  catch (e) { failed.push(`DOMAINS (${e.message})`); }
 
   // 7. Scripts package.json si présent
   try {
