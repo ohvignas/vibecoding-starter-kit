@@ -19,3 +19,9 @@ test("DOMAIN_TRIGGERS matche les mots-clés FR attendus", () => {
   assert.match('mise à jour automatique', DOMAIN_TRIGGERS['auto-update']);
   assert.doesNotMatch('juste une page de contact', DOMAIN_TRIGGERS.payment);
 });
+
+test('DOMAIN_TRIGGERS robuste : essai gratuit + apostrophe courbe', () => {
+  assert.match('un essai gratuit de 14 jours', DOMAIN_TRIGGERS.licensing);
+  assert.match('je veux le suivi d’usage', DOMAIN_TRIGGERS.analytics);
+  assert.match('une file d’attente', DOMAIN_TRIGGERS.jobs);
+});
