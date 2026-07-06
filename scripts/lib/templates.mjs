@@ -26,7 +26,7 @@ Voir les règles de stack (\`.cursor/rules/\` ou \`.claude/skills/\`) et \`ai-co
 PRD : \`docs/PRD.md\` · Roadmap : \`docs/ROADMAP.md\` · Design : \`docs/design.md\` · Capacités : \`docs/DOMAINS.md\` · Architecture : \`docs/superpowers/specs/\` · Propositions (dream) : \`docs/DREAM.md\`.
 
 ## Commandes
-\`/new-project\` (fondation) · \`/new-feature\` (livrer) · \`/edit-design\` (UI). Runbooks dans \`${commandsDir}/\`.
+\`/new-project\` (fondation) · \`/build\` (construire la roadmap, jalon par jalon) · \`/new-feature\` (livrer une feature) · \`/edit-design\` (UI). Runbooks dans \`${commandsDir}/\`.
 
 ## Maquette
 La maquette de référence est dans \`maquette/\`.

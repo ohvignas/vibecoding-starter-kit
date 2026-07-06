@@ -87,3 +87,14 @@ export function validateExtras(root) {
   for (const f of files) if (!fs.existsSync(path.join(root, f))) errors.push(`extra manquant : ${f}`);
   return errors;
 }
+
+export function validateBuildCommand(root) {
+  const errors = [];
+  const rb = path.join(root, 'templates/commands/build.md');
+  if (!fs.existsSync(rb)) { errors.push('manquant : templates/commands/build.md'); return errors; }
+  const txt = fs.readFileSync(rb, 'utf8');
+  for (const s of ['docs/ROADMAP.md', 'subagent-driven-development', 'docs/RUN.md', 'Ce que tu vois', 'writing-plans']) {
+    if (!txt.includes(s)) errors.push(`build : ne référence pas « ${s} »`);
+  }
+  return errors;
+}

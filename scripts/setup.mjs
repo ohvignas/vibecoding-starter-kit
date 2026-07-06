@@ -69,7 +69,7 @@ function main() {
     finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 
-  for (const cmd of ['new-project', 'new-feature', 'edit-design', 'doctor']) {
+  for (const cmd of ['new-project', 'new-feature', 'edit-design', 'doctor', 'build']) {
     try {
       const src = path.join(args.source, `templates/commands/${cmd}.md`);
       if (args.assistant === 'cursor') {
