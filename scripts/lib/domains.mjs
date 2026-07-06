@@ -26,3 +26,21 @@ export const DOMAIN_TRIGGERS = {
   licensing:        /licence|activation|clé de licence|débloquer l[‘’’]app|essai gratuit|période d[‘’’]essai|trial/i,
   persistence:      /base (de données )?locale|offline|hors-?ligne|persistance|réglages|sauvegarde locale/i,
 };
+
+// Rend docs/DOMAINS.md : le catalogue de capacités de la stack que l'IA lit pour choisir selon le PRD.
+export function renderDomains({ stack, domains, shared }) {
+  const L = [];
+  L.push(`# Capacités métier — stack ${stack}`);
+  L.push('');
+  L.push("L'IA lit ce catalogue pour choisir les capacités **selon le PRD** (elle n'invente pas). Règle : préférer le **built-in / officiel** ; n'ajouter une option externe que si le PRD le justifie. Les secrets vont dans `.env.example` (ou l'env Convex pour cette stack), jamais dans le code client.");
+  L.push('');
+  for (const [key, d] of Object.entries(domains)) {
+    L.push(`## ${d.label}`);
+    for (const o of d.options) L.push(`- ${o}`);
+    if (d.when) L.push(`- _Quand :_ ${d.when}`);
+    if (d.secrets && d.secrets.length) L.push(`- _Secrets :_ ${d.secrets.join(', ')}`);
+    if (d.mcp && shared[d.mcp]) L.push(`- _MCP :_ \`${shared[d.mcp].mcp.install}\``);
+    L.push('');
+  }
+  return L.join('\n');
+}
