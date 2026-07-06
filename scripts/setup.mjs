@@ -11,6 +11,7 @@ import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, selectByTags, installCaveman } from './lib/external.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
+import { writeStackEnvironment } from './lib/environment.mjs';
 
 export function buildRunPlan(args) {
   const assets = resolveAssets(args.stack, args.assistant);
@@ -123,6 +124,13 @@ function main() {
     if (fs.existsSync(hook)) fs.chmodSync(hook, 0o755);
     done.push('.githooks/pre-commit');
   } catch (e) { failed.push(`pre-commit (${e.message})`); }
+
+  try {
+    const env = writeStackEnvironment({ projectDir, source: args.source, stack: args.stack, assistant: args.assistant });
+    done.push(...env.done);
+    failed.push(...env.failed);
+  } catch (e) { failed.push(`environnement (${e.message})`); }
+
   try { copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt); done.push('docs/examples/feature-exemple.md'); }
   catch (e) { failed.push(`exemple (${e.message})`); }
 
