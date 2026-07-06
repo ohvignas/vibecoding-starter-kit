@@ -85,15 +85,19 @@ Maquettes optionnelles (frontend-design / Pencil / Stitch / Figma) : 2-4 écrans
 
 ---
 
-## Phase 6 — Roadmap → `docs/ROADMAP.md`
-Découpe les features (du PRD) par phase (v1 / v2 / v3), en respectant les Non-objectifs.
+## Phase 6 — Sélection des domaines + Roadmap exhaustive → `docs/ROADMAP.md`
+
+1. **Sélection des domaines** : lis `docs/DOMAINS.md` (le catalogue de la stack) et repère, dans le PRD, les **domaines métier** nécessaires (paiement, email, storage, analytics, erreurs, push, caméra, cartes, auto-update, licence…). Ajoute les secrets correspondants à `.env.example` et leurs commandes à `docs/SETUP-AI.md`. Règle : préfère le **built-in / officiel** ; n'ajoute un externe que si le PRD le justifie.
+2. **Roadmap exhaustive** : remplis `docs/ROADMAP.md` (squelette déjà présent) en **pensant à tout** — parcours les dimensions : Fondations, Modèle de données, Auth, **chaque feature du PRD**, **domaines sélectionnés**, passe UI/design, États (chargement/vide/erreur), Tests, passe sécu, Déploiement, Docs. **Fondations d'abord**.
+3. Chaque jalon = une **tranche verticale** avec une ligne **`✅ Ce que tu vois :`** (le résultat observable dans l'app) et un chemin de plan `docs/superpowers/plans/NN-<slug>.md`.
+4. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.
 
 ---
 
 ## Phase 7 — Mise en place du projet
 1. Scaffold la stack choisie (`npm create convex …` / `create-expo-app` / `create-electron-app`).
-2. Écris `AGENTS.md` (+ copie `CLAUDE.md`) en y intégrant : `templates/agents/loop-section.md` (la boucle), `templates/agents/design-rule.md` (règle design), les règles mémoire, et des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/design.md`, la spec architecture, et `docs/memory/`.
+2. Écris `AGENTS.md` (+ copie `CLAUDE.md`) en y intégrant : `templates/agents/loop-section.md` (la boucle), `templates/agents/design-rule.md` (règle design), les règles mémoire, et des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle de jouer `docs/SETUP-AI.md` (plugins/skills/MCP) et d'utiliser `docs/RUN.md` pour lancer l'app.
 3. Crée le squelette `docs/memory/` (index + gotchas/conventions/decisions/archive) et `docs/DREAM.md` (vide, avec en-tête).
 
 ## Fini quand
-Les fichiers fondation existent + le projet est scaffoldé + `AGENTS.md` contient la boucle et la règle design. Ensuite : « pour construire une feature, lance `/new-feature` ».
+Les fichiers fondation existent + le projet est scaffoldé + `AGENTS.md` contient la boucle et la règle design. Ensuite : « pour tout construire dans l'ordre avec un visuel à chaque étape, lance `/build` ; pour une feature isolée, `/new-feature` ».
