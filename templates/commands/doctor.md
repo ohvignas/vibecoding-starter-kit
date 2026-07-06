@@ -16,6 +16,6 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
    - Câblage checks : `.cursor/hooks.json` (Cursor) ou `.claude/settings.json` (Claude Code) référence `checks.mjs`.
    - Scripts `package.json` : `typecheck` (+ `lint` hors mobile) présents.
    - `docs/SETUP-AI.md` : s'il reste des cases `[ ]`, rappelle de les jouer.
-   - (desktop) `npx @doyensec/electronegativity --version` fonctionne (sécu).
+   - (desktop) le scan sécu `@doyensec/electronegativity` est câblé dans `.githooks/pre-push` (il tourne au `git push` et en CI).
 
 Termine par un résumé : ce qui va, ce qui manque, et les commandes exactes pour corriger.
