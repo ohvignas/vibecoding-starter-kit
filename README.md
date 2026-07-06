@@ -56,8 +56,10 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 | | Fonctionnalité | Ce que ça fait |
 |---|---|---|
-| 🚀 | **4 commandes** | `/new-project`, `/new-feature`, `/edit-design`, `/doctor` — tout le cycle de vie |
-| 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage → l'IA ne refait pas ses erreurs |
+| 🚀 | **5 commandes** | `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor` — tout le cycle de vie |
+| 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework (`.mcp.json` mergé, checks warn-only, `docs/SETUP-AI.md` joué par l'IA) |
+| 💳 | **Catalogue de domaines** | paiement (Stripe/Polar…), email, storage, analytics, erreurs, push, cartes… **choisis d'après le PRD** (`docs/DOMAINS.md`) — pas tout d'un coup |
+| 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
 | 🌙 | **Dream hook** | GitHub Action qui analyse les commits et **propose** features/bugs/idées (propose-only) |
 | 🛡️ | **Revue + sécu** | Subagents `code-reviewer` + `security-reviewer`, scan de secrets, CI, hook pre-commit |
 | 🤖 | **Multi-assistant** | Cursor (Skills + hooks), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
@@ -109,14 +111,15 @@ flowchart TD
 
 Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) : `brainstorm → plan → exécution (sub-agents, TDD) → review → test live → sécu → commit → PR → CI → merge`. Elle est écrite dans l'`AGENTS.md`/`CLAUDE.md` généré, toujours en contexte.
 
-## 🎛️ Les 4 commandes
+## 🎛️ Les 5 commandes
 
 | Commande | Rôle |
 |---|---|
-| **`/new-project`** | La fondation : interview → **PRD complète** + **tech spec** + **design** + roadmap (templates structurés, validation à chaque étape) |
-| **`/new-feature`** | La livraison : **story + critères d'acceptation** → build TDD → **test live** (chaque critère vérifié) → sécu → commit → PR → CI → merge sur `dev` |
+| **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **design** + **sélection des domaines** (d'après le PRD) + **roadmap exhaustive** (chaque jalon = un résultat visible) |
+| **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** — tu vois ton produit grandir. Gate « on continue ? » ou « enchaîne tout » |
+| **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `dev` |
 | **`/edit-design`** | Charge les **5 skills design** + `design.md` **avant** de toucher l'UI |
-| **`/doctor`** | Auto-diagnostic : fichiers présents, MCP OK, **aucun secret commité**, `.gitignore` correct |
+| **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
 
 Chaque commande est livrée au bon format : **Cursor Skills** (`.cursor/skills/`), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
 
@@ -139,18 +142,21 @@ Chaque stack : explication débutant, **docs officielles vérifiées**, `AGENTS.
 mon-app/
 ├── AGENTS.md · CLAUDE.md          # règles + boucle + @import mémoire (toujours les deux)
 ├── .claude/
-│   ├── commands/                  # /new-project /new-feature /edit-design /doctor
+│   ├── commands/                  # /new-project /build /new-feature /edit-design /doctor
+│   ├── settings.json              # hooks PostToolUse → checks framework (warn-only)
 │   ├── skills/stack-*             # règles de la stack
 │   └── agents/                    # code-reviewer + security-reviewer
 ├── docs/
+│   ├── SETUP-AI.md                # plugins/skills/MCP à installer (joué par l'IA)
+│   ├── DOMAINS.md                 # catalogue des capacités métier de la stack
+│   ├── ROADMAP.md                 # jalons (✅ ce que tu vois) — piloté par /build
+│   ├── RUN.md                     # comment lancer l'app + ce que tu dois voir
 │   ├── memory/                    # index + gotchas/conventions/decisions/archive
-│   ├── DREAM.md                   # propositions du dream hook
-│   ├── examples/feature-exemple.md
-│   └── ONBOARDING.md
+│   └── DREAM.md · examples/ · ONBOARDING.md
 ├── .github/workflows/             # ci · secrets (gitleaks) · dream · memory-consolidate
-├── .githooks/pre-commit           # scan secrets + lint
+├── .githooks/                     # pre-commit (secrets+lint) · pre-push (sécu) · checks.mjs
 ├── ai-context/                    # llms.txt officiels
-├── .env.example · .gitignore · .mcp.json
+├── .env.example · .gitignore · .mcp.json   # MCP mergé par stack
 └── maquette/
 ```
 _(Cursor : `.cursor/skills` + `.cursor/rules` + `.cursor/hooks.json` + `.cursorignore` à la place.)_
