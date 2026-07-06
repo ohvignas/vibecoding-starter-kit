@@ -12,7 +12,7 @@ export const SHARED_DOMAINS = {
 };
 
 export const DOMAIN_TRIGGERS = {
-  payment:          /abonnement|premium|forfait|paywall|payer|paiement|checkout|réservation payante|acheter|panier|commande/i,
+  payment:          /abonnement|premium|forfait|paywall|payer|paiement|checkout|réservation payante|acheter|panier d['']achat|ajouter au panier|passer (une |la )?commande|bon de commande/i,
   email:            /e-?mail\b|\bmail\b|magic link|newsletter|mot de passe oublié|réinitialis/i,
   storage:          /upload|télévers|fichier|image|avatar|photo de profil|pièce jointe|pdf|document/i,
   analytics:        /statistiques|analytics|suivi d['’]usage|funnel|entonnoir|feature flag|a\/b/i,
@@ -23,7 +23,7 @@ export const DOMAIN_TRIGGERS = {
   camera:           /photo|caméra|appareil photo|scanner/i,
   maps:             /carte|\bmap\b|localisation|gps|à proximité|adresse/i,
   'auto-update':    /mise à jour|auto-?update|nouvelle version/i,
-  licensing:        /licence|activation|clé de licence|débloquer l[‘’’]app|essai gratuit|période d[‘’’]essai|trial/i,
+  licensing:        /licence|clé d[‘’]activation|activation de licence|débloquer l[‘’]app|essai gratuit|période d[‘’]essai|trial/i,
   persistence:      /base (de données )?locale|offline|hors-?ligne|persistance|réglages|sauvegarde locale/i,
 };
 
