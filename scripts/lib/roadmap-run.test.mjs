@@ -10,7 +10,7 @@ test('le template ROADMAP a les dimensions + l’acceptation visuelle', () => {
 });
 
 test('chaque cible de run décrit ce qu’on doit voir', () => {
-  for (const [stack, needle] of [['saas', 'localhost'], ['mobile', 'expo start'], ['desktop', 'run start']]) {
+  for (const [stack, needle] of [['saas', 'localhost'], ['mobile', 'expo start'], ['desktop', 'npm start']]) {
     const t = fs.readFileSync(`templates/run/${stack}.md`, 'utf8');
     assert.match(t, /Ce que tu dois voir/);
     assert.match(t, new RegExp(needle));

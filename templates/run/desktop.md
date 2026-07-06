@@ -1,5 +1,5 @@
 # Lancer l'app — Desktop (Electron)
 
-`npm run start`
+`npm start`
 
 **Ce que tu dois voir :** la fenêtre Electron s'ouvre avec ton interface.
