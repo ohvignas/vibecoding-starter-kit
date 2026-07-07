@@ -33,7 +33,8 @@ export function installCaveman(run = defaultRun) {
 // Construit les arguments de `npx skills add <repo> [--skill …] -a <assistant> --yes`.
 export function buildSkillAddArgs(spec, assistant) {
   const args = ['-y', 'skills', 'add', spec.repo];
-  if (spec.skills && spec.skills.length) args.push('--skill', ...spec.skills);
+  if (spec.all) args.push('--all');
+  else if (spec.skills && spec.skills.length) args.push('--skill', ...spec.skills);
   args.push('-a', assistant, '--yes');
   return args;
 }

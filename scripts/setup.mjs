@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, validateArgs } from './lib/args.mjs';
-import { resolveAssets, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
+import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { renderProjectAgentsMd, toCursorMdc } from './lib/templates.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, selectByTags, installCaveman, installSkills } from './lib/external.mjs';
@@ -170,12 +170,20 @@ async function main() {
   }
 
   if (!args.noSkills) {
-    console.log('\nInstallation des skills design (npx skills add — peut prendre ~1 min)…');
+    console.log('\nInstallation des skills (npx skills add — peut prendre ~1-2 min)…');
     try {
       const skl = installSkills(DESIGN_SKILL_SPECS, args.assistant);
       done.push(...skl.done.map((d) => `skill design : ${d}`));
       failed.push(...skl.failed.map((f) => `skill design : ${f}`));
     } catch (e) { failed.push(`skills design (${e.message})`); }
+    try {
+      const stackSkills = resolveStackManifest(args.stack, args.assistant).skills;
+      if (stackSkills.length) {
+        const skl = installSkills(stackSkills, args.assistant);
+        done.push(...skl.done.map((d) => `skill stack : ${d}`));
+        failed.push(...skl.failed.map((f) => `skill stack : ${f}`));
+      }
+    } catch (e) { failed.push(`skills stack (${e.message})`); }
   }
 
   console.log(formatReport({ project: args.project, stack: args.stack, assistant: args.assistant, done, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
@@ -184,7 +192,7 @@ async function main() {
     console.log('\n— Colle ce prompt dans ton assistant —\n');
     console.log([
       "Finalise l'install et démarre :",
-      '1. Ouvre docs/SETUP-AI.md → installe les plugins + skills stack, et autorise les MCP (/mcp).',
+      '1. Ouvre docs/SETUP-AI.md → installe les plugins et autorise les MCP (/mcp). (Les skills — design + stack — sont déjà installés par le wizard.)',
       `2. Boucle superpowers : ${SUPERPOWERS[args.assistant]}`,
       '3. /doctor pour vérifier.',
       '4. /new-project (PRD + tech spec + design), puis /build.',

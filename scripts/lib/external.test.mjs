@@ -39,6 +39,11 @@ test('buildSkillAddArgs : sans skills → pas de --skill', () => {
   assert.deepEqual(args, ['-y', 'skills', 'add', 'owner/repo', '-a', 'codex', '--yes']);
 });
 
+test('buildSkillAddArgs : all → --all (et jamais --skill)', () => {
+  const args = buildSkillAddArgs({ label: 'convex', repo: 'get-convex/agent-skills', all: true, skills: ['ignoré'] }, 'cursor');
+  assert.deepEqual(args, ['-y', 'skills', 'add', 'get-convex/agent-skills', '--all', '-a', 'cursor', '--yes']);
+});
+
 test('installSkills : lance chaque spec, échec gracieux', () => {
   const calls = [];
   const run = (cmd, args) => { calls.push([cmd, args]); if (args.includes('boom/repo')) throw new Error('offline'); };

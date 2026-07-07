@@ -11,8 +11,11 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   else L.push('- [ ] (aucun plugin dédié pour cet assistant)');
   L.push('');
   L.push('## 2. Skills portables (stack)');
-  if (manifest.skills.length) for (const s of manifest.skills) L.push(`- [ ] ${s.cmd}`);
-  else L.push('- [ ] (aucun)');
+  if (manifest.skills.length) {
+    L.push(`- ✅ déjà installés par le wizard : ${manifest.skills.map((s) => s.label).join(', ')}`);
+    L.push('- (si un install a échoué — réseau — relance à la main :)');
+    for (const s of manifest.skills) L.push(`  - \`npx skills add ${s.repo}${s.all ? ' --all' : ''} -a ${assistant} --yes\``);
+  } else L.push('- [ ] (aucun)');
   L.push('');
   L.push('## 3. MCP à autoriser');
   for (const [name, cfg] of Object.entries(manifest.mcp)) {

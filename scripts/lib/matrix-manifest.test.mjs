@@ -35,6 +35,18 @@ test('stack inconnue → throw', () => {
   assert.throws(() => resolveStackManifest('flutter', 'cursor'), /Stack inconnue/);
 });
 
+test('skills stack = specs installables (repo + label ; convex en --all)', () => {
+  // Auto-installés par le wizard via buildSkillAddArgs → chaque entrée doit porter repo+label.
+  for (const stack of ['saas', 'mobile']) {
+    for (const s of resolveStackManifest(stack, 'cursor').skills) {
+      assert.ok(s.repo, `${stack}: repo présent`);
+      assert.ok(s.label, `${stack}: label présent`);
+      assert.equal('cmd' in s, false, `${stack}: plus de champ cmd libre`);
+    }
+  }
+  assert.ok(resolveStackManifest('saas', 'cursor').skills.find((s) => s.repo === 'get-convex/agent-skills').all);
+});
+
 test('DESIGN_SKILLS liste les 5 skills design', () => {
   assert.match(DESIGN_SKILLS, /frontend-design/);
   assert.match(DESIGN_SKILLS, /shadcnblocks/);

@@ -71,9 +71,14 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 # 1. Récupère le kit (dans un terminal)
 git clone https://github.com/ohvignas/vibecoding-starter-kit && cd vibecoding-starter-kit
 # 2. Lance le wizard et réponds aux questions (stack, assistant, nom, Convex cloud/local)
+#    → il pose TOUT : fichiers, hooks, règles, commandes, mémoire, CI + installe les skills (design + stack)
 node scripts/setup.mjs
-# 3. Ouvre ton assistant IA dans le dossier du projet et tape :  /new-project
+# 3. Ouvre ton assistant IA dans le dossier du projet et COLLE le prompt affiché par le wizard
+#    (2 gestes qui restent : installer superpowers + autoriser les MCP) → puis /new-project
 ```
+
+> [!TIP]
+> Le seul travail manuel dans l'assistant, ce sont ces **2 gestes interactifs** (installer le plugin superpowers + `/mcp` pour autoriser les connexions) — impossibles à automatiser depuis le terminal. Tout le reste (skills compris) est déjà posé par le wizard.
 
 > [!NOTE]
 > **Windows** : lance avec `node` (pas de script `.sh`). Les hooks Git tournent sous **Git Bash**. Prérequis : Node.js ≥ 20.12 + git.
@@ -96,10 +101,11 @@ flowchart TD
     D --> E1["Cursor : .cursor/commands + rules .mdc + hooks + BUGBOT"]
     D --> E2["Claude Code : CLAUDE.md + .claude/skills"]
     D --> E3["Codex : AGENTS.md + docs/commands"]
-    E1 --> F["MCP + hooks + mémoire + dream + CI + subagents posés"]
+    E1 --> F["Skills (design + stack) + hooks + mémoire + dream + CI + subagents posés auto"]
     E2 --> F
     E3 --> F
-    F --> G["Dans ton assistant : /new-project « ton idée »"]
+    F --> G0["Colle le prompt du wizard : installe superpowers + /mcp (2 gestes)"]
+    G0 --> G["Dans ton assistant : /new-project « ton idée »"]
     G --> H["/build : la roadmap, jalon par jalon (visuel à chaque étape)"]
     H -.->|jalon suivant| H
 ```

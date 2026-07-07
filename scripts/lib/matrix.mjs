@@ -50,8 +50,8 @@ export const STACKS = {
       shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
     },
     skills: [
-      { name: 'better-auth', cmd: 'npx skills add better-auth/skills' },
-      { name: 'convex-agent-skills', cmd: 'npx skills add get-convex/agent-skills --all' },
+      { label: 'better-auth', repo: 'better-auth/skills' },
+      { label: 'convex-agent-skills', repo: 'get-convex/agent-skills', all: true },
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: [] },
     scripts: { typecheck: 'tsc --noEmit', lint: 'biome check .' },
@@ -84,8 +84,8 @@ export const STACKS = {
       expo: { type: 'http', url: 'https://mcp.expo.dev/mcp', needsAuth: true },
     },
     skills: [
-      { name: 'expo', cmd: 'npx skills add expo/skills' },
-      { name: 'convex-agent-skills', cmd: 'npx skills add get-convex/agent-skills --all' },
+      { label: 'expo', repo: 'expo/skills' },
+      { label: 'convex-agent-skills', repo: 'get-convex/agent-skills', all: true },
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint-expo', 'deps-check'], prePush: ['doctor'] },
     scripts: { typecheck: 'tsc --noEmit' },
