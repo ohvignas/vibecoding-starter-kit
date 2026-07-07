@@ -24,7 +24,7 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push('');
   L.push('## 5. Design');
   L.push('- ✅ déjà installés par le wizard : frontend-design, brand-guidelines, web-design-guidelines, ui-ux-pro-max');
-  L.push(`- [ ] ${shadcnNote}`);
+  L.push(`- [ ] ${shadcnNote.replace('<assistant>', assistant)}`);
   L.push('');
   L.push('## 6. Scripts package.json (à ajouter si absents après le scaffold)');
   for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);

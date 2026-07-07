@@ -163,6 +163,7 @@ async function main() {
   }
 
   if (!args.noSkills) {
+    console.log('\nInstallation des skills design (npx skills add — peut prendre ~1 min)…');
     try {
       const skl = installSkills(DESIGN_SKILL_SPECS, args.assistant);
       done.push(...skl.done.map((d) => `skill design : ${d}`));
@@ -172,7 +173,7 @@ async function main() {
 
   console.log(formatReport({ project: args.project, stack: args.stack, assistant: args.assistant, done, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
   if (fromWizard) {
-    console.log('\n' + ok('Config prête. Skills design installés. Ouvre ton assistant IA dans le dossier du projet.', on));
+    console.log('\n' + ok('Config prête. Ouvre ton assistant IA dans le dossier du projet.', on));
     console.log('\n— Colle ce prompt dans ton assistant —\n');
     console.log([
       "Finalise l'install et démarre :",
