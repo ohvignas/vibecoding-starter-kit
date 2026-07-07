@@ -59,7 +59,8 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🌙 | **Dream hook** | GitHub Action qui analyse les commits et **propose** features/bugs/idées (propose-only) |
 | 🛡️ | **Revue + sécu** | Subagents `code-reviewer` + `security-reviewer`, scan de secrets, CI, hook pre-commit |
 | 🤖 | **Multi-assistant** | Cursor (règles `.mdc` typées + commandes + hooks sécu + Bugbot), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
-| 📐 | **Planif à fond** | PRD + tech spec + design détaillés (templates structurés) avant la moindre ligne de code |
+| 🎨 | **Maquette-first** | PRD + tech spec, puis la **maquette** créée/itérée sur **Google Stitch** (IA, gratuit) ou fournie par toi ; la **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné**, pas une interprétation du PRD |
+| 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code |
 
 ## ⚡ Démarrage rapide
 
@@ -119,7 +120,9 @@ flowchart TD
     E3 --> F
     F --> G0["Colle le prompt du wizard : plugins (superpowers + stack) + /mcp"]
     G0 --> G["Dans ton assistant : /new-project « ton idée »"]
-    G --> H["/build : la roadmap, jalon par jalon (visuel à chaque étape)"]
+    G --> M["Maquette (Stitch) : crée → itère → valide"]
+    M --> R["Roadmap dérivée de la maquette (chaque écran = un jalon)"]
+    R --> H["/build : jalon par jalon, comparé à la maquette (visuel à chaque étape)"]
     H -.->|jalon suivant| H
 ```
 
@@ -129,8 +132,8 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 
 | Commande | Rôle |
 |---|---|
-| **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **design** + **sélection des domaines** (d'après le PRD) + **roadmap exhaustive** (chaque jalon = un résultat visible) |
-| **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** — tu vois ton produit grandir. Gate « on continue ? » ou « enchaîne tout » |
+| **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **maquette** (créée/itérée sur **Stitch**, ou la tienne) + **design system** (`design.md`) + **domaines** + **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) |
+| **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » ou « enchaîne tout » |
 | **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `dev` |
 | **`/edit-design`** | Charge les **5 skills design** + `design.md` **avant** de toucher l'UI |
 | **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |

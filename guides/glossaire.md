@@ -40,8 +40,8 @@
 ## 2. 🛠️ Le kit & ses commandes
 
 - <a id="wizard"></a>**Wizard (assistant d'installation)** — La commande interactive `node scripts/setup.mjs` qui te **pose les questions** (stack, assistant, nom…) et installe l'environnement. C'est **toi** qui choisis, pas l'IA. *Ex. : évite que l'IA parte sur la mauvaise stack toute seule.*
-- **`/new-project`** — La commande qui **pose la fondation** d'un projet : interview → PRD + tech spec + design + sélection des domaines + roadmap. *Ex. : `/new-project "un SaaS de réservation pour coiffeurs"`.*
-- **`/build`** — La commande qui **construit la roadmap jalon par jalon** (plan → code TDD → relance l'app pour voir le résultat → jalon suivant). *Ex. : tu vois ton produit grandir, écran par écran.*
+- **`/new-project`** — La commande qui **pose la fondation** d'un projet : interview → PRD + tech spec + **maquette** (créée/itérée sur Stitch, ou la tienne) + design system + domaines + **roadmap dérivée de la maquette**. *Ex. : `/new-project "un SaaS de réservation pour coiffeurs"`.*
+- **`/build`** — La commande qui **construit la roadmap jalon par jalon** (plan → code TDD → relance l'app, **comparée à la maquette** → jalon suivant). *Ex. : tu vois ton produit grandir, écran par écran.*
 - **`/new-feature`** — La commande qui **livre une fonctionnalité isolée** : story + critères d'acceptation → build → test live → sécu → merge. *Ex. : `/new-feature "l'utilisateur voit ses rendez-vous"`.*
 - **`/edit-design`** — Charge les **5 skills de design** + le `design.md` avant de toucher à l'interface. *Ex. : pour garder une UI cohérente et pro.*
 - **`/doctor`** — **Auto-diagnostic** du projet : fichiers présents, MCP OK, hooks câblés, aucun secret commité. *Ex. : « pourquoi ça marche pas ? » → lance `/doctor`.*
@@ -49,6 +49,7 @@
 - **Tech spec (spécification technique)** — Le **plan d'architecture** : les décisions durables (pattern, conventions, modèle de données) qu'un futur développeur ne peut pas deviner. *Ex. : « les erreurs ont toujours cette forme », « l'auth passe par ici ».*
 - <a id="roadmap"></a>**Roadmap** — La **liste ordonnée des jalons** à construire, fondations d'abord, chacun avec un résultat visible. Relue à chaque tour de `/build` pour ne rien oublier. *Ex. : jalon 0 = « l'app démarre » ; jalon 5 = « l'utilisateur paie ».*
 - **Jalon (milestone)** — Une **tranche verticale** de la roadmap = un morceau qui livre un résultat **observable**. *Ex. : « ✅ Ce que tu vois : l'écran de connexion s'affiche ».*
+- <a id="maquette"></a>**Maquette** — Le **dessin des écrans** de ton app **avant** de coder. Dans le kit c'est le **pivot** : tu la crées/itères (sur [Stitch](#stitch), ou tu fournis la tienne), tu la valides, puis la **roadmap en découle** — le build réalise ce que tu as dessiné. *Ex. : 4 écrans porteurs dans `maquette/`, puis chaque écran devient un jalon.*
 - **Story & critères d'acceptation** — Une **story** décrit un besoin (« en tant que X, je veux Y ») ; les **critères d'acceptation** sont les conditions testables qui prouvent que c'est fait. *Ex. : AC-1 « quand je clique Payer, Stripe s'ouvre ».*
 - <a id="mémoire"></a>**Mémoire (du projet)** — Un « cerveau » écrit (`docs/memory/`) que l'IA **nourrit** quand elle découvre un piège, et **relit** au démarrage — pour ne pas refaire ses erreurs. *Ex. : « ne pas utiliser `@latest` pour Better Auth ».*
 - **Dream hook** — Une GitHub Action qui, toutes les quelques heures, analyse les commits et **propose** des idées/bugs dans `docs/DREAM.md` (propose-only, ne code jamais). *Ex. : « et si on ajoutait un rappel par email ? ».*
@@ -73,6 +74,8 @@
 - **TypeScript** — Du **JavaScript typé** : tu déclares le type des données, l'éditeur attrape les erreurs avant l'exécution. *Ex. : `tsc --noEmit` vérifie les types sans rien lancer.*
 - **shadcn/ui** — Une **collection de composants React** (boutons, modales, tableaux) prêts à copier dans ton projet et à styliser. *Ex. : ajouter une belle boîte de dialogue en une commande.*
 - **Tailwind CSS** — Un **framework CSS** où tu stylises directement avec des classes utilitaires (`p-4`, `text-center`) au lieu d'écrire du CSS séparé. *Ex. : mise en page rapide sans quitter le HTML.*
+- <a id="stitch"></a>**Stitch (Google)** — Un **outil de design par IA, gratuit** (compte Google) : tu décris un écran, il le génère (HTML/CSS), tu itères. Le kit installe ses skills et l'utilise pour créer la [maquette](#maquette). *Ex. : « une page de connexion épurée » → un écran prêt à exporter dans `maquette/`.*
+- **tweakcn** — Un **éditeur de thème visuel** gratuit pour shadcn/Tailwind : tu règles couleurs/typo/rayons avec preview live, puis tu **exportes les variables CSS** à coller dans ton projet. *Ex. : donner son identité visuelle à l'app sans écrire de CSS.*
 - **git / GitHub** — **git** = l'outil qui versionne ton code (historique, branches) ; **GitHub** = l'hébergeur en ligne des dépôts git (+ PR, Actions). *Ex. : chaque étape qui marche = un commit git.*
 - **Node.js** — L'**environnement qui exécute du JavaScript** hors navigateur (outils, serveurs, scripts). Prérequis du kit (≥ 20.12). *Ex. : `node scripts/setup.mjs` lance le wizard.*
 - **npm / npx** — **npm** installe des paquets ; **npx** exécute un paquet sans l'installer durablement. *Ex. : `npx expo-doctor` lance un check sans rien garder.*
