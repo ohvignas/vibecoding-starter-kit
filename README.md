@@ -63,14 +63,27 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 ## ⚡ Démarrage rapide
 
-```text
-# 1. Récupère le kit (dans un terminal)
-git clone https://github.com/ohvignas/vibecoding-starter-kit && cd vibecoding-starter-kit
-# 2. Lance le wizard et réponds aux questions (stack, assistant, nom, Convex cloud/local)
-#    → il pose TOUT : fichiers, hooks, règles, commandes, mémoire, CI + installe les skills (design + stack)
+**1. Récupère le kit** (dans un terminal)
+
+```bash
+git clone https://github.com/ohvignas/vibecoding-starter-kit
+cd vibecoding-starter-kit
+```
+
+**2. Lance le wizard** et réponds aux questions (stack, assistant, nom, Convex cloud/local)
+
+```bash
 node scripts/setup.mjs
-# 3. Ouvre ton assistant IA dans le dossier du projet et COLLE le prompt affiché par le wizard
-#    (il installe les plugins listés — superpowers + éventuel plugin de stack — et autorise les MCP) → puis /new-project
+```
+
+> Il pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack).
+
+**3. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard**
+
+Il installe les plugins (superpowers + éventuel plugin de stack) et autorise les MCP. Ensuite, lance :
+
+```
+/new-project
 ```
 
 > [!TIP]
