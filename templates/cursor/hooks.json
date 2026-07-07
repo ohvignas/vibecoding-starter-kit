@@ -2,6 +2,7 @@
   "version": 1,
   "hooks": {
     "sessionStart": [{ "command": "node .cursor/hooks/inject-memory.mjs", "type": "command" }],
-    "afterFileEdit": [{ "command": "node .cursor/hooks/log-edit.mjs", "type": "command" }]
+    "afterFileEdit": [{ "command": "node .cursor/hooks/log-edit.mjs", "type": "command" }],
+    "beforeShellExecution": [{ "command": "node .cursor/hooks/guard-shell.mjs", "type": "command" }]
   }
 }
