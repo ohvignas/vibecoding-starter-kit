@@ -67,22 +67,16 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 ## ⚡ Démarrage rapide
 
-Tu ne tapes **aucune commande technique**. Ouvre ton assistant dans un dossier vide et dis-lui :
-
 ```text
-Installe et configure ce projet, puis démarre-le :
-github.com/ohvignas/vibecoding-starter-kit — suis playbook/00-START.md
-```
-
-L'IA pose 3-4 questions (quoi construire, quel assistant, nom du projet), pose tout, puis :
-
-```text
-/new-project "un SaaS de réservation pour coiffeurs"   ← la fondation (PRD + tech spec + design)
-/new-feature "l'utilisateur voit ses rendez-vous"       ← la boucle : build → test live → sécu → merge
+# 1. Récupère le kit (dans un terminal)
+git clone https://github.com/ohvignas/vibecoding-starter-kit && cd vibecoding-starter-kit
+# 2. Lance le wizard et réponds aux questions (stack, assistant, nom, Convex cloud/local)
+node scripts/setup.mjs
+# 3. Ouvre ton assistant IA dans le dossier du projet et tape :  /new-project
 ```
 
 > [!NOTE]
-> Prérequis : **Node.js ≥ 20.12**, **git**, et un assistant (Cursor / Claude Code / Codex). Détails : [`guides/02-installer-les-outils.md`](guides/02-installer-les-outils.md).
+> **Windows** : lance avec `node` (pas de script `.sh`). Les hooks Git tournent sous **Git Bash**. Prérequis : Node.js ≥ 20.12 + git.
 
 <details>
 <summary>Préfères-tu tout comprendre à la main ? (chemin débutant)</summary>
