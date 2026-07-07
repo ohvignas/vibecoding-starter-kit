@@ -26,3 +26,13 @@ test('validateArgs signale stack/assistant/projet invalides', () => {
   assert.deepEqual(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','/tmp/vibe-demo'])), []);
   assert.equal(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','a b'])).length, 1);
 });
+
+test('--backend : parsé et validé (cloud|local)', () => {
+  const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--backend', 'local']);
+  assert.equal(a.backend, 'local');
+  assert.deepEqual(validateArgs(a), []);
+});
+test('--backend invalide → erreur', () => {
+  const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--backend', 'nope']);
+  assert.ok(validateArgs(a).some((e) => /backend/.test(e)));
+});

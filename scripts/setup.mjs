@@ -12,6 +12,9 @@ import { cloneRepo, pickFromClone, selectByTags, installCaveman } from './lib/ex
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
+import readline from 'node:readline/promises';
+import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard } from './lib/wizard.mjs';
+import { supportsColor, ok } from './lib/ui.mjs';
 
 export function buildRunPlan(args) {
   const assets = resolveAssets(args.stack, args.assistant);
@@ -19,10 +22,20 @@ export function buildRunPlan(args) {
   return { assets, projectDir };
 }
 
-function main() {
-  const args = parseArgs(process.argv.slice(2));
-  const errs = validateArgs(args);
-  if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
+async function main() {
+  const argv = process.argv.slice(2);
+  const on = supportsColor(process.stdout, process.env);
+  const fromWizard = needsWizard(argv, Boolean(process.stdin.isTTY));
+  let args;
+  if (fromWizard) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    try { args = buildArgsFromAnswers(await runWizard((q) => rl.question(q), on)); }
+    finally { rl.close(); }
+  } else {
+    args = parseArgs(argv);
+    const errs = validateArgs(args);
+    if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
+  }
   if (!meetsNode(process.version)) { console.error('Node ≥ 20.12 requis (voir guides/02-installer-les-outils.md)'); process.exit(1); }
   if (!ensureGit()) { console.error('git requis (voir guides/02-installer-les-outils.md)'); process.exit(1); }
 
@@ -117,6 +130,16 @@ function main() {
   try { copyIfAbsent(path.join(args.source, `templates/run/${args.stack}.md`), path.join(projectDir, 'docs/RUN.md'), opt); done.push('docs/RUN.md'); }
   catch (e) { failed.push(`run (${e.message})`); }
 
+  try {
+    const note = renderBackendNote(args.stack, args.backend);
+    if (note) {
+      const runPath = path.join(projectDir, 'docs/RUN.md');
+      const cur = fs.existsSync(runPath) ? fs.readFileSync(runPath, 'utf8') : '';
+      fs.writeFileSync(runPath, note + '\n' + cur);
+      done.push('docs/RUN.md (note backend local)');
+    }
+  } catch (e) { failed.push(`backend note (${e.message})`); }
+
   try { copyDirIfAbsent(path.join(args.source, 'templates/agents/subagents'), path.join(projectDir, '.claude/agents'), opt); done.push('.claude/agents/ (code-reviewer + security-reviewer)'); }
   catch (e) { failed.push(`agents (${e.message})`); }
   try { copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt); done.push('.gitignore'); }
@@ -145,6 +168,7 @@ function main() {
   }
 
   console.log(formatReport({ project: args.project, stack: args.stack, assistant: args.assistant, done, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
+  if (fromWizard) console.log('\n' + ok('Config prête. Ouvre ton assistant IA dans le dossier du projet et lance /new-project.', on));
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main();
+if (import.meta.url === pathToFileURL(process.argv[1]).href) main().catch((e) => { console.error(e?.message || e); process.exit(1); });

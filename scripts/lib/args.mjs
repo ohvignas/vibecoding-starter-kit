@@ -14,6 +14,7 @@ export function parseArgs(argv) {
       case '--dry-run': args.dryRun = true; break;
       case '--force': args.force = true; break;
       case '--caveman': args.caveman = true; break;
+      case '--backend': args.backend = argv[++i]; break;
       default: throw new Error(`Argument inconnu : ${a}`);
     }
   }
@@ -25,6 +26,7 @@ export function validateArgs(args) {
   if (!STACKS.includes(args.stack)) errors.push(`--stack doit valoir ${STACKS.join('|')}`);
   if (!ASSISTANTS.includes(args.assistant)) errors.push(`--assistant doit valoir ${ASSISTANTS.join('|')}`);
   if (!args.project || !/^[\w./~-]+$/.test(args.project)) errors.push('--project : nom invalide');
+  if (args.backend !== undefined && !['cloud', 'local'].includes(args.backend)) errors.push('--backend doit valoir cloud|local');
   return errors;
 }
 
