@@ -6,7 +6,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, validateArgs } from './lib/args.mjs';
 import { resolveAssets } from './lib/matrix.mjs';
-import { renderProjectAgentsMd, toCursorMdc, toSkillMd } from './lib/templates.mjs';
+import { renderProjectAgentsMd, toCursorMdc } from './lib/templates.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, selectByTags, installCaveman } from './lib/external.mjs';
 import { formatReport } from './lib/report.mjs';
@@ -85,15 +85,9 @@ async function main() {
   for (const cmd of ['new-project', 'new-feature', 'edit-design', 'doctor', 'build']) {
     try {
       const src = path.join(args.source, `templates/commands/${cmd}.md`);
-      if (args.assistant === 'cursor') {
-        const dest = path.join(projectDir, `.cursor/skills/${cmd}/SKILL.md`);
-        ensureDir(path.dirname(dest));
-        if (!fs.existsSync(dest) || args.force) fs.writeFileSync(dest, toSkillMd({ name: cmd, description: `Commande vibe-stack : ${cmd}`, body: fs.readFileSync(src, 'utf8') }));
-        done.push(`.cursor/skills/${cmd}/SKILL.md`);
-      } else {
-        copyIfAbsent(src, path.join(projectDir, assets.commandsDir, `${cmd}.md`), opt);
-        done.push(`${assets.commandsDir}/${cmd}.md`);
-      }
+      // Slash-commands typables pour tous : Cursor → .cursor/commands/, Claude → .claude/commands/, Codex → docs/commands/.
+      copyIfAbsent(src, path.join(projectDir, assets.commandsDir, `${cmd}.md`), opt);
+      done.push(`${assets.commandsDir}/${cmd}.md`);
     } catch (e) { failed.push(`commande ${cmd} (${e.message})`); }
   }
   try { copyDirIfAbsent(path.join(args.source, 'templates/memory'), path.join(projectDir, 'docs/memory'), opt); done.push('docs/memory/'); }
