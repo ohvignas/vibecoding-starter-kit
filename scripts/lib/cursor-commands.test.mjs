@@ -11,7 +11,7 @@ test('cursor : commandes en .cursor/commands/*.md, pas en .cursor/skills', () =>
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-cur-'));
   execFileSync(
     process.execPath,
-    ['scripts/setup.mjs', '--source', '.', '--stack', 'saas', '--assistant', 'cursor', '--project', dir],
+    ['scripts/setup.mjs', '--source', '.', '--stack', 'saas', '--assistant', 'cursor', '--project', dir, '--no-skills'],
     { stdio: 'ignore' },
   );
   for (const c of ['new-project', 'build', 'new-feature', 'edit-design', 'doctor']) {
