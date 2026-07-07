@@ -29,3 +29,21 @@ export function selectByTags(rulesDir, tags) {
 export function installCaveman(run = defaultRun) {
   run('bash', ['-lc', 'curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash']);
 }
+
+// Construit les arguments de `npx skills add <repo> [--skill …] -a <assistant> --yes`.
+export function buildSkillAddArgs(spec, assistant) {
+  const args = ['-y', 'skills', 'add', spec.repo];
+  if (spec.skills && spec.skills.length) args.push('--skill', ...spec.skills);
+  args.push('-a', assistant, '--yes');
+  return args;
+}
+
+// Installe une liste de skills (CLI skills.sh) pour l'assistant choisi. Échec gracieux.
+export function installSkills(specs, assistant, run = defaultRun) {
+  const done = [], failed = [];
+  for (const spec of specs) {
+    try { run('npx', buildSkillAddArgs(spec, assistant)); done.push(spec.label); }
+    catch (e) { failed.push(`${spec.label} (${e.message})`); }
+  }
+  return { done, failed };
+}
