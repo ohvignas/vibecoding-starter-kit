@@ -4,8 +4,8 @@
 import fs from 'node:fs';
 
 const DANGER = [
-  /\brm\b[^\n]*\s-[a-z]*f[a-z]*\b[^\n]*?\s(\/|~|\$HOME|\*)/, // rm -rf sur / ~ $HOME *
-  /\b(curl|wget)\b[^|]*\|\s*(sudo\s+)?(ba|z)?sh\b/,          // curl … | sh
+  /\brm\b[^\n]*\s-[a-z]*f[a-z]*\b[^\n]*?\s["']?(\/|~|\$HOME|\*)/i, // rm -rf (toute casse, guillemets) sur / ~ $HOME *
+  /\b(curl|wget)\b[^|]*\|\s*(sudo\s+)?(\S*\/)?(ba|z)?sh\b/,  // curl … | sh (incl. /bin/sh)
   /\bgit\s+push\b[^\n]*--force(?!-with-lease)/,              // push --force (autorise --force-with-lease)
   /\b(cat|less|more|head|tail|printenv|env|base64|xxd)\b[^\n]*(^|\s|\/)\.env\b/, // lire/exfiltrer .env
   /\bchmod\s+-?R?\s*777\b/,                                  // chmod 777
