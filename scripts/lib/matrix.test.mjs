@@ -8,7 +8,7 @@ test('SaaS + Cursor : mdc stack, 2 clones, commandsDir cursor, pas de bmad', () 
   assert.equal(p.clones.length, 2);
   assert.equal(p.commandsDir, '.cursor/commands');
   assert.equal(p.inAssistant[0].command, '/add-plugin superpowers');
-  assert.ok(p.inAssistant.some(s => /design/i.test(s.name)));
+  assert.ok(!p.inAssistant.some(s => /design/i.test(s.name)));
   assert.equal(p.bmad, undefined);
 });
 test('Desktop + Claude Code : pas de MCP, cursorrules sauté, skill dir, commandsDir claude', () => {

@@ -1,5 +1,5 @@
 const TARGET = { cursor: '.cursor/commands', 'claude-code': '.claude/commands', codex: 'docs/commands' };
-const SUPERPOWERS = {
+export const SUPERPOWERS = {
   cursor: '/add-plugin superpowers',
   'claude-code': '/plugin install superpowers@claude-plugins-official',
   codex: '/plugins  (chercher « Superpowers » puis installer)',
@@ -33,7 +33,6 @@ export function resolveAssets(stack, assistant) {
   else skipped.push({ name: 'awesome-cursorrules', reason: 'Format .mdc spécifique à Cursor' });
 
   inAssistant.push({ name: 'superpowers', command: SUPERPOWERS[assistant] });
-  inAssistant.push({ name: 'skills design (5)', command: `installe dans ton assistant : ${DESIGN_SKILLS} (voir guides/03 + la règle design de l'AGENTS.md)` });
 
   return { copies, clones, inAssistant, skipped, commandsDir: TARGET[assistant] };
 }
@@ -142,3 +141,12 @@ export function resolveStackManifest(stack, assistant) {
     domains: s.domains,
   };
 }
+
+// Skills design auto-installables (headless) via le CLI skills. shadcnblocks à part (clé payante).
+export const DESIGN_SKILL_SPECS = [
+  { label: 'frontend-design + brand-guidelines', repo: 'github.com/anthropics/skills', skills: ['frontend-design', 'brand-guidelines'] },
+  { label: 'web-design-guidelines', repo: 'github.com/vercel-labs/agent-skills', skills: ['web-design-guidelines'] },
+  { label: 'ui-ux-pro-max', repo: 'github.com/nextlevelbuilder/ui-ux-pro-max-skill', skills: ['ui-ux-pro-max'] },
+];
+
+export const SHADCN_NOTE = 'shadcnblocks (optionnel) : `npx -y skills add masonjames/Shadcnblocks-Skill -a <assistant> --yes` — nécessite une clé API ShadcnBlocks (payante) + `jq` pour récupérer des blocs.';
