@@ -87,7 +87,7 @@ Il installe les plugins (superpowers + éventuel plugin de stack) et autorise le
 ```
 
 > [!TIP]
-> Le seul travail manuel dans l'assistant se limite à ce que liste **`docs/SETUP-AI.md`** : **installer les plugins** (superpowers + parfois un plugin de stack, ex. Convex/Expo/Electron) et **autoriser les MCP** (`/mcp`) — deux gestes interactifs, impossibles à automatiser depuis le terminal. Tout le reste (fichiers, hooks, règles, commandes, **skills**) est déjà posé par le wizard.
+> La liste exacte des plugins/MCP à cocher est dans **`docs/SETUP-AI.md`**. Tout le reste est déjà posé.
 
 > [!NOTE]
 > **Windows** : lance avec `node` (pas de script `.sh`). Les hooks Git tournent sous **Git Bash**. Prérequis : Node.js ≥ 20.12 + git.
