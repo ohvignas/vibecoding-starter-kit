@@ -1,5 +1,7 @@
 // Rend docs/SETUP-AI.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
 // Les skills design sont déjà installés par le wizard.
+import { buildSkillAddArgs } from './external.mjs';
+
 export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shadcnNote }) {
   const L = [];
   L.push(`# Setup IA — stack ${stack} · assistant ${assistant}`);
@@ -14,7 +16,7 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   if (manifest.skills.length) {
     L.push(`- ✅ déjà installés par le wizard : ${manifest.skills.map((s) => s.label).join(', ')}`);
     L.push('- (si un install a échoué — réseau — relance à la main :)');
-    for (const s of manifest.skills) L.push(`  - \`npx skills add ${s.repo}${s.all ? ' --all' : ''} -a ${assistant} --yes\``);
+    for (const s of manifest.skills) L.push(`  - \`npx ${buildSkillAddArgs(s, assistant).join(' ')}\``);
   } else L.push('- [ ] (aucun)');
   L.push('');
   L.push('## 3. MCP à autoriser');

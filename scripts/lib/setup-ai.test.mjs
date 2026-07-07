@@ -11,7 +11,7 @@ const call = (stack, assistant) => renderSetupAi({
 test('SETUP-AI : plugins, skills, MCP, superpowers, design auto', () => {
   const md = call('saas', 'claude-code');
   assert.match(md, /\/plugin install convex@claude-plugins-official/);
-  assert.match(md, /npx skills add better-auth\/skills/);
+  assert.match(md, /skills add better-auth\/skills.*-a claude-code/);
   assert.match(md, /shadcn/);
   assert.match(md, /plugin install superpowers/);           // section superpowers
   assert.match(md, /déjà installés par le wizard/i);        // section design
