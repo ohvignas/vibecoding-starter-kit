@@ -5,6 +5,8 @@ import { resolveAssets } from './matrix.mjs';
 test('SaaS + Cursor : mdc stack, 2 clones, commandsDir cursor, pas de bmad', () => {
   const p = resolveAssets('saas', 'cursor');
   assert.ok(p.copies.find(c => c.to === '.cursor/rules/stack-saas.mdc' && c.transform === 'mdc'));
+  // La règle de stack est Agent-Requested (alwaysApply:false) pour ne pas saturer le contexte à chaque tour.
+  assert.equal(p.copies.find(c => c.to === '.cursor/rules/stack-saas.mdc').alwaysApply, false);
   assert.equal(p.clones.length, 2);
   assert.equal(p.commandsDir, '.cursor/commands');
   assert.equal(p.inAssistant[0].command, '/add-plugin superpowers');

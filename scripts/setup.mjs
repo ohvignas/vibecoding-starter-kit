@@ -105,6 +105,7 @@ async function main() {
       copyIfAbsent(path.join(args.source, 'templates/cursor/cursorignore'), path.join(projectDir, '.cursorignore'), opt);
       copyIfAbsent(path.join(args.source, 'templates/cursor/rules/00-project.mdc'), path.join(projectDir, '.cursor/rules/00-project.mdc'), opt);
       copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt);
+      done.push('.cursor/hooks.json + .cursorignore (mémoire auto)');
       done.push('.cursor/rules/ (00-project + règles typées par framework)');
     } catch (e) { failed.push(`cursor extras (${e.message})`); }
   }
