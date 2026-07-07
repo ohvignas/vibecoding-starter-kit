@@ -186,3 +186,10 @@ Un **`AGENTS.md` combiné** pour cette stack est fourni : **`stacks/saas/AGENTS.
 ## 👉 Prochaine étape
 
 Ouvre **`stacks/saas/prompts-de-demarrage.md`** pour les prompts prêts à copier-coller à ton IA, étape par étape.
+
+---
+
+## Cursor — pour aller plus loin
+- **Bugbot** (review PR auto) : connecte le dépôt dans le dashboard Cursor (Settings → Bugbot). Le `.cursor/BUGBOT.md` généré pilote la review.
+- **`/create-rule`** : dans le chat, tape `/create-rule` pour ajouter une règle `.cursor/rules/` au fil de l'eau.
+- **Memories** : Settings → Rules → Memories (réglage de compte, non committable) — la mémoire du kit (`docs/memory/`) reste la source partagée.

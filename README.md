@@ -62,7 +62,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
 | 🌙 | **Dream hook** | GitHub Action qui analyse les commits et **propose** features/bugs/idées (propose-only) |
 | 🛡️ | **Revue + sécu** | Subagents `code-reviewer` + `security-reviewer`, scan de secrets, CI, hook pre-commit |
-| 🤖 | **Multi-assistant** | Cursor (Skills + hooks), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
+| 🤖 | **Multi-assistant** | Cursor (règles `.mdc` typées + commandes + hooks sécu + Bugbot), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
 | 📐 | **Planif à fond** | PRD + tech spec + design détaillés (templates structurés) avant la moindre ligne de code |
 
 ## ⚡ Démarrage rapide
@@ -93,7 +93,7 @@ Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** expliq
 flowchart TD
     A["Tu lances : node scripts/setup.mjs (wizard)"] --> C{"Réponds : stack ? assistant ? nom ? Convex cloud/local ?"}
     C --> D["setup.mjs génère l'environnement"]
-    D --> E1["Cursor : .cursor/skills + rules + hooks"]
+    D --> E1["Cursor : .cursor/commands + rules .mdc + hooks + BUGBOT"]
     D --> E2["Claude Code : CLAUDE.md + .claude/skills"]
     D --> E3["Codex : AGENTS.md + docs/commands"]
     E1 --> F["MCP + hooks + mémoire + dream + CI + subagents posés"]
@@ -116,7 +116,7 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 | **`/edit-design`** | Charge les **5 skills design** + `design.md` **avant** de toucher l'UI |
 | **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
 
-Chaque commande est livrée au bon format : **Cursor Skills** (`.cursor/skills/`), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
+Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
 
 ## 🧱 Les 3 stacks
 
@@ -154,7 +154,7 @@ mon-app/
 ├── .env.example · .gitignore · .mcp.json   # MCP mergé par stack
 └── maquette/
 ```
-_(Cursor : `.cursor/skills` + `.cursor/rules` + `.cursor/hooks.json` + `.cursorignore` à la place.)_
+_(Cursor à la place : `.cursor/commands/` (mêmes slash-commands) · `.cursor/rules/*.mdc` typées (auto-attachées par framework) · `.cursor/hooks.json` + `.cursor/hooks/` (mémoire + `guard-shell` sécu) · `.cursor/BUGBOT.md` (review PR) · `.cursor/environment.json` (dev reproductible) · `.cursorignore` + `.cursorindexingignore`.)_
 
 </details>
 
