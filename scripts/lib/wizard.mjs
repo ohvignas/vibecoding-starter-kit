@@ -72,7 +72,7 @@ export async function runWizard(ask, on, out = process.stdout) {
   if (stack === 'saas') backend = await pickOne(ask, on, out, 'Backend Convex ?', BACKENDS);
 
   const raw = (await ask('  Réduire les coûts IA (caveman) ? [o/N] : ')).trim().toLowerCase();
-  const caveman = raw === 'o' || raw === 'oui';
+  const caveman = ['o', 'oui', 'y', 'yes'].includes(raw);
   out.write(ok(caveman ? 'caveman activé' : 'caveman désactivé', on) + '\n\n');
 
   return { stack, assistant, project, backend, caveman };

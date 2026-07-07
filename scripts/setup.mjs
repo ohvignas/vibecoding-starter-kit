@@ -132,9 +132,10 @@ async function main() {
 
   try {
     const note = renderBackendNote(args.stack, args.backend);
-    if (note) {
-      const runPath = path.join(projectDir, 'docs/RUN.md');
-      const cur = fs.existsSync(runPath) ? fs.readFileSync(runPath, 'utf8') : '';
+    const runPath = path.join(projectDir, 'docs/RUN.md');
+    const cur = fs.existsSync(runPath) ? fs.readFileSync(runPath, 'utf8') : '';
+    // Idempotent : ne préfixe la note que si elle n'est pas déjà là (re-run sans --force).
+    if (note && !cur.includes('Backend en local')) {
       fs.writeFileSync(runPath, note + '\n' + cur);
       done.push('docs/RUN.md (note backend local)');
     }
