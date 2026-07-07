@@ -107,6 +107,10 @@ async function main() {
       copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt);
       done.push('.cursor/hooks.json + .cursorignore (mémoire auto)');
       done.push('.cursor/rules/ (00-project + règles typées par framework)');
+      copyIfAbsent(path.join(args.source, 'templates/cursor/BUGBOT.md'), path.join(projectDir, '.cursor/BUGBOT.md'), opt);
+      copyIfAbsent(path.join(args.source, `templates/cursor/environment/${args.stack}.json`), path.join(projectDir, '.cursor/environment.json'), opt);
+      copyIfAbsent(path.join(args.source, 'templates/cursor/cursorindexingignore'), path.join(projectDir, '.cursorindexingignore'), opt);
+      done.push('.cursor/BUGBOT.md + .cursor/environment.json + .cursorindexingignore');
     } catch (e) { failed.push(`cursor extras (${e.message})`); }
   }
 

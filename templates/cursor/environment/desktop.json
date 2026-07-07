@@ -1,0 +1,6 @@
+{
+  "install": "npm install",
+  "terminals": [
+    { "name": "App", "command": "npm run dev" }
+  ]
+}

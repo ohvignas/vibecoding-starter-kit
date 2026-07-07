@@ -1,0 +1,7 @@
+{
+  "install": "npm install",
+  "terminals": [
+    { "name": "Convex", "command": "npx convex dev" },
+    { "name": "Expo", "command": "npx expo start" }
+  ]
+}

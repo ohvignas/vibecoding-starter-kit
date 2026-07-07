@@ -1,0 +1,8 @@
+# Exclu du search Cursor (mais reste lisible à la demande). Secrets : voir .cursorignore.
+convex/_generated/
+ios/
+android/
+dist/
+build/
+*.lock
+package-lock.json
