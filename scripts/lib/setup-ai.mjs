@@ -1,6 +1,7 @@
 // Rend docs/SETUP-AI.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
 // Les skills design sont déjà installés par le wizard.
 import { buildSkillAddArgs } from './external.mjs';
+import { STITCH } from './matrix.mjs';
 
 export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shadcnNote }) {
   const L = [];
@@ -30,6 +31,11 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push('## 5. Design');
   L.push('- ✅ déjà installés par le wizard : frontend-design, brand-guidelines, web-design-guidelines, ui-ux-pro-max');
   L.push(`- [ ] ${shadcnNote.replace('<assistant>', assistant)}`);
+  L.push('');
+  L.push('### Maquette IA — Stitch (si tu n\'as pas de design à fournir)');
+  L.push('- ✅ skills Stitch déjà installés par le wizard (generate-design · extract-html · loop · design-md).');
+  L.push(`- [ ] Crée ta **clé API Stitch** : ${STITCH.keyUrl} → ${STITCH.keySteps} → copie-la (garde-la **secrète**, ne la commite jamais).`);
+  L.push(`- [ ] Connecte le **MCP Stitch au niveau utilisateur** (hors dépôt → la clé n'est jamais commitée) : ${STITCH.mcp[assistant]}`);
   L.push('');
   L.push('## 6. Scripts package.json (à ajouter si absents après le scaffold)');
   for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);

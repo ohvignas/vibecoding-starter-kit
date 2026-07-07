@@ -16,6 +16,10 @@ test('SETUP-AI : plugins, skills, MCP, superpowers, design auto', () => {
   assert.match(md, /plugin install superpowers/);           // section superpowers
   assert.match(md, /déjà installés par le wizard/i);        // section design
   assert.match(md, /shadcnblocks/i);                        // note shadcnblocks
+  // Stitch (maquette IA) : section design avec clé API + MCP au niveau utilisateur (hors dépôt).
+  assert.match(md, /clé API Stitch/i);
+  assert.match(md, /MCP Stitch au niveau utilisateur/i);
+  assert.match(md, /claude mcp add stitch/);              // commande user-scope pour claude-code
 });
 
 test('SETUP-AI mobile : MCP expo login requis', () => {

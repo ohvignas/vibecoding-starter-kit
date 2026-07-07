@@ -74,10 +74,11 @@ Choisis parmi les 3 stacks du kit selon l'idée : SaaS (Convex+TanStack Start+Be
 La **maquette est le pivot** : on dessine les écrans **avant** de coder, on **itère dessus** jusqu'à validation, puis la roadmap en découle (Phase 6). Ne code rien ici.
 
 **1. Maquette des écrans clés (créer → itérer → valider)**
-Avec **Google Stitch** (IA visuelle de design, **gratuit** avec un compte Google, ~350 générations/mois) — soit le **MCP** [`github.com/davideast/stitch-mcp`](https://github.com/davideast/stitch-mcp) (Cursor/Claude Code), soit le web [`stitch.withgoogle.com`](https://stitch.withgoogle.com) :
+Avec **Google Stitch** (IA visuelle de design, **gratuit** avec un compte Google, ~350 générations/mois). Les **skills officiels sont déjà installés** par le wizard (`stitch::generate-design`, `stitch::extract-static-html`, `stitch-loop`, `design-md`). Pour le **MCP Stitch**, l'utilisateur crée sa **clé API** et le connecte **au niveau utilisateur** (hors dépôt → clé jamais commitée) — étapes exactes dans `docs/SETUP-AI.md`. Si l'utilisateur **n'a pas de design à fournir**, c'est ici qu'on le crée :
 - Décris les **écrans porteurs** en t'appuyant sur les parcours **UJ-*** du PRD : entrée canonique, écran héros du flux le plus complexe, un overlay porteur, la vue liste/dashboard.
-- **Génère → montre à l'utilisateur → itère** (applique ce qu'il demande) **jusqu'à validation**. Vrai aller-retour, pas un one-shot.
-- **Exporte le HTML/CSS** de chaque écran validé dans **`maquette/`** — l'IA **lira ces fichiers en Phase 6** pour dériver la roadmap.
+- **Génère** (`stitch::generate-design`) **→ montre → itère** (boucle `stitch-loop`, applique ce qu'il demande) **jusqu'à validation**. Vrai aller-retour, pas un one-shot.
+- **Exporte le HTML/CSS** (`stitch::extract-static-html`) de chaque écran validé dans **`maquette/`** — l'IA **lira ces fichiers en Phase 6** pour dériver la roadmap.
+- Le skill **`design-md`** produit un design system aligné : sers-t'en pour remplir `docs/design.md` (§2) et, au besoin, `upload_design_md` pour que Stitch génère des écrans cohérents.
 
 **2. Design system → `docs/design.md`** *(dérivé de la maquette validée)*
 Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`. Extrais de la maquette DEUX volets :

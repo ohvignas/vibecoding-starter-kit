@@ -37,6 +37,23 @@ export function resolveAssets(stack, assistant) {
   return { copies, clones, inAssistant, skipped, commandsDir: TARGET[assistant] };
 }
 
+// Stitch (Google Labs) — design/maquette par IA. Skills officiels auto-installés + MCP distant.
+// SÉCURITÉ : le MCP Stitch se configure au niveau UTILISATEUR (hors dépôt), avec la clé en clair — JAMAIS
+// dans le mcp.json du projet (Cursor n'interpole pas `${env:...}` dans les headers des MCP distants, donc
+// une référence d'env ne marche pas ; et une clé en clair dans un fichier de projet serait commitée = fuite).
+// Config user-scope = clé hors du repo = jamais commitée. Rendu par SETUP-AI (renderSetupAi).
+export const STITCH = {
+  url: 'https://stitch.googleapis.com/mcp',
+  keyUrl: 'https://stitch.withgoogle.com',
+  keySteps: 'Settings → Create API Key',
+  mcp: {
+    cursor: 'Cursor → Settings → MCP → Add — dans la config **globale** (`~/.cursor/mcp.json`, PAS le projet) : `{ "mcpServers": { "stitch": { "url": "https://stitch.googleapis.com/mcp", "headers": { "X-Goog-Api-Key": "TA_CLÉ" } } } }`',
+    'claude-code': '`claude mcp add stitch --transport http https://stitch.googleapis.com/mcp --header "X-Goog-Api-Key: TA_CLÉ" -s user`',
+    codex: 'Ajoute un serveur MCP HTTP `https://stitch.googleapis.com/mcp` avec le header `X-Goog-Api-Key: TA_CLÉ` dans ta config Codex **utilisateur**.',
+  },
+};
+const STITCH_SKILL = { label: 'stitch (maquette : generate-design · extract-html · loop · design-md)', repo: 'google-labs-code/stitch-skills', skills: ['stitch::generate-design', 'stitch::extract-static-html', 'stitch-loop', 'design-md'] };
+
 export const STACKS = {
   saas: {
     plugins: {
@@ -52,6 +69,7 @@ export const STACKS = {
     skills: [
       { label: 'better-auth', repo: 'better-auth/skills' },
       { label: 'convex-agent-skills', repo: 'get-convex/agent-skills', all: true },
+      STITCH_SKILL,
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: [] },
     scripts: { typecheck: 'tsc --noEmit', lint: 'biome check .' },
@@ -86,6 +104,7 @@ export const STACKS = {
     skills: [
       { label: 'expo', repo: 'expo/skills' },
       { label: 'convex-agent-skills', repo: 'get-convex/agent-skills', all: true },
+      STITCH_SKILL,
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint-expo', 'deps-check'], prePush: ['doctor'] },
     scripts: { typecheck: 'tsc --noEmit' },
@@ -112,7 +131,7 @@ export const STACKS = {
     mcp: {
       'chrome-devtools': { command: 'npx', args: ['chrome-devtools-mcp@latest', '--browser-url=http://127.0.0.1:9222'] },
     },
-    skills: [],
+    skills: [STITCH_SKILL],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: ['security'] },
     scripts: { typecheck: 'tsc --noEmit', lint: 'biome check .' },
     rules: [
