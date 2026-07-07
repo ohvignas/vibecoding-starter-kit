@@ -5,6 +5,7 @@ import fs from 'node:fs';
 test('BUGBOT.md a la checklist sécu', () => {
   const t = fs.readFileSync('templates/cursor/BUGBOT.md', 'utf8');
   assert.match(t, /secret/i);
+  assert.match(t, /Convex/i);
   assert.match(t, /Electron|contextIsolation/i);
 });
 
