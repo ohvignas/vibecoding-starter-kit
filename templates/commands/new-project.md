@@ -69,30 +69,39 @@ Choisis parmi les 3 stacks du kit selon l'idée : SaaS (Convex+TanStack Start+Be
 
 ---
 
-## Phase 5 — Design → `docs/design.md` (gate)
+## Phase 5 — Maquette + Design → `maquette/` + `docs/design.md` (gate)
 
-**Charge d'abord les 5 skills design** : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`. Produis DEUX volets dans `docs/design.md` (le visuel et le comportement) :
+La **maquette est le pivot** : on dessine les écrans **avant** de coder, on **itère dessus** jusqu'à validation, puis la roadmap en découle (Phase 6). Ne code rien ici.
+
+**1. Maquette des écrans clés (créer → itérer → valider)**
+Avec **Google Stitch** (IA visuelle de design, **gratuit** avec un compte Google, ~350 générations/mois) — soit le **MCP** [`github.com/davideast/stitch-mcp`](https://github.com/davideast/stitch-mcp) (Cursor/Claude Code), soit le web [`stitch.withgoogle.com`](https://stitch.withgoogle.com) :
+- Décris les **écrans porteurs** en t'appuyant sur les parcours **UJ-*** du PRD : entrée canonique, écran héros du flux le plus complexe, un overlay porteur, la vue liste/dashboard.
+- **Génère → montre à l'utilisateur → itère** (applique ce qu'il demande) **jusqu'à validation**. Vrai aller-retour, pas un one-shot.
+- **Exporte le HTML/CSS** de chaque écran validé dans **`maquette/`** — l'IA **lira ces fichiers en Phase 6** pour dériver la roadmap.
+
+**2. Design system → `docs/design.md`** *(dérivé de la maquette validée)*
+Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`. Extrais de la maquette DEUX volets :
 
 **A. DESIGN.md — l'identité visuelle** *(format google-labs design.md)*
 - *Frontmatter tokens* (machine) : `colors` (nom→hex), `typography` (fontFamily/size/weight/lineHeight), `rounded`, `spacing`, `components` (composant→tokens).
-- *Marque & style* (posture esthétique, en prose) · *Couleurs* (rôle de chacune) · *Typographie* (rôles, échelle) · *Layout & espacements* (grille, breakpoints) · *Élévation & profondeur* (ombres) · *Formes* (rayons) · *Composants* (specs visuelles par composant) · *À faire / à éviter*.
-- Si tu utilises shadcn/Tailwind : référence les tokens par nom plutôt que de tout redéfinir.
-
-> **Créer le thème visuellement (option débutant, stack shadcn/Tailwind = SaaS)** : au lieu de tout décrire, l'utilisateur peut régler couleurs/typo/rayons sur **[tweakcn.com](https://tweakcn.com)** (éditeur de thème shadcn, gratuit, sans compte, preview live + contraste), puis **exporter les variables CSS**. Reprends cet export → écris-le dans les *tokens* de `docs/design.md` **et** dans le `globals.css` (ou l'équivalent Tailwind) → toute l'app est thémée. Propose-le explicitement.
+- *Marque & style* · *Couleurs* (rôle) · *Typographie* (rôles, échelle) · *Layout & espacements* (grille, breakpoints) · *Élévation* (ombres) · *Formes* (rayons) · *Composants* (specs par composant) · *À faire / à éviter*.
+- shadcn/Tailwind : réfère les tokens par nom plutôt que de tout redéfinir.
+> **Affiner la palette** (shadcn/Tailwind) : régler couleurs/typo/rayons sur **[tweakcn.com](https://tweakcn.com)** (gratuit, export variables CSS) → colle dans `globals.css` + les *tokens* de `docs/design.md`.
 
 **B. EXPERIENCE.md — le comportement**
-- *Fondation* (form-factor, système d'UI) · *Architecture de l'information* · *Voix & ton* (microcopy) · *Patterns de composants* (comportement) · *Patterns d'état* (chargement/vide/erreur/succès) · *Primitives d'interaction* · *Plancher d'accessibilité* · *Flux clés* (parcours avec protagoniste nommé + moment climax).
+- *Fondation* (form-factor, système d'UI) · *Architecture de l'information* · *Voix & ton* (microcopy) · *Patterns de composants* + *d'état* (chargement/vide/erreur/succès) · *Primitives d'interaction* · *Plancher d'accessibilité* · *Flux clés* (parcours avec protagoniste nommé + climax).
 
-Maquettes optionnelles (frontend-design / Pencil / Stitch / Figma) : 2-4 écrans porteurs seulement (entrée canonique, écran héros du flux le plus complexe, overlay porteur, vue liste/dashboard). → **validation utilisateur**.
+→ **validation utilisateur** (la maquette **et** le `design.md`) avant la Phase 6.
 
 ---
 
-## Phase 6 — Sélection des domaines + Roadmap exhaustive → `docs/ROADMAP.md`
+## Phase 6 — Analyse de la maquette + domaines → Roadmap `docs/ROADMAP.md`
 
 1. **Sélection des domaines** : lis `docs/DOMAINS.md` (le catalogue de la stack) et repère, dans le PRD, les **domaines métier** nécessaires (paiement, email, storage, analytics, erreurs, push, caméra, cartes, auto-update, licence…). Ajoute les secrets correspondants à `.env.example` et leurs commandes à `docs/SETUP-AI.md`. Règle : préfère le **built-in / officiel** ; n'ajoute un externe que si le PRD le justifie.
-2. **Roadmap exhaustive** : remplis `docs/ROADMAP.md` (squelette déjà présent) en **pensant à tout** — parcours les dimensions : Fondations, Modèle de données, Auth, **chaque feature du PRD**, **domaines sélectionnés**, passe UI/design, États (chargement/vide/erreur), Tests, passe sécu, Déploiement, Docs. **Fondations d'abord**.
-3. Chaque jalon = une **tranche verticale** avec une ligne **`✅ Ce que tu vois :`** (le résultat observable dans l'app) et un chemin de plan `docs/superpowers/plans/NN-<slug>.md`.
-4. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.
+2. **Analyse la maquette validée** (`maquette/`) : lis les fichiers exportés et **liste chaque écran + chaque flux** qu'elle montre. C'est la **cible concrète** que le build doit réaliser — la roadmap existe pour rendre ces écrans réels.
+3. **Roadmap exhaustive** : remplis `docs/ROADMAP.md` (squelette déjà présent) en **pensant à tout** — **Fondations d'abord**, puis balaie les dimensions : Modèle de données, Auth, **réaliser chaque écran/flux de la maquette**, **chaque feature du PRD**, **domaines sélectionnés**, États (chargement/vide/erreur), Tests, passe sécu, Déploiement, Docs.
+4. Chaque jalon = une **tranche verticale** avec une ligne **`✅ Ce que tu vois :`** — idéalement **l'écran de la maquette qui devient réel** dans l'app — et un chemin de plan `docs/superpowers/plans/NN-<slug>.md`.
+5. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.
 
 ---
 
