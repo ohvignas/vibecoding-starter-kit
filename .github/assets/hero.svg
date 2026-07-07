@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340" role="img" aria-label="Vibecoding Starter Kit — environnement de dev IA complet pour débutants">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="0.55" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.15" r="0.95">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#ffffff" fill-opacity="0.07"/>
+    </pattern>
+    <clipPath id="round"><rect width="1200" height="340" rx="28"/></clipPath>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    </style>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <rect width="1200" height="340" fill="url(#bg)"/>
+    <!-- Décor : grands cercles translucides en haut à droite -->
+    <circle cx="1080" cy="40" r="230" fill="#ffffff" fill-opacity="0.05"/>
+    <circle cx="1160" cy="120" r="150" fill="#ffffff" fill-opacity="0.05"/>
+    <rect width="1200" height="340" fill="url(#dots)"/>
+    <rect width="1200" height="340" fill="url(#glow)"/>
+  </g>
+
+  <!-- Titre -->
+  <text class="t" x="74" y="110" font-size="30" fill="#ffffff" fill-opacity="0.95">🎨</text>
+  <text class="t" x="120" y="116" font-size="54" font-weight="800" fill="#ffffff" letter-spacing="-1">Vibecoding Starter Kit</text>
+
+  <!-- Tagline -->
+  <text class="t" x="76" y="162" font-size="22" fill="#ffffff" fill-opacity="0.94">L'environnement de dev IA <tspan font-weight="700">niveau pro</tspan>, pour débutants.</text>
+  <text class="t" x="76" y="193" font-size="19" fill="#ffffff" fill-opacity="0.78">Un wizard pose tout — règles, mémoire, revue, CI. Ton assistant fait le reste.</text>
+
+  <!-- Chips stacks -->
+  <g class="t" font-size="19" font-weight="600" fill="#ffffff">
+    <rect x="76" y="226" width="176" height="44" rx="22" fill="#ffffff" fill-opacity="0.16"/>
+    <text x="100" y="254">💻  SaaS / web</text>
+    <rect x="266" y="226" width="146" height="44" rx="22" fill="#ffffff" fill-opacity="0.16"/>
+    <text x="290" y="254">📱  Mobile</text>
+    <rect x="426" y="226" width="158" height="44" rx="22" fill="#ffffff" fill-opacity="0.16"/>
+    <text x="450" y="254">🖥️  Desktop</text>
+  </g>
+
+  <!-- Séparateur + badges -->
+  <rect x="76" y="298" width="628" height="1.5" fill="#ffffff" fill-opacity="0.22"/>
+  <g class="mono" font-size="15" fill="#ffffff" fill-opacity="0.86">
+    <text x="76" y="326">Cursor · Claude Code · Codex</text>
+    <text x="366" y="326" fill-opacity="0.55">|</text>
+    <text x="390" y="326">5 commandes</text>
+    <text x="520" y="326" fill-opacity="0.55">|</text>
+    <text x="544" y="326">0 dépendance</text>
+  </g>
+</svg>

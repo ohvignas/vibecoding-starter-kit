@@ -1,9 +1,5 @@
-<h1 align="center">🎨 Vibecoding Starter Kit</h1>
-
 <p align="center">
-  <strong>Un environnement de dev IA complet, généré en parlant à ton assistant.</strong>
-  <br />
-  Tu décris ton app, l'IA la construit — encadrée par les bons rails.
+  <img src=".github/assets/hero.svg" alt="Vibecoding Starter Kit — l'environnement de dev IA niveau pro, pour débutants" width="100%">
 </p>
 
 <p align="center">
@@ -93,6 +89,10 @@ Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** expliq
 </details>
 
 ## 🔍 Comment ça marche
+
+<p align="center">
+  <img src=".github/assets/wizard.svg" alt="Aperçu du wizard : il génère AGENTS.md, .cursor/, docs/, CI et subagents, installe les skills, puis tu lances /new-project et /build" width="820">
+</p>
 
 ```mermaid
 flowchart TD

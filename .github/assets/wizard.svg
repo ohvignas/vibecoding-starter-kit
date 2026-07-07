@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500" role="img" aria-label="Aperçu : le wizard vibecoding génère l'environnement complet">
+  <defs>
+    <style>
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+      .g  { fill: #3fb950; }  /* vert */
+      .b  { fill: #58a6ff; }  /* bleu */
+      .v  { fill: #bc8cff; }  /* violet */
+      .w  { fill: #e6edf3; }  /* blanc */
+      .d  { fill: #8b949e; }  /* gris */
+    </style>
+  </defs>
+
+  <!-- Fenêtre -->
+  <rect x="1" y="1" width="998" height="498" rx="16" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+  <!-- Barre de titre -->
+  <rect x="1" y="1" width="998" height="46" rx="16" fill="#161b22"/>
+  <rect x="1" y="30" width="998" height="17" fill="#161b22"/>
+  <circle cx="28" cy="24" r="6" fill="#ff5f57"/>
+  <circle cx="50" cy="24" r="6" fill="#febc2e"/>
+  <circle cx="72" cy="24" r="6" fill="#28c840"/>
+  <text class="mono d" x="500" y="29" font-size="14" text-anchor="middle">vibecoding — setup</text>
+
+  <g class="mono" font-size="16">
+    <!-- commande -->
+    <text x="28" y="90"><tspan class="g">$</tspan> <tspan class="w">node scripts/setup.mjs</tspan></text>
+
+    <!-- questions -->
+    <text x="28" y="132"><tspan class="b">◆</tspan> <tspan class="d">Quelle stack ?</tspan></text>
+    <text x="360" y="132"><tspan class="v">›</tspan> <tspan class="w">SaaS · TanStack · Better Auth</tspan></text>
+
+    <text x="28" y="162"><tspan class="b">◆</tspan> <tspan class="d">Quel assistant IA ?</tspan></text>
+    <text x="360" y="162"><tspan class="v">›</tspan> <tspan class="w">Cursor</tspan></text>
+
+    <text x="28" y="192"><tspan class="b">◆</tspan> <tspan class="d">Nom du projet ?</tspan></text>
+    <text x="360" y="192"><tspan class="v">›</tspan> <tspan class="w">mon-app</tspan></text>
+
+    <text x="28" y="222"><tspan class="b">◆</tspan> <tspan class="d">Convex : cloud ou local ?</tspan></text>
+    <text x="360" y="222"><tspan class="v">›</tspan> <tspan class="w">cloud</tspan></text>
+
+    <!-- résultats -->
+    <text x="28" y="270"><tspan class="g">✔</tspan> <tspan class="w">AGENTS.md · CLAUDE.md · maquette/</tspan></text>
+    <text x="28" y="300"><tspan class="g">✔</tspan> <tspan class="w">.cursor/</tspan> <tspan class="d">commands · rules typées · hooks sécu · BUGBOT</tspan></text>
+    <text x="28" y="330"><tspan class="g">✔</tspan> <tspan class="w">docs/</tspan> <tspan class="d">PRD · ROADMAP · memory · DOMAINS · RUN</tspan></text>
+    <text x="28" y="360"><tspan class="g">✔</tspan> <tspan class="w">CI · scan secrets · subagents review · dream hook</tspan></text>
+    <text x="28" y="390"><tspan class="g">✔</tspan> <tspan class="w">skills installés</tspan> <tspan class="d">(design + stack)</tspan></text>
+
+    <!-- next -->
+    <text x="28" y="438"><tspan class="v">▸</tspan> <tspan class="d">Ouvre Cursor → colle le prompt →</tspan> <tspan class="v">/new-project</tspan></text>
+    <text x="28" y="468"><tspan class="v">▸</tspan> <tspan class="v">/build</tspan> <tspan class="d">construit la roadmap, jalon par jalon (visuel à chaque étape)</tspan></text>
+  </g>
+</svg>
