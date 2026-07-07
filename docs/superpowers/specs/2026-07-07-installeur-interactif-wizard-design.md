@@ -19,7 +19,7 @@ Bénéfices : plus d'IA qui devine la stack (corrige le bug) · **cross-platform
 
 ## Principes
 
-- **Zéro dépendance externe** : prompts via `node:readline/promises` (intégré), pas d'inquirer.
+- **Zéro dépendance externe** : prompts via `node:readline/promises` (intégré), pas d'inquirer/@clack. Style via un **helper ANSI maison** (`scripts/lib/ui.mjs`) — couleurs, cadres, ✓, hints — **couleurs auto-désactivées** si non-TTY ou variable `NO_COLOR` (standard). Rester standalone est prioritaire : l'installeur doit tourner **sans `npm install` préalable** (c'est lui qui installe).
 - **Rétrocompat** : le mode `--flags` existant reste (pour l'IA/CI/avancés). Le wizard ne se déclenche que **sans flags et en TTY**.
 - **Testable** : la logique pure (mapping réponses→args, décision wizard-vs-flags, rendu de la note backend) est séparée de l'I/O readline et testée `node --test`. L'I/O readline est un mince wrapper avec un `ask()` injectable.
 - **Additif, non destructif** : réutilise `buildRunPlan` + les writers existants ; ne change pas la génération.
@@ -38,6 +38,17 @@ Puis : construit l'objet `args` (mêmes clés que `parseArgs` + `backend`), lanc
 
 Entrée invalide → redemande la même question (boucle jusqu'à réponse valide), pas de crash.
 
+## Style / UI (zéro-dép, « stylé et sympa »)
+
+`scripts/lib/ui.mjs` — helpers de rendu purs (chaînes), zéro dépendance :
+- `supportsColor(stream, env)` → bool : `true` seulement si `stream.isTTY` **et** `!env.NO_COLOR`. Injectable pour les tests.
+- `paint(on)` → objet de fonctions couleur (`cyan`, `green`, `dim`, `bold`, `red`…) qui **enveloppent en ANSI si `on`, sinon renvoient le texte brut**. (ANSI maison : `\x1b[36m…\x1b[0m`, etc.)
+- `heading(title, on)` → bannière encadrée en box-drawing (`┌─ … ─┐`).
+- `menu(question, options, on)` → rend une question + choix numérotés alignés (`1) Label  <hint gris>`).
+- `ok(text, on)` → `✓ text` en vert · `hint(text, on)` → gris/dim.
+
+Le wizard compose ces helpers : bannière au début, une question stylée par étape, `✓` vert après chaque réponse validée, hints gris pour les explications, erreurs en rouge. Menus **numérotés** (taper `1/2/3`) — pas de sélection fléchée (bulletproof cross-platform, notamment Windows). Couleurs désactivées automatiquement hors TTY (sortie propre si loggée/pipée).
+
 ## Choix Convex cloud/local
 
 Le champ `backend` n'affecte pas les fichiers générés sauf une **note** :
@@ -49,17 +60,20 @@ Le champ `backend` n'affecte pas les fichiers générés sauf une **note** :
 ## Architecture & fichiers
 
 **Nouveaux :**
-- `scripts/lib/wizard.mjs` — `needsWizard(argv, isTTY)` (bool) · `buildArgsFromAnswers(answers)` → args validés (throw si invalide, réutilise `validateArgs`) · `async runWizard(ask)` où `ask(prompt, {choices?})→Promise<string>` est injecté → retourne l'objet answers. `renderBackendNote(stack, backend)` peut vivre ici ou dans un petit module dédié.
+- `scripts/lib/ui.mjs` — helpers de style zéro-dép (§ Style) : `supportsColor(stream, env)` · `paint(on)` · `heading(title, on)` · `menu(question, options, on)` · `ok(text, on)` · `hint(text, on)`. Fonctions **pures** (chaînes) → testables.
+- `scripts/lib/ui.test.mjs` — `supportsColor` (TTY on/off, `NO_COLOR`) · `paint(true)` enveloppe en ANSI, `paint(false)` renvoie brut · `heading`/`menu`/`ok`/`hint` contiennent le texte attendu.
+- `scripts/lib/wizard.mjs` — `needsWizard(argv, isTTY)` (bool) · `buildArgsFromAnswers(answers)` → args validés (throw si invalide, réutilise `validateArgs`) · `async runWizard(ask, ui)` où `ask(prompt)→Promise<string>` et `ui` (helpers de style) sont injectés → retourne l'objet answers. `renderBackendNote(stack, backend)` vit ici.
 - `scripts/lib/wizard.test.mjs` — teste `needsWizard`, `buildArgsFromAnswers` (mapping + validation + rejet), `runWizard` avec un `ask` factice (séquence de réponses scriptée, y compris une invalide re-demandée), `renderBackendNote`.
 
 **Modifiés :**
-- `scripts/setup.mjs` — au démarrage de `main()` : si `needsWizard(argv, process.stdin.isTTY)` → construire un `readline/promises`, envelopper en `ask()`, `await runWizard(ask)` → `args` ; sinon `parseArgs` comme aujourd'hui. Puis suite identique. Appliquer `renderBackendNote` sur `docs/RUN.md` (préfixe) après la copie du RUN (Plan 3). Rapport final : ajouter la ligne « ouvre ton assistant → /new-project ».
+- `scripts/setup.mjs` — au démarrage de `main()` : si `needsWizard(argv, process.stdin.isTTY)` → construire un `readline/promises`, l'envelopper en `ask()`, bâtir `ui` via `supportsColor(process.stdout, process.env)`, `await runWizard(ask, ui)` → `args` ; sinon `parseArgs` comme aujourd'hui. Puis suite identique. Appliquer `renderBackendNote` sur `docs/RUN.md` (préfixe) après la copie du RUN (Plan 3). Rapport final : ajouter la ligne « ouvre ton assistant → /new-project ».
 - `playbook/00-START.md` — repointer : **chemin principal = `node scripts/setup.mjs` (wizard)** que l'humain lance et auquel il répond ; l'ancien chemin « l'IA installe » devient secondaire et, s'il est utilisé, **gate dur** : « ne devine JAMAIS la stack, pose les questions d'abord ». Note **Windows** : lancer avec `node` (pas de `.sh`) ; les hooks `.githooks/*` sont en bash → besoin de **Git Bash** pour qu'ils s'exécutent.
 - `README.md` — bloc « Démarrage rapide » : montrer d'abord `node scripts/setup.mjs` (wizard), puis « ouvre ton assistant → `/new-project` ». Enlever le « puis démarre-le » ambigu.
 
 ## Tests
 
-- `wizard` : `needsWizard([], true)===true` ; `needsWizard(['--stack','saas',…], true)===false` ; `needsWizard([], false)===false` (non-TTY → pas de wizard). `buildArgsFromAnswers` mappe et valide ; rejette une stack/nom invalide. `runWizard(fakeAsk)` produit les bons args, redemande sur entrée invalide. `renderBackendNote('saas','local')` contient `convex deployment select local` ; `('saas','cloud')` et `('desktop','local')` → vide.
+- `ui` : `supportsColor({isTTY:true},{})===true` · `({isTTY:false},{})===false` · `({isTTY:true},{NO_COLOR:'1'})===false`. `paint(true).green('x')` contient `\x1b[` ; `paint(false).green('x')==='x'`. `heading`/`menu`/`ok`/`hint` contiennent le texte fourni.
+- `wizard` : `needsWizard([], true)===true` ; `needsWizard(['--stack','saas',…], true)===false` ; `needsWizard([], false)===false` (non-TTY → pas de wizard). `buildArgsFromAnswers` mappe et valide ; rejette une stack/nom invalide. `runWizard(fakeAsk, paint(false))` (couleurs off en test) produit les bons args, redemande sur entrée invalide. `renderBackendNote('saas','local')` contient `convex deployment select local` ; `('saas','cloud')` et `('desktop','local')` → vide.
 - Régression : `node --test` complet vert ; le mode `--flags` inchangé (les tests setup existants passent).
 
 ## Non-goals (YAGNI)
