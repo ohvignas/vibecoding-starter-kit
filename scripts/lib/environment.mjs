@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { resolveStackManifest, DESIGN_SKILLS } from './matrix.mjs';
+import { resolveStackManifest, SUPERPOWERS, SHADCN_NOTE } from './matrix.mjs';
 import { mergeMcpConfig } from './mcp.mjs';
 import { extendCursorHooks, claudeSettings, prePushScript, preCommitCheckLine } from './hooks.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
@@ -57,7 +57,7 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant }) 
   } catch (e) { failed.push(`hooks assistant (${e.message})`); }
 
   // 6. SETUP-AI.md
-  try { write('docs/SETUP-AI.md', renderSetupAi({ stack, assistant, manifest, designSkills: DESIGN_SKILLS })); done.push('docs/SETUP-AI.md'); }
+  try { write('docs/SETUP-AI.md', renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE })); done.push('docs/SETUP-AI.md'); }
   catch (e) { failed.push(`SETUP-AI (${e.message})`); }
 
   // 6b. DOMAINS.md (catalogue métier de la stack)
