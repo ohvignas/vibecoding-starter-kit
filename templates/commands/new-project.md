@@ -78,6 +78,8 @@ Choisis parmi les 3 stacks du kit selon l'idée : SaaS (Convex+TanStack Start+Be
 - *Marque & style* (posture esthétique, en prose) · *Couleurs* (rôle de chacune) · *Typographie* (rôles, échelle) · *Layout & espacements* (grille, breakpoints) · *Élévation & profondeur* (ombres) · *Formes* (rayons) · *Composants* (specs visuelles par composant) · *À faire / à éviter*.
 - Si tu utilises shadcn/Tailwind : référence les tokens par nom plutôt que de tout redéfinir.
 
+> **Créer le thème visuellement (option débutant, stack shadcn/Tailwind = SaaS)** : au lieu de tout décrire, l'utilisateur peut régler couleurs/typo/rayons sur **[tweakcn.com](https://tweakcn.com)** (éditeur de thème shadcn, gratuit, sans compte, preview live + contraste), puis **exporter les variables CSS**. Reprends cet export → écris-le dans les *tokens* de `docs/design.md` **et** dans le `globals.css` (ou l'équivalent Tailwind) → toute l'app est thémée. Propose-le explicitement.
+
 **B. EXPERIENCE.md — le comportement**
 - *Fondation* (form-factor, système d'UI) · *Architecture de l'information* · *Voix & ton* (microcopy) · *Patterns de composants* (comportement) · *Patterns d'état* (chargement/vide/erreur/succès) · *Primitives d'interaction* · *Plancher d'accessibilité* · *Flux clés* (parcours avec protagoniste nommé + moment climax).
 
