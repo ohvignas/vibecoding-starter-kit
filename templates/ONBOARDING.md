@@ -18,5 +18,11 @@ L'installeur a tout posé. Reste quelques réglages **manuels** (pas automatisab
 ## Secrets
 - Copie `.env.example` → `.env` et remplis-le. **Ne commit jamais `.env`.**
 
+## Maquette IA (Stitch) — si tu n'as pas de design à fournir
+- Les **skills Stitch sont déjà installés** ; `/new-project` s'en sert pour créer/itérer ta maquette.
+- Crée ta **clé API** : stitch.withgoogle.com → Settings → Create API Key (garde-la **secrète**).
+- Connecte le **MCP Stitch au niveau utilisateur** (hors dépôt → clé jamais commitée) — commande exacte dans `docs/SETUP-AI.md`.
+
 ## Démarrer
-- `/new-project "<ton idée>"` (fondation : PRD + tech spec + design), puis `/new-feature "<une feature>"`.
+- `/new-project "<ton idée>"` : PRD + tech spec + **maquette** (Stitch, ou la tienne) + design + **roadmap dérivée de la maquette**.
+- Puis `/build` (construit la roadmap jalon par jalon, comparé à la maquette) — ou `/new-feature "<une feature>"` pour une feature isolée.
