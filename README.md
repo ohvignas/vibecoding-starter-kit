@@ -24,7 +24,7 @@
 
 ---
 
-Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (3 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur piloté par l'IA** qui génère un environnement de développement complet — 4 commandes, mémoire persistante, revue de code, CI — pour **Cursor, Claude Code et Codex**.
+Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (3 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur (wizard interactif)** qui génère un environnement de développement complet — 5 commandes, mémoire persistante, revue de code, CI — pour **Cursor, Claude Code et Codex**.
 
 > [!TIP]
 > Pas besoin de choisir un seul assistant : l'installeur configure celui que tu utilises, et le projet reste **portable** (les mêmes règles marchent partout).
@@ -36,7 +36,7 @@ Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation *
 - [Fonctionnalités](#-fonctionnalités)
 - [Démarrage rapide](#-démarrage-rapide)
 - [Comment ça marche](#-comment-ça-marche)
-- [Les 4 commandes](#-les-4-commandes)
+- [Les 5 commandes](#-les-5-commandes)
 - [Les 3 stacks](#-les-3-stacks)
 - [Ce qui est généré](#-ce-qui-est-généré)
 - [Mémoire & dream hook](#-mémoire--dream-hook)
@@ -89,18 +89,17 @@ Clone le dépôt, lis [`guides/01-comment-parler-a-l-IA.md`](guides/01-comment-p
 
 ```mermaid
 flowchart TD
-    A["Tu dis à ton IA : « installe ce projet »"] --> B[L'IA suit playbook/00-START.md]
-    B --> C{Questions : quoi construire ? quel assistant ?}
+    A["Tu lances : node scripts/setup.mjs (wizard)"] --> C{"Réponds : stack ? assistant ? nom ? Convex cloud/local ?"}
     C --> D["setup.mjs génère l'environnement"]
     D --> E1["Cursor : .cursor/skills + rules + hooks"]
     D --> E2["Claude Code : CLAUDE.md + .claude/skills"]
     D --> E3["Codex : AGENTS.md + docs/commands"]
-    E1 --> F["Mémoire + dream + CI + subagents posés"]
+    E1 --> F["MCP + hooks + mémoire + dream + CI + subagents posés"]
     E2 --> F
     E3 --> F
-    F --> G["/new-project « ton idée »"]
-    G --> H["/new-feature « une feature » → merge sur dev"]
-    H -.->|feature suivante| H
+    F --> G["Dans ton assistant : /new-project « ton idée »"]
+    G --> H["/build : la roadmap, jalon par jalon (visuel à chaque étape)"]
+    H -.->|jalon suivant| H
 ```
 
 Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) : `brainstorm → plan → exécution (sub-agents, TDD) → review → test live → sécu → commit → PR → CI → merge`. Elle est écrite dans l'`AGENTS.md`/`CLAUDE.md` généré, toujours en contexte.
