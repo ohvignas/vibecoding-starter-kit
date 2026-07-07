@@ -5,10 +5,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, validateArgs } from './lib/args.mjs';
-import { resolveAssets } from './lib/matrix.mjs';
+import { resolveAssets, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { renderProjectAgentsMd, toCursorMdc } from './lib/templates.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
-import { cloneRepo, pickFromClone, selectByTags, installCaveman } from './lib/external.mjs';
+import { cloneRepo, pickFromClone, selectByTags, installCaveman, installSkills } from './lib/external.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
@@ -162,8 +162,26 @@ async function main() {
     catch (e) { failed.push(`caveman (${e.message})`); }
   }
 
+  if (!args.noSkills) {
+    try {
+      const skl = installSkills(DESIGN_SKILL_SPECS, args.assistant);
+      done.push(...skl.done.map((d) => `skill design : ${d}`));
+      failed.push(...skl.failed.map((f) => `skill design : ${f}`));
+    } catch (e) { failed.push(`skills design (${e.message})`); }
+  }
+
   console.log(formatReport({ project: args.project, stack: args.stack, assistant: args.assistant, done, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
-  if (fromWizard) console.log('\n' + ok('Config prête. Ouvre ton assistant IA dans le dossier du projet et lance /new-project.', on));
+  if (fromWizard) {
+    console.log('\n' + ok('Config prête. Skills design installés. Ouvre ton assistant IA dans le dossier du projet.', on));
+    console.log('\n— Colle ce prompt dans ton assistant —\n');
+    console.log([
+      "Finalise l'install et démarre :",
+      '1. Ouvre docs/SETUP-AI.md → installe les plugins + skills stack, et autorise les MCP (/mcp).',
+      `2. Boucle superpowers : ${SUPERPOWERS[args.assistant]}`,
+      '3. /doctor pour vérifier.',
+      '4. /new-project (PRD + tech spec + design), puis /build.',
+    ].join('\n'));
+  }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) main().catch((e) => { console.error(e?.message || e); process.exit(1); });

@@ -11,7 +11,7 @@ test('re-run sans --force : la note backend local reste unique', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-idem-'));
   const run = () => execFileSync(
     process.execPath,
-    ['scripts/setup.mjs', '--source', '.', '--stack', 'saas', '--assistant', 'claude-code', '--project', dir, '--backend', 'local'],
+    ['scripts/setup.mjs', '--source', '.', '--stack', 'saas', '--assistant', 'claude-code', '--project', dir, '--backend', 'local', '--no-skills'],
     { stdio: 'ignore' },
   );
   run();

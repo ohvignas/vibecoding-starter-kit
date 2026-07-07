@@ -15,6 +15,7 @@ export function parseArgs(argv) {
       case '--force': args.force = true; break;
       case '--caveman': args.caveman = true; break;
       case '--backend': args.backend = argv[++i]; break;
+      case '--no-skills': args.noSkills = true; break;
       default: throw new Error(`Argument inconnu : ${a}`);
     }
   }

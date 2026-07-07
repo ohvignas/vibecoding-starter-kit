@@ -26,3 +26,7 @@ npm-debug.log*
 # Note : le dossier ai-context/ EST volontairement suivi par git,
 # pour que le clone contienne déjà le contexte IA.
 # Relance scripts/download-ai-context.sh pour le mettre à jour.
+
+# artefacts CLI skills / caveman (runs réels)
+.agents/
+skills-lock.json

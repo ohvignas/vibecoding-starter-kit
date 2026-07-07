@@ -36,3 +36,8 @@ test('--backend invalide → erreur', () => {
   const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--backend', 'nope']);
   assert.ok(validateArgs(a).some((e) => /backend/.test(e)));
 });
+
+test('--no-skills : drapeau lu', () => {
+  const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--no-skills']);
+  assert.equal(a.noSkills, true);
+});
