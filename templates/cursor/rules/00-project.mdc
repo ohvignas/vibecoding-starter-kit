@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+- Tout est en **TypeScript strict**. Pas de `any` sans raison justifiée.
+- **Ne commit jamais de secret** (clé API, token) ni dans le code client.
+- **Demande avant toute action destructive** (suppression de données, `git push --force`, migration).
+- En cas de doute sur une API, lis les docs officielles de `ai-context/` (jamais d'API inventée).
+- Suis les règles projet de `AGENTS.md`, la roadmap `docs/ROADMAP.md`, les capacités `docs/DOMAINS.md`.

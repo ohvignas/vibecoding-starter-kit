@@ -1,0 +1,9 @@
+---
+description: Better Auth via le composant Convex
+globs: convex/betterAuth/**,**/auth*.ts,**/*auth*.tsx
+alwaysApply: false
+---
+
+- Auth via `@convex-dev/better-auth`. Pin `better-auth@~1.6.x` (pas `@latest`).
+- Schéma : `npx auth generate` (pas `@better-auth/cli`). Secrets via `npx convex env set`, jamais `.env`.
+- Protège les routes privées côté serveur (vérifie la session).

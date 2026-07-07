@@ -1,0 +1,10 @@
+---
+description: Sécurité Electron (obligatoire)
+globs: **/main.ts,**/preload.ts,**/main/**,**/electron/**
+alwaysApply: false
+---
+
+- `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
+- IPC : valide `senderFrame` ; expose une API minimale via `contextBridge` (pas tout `ipcRenderer`).
+- CSP stricte ; `shell.openExternal` seulement sur des URLs de confiance.
+- Jamais de contenu distant non fiable dans un `BrowserWindow`.

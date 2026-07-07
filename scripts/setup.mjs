@@ -61,7 +61,7 @@ async function main() {
       if (c.transform === 'dir') copyDirIfAbsent(src, dest, opt);
       else if (c.transform === 'mdc') {
         ensureDir(path.dirname(dest));
-        if (!fs.existsSync(dest) || args.force) fs.writeFileSync(dest, toCursorMdc({ description: c.description, body: fs.readFileSync(src, 'utf8') }));
+        if (!fs.existsSync(dest) || args.force) fs.writeFileSync(dest, toCursorMdc({ description: c.description, body: fs.readFileSync(src, 'utf8'), alwaysApply: c.alwaysApply !== false }));
       } else copyIfAbsent(src, dest, opt);
       done.push(c.to);
     } catch (e) { failed.push(`${c.to} (${e.message})`); }
@@ -103,7 +103,9 @@ async function main() {
       copyIfAbsent(path.join(args.source, 'templates/cursor/hooks.json'), path.join(projectDir, '.cursor/hooks.json'), opt);
       copyDirIfAbsent(path.join(args.source, 'templates/cursor/hooks'), path.join(projectDir, '.cursor/hooks'), opt);
       copyIfAbsent(path.join(args.source, 'templates/cursor/cursorignore'), path.join(projectDir, '.cursorignore'), opt);
-      done.push('.cursor/hooks.json + .cursorignore (mémoire auto)');
+      copyIfAbsent(path.join(args.source, 'templates/cursor/rules/00-project.mdc'), path.join(projectDir, '.cursor/rules/00-project.mdc'), opt);
+      copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt);
+      done.push('.cursor/rules/ (00-project + règles typées par framework)');
     } catch (e) { failed.push(`cursor extras (${e.message})`); }
   }
 

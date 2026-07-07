@@ -1,0 +1,9 @@
+---
+description: TanStack Start (routing, server functions)
+globs: src/routes/**,src/**/*.tsx
+alwaysApply: false
+---
+
+- Routing par fichiers dans `src/routes` — liens typés, pas de `<a href>` interne.
+- Code serveur appelé du client = `createServerFn`, pas d'API séparée.
+- Ne t'inspire pas de l'`AGENTS.md` du dépôt TanStack (il vise les contributeurs du framework).

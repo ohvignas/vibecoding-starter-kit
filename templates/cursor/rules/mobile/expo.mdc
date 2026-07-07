@@ -1,0 +1,9 @@
+---
+description: Expo / React Native
+globs: app/**,**/*.tsx
+alwaysApply: false
+---
+
+- `npx expo install <pkg>` (versions alignées au SDK), pas `npm install`.
+- Modules natifs (Stripe, notifications, maps) → **dev build** requis, pas Expo Go.
+- Typed routes (`app.json` experiments.typedRoutes). Env : `EXPO_PUBLIC_*`.

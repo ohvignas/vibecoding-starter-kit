@@ -1,0 +1,10 @@
+---
+description: Backend Convex (queries, mutations, schéma)
+globs: convex/**
+alwaysApply: false
+---
+
+- La logique serveur = `query`/`mutation`/`action`. Jamais d'API REST maison pour les données.
+- Schéma dans `convex/schema.ts` ; indexe chaque champ filtré/paginé.
+- Front : `useQuery` (réactif) — ne recharge pas à la main.
+- Règles officielles : `ai-context/convex/`.
