@@ -20,7 +20,7 @@ test('cursor : commandes en .cursor/commands/*.md, pas en .cursor/skills', () =>
     ['scripts/setup.mjs', '--source', '.', '--stack', 'saas', '--assistant', 'cursor', '--project', dir, '--no-skills', '--yes'],
     { stdio: 'ignore', env },
   );
-  for (const c of ['new-project', 'build', 'new-feature', 'edit-design', 'doctor', 'next', 'sos']) {
+  for (const c of ['new-project', 'build', 'new-feature', 'edit-design', 'doctor', 'next', 'sos', 'debug', 'deploy']) {
     assert.ok(fs.existsSync(path.join(dir, `.cursor/commands/${c}.md`)), `.cursor/commands/${c}.md doit exister`);
   }
   assert.ok(!fs.existsSync(path.join(dir, '.cursor/skills')), 'plus de dossier .cursor/skills');

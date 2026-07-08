@@ -111,7 +111,7 @@ async function main() {
     finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 
-  for (const cmd of ['new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos']) {
+  for (const cmd of ['new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'debug', 'deploy']) {
     try {
       const src = path.join(args.source, `templates/commands/${cmd}.md`);
       // Slash-commands typables pour tous : Cursor → .cursor/commands/, Claude → .claude/commands/, Codex → docs/commands/.
@@ -194,6 +194,13 @@ async function main() {
 
   try { track('docs/examples/feature-exemple.md', copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt)); }
   catch (e) { failed.push(`exemple (${e.message})`); }
+
+  // Manifeste : mémorise stack+assistant pour que `scripts/update.mjs` puisse récupérer les nouveaux fichiers du kit.
+  try {
+    const mf = path.join(projectDir, '.vibecoding.json');
+    if (!fs.existsSync(mf) || args.force) { fs.writeFileSync(mf, JSON.stringify({ stack: args.stack, assistant: args.assistant, generatedBy: 'vibecoding-starter-kit' }, null, 2) + '\n'); done.push('.vibecoding.json'); }
+    else kept.push('.vibecoding.json');
+  } catch (e) { failed.push(`.vibecoding.json (${e.message})`); }
 
   if (args.caveman) {
     try { installCaveman(); done.push('caveman (réduction des coûts)'); }
