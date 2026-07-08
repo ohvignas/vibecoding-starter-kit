@@ -7,3 +7,4 @@ alwaysApply: true
 - **Demande avant toute action destructive** (suppression de données, `git push --force`, migration).
 - En cas de doute sur une API, lis les docs officielles de `ai-context/` (jamais d'API inventée).
 - Suis les règles projet de `AGENTS.md`, la roadmap `docs/ROADMAP.md`, les capacités `docs/DOMAINS.md`.
+- **Règle des 3 essais** : 3 corrections ratées sur le même bug → arrête, reviens au dernier état vert, note le bug dans `docs/memory/`, repars propre. Jamais d'acharnement.

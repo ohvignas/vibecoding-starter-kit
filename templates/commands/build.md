@@ -7,7 +7,7 @@ Tu exécutes `docs/ROADMAP.md` **une tranche à la fois**, en montrant un résul
 2. **Plan** : si `docs/superpowers/plans/NN-*.md` du jalon n'existe pas → crée-le avec `superpowers:writing-plans` (dérivé du PRD + `docs/design.md` + la **maquette** `maquette/` (l'écran cible du jalon) + `docs/DOMAINS.md` pour les domaines).
 3. **Exécute** le plan avec `superpowers:subagent-driven-development` (TDD + review + fix). C'est la **boucle** du projet.
 4. **Montre le visuel** : lance l'app (`docs/RUN.md`) et vérifie le `✅ Ce que tu vois` du jalon — navigateur (web), simulateur (mobile), fenêtre (desktop), screenshot à l'appui. **Compare à l'écran correspondant de `maquette/`** : le rendu doit s'en approcher. Non atteint → `superpowers:systematic-debugging`, on ne passe pas au suivant.
-5. **Coche** le jalon dans `docs/ROADMAP.md`, note tout piège dans `docs/memory/`, commit.
+5. **Coche** le jalon dans `docs/ROADMAP.md`, note tout piège dans `docs/memory/`, commit — puis pose un **point de restauration** : `git tag jalon-NN-<slug>` (NN = numéro du jalon). C'est le filet de `/sos` (retour à un état qui marche).
 6. **Gate** : demande « on continue au jalon suivant ? » — sauf si l'utilisateur a dit « enchaîne tout » (ou `/build --all`) → boucle automatiquement jusqu'à la fin, en montrant le visuel + une ligne de progrès à chaque tour.
 
 ## Jalon 0 (fondations)

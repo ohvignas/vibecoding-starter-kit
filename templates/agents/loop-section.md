@@ -19,4 +19,6 @@ Tout changement suit ce cycle. Chaque flèche = un livrable validé avant la sui
 
 **Transverses** : jamais de code avant plan validé ; toujours **TDD** ; `superpowers:verification-before-completion` avant de dire « fini » (preuve par la commande) ; `superpowers:systematic-debugging` avant tout fix ; **un worktree par feature** (`superpowers:using-git-worktrees`).
 
+**Règle des 3 essais (anti-boucle infinie)** : si 3 corrections successives sur le **même** bug échouent → STOP. Reviens au dernier état vert (dernier commit/tag `jalon-*`), écris le bug dans `docs/memory/gotchas.md`, et **repars d'une conversation neuve**. Ne t'acharne jamais : re-corriger en boucle empire le code.
+
 **Définition de « fini » (NON négociable)** : mergé sur `dev` (CI verte + review OK, un PR à la fois) **ET** testé en live par l'agent. Tests unitaires + CI verte = nécessaires mais **pas** suffisants. Si un blocage externe empêche le test live → le signaler explicitement comme seul motif d'arrêt.
