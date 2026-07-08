@@ -9,10 +9,16 @@ import path from 'node:path';
 // la note « Backend en local » en tête de docs/RUN.md.
 test('re-run sans --force : la note backend local reste unique', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-idem-'));
+  // Identité git explicite : le setup fait maintenant un commit initial (CI sans user.name global).
+  const env = {
+    ...process.env,
+    GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@vibecoding.local',
+    GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 'test@vibecoding.local',
+  };
   const run = () => execFileSync(
     process.execPath,
     ['scripts/setup.mjs', '--source', '.', '--stack', 'saas', '--assistant', 'claude-code', '--project', dir, '--backend', 'local', '--no-skills'],
-    { stdio: 'ignore' },
+    { stdio: 'ignore', env },
   );
   run();
   run();

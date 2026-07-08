@@ -12,8 +12,8 @@ L'installeur a tout posé. Reste quelques réglages **manuels** (pas automatisab
 - Ajoute le secret **`ANTHROPIC_API_KEY`** (Settings → Secrets → Actions) pour le dream hook.
 - La CI (`.github/workflows/ci.yml`) et le scan de secrets (`secrets.yml`) tournent à chaque push/PR.
 
-## Git — activer le hook pre-commit
-`git config core.hooksPath .githooks` (bloque les secrets évidents + linte avant chaque commit).
+## Git — hook pre-commit
+Déjà actif : l'installeur a fait `git init` et `git config core.hooksPath .githooks` pour toi. À chaque commit, il bloque les secrets évidents et lance le linter.
 
 ## Secrets
 - Copie `.env.example` → `.env` et remplis-le. **Ne commit jamais `.env`.**

@@ -9,6 +9,7 @@ import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } 
 import { renderProjectAgentsMd, toCursorMdc } from './lib/templates.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, selectByTags, installCaveman, installSkills } from './lib/external.mjs';
+import { initProjectGit } from './lib/gitinit.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
@@ -185,6 +186,11 @@ async function main() {
     try { installCaveman(); done.push('caveman (réduction des coûts)'); }
     catch (e) { failed.push(`caveman (${e.message})`); }
   }
+
+  // Dépôt git réel : hooks pre-commit actifs immédiatement + premier point de retour arrière.
+  const g = initProjectGit({ projectDir });
+  done.push(...g.done);
+  failed.push(...g.failed);
 
   if (!args.noSkills) {
     console.log('\nInstallation des skills (npx skills add — peut prendre ~1-2 min)…');
