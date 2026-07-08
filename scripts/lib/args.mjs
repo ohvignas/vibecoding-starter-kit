@@ -1,8 +1,11 @@
+import path from 'node:path';
+
 const STACKS = ['saas', 'mobile', 'desktop'];
 const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
 
 export function parseArgs(argv) {
-  const args = { stack: null, assistant: null, project: null, mockup: null, source: '.', dryRun: false, force: false, caveman: false };
+  // source: null = « non fourni » → setup.mjs y mettra la racine du kit (dérivée de import.meta.url).
+  const args = { stack: null, assistant: null, project: null, mockup: null, source: null, dryRun: false, force: false, caveman: false, yes: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -16,6 +19,7 @@ export function parseArgs(argv) {
       case '--caveman': args.caveman = true; break;
       case '--backend': args.backend = argv[++i]; break;
       case '--no-skills': args.noSkills = true; break;
+      case '--yes': args.yes = true; break;
       default: throw new Error(`Argument inconnu : ${a}`);
     }
   }
@@ -32,3 +36,20 @@ export function validateArgs(args) {
 }
 
 export const KNOWN = { STACKS, ASSISTANTS };
+
+// Étend ~ vers le dossier personnel : le shell ne le fait pas quand la valeur vient du wizard
+// ou d'un drapeau quoté ("~/mon-app"). Sans ça, un dossier littéral « ~ » est créé dans le projet.
+export function expandHome(p, home) {
+  if (typeof p !== 'string' || !p.startsWith('~')) return p;
+  if (p === '~') return home;
+  if (p.startsWith('~/') || p.startsWith('~\\')) return path.join(home, p.slice(2));
+  return p; // formes ~autre-utilisateur : non gérées, renvoyées telles quelles
+}
+
+// Un nom nu (sans séparateur) atterrit EN DEHORS du clone du kit : ../<nom> par rapport à la
+// racine du kit. Un chemin explicite (relatif avec séparateur, ou absolu) est respecté tel quel.
+export function resolveProjectDir(project, kitRoot) {
+  if (path.isAbsolute(project)) return path.resolve(project);
+  if (project.includes('/') || project.includes('\\')) return path.resolve(project);
+  return path.resolve(kitRoot, '..', project);
+}

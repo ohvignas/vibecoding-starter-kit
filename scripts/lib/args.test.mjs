@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs, validateArgs } from './args.mjs';
+import path from 'node:path';
+import { parseArgs, validateArgs, expandHome, resolveProjectDir } from './args.mjs';
 
 test('parseArgs lit les drapeaux', () => {
   const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'mon-app', '--dry-run']);
@@ -8,7 +9,7 @@ test('parseArgs lit les drapeaux', () => {
   assert.equal(a.assistant, 'cursor');
   assert.equal(a.project, 'mon-app');
   assert.equal(a.dryRun, true);
-  assert.equal(a.source, '.'); // défaut
+  assert.equal(a.source, null); // défaut : null = setup.mjs y mettra la racine du kit
 });
 
 test('parseArgs rejette un drapeau inconnu', () => {
@@ -40,4 +41,26 @@ test('--backend invalide → erreur', () => {
 test('--no-skills : drapeau lu', () => {
   const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--no-skills']);
   assert.equal(a.noSkills, true);
+});
+
+test('--yes : drapeau lu (mode non-interactif)', () => {
+  assert.equal(parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--yes']).yes, true);
+  assert.equal(parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x']).yes, false);
+});
+
+test('expandHome : ~ et ~/… étendus, le reste intact', () => {
+  const home = path.join(path.sep, 'home', 'eleve');
+  assert.equal(expandHome('~/mon-app', home), path.join(home, 'mon-app'));
+  assert.equal(expandHome('~', home), home);
+  assert.equal(expandHome('mon-app', home), 'mon-app');
+  assert.equal(expandHome('./mon-app', home), './mon-app');
+  assert.equal(expandHome(null, home), null);
+});
+
+test('resolveProjectDir : nom nu → ../<nom> à côté du kit ; chemins explicites respectés', () => {
+  const kit = path.join(path.sep, 'tmp', 'kit');
+  assert.equal(resolveProjectDir('mon-app', kit), path.resolve(kit, '..', 'mon-app'));
+  assert.equal(resolveProjectDir('apps/mon-app', kit), path.resolve('apps/mon-app'));
+  const abs = path.resolve(path.sep, 'ailleurs', 'app');
+  assert.equal(resolveProjectDir(abs, kit), abs);
 });
