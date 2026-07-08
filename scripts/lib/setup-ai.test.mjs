@@ -25,3 +25,14 @@ test('SETUP-AI : plugins, skills, MCP, superpowers, design auto', () => {
 test('SETUP-AI mobile : MCP expo login requis', () => {
   assert.match(call('mobile', 'claude-code'), /expo.*login requis/);
 });
+
+test('SETUP-AI --no-skills : liste les commandes à lancer, ne ment pas', () => {
+  const md = renderSetupAi({
+    stack: 'saas', assistant: 'claude-code', manifest: resolveStackManifest('saas', 'claude-code'),
+    superpowersCmd: SUPERPOWERS['claude-code'], shadcnNote: SHADCN_NOTE, skillsInstalled: false,
+  });
+  assert.ok(!md.includes('déjà installés par le wizard'), 'aucun faux ✅');
+  assert.match(md, /PAS installés/);
+  assert.match(md, /\[ \] `npx -y skills add better-auth\/skills/);          // skills stack en cases à cocher
+  assert.match(md, /\[ \] `npx -y skills add github\.com\/anthropics\/skills/); // skills design en cases à cocher
+});

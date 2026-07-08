@@ -8,7 +8,7 @@ import { renderDomains, SHARED_DOMAINS } from './domains.mjs';
 import { ensureDir } from './fsops.mjs';
 
 // Écrit l'environnement IA d'une stack dans un projet (déclaratif, additif, non destructif).
-export function writeStackEnvironment({ projectDir, source, stack, assistant }) {
+export function writeStackEnvironment({ projectDir, source, stack, assistant, skillsInstalled = true }) {
   const done = [], failed = [];
   const manifest = resolveStackManifest(stack, assistant);
   const isCursor = assistant === 'cursor';
@@ -57,7 +57,7 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant }) 
   } catch (e) { failed.push(`hooks assistant (${e.message})`); }
 
   // 6. SETUP-AI.md
-  try { write('docs/SETUP-AI.md', renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE })); done.push('docs/SETUP-AI.md'); }
+  try { write('docs/SETUP-AI.md', renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE, skillsInstalled })); done.push('docs/SETUP-AI.md'); }
   catch (e) { failed.push(`SETUP-AI (${e.message})`); }
 
   // 6b. DOMAINS.md (catalogue métier de la stack)

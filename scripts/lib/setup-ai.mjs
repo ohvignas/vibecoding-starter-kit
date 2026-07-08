@@ -1,9 +1,10 @@
 // Rend docs/SETUP-AI.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
 // Les skills design sont déjà installés par le wizard.
 import { buildSkillAddArgs } from './external.mjs';
-import { STITCH } from './matrix.mjs';
+import { DESIGN_SKILL_SPECS, STITCH } from './matrix.mjs';
 
-export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shadcnNote }) {
+// skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
+export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shadcnNote, skillsInstalled = true }) {
   const L = [];
   L.push(`# Setup IA — stack ${stack} · assistant ${assistant}`);
   L.push('');
@@ -15,9 +16,13 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push('');
   L.push('## 2. Skills portables (stack)');
   if (manifest.skills.length) {
-    L.push(`- ✅ déjà installés par le wizard : ${manifest.skills.map((s) => s.label).join(', ')}`);
-    L.push('- (si un install a échoué — réseau — relance à la main :)');
-    for (const s of manifest.skills) L.push(`  - \`npx ${buildSkillAddArgs(s, assistant).join(' ')}\``);
+    if (skillsInstalled) {
+      L.push(`- ✅ déjà installés par le wizard : ${manifest.skills.map((s) => s.label).join(', ')}`);
+      L.push('- (si un install a échoué — réseau — relance à la main :)');
+    } else {
+      L.push('- ⚠️ PAS installés (wizard lancé avec --no-skills) — lance ces commandes :');
+    }
+    for (const s of manifest.skills) L.push(`  - ${skillsInstalled ? '' : '[ ] '}\`npx ${buildSkillAddArgs(s, assistant).join(' ')}\``);
   } else L.push('- [ ] (aucun)');
   L.push('');
   L.push('## 3. MCP à autoriser');
@@ -29,11 +34,18 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push(`- [ ] ${superpowersCmd}`);
   L.push('');
   L.push('## 5. Design');
-  L.push('- ✅ déjà installés par le wizard : frontend-design, brand-guidelines, web-design-guidelines, ui-ux-pro-max');
+  if (skillsInstalled) {
+    L.push('- ✅ déjà installés par le wizard : frontend-design, brand-guidelines, web-design-guidelines, ui-ux-pro-max');
+  } else {
+    L.push('- ⚠️ PAS installés (wizard lancé avec --no-skills) — lance ces commandes :');
+    for (const s of DESIGN_SKILL_SPECS) L.push(`  - [ ] \`npx ${buildSkillAddArgs(s, assistant).join(' ')}\``);
+  }
   L.push(`- [ ] ${shadcnNote.replace('<assistant>', assistant)}`);
   L.push('');
   L.push('### Maquette IA — Stitch (si tu n\'as pas de design à fournir)');
-  L.push('- ✅ skills Stitch déjà installés par le wizard (generate-design · extract-html · loop · design-md).');
+  L.push(skillsInstalled
+    ? '- ✅ skills Stitch déjà installés par le wizard (generate-design · extract-html · loop · design-md).'
+    : '- ⚠️ skills Stitch PAS installés : couverts par les commandes de la section 2 ci-dessus (spec « stitch »).');
   L.push(`- [ ] Crée ta **clé API Stitch** : ${STITCH.keyUrl} → ${STITCH.keySteps} → copie-la (garde-la **secrète**, ne la commite jamais).`);
   L.push(`- [ ] Connecte le **MCP Stitch au niveau utilisateur** (hors dépôt → la clé n'est jamais commitée) : ${STITCH.mcp[assistant]}`);
   L.push('');

@@ -17,3 +17,14 @@ test('le rapport liste installé, à-faire-dans-l-IA, sauté, échecs', () => {
   assert.match(out, /❌ BMAD/);
   assert.match(out, /new-project/); // prochaine étape
 });
+
+test('le rapport affiche les fichiers conservés (jamais écrasés)', () => {
+  const out = formatReport({
+    project: '/abs/mon-app', stack: 'saas', assistant: 'cursor',
+    done: [], kept: ['docs/ONBOARDING.md', '⚠️ AGENTS.md existant conservé (nouvelle version : AGENTS.md.new)'],
+    inAssistant: [], skipped: [], failed: [],
+  });
+  assert.match(out, /Conservé/);
+  assert.match(out, /AGENTS\.md\.new/);
+  assert.match(out, /docs\/ONBOARDING\.md/);
+});
