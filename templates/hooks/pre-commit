@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pre-commit vibe-stack : bloque les secrets évidents + lance le linter si dispo.
 set -e
-if git diff --cached -U0 | grep -Eq '(sk-[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)'; then
+if git diff --cached -U0 | grep -Eq '(sk-ant-[A-Za-z0-9_-]{20,}|sk-proj-[A-Za-z0-9_-]{20,}|sk-[a-zA-Z0-9]{20,}|sk_live_[A-Za-z0-9]{10,}|re_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z_-]{35}|ghp_[A-Za-z0-9]{36}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)'; then
   echo "⛔ Secret potentiel détecté dans le diff — retire-le avant de commit."
   exit 1
 fi
