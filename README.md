@@ -22,7 +22,7 @@
 
 ---
 
-Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (3 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur (wizard interactif)** qui génère un environnement de développement complet — 5 commandes, mémoire persistante, revue de code, CI — pour **Cursor, Claude Code et Codex**.
+Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (3 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur (wizard interactif)** qui génère un environnement de développement complet — 9 commandes, mémoire persistante, revue de code, CI, filet de sécurité — pour **Cursor, Claude Code et Codex**.
 
 > [!TIP]
 > Pas besoin de choisir un seul assistant : l'installeur configure celui que tu utilises, et le projet reste **portable** (les mêmes règles marchent partout).
@@ -71,16 +71,15 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 ## ⚡ Démarrage rapide
 
-**1. Une seule commande** — rien à cloner :
+**1. Installe le kit** — deux façons :
+
+**Option A — une commande** *(après publication npm, voir [`PUBLISH.md`](PUBLISH.md))* :
 
 ```bash
 npm create vibecoding@latest
 ```
 
-> Télécharge le kit et lance le **wizard** (stack, assistant, nom, Convex cloud/local). Prérequis : Node.js ≥ 20.12 + git. Le wizard pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack).
-
-<details>
-<summary>Alternative : cloner le dépôt (pour bidouiller le kit lui-même)</summary>
+**Option B — cloner** *(marche tout de suite, sans rien publier)* :
 
 ```bash
 git clone https://github.com/ohvignas/vibecoding-starter-kit
@@ -88,9 +87,9 @@ cd vibecoding-starter-kit
 node scripts/setup.mjs
 ```
 
-</details>
+> Prérequis : **Node.js ≥ 20.12 + git**. Le wizard demande stack/assistant/nom (+ Convex cloud/local) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack).
 
-**2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard**
+**2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
 
 Il installe les plugins (superpowers + éventuel plugin de stack) et autorise les MCP. Ensuite, lance :
 
@@ -121,7 +120,7 @@ Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** expliq
 
 ```mermaid
 flowchart TD
-    A["Tu lances : node scripts/setup.mjs (wizard)"] --> C{"Réponds : stack ? assistant ? nom ? Convex cloud/local ?"}
+    A["Tu lances : npm create vibecoding (ou node scripts/setup.mjs)"] --> C{"Réponds : stack ? assistant ? nom ? Convex cloud/local ?"}
     C --> D["setup.mjs génère l'environnement"]
     D --> E1["Cursor : .cursor/commands + rules .mdc + hooks + BUGBOT"]
     D --> E2["Claude Code : CLAUDE.md + .claude/skills"]

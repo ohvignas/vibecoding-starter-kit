@@ -30,3 +30,4 @@ npm-debug.log*
 # artefacts CLI skills / caveman (runs réels)
 .agents/
 skills-lock.json
+*.tgz
