@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
-import { parseArgs, validateArgs } from './lib/args.mjs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseArgs, validateArgs, expandHome, resolveProjectDir } from './lib/args.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { renderProjectAgentsMd, toCursorMdc } from './lib/templates.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
@@ -12,34 +12,51 @@ import { cloneRepo, pickFromClone, selectByTags, installCaveman, installSkills }
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
-import readline from 'node:readline/promises';
-import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard } from './lib/wizard.mjs';
+import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
 import { supportsColor, ok } from './lib/ui.mjs';
 
-export function buildRunPlan(args) {
+// Racine du kit = dossier parent de scripts/ — fiable quel que soit le cwd de lancement
+// (fini les 22 ENOENT silencieux quand on lance le script depuis un autre dossier).
+export function kitRootFromModuleUrl(moduleUrl) {
+  return path.resolve(path.dirname(fileURLToPath(moduleUrl)), '..');
+}
+
+export function buildRunPlan(args, kitRoot = process.cwd()) {
   const assets = resolveAssets(args.stack, args.assistant);
-  const projectDir = path.resolve(args.project);
+  const projectDir = resolveProjectDir(args.project, kitRoot);
   return { assets, projectDir };
 }
 
 async function main() {
+  // Prérequis d'abord : échouer AVANT de poser 5 questions, pas après.
+  if (!meetsNode(process.version)) { console.error('Node ≥ 20.12 requis (voir guides/02-installer-les-outils.md)'); process.exit(1); }
+  if (!ensureGit()) { console.error('git requis (voir guides/02-installer-les-outils.md)'); process.exit(1); }
+
   const argv = process.argv.slice(2);
   const on = supportsColor(process.stdout, process.env);
-  const fromWizard = needsWizard(argv, Boolean(process.stdin.isTTY));
+  const isTTY = Boolean(process.stdin.isTTY);
+  const kitRoot = kitRootFromModuleUrl(import.meta.url);
   let args;
-  if (fromWizard) {
+  if (needsWizard(argv, isTTY)) {
+    const base = parseArgs(argv); // drapeaux partiels (--no-skills, --source…) conservés
+    const readline = await import('node:readline/promises'); // dynamique : le check Node ci-dessus tourne même sur Node 16
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    try { args = buildArgsFromAnswers(await runWizard((q) => rl.question(q), on)); }
+    wireSigint(rl);
+    try { args = buildArgsFromAnswers(await runWizard((q) => rl.question(q), on), base); }
     finally { rl.close(); }
   } else {
     args = parseArgs(argv);
     const errs = validateArgs(args);
-    if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
+    if (errs.length) {
+      console.error(errs.join('\n'));
+      if (!isTTY) console.error('\n' + renderNonTtyHelp());
+      process.exit(1);
+    }
   }
-  if (!meetsNode(process.version)) { console.error('Node ≥ 20.12 requis (voir guides/02-installer-les-outils.md)'); process.exit(1); }
-  if (!ensureGit()) { console.error('git requis (voir guides/02-installer-les-outils.md)'); process.exit(1); }
+  args.source = args.source ?? kitRoot;
+  args.project = expandHome(args.project, os.homedir());
 
-  const { assets, projectDir } = buildRunPlan(args);
+  const { assets, projectDir } = buildRunPlan(args, kitRoot);
   if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }
 
   const done = [], failed = [];
@@ -186,18 +203,16 @@ async function main() {
     } catch (e) { failed.push(`skills stack (${e.message})`); }
   }
 
-  console.log(formatReport({ project: args.project, stack: args.stack, assistant: args.assistant, done, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
-  if (fromWizard) {
-    console.log('\n' + ok('Config prête. Ouvre ton assistant IA dans le dossier du projet.', on));
-    console.log('\n— Colle ce prompt dans ton assistant —\n');
-    console.log([
-      "Finalise l'install et démarre :",
-      '1. Ouvre docs/SETUP-AI.md → installe les plugins et autorise les MCP (/mcp). (Les skills — design + stack — sont déjà installés par le wizard.)',
-      `2. Boucle superpowers : ${SUPERPOWERS[args.assistant]}`,
-      '3. /doctor pour vérifier.',
-      '4. /new-project (PRD + tech spec + design), puis /build.',
-    ].join('\n'));
-  }
+  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
+  console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
+  console.log('\n— Colle ce prompt dans ton assistant —\n');
+  console.log([
+    "Finalise l'install et démarre :",
+    '1. Ouvre docs/SETUP-AI.md → installe les plugins et autorise les MCP (/mcp). (Les skills — design + stack — sont déjà installés par le wizard.)',
+    `2. Boucle superpowers : ${SUPERPOWERS[args.assistant]}`,
+    '3. /doctor pour vérifier.',
+    '4. /new-project (PRD + tech spec + design), puis /build.',
+  ].join('\n'));
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) main().catch((e) => { console.error(e?.message || e); process.exit(1); });
