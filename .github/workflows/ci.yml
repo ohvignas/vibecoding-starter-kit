@@ -2,10 +2,18 @@ name: CI
 on: [push, pull_request]
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ['20.12', '22']
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node }}
+      # Suite unitaire + intégration (les tests fournissent leur identité git via variables d'env)
       - run: node --test
+      # Smoke E2E cross-platform en Node pur (pas de bash) : le kit tient-il ses promesses ?
+      - run: node scripts/smoke-e2e.mjs
