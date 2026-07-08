@@ -48,8 +48,8 @@ Rédige une **PRD** en suivant ce template (colonne 100 %, chaque section = un t
 
 ---
 
-## Phase 3 — Choix de la stack
-Choisis parmi les 3 stacks du kit selon l'idée : SaaS (Convex+TanStack Start+Better Auth) / mobile (Expo+Convex) / desktop (Electron). Réutilise `stacks/<stack>/` (README + AGENTS.md + ai-context).
+## Phase 3 — Stack (déjà fixée)
+La stack a été **choisie par le wizard** : lis-la dans `AGENTS.md` (et les règles de `.cursor/rules/` ou `.claude/skills/`) — **ne redemande pas**. Le contexte officiel de la stack est dans `ai-context/`. Confirme-la à l'utilisateur en une phrase, puis continue.
 
 ---
 
@@ -73,12 +73,21 @@ Choisis parmi les 3 stacks du kit selon l'idée : SaaS (Convex+TanStack Start+Be
 
 La **maquette est le pivot** : on dessine les écrans **avant** de coder, on **itère dessus** jusqu'à validation, puis la roadmap en découle (Phase 6). Ne code rien ici.
 
-**1. Maquette des écrans clés (créer → itérer → valider)**
-Avec **Google Stitch** (IA visuelle de design, **gratuit** avec un compte Google, ~350 générations/mois). Les **skills officiels sont déjà installés** par le wizard (`stitch::generate-design`, `stitch::extract-static-html`, `stitch-loop`, `design-md`). Pour le **MCP Stitch**, l'utilisateur crée sa **clé API** et le connecte **au niveau utilisateur** (hors dépôt → clé jamais commitée) — étapes exactes dans `docs/SETUP-AI.md`. Si l'utilisateur **n'a pas de design à fournir**, c'est ici qu'on le crée :
-- Décris les **écrans porteurs** en t'appuyant sur les parcours **UJ-*** du PRD : entrée canonique, écran héros du flux le plus complexe, un overlay porteur, la vue liste/dashboard.
-- **Génère** (`stitch::generate-design`) **→ montre → itère** (boucle `stitch-loop`, applique ce qu'il demande) **jusqu'à validation**. Vrai aller-retour, pas un one-shot.
-- **Exporte le HTML/CSS** (`stitch::extract-static-html`) de chaque écran validé dans **`maquette/`** — l'IA **lira ces fichiers en Phase 6** pour dériver la roadmap.
-- Le skill **`design-md`** produit un design system aligné : sers-t'en pour remplir `docs/design.md` (§2) et, au besoin, `upload_design_md` pour que Stitch génère des écrans cohérents.
+**1. La maquette (le pivot) — 3 entrées possibles, aucune ne bloque**
+
+Demande d'abord à l'utilisateur laquelle correspond :
+
+- **(a) « J'ai déjà une maquette sur Stitch »** → connecte le MCP Stitch (voir `docs/SETUP-AI.md`), puis `list_projects` → `list_screens` → pour chaque écran validé, récupère le `htmlCode` (`get_screen`) et **écris-le dans `maquette/<ecran>.html`**.
+- **(b) « J'ai une maquette ailleurs » (Figma, images, HTML)** → demande-lui de **déposer ses exports/captures dans `maquette/`** (un fichier par écran). Tu t'en serviras de référence visuelle.
+- **(c) « Je n'ai pas de maquette »** → on la crée :
+  - Si le MCP Stitch est connecté : `generate_screen_from_text` (skill `stitch::generate-design`) → itère → importe le HTML dans `maquette/`.
+  - **Sinon (pas de Stitch — cas par défaut)** : **génère toi-même des wireframes HTML/CSS sobres** (Tailwind CDN, gris/noir/blanc, pas de logique) directement dans `maquette/<ecran>.html`, un par écran porteur (entrée canonique, écran héros du flux le plus complexe, un overlay, la vue liste/dashboard). Appuie-toi sur les parcours **UJ-*** du PRD.
+
+**Itère jusqu'à validation** : montre, applique les retours, recommence. Vrai aller-retour, pas un one-shot.
+
+**Génère la galerie `maquette/index.html`** : une page qui liste chaque écran dans une `<iframe>` (titre + aperçu), pour valider toute la maquette d'un coup d'œil dans le navigateur.
+
+> Stitch est un **bonus** (maquettes IA plus léchées), jamais un péage : sans clé, le chemin (c) par wireframes HTML produit exactement le même livrable (`maquette/*.html`) pour la Phase 6. Le skill **`design-md`** aligne `docs/design.md` (§2).
 
 **2. Design system → `docs/design.md`** *(dérivé de la maquette validée)*
 Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`. Extrais de la maquette DEUX volets :
@@ -108,7 +117,7 @@ Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-gui
 
 ## Phase 7 — Mise en place du projet
 1. Scaffold la stack choisie (`npm create convex …` / `create-expo-app` / `create-electron-app`).
-2. Écris `AGENTS.md` (+ copie `CLAUDE.md`) en y intégrant : `templates/agents/loop-section.md` (la boucle), `templates/agents/design-rule.md` (règle design), les règles mémoire, et des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle de jouer `docs/SETUP-AI.md` (plugins/skills/MCP) et d'utiliser `docs/RUN.md` pour lancer l'app.
+2. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle de jouer `docs/SETUP-AI.md` (plugins/skills/MCP) et d'utiliser `docs/RUN.md` pour lancer l'app.
 3. Crée le squelette `docs/memory/` (index + gotchas/conventions/decisions/archive) et `docs/DREAM.md` (vide, avec en-tête).
 
 ## Fini quand
