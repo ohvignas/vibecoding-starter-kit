@@ -35,3 +35,11 @@ test('renderProjectAgentsMd compose la boucle + @import mémoire, sans BMAD', ()
   assert.match(out, /new-project/);
   assert.doesNotMatch(out, /BMAD/i);
 });
+
+test('mode apprentissage : section présente par défaut, absente si learning:false', () => {
+  const on = renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor', learning: true });
+  assert.match(on, /Mode apprentissage/);
+  assert.match(on, /question de compréhension/i);
+  const off = renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor', learning: false });
+  assert.doesNotMatch(off, /Mode apprentissage/);
+});

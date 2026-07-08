@@ -43,15 +43,15 @@ test('renderBackendNote : saas+local seulement', () => {
 });
 
 test('runWizard : saas → demande le backend, produit les bons args', async () => {
-  const ask = scripted(['1', '2', 'mon-app', '2', 'o']); // saas, claude-code, nom, backend local, caveman oui
+  const ask = scripted(['1', '2', 'mon-app', '2', 'o', 'o']); // saas, claude-code, nom, backend local, caveman oui, apprentissage oui
   const a = await runWizard(ask, false, NULL_OUT);
-  assert.deepEqual(a, { stack: 'saas', assistant: 'claude-code', project: 'mon-app', backend: 'local', caveman: true });
+  assert.deepEqual(a, { stack: 'saas', assistant: 'claude-code', project: 'mon-app', backend: 'local', caveman: true, learning: true });
 });
 
 test('runWizard : redemande sur choix invalide (mobile → pas de backend)', async () => {
-  const ask = scripted(['9', '2', '1', 'app', 'n']); // stack 9 invalide→2 mobile ; assistant 1 cursor ; nom ; caveman non
+  const ask = scripted(['9', '2', '1', 'app', 'n', 'n']); // stack 9 invalide→2 mobile ; assistant 1 cursor ; nom ; caveman non ; apprentissage non
   const a = await runWizard(ask, false, NULL_OUT);
-  assert.deepEqual(a, { stack: 'mobile', assistant: 'cursor', project: 'app', backend: 'cloud', caveman: false });
+  assert.deepEqual(a, { stack: 'mobile', assistant: 'cursor', project: 'app', backend: 'cloud', caveman: false, learning: false });
 });
 
 test('wireSigint : Ctrl+C → message + exit 130', () => {

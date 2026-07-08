@@ -32,6 +32,7 @@ export function buildArgsFromAnswers(a, base = {}) {
     mockup: base.mockup ?? null, source: base.source ?? null, dryRun: Boolean(base.dryRun), force: Boolean(base.force),
     caveman: Boolean(a.caveman), backend: a.backend || 'cloud',
     noSkills: Boolean(base.noSkills), yes: Boolean(base.yes),
+    learning: a.learning !== false,
   };
   const errs = validateArgs(args);
   if (errs.length) throw new Error(errs.join(' ; '));
@@ -100,5 +101,9 @@ export async function runWizard(ask, on, out = process.stdout) {
   const caveman = ['o', 'oui', 'y', 'yes'].includes(raw);
   out.write(ok(caveman ? 'caveman activé' : 'caveman désactivé', on) + '\n\n');
 
-  return { stack, assistant, project, backend, caveman };
+  const rawL = (await ask('  Mode apprentissage — l\'IA t\'explique ce qu\'elle fait et vérifie que tu suis ? [O/n] : ')).trim().toLowerCase();
+  const learning = !['n', 'non', 'no'].includes(rawL);
+  out.write(ok(learning ? 'mode apprentissage activé' : 'mode apprentissage désactivé', on) + '\n\n');
+
+  return { stack, assistant, project, backend, caveman, learning };
 }

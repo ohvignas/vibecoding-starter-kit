@@ -5,7 +5,7 @@ const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
 
 export function parseArgs(argv) {
   // source: null = « non fourni » → setup.mjs y mettra la racine du kit (dérivée de import.meta.url).
-  const args = { stack: null, assistant: null, project: null, mockup: null, source: null, dryRun: false, force: false, caveman: false, yes: false };
+  const args = { stack: null, assistant: null, project: null, mockup: null, source: null, dryRun: false, force: false, caveman: false, yes: false, learning: true };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -19,6 +19,7 @@ export function parseArgs(argv) {
       case '--caveman': args.caveman = true; break;
       case '--backend': args.backend = argv[++i]; break;
       case '--no-skills': args.noSkills = true; break;
+      case '--no-learning': args.learning = false; break;
       case '--yes': args.yes = true; break;
       default: throw new Error(`Argument inconnu : ${a}`);
     }
