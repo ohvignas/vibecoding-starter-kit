@@ -34,7 +34,7 @@ Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation *
 - [Fonctionnalités](#-fonctionnalités)
 - [Démarrage rapide](#-démarrage-rapide)
 - [Comment ça marche](#-comment-ça-marche)
-- [Les 5 commandes](#-les-5-commandes)
+- [Les commandes](#-les-commandes)
 - [Les 3 stacks](#-les-3-stacks)
 - [Ce qui est généré](#-ce-qui-est-généré)
 - [Mémoire & dream hook](#-mémoire--dream-hook)
@@ -61,7 +61,8 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🌙 | **Dream hook** | GitHub Action qui analyse les commits et **propose** features/bugs/idées (propose-only) |
 | 🛡️ | **Revue + sécu** | Subagents `code-reviewer` + `security-reviewer`, scan de secrets, CI, hook pre-commit |
 | 🤖 | **Multi-assistant** | Cursor (règles `.mdc` typées + commandes + hooks sécu + Bugbot), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
-| 🎨 | **Maquette-first** | PRD + tech spec, puis la **maquette** créée/itérée sur **Google Stitch** (IA, gratuit) ou fournie par toi ; la **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné**, pas une interprétation du PRD |
+| 🎨 | **Maquette-first** | ta maquette **Stitch** (importée), ta maquette **existante** (déposée), ou **l'IA la dessine** (wireframes) ; la **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné**, pas une interprétation du PRD |
+| 🎓 | **Mode apprentissage** | l'IA **explique** ce qu'elle construit et te pose **une question de compréhension** à chaque jalon — tu comprends, tu ne subis pas |
 | 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code |
 
 ## ⚡ Démarrage rapide
@@ -130,7 +131,7 @@ flowchart TD
 
 Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) : `brainstorm → plan → exécution (sub-agents, TDD) → review → test live → sécu → commit → PR → CI → merge`. Elle est écrite dans l'`AGENTS.md`/`CLAUDE.md` généré, toujours en contexte.
 
-## 🎛️ Les 5 commandes
+## 🎛️ Les commandes
 
 | Commande | Rôle |
 |---|---|
@@ -139,6 +140,8 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 | **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `dev` |
 | **`/edit-design`** | Charge les **5 skills design** + `design.md` **avant** de toucher l'UI |
 | **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
+| **`/next`** | « Je fais quoi maintenant ? » — l'IA lit l'état du projet et te donne ta **prochaine action** |
+| **`/sos`** | Quelque chose casse : diagnostic **rassurant** + 3 sorties (réparer / mettre de côté / revenir au dernier point vert) |
 
 Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
 
