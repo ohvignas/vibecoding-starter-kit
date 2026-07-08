@@ -8,3 +8,4 @@ alwaysApply: true
 - En cas de doute sur une API, lis les docs officielles de `ai-context/` (jamais d'API inventée).
 - Suis les règles projet de `AGENTS.md`, la roadmap `docs/ROADMAP.md`, les capacités `docs/DOMAINS.md`.
 - **Règle des 3 essais** : 3 corrections ratées sur le même bug → arrête, reviens au dernier état vert, note le bug dans `docs/memory/`, repars propre. Jamais d'acharnement.
+- **Finir le travail (anti-flemme)** : **zéro placeholder** (`// TODO`, `// reste du code`, `...`, stub bidon) — chaque fonction est écrite en entier. **Zéro report** (« pour l'instant », « plus tard »). Tu termines le **périmètre complet** de la demande. Vraiment bloqué → dis **quoi** et **pourquoi**, ne rends jamais du partiel comme « fini ». Ne dis « fait » qu'après avoir **vérifié** (test vert + résultat visible à l'écran).

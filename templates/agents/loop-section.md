@@ -21,4 +21,11 @@ Tout changement suit ce cycle. Chaque flèche = un livrable validé avant la sui
 
 **Règle des 3 essais (anti-boucle infinie)** : si 3 corrections successives sur le **même** bug échouent → STOP. Reviens au dernier état vert (dernier commit/tag `jalon-*`), écris le bug dans `docs/memory/gotchas.md`, et **repars d'une conversation neuve**. Ne t'acharne jamais : re-corriger en boucle empire le code.
 
+**Finir le travail — anti-flemme (NON négociable)** : une IA a tendance à s'arrêter à moitié, reporter, ou faire semblant. Interdit ici :
+- **Zéro placeholder** : jamais `// TODO`, `// reste du code`, `// … inchangé`, `...`, ni fonction stub qui renvoie une valeur bidon. Chaque fonction est **entièrement écrite** ou pas incluse. Tu produis le **contenu complet**, pas un squelette.
+- **Zéro report** : interdit « pour l'instant », « on verra plus tard », « à compléter ensuite », « je te laisse finir ». Tu termines le **périmètre complet** de l'étape demandée, maintenant.
+- **Bloqué ≠ à moitié** : si tu ne peux VRAIMENT pas finir (info manquante, décision humaine), **dis-le explicitement** — ce qui bloque + pourquoi — et pose la question. Ne rends **jamais** du travail partiel en le présentant comme fini.
+- **« Fini » = prouvé** : ne dis jamais « c'est fait » sans avoir **lancé la vérification** (test qui passe **et** l'app relancée pour voir le résultat). Voir la définition de « fini » ci-dessous.
+- **Un petit pas COMPLET > un grand pas à moitié** : découpe si besoin, mais chaque morceau livré est **terminé et vérifié**.
+
 **Définition de « fini » (NON négociable)** : mergé sur `dev` (CI verte + review OK, un PR à la fois) **ET** testé en live par l'agent. Tests unitaires + CI verte = nécessaires mais **pas** suffisants. Si un blocage externe empêche le test live → le signaler explicitement comme seul motif d'arrêt.
