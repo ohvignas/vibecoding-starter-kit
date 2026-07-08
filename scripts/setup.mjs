@@ -225,8 +225,7 @@ async function main() {
   console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
   if (failed.length) process.exitCode = 1; // rapport honnête : l'échec est visible aussi dans le code de sortie
   console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
-  console.log('\n— Colle ce prompt dans ton assistant —\n');
-  console.log([
+  const promptLines = [
     "Finalise l'install et démarre :",
     args.noSkills
       ? '1. Ouvre docs/SETUP-AI.md → installe les plugins, lance les commandes de skills listées (sections 2 et 5), autorise les MCP (/mcp).'
@@ -234,7 +233,11 @@ async function main() {
     `2. Boucle superpowers : ${SUPERPOWERS[args.assistant]}`,
     '3. /doctor pour vérifier.',
     '4. /new-project (PRD + tech spec + design), puis /build.',
-  ].join('\n'));
+  ];
+  // Le prompt survit au terminal : écrit à la racine du projet, dans tous les modes.
+  fs.writeFileSync(path.join(projectDir, 'COLLE-MOI-DANS-L-IA.md'), ['# À coller dans ton assistant IA', '', ...promptLines, ''].join('\n'));
+  console.log('\n— Colle ce prompt dans ton assistant (aussi sauvé dans COLLE-MOI-DANS-L-IA.md) —\n');
+  console.log(promptLines.join('\n'));
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) main().catch((e) => { console.error(e?.message || e); process.exit(1); });
