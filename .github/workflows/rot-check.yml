@@ -1,0 +1,34 @@
+name: rot-check
+# Anti-pourrissement : vérifie chaque semaine que les sources externes du kit répondent encore
+# (dépôts de skills + URLs llms.txt/MCP). Si l'une bouge/disparaît, le job rougit → on est prévenu.
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # tous les lundis 06:00 UTC
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dépôts de skills (GitHub)
+        run: |
+          set -e
+          for r in better-auth/skills get-convex/agent-skills expo/skills google-labs-code/stitch-skills anthropics/skills; do
+            code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "https://github.com/$r")
+            echo "$r -> $code"
+            [ "$code" -lt 400 ] || { echo "::error::dépôt de skills injoignable : $r ($code)"; exit 1; }
+          done
+      - name: URLs de contexte (llms.txt / MCP)
+        run: |
+          set -e
+          for u in \
+            https://convex.link/convex_rules.txt \
+            https://tanstack.com/start/latest/llms.txt \
+            https://better-auth.com/llms.txt \
+            https://docs.expo.dev/llms.txt \
+            https://stitch.googleapis.com/mcp \
+            https://mcp.better-auth.com/mcp ; do
+            code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
+            echo "$u -> $code"
+            [ "$code" -lt 500 ] || { echo "::error::source de contexte injoignable : $u ($code)"; exit 1; }
+          done
