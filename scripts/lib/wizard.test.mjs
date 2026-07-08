@@ -1,23 +1,34 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard } from './wizard.mjs';
+import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard, wireSigint, renderNonTtyHelp } from './wizard.mjs';
 
 const NULL_OUT = { write() {} };
 const scripted = (answers) => { let i = 0; return async () => answers[i++]; };
 
-test('needsWizard : sans flags ET TTY seulement', () => {
+test('needsWizard : TTY + config incomplète (le wizard complète) ; --yes = jamais de questions', () => {
   assert.equal(needsWizard([], true), true);
   assert.equal(needsWizard([], false), false);
-  assert.equal(needsWizard(['--stack', 'saas'], true), false);
+  assert.equal(needsWizard(['--stack', 'saas'], true), true); // incomplet + TTY → le wizard complète
+  assert.equal(needsWizard(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x'], true), false);
+  assert.equal(needsWizard(['--stack', 'saas'], false), false);
+  assert.equal(needsWizard(['--yes'], true), false);
 });
 
 test('buildArgsFromAnswers : mappe + défauts + validation', () => {
   const a = buildArgsFromAnswers({ stack: 'saas', assistant: 'claude-code', project: 'mon-app', backend: 'local', caveman: true });
   assert.equal(a.stack, 'saas');
-  assert.equal(a.source, '.');
+  assert.equal(a.source, null); // null = setup.mjs y mettra la racine du kit
   assert.equal(a.backend, 'local');
   assert.equal(a.caveman, true);
   assert.equal(a.dryRun, false);
+});
+
+test('buildArgsFromAnswers : conserve les drapeaux CLI déjà passés (base)', () => {
+  const base = { source: '../kit', noSkills: true, force: true, dryRun: false, yes: false, mockup: null };
+  const a = buildArgsFromAnswers({ stack: 'mobile', assistant: 'cursor', project: 'app' }, base);
+  assert.equal(a.source, '../kit');
+  assert.equal(a.noSkills, true);
+  assert.equal(a.force, true);
 });
 
 test('buildArgsFromAnswers : rejette une entrée invalide', () => {
@@ -41,4 +52,23 @@ test('runWizard : redemande sur choix invalide (mobile → pas de backend)', asy
   const ask = scripted(['9', '2', '1', 'app', 'n']); // stack 9 invalide→2 mobile ; assistant 1 cursor ; nom ; caveman non
   const a = await runWizard(ask, false, NULL_OUT);
   assert.deepEqual(a, { stack: 'mobile', assistant: 'cursor', project: 'app', backend: 'cloud', caveman: false });
+});
+
+test('wireSigint : Ctrl+C → message + exit 130', () => {
+  const handlers = {};
+  const rl = { on(evt, cb) { handlers[evt] = cb; } };
+  const codes = [], msgs = [];
+  wireSigint(rl, (c) => codes.push(c), (m) => msgs.push(m));
+  handlers.SIGINT();
+  assert.deepEqual(codes, [130]);
+  assert.match(msgs[0], /annulée/);
+});
+
+test('renderNonTtyHelp : mentionne les drapeaux, PowerShell et Git Bash', () => {
+  const h = renderNonTtyHelp();
+  assert.match(h, /--stack/);
+  assert.match(h, /--assistant/);
+  assert.match(h, /--project/);
+  assert.match(h, /PowerShell/);
+  assert.match(h, /Git Bash/);
 });

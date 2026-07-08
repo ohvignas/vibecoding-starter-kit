@@ -16,19 +16,44 @@ const BACKENDS = [
   { key: 'local', label: 'Local', hint: 'zéro Docker, zéro compte, données dans .convex/' },
 ];
 
+// Wizard seulement si terminal interactif ET config incomplète. --yes force le mode non-interactif
+// (une cohorte lance UNE commande avec tous les drapeaux, jamais de question posée).
 export function needsWizard(argv, isTTY) {
-  return argv.length === 0 && isTTY === true;
+  if (isTTY !== true) return false;
+  if (argv.includes('--yes')) return false;
+  return !['--stack', '--assistant', '--project'].every((f) => argv.includes(f));
 }
 
-export function buildArgsFromAnswers(a) {
+// base = drapeaux déjà passés en CLI (--source, --force, --no-skills…) : conservés.
+// Les réponses du wizard priment pour stack/assistant/projet/backend/caveman.
+export function buildArgsFromAnswers(a, base = {}) {
   const args = {
     stack: a.stack, assistant: a.assistant, project: a.project,
-    mockup: null, source: '.', dryRun: false, force: false,
+    mockup: base.mockup ?? null, source: base.source ?? null, dryRun: Boolean(base.dryRun), force: Boolean(base.force),
     caveman: Boolean(a.caveman), backend: a.backend || 'cloud',
+    noSkills: Boolean(base.noSkills), yes: Boolean(base.yes),
   };
   const errs = validateArgs(args);
   if (errs.length) throw new Error(errs.join(' ; '));
   return args;
+}
+
+// Ctrl+C pendant une question readline : sans handler dédié, le wizard gèle. 130 = 128 + SIGINT(2).
+export function wireSigint(rl, exit = process.exit, err = console.error) {
+  rl.on('SIGINT', () => {
+    err('\nInstallation annulée (Ctrl+C). Rien n\'a été cassé — relance quand tu veux.');
+    exit(130);
+  });
+  return rl;
+}
+
+export function renderNonTtyHelp() {
+  return [
+    'Terminal non interactif : le wizard ne peut pas poser ses questions ici.',
+    'Deux options :',
+    '  1. Passe tout en drapeaux : node scripts/setup.mjs --stack saas|mobile|desktop --assistant cursor|claude-code|codex --project ../mon-app',
+    '  2. Relance depuis un vrai terminal. Sous Windows, lance depuis PowerShell, pas Git Bash (MinTTY n\'est pas vu comme un terminal interactif).',
+  ].join('\n');
 }
 
 export function renderBackendNote(stack, backend) {
@@ -63,7 +88,7 @@ export async function runWizard(ask, on, out = process.stdout) {
 
   let project = '';
   for (;;) {
-    project = (await ask('  Nom du projet (dossier) : ')).trim();
+    project = (await ask('  Nom du projet (dossier — créé à côté du kit) : ')).trim();
     if (/^[\w./~-]+$/.test(project)) { out.write(ok(project, on) + '\n\n'); break; }
     out.write(hint('  Nom invalide (lettres, chiffres, . / _ - ~).', on) + '\n');
   }
