@@ -18,6 +18,9 @@ Déjà actif : l'installeur a fait `git init` et `git config core.hooksPath .git
 ## Secrets
 - Copie `.env.example` → `.env` et remplis-le. **Ne commit jamais `.env`.**
 
+## Coûts IA
+- Surveille ta consommation : `npx ccusage`. Réflexes pour payer moins : `/build` jalon par jalon (pas `--all`), conversations courtes, `/next` quand tu es perdu.
+
 ## Maquette IA (Stitch) — si tu n'as pas de design à fournir
 - Les **skills Stitch sont déjà installés** ; `/new-project` s'en sert pour créer/itérer ta maquette.
 - Crée ta **clé API** : stitch.withgoogle.com → Settings → Create API Key (garde-la **secrète**).
