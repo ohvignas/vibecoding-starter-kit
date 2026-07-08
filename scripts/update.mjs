@@ -20,7 +20,8 @@ export function readVibecodingManifest(projectDir) {
 
 export function buildUpdateArgs({ stack, assistant }, projectDir, kitRoot) {
   // Re-joue le setup : copyIfAbsent n'écrase jamais → seuls les fichiers manquants sont ajoutés.
-  return ['scripts/setup.mjs', '--source', kitRoot, '--stack', stack, '--assistant', assistant, '--project', projectDir, '--no-skills', '--yes'];
+  // Chemin ABSOLU du script : update peut être lancé depuis le dossier du projet (cwd ≠ kit).
+  return [path.join(kitRoot, 'scripts', 'setup.mjs'), '--source', kitRoot, '--stack', stack, '--assistant', assistant, '--project', projectDir, '--no-skills', '--yes'];
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

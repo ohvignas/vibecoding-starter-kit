@@ -20,12 +20,12 @@ test('readVibecodingManifest : lit le manifeste, erreur claire si absent', () =>
   assert.deepEqual(readVibecodingManifest(dir), { stack: 'saas', assistant: 'cursor' });
 });
 
-test('buildUpdateArgs : re-joue le setup avec la stack/assistant du manifeste', () => {
+test('buildUpdateArgs : re-joue le setup (chemin ABSOLU) avec la stack/assistant du manifeste', () => {
   const a = buildUpdateArgs({ stack: 'mobile', assistant: 'cursor' }, '/p', '/kit');
-  assert.deepEqual(a, ['scripts/setup.mjs', '--source', '/kit', '--stack', 'mobile', '--assistant', 'cursor', '--project', '/p', '--no-skills', '--yes']);
+  assert.deepEqual(a, [path.join('/kit', 'scripts', 'setup.mjs'), '--source', '/kit', '--stack', 'mobile', '--assistant', 'cursor', '--project', '/p', '--no-skills', '--yes']);
 });
 
-test('intégration : update recrée un fichier supprimé, ne touche pas un fichier modifié', () => {
+test('intégration : update lancé DEPUIS le projet recrée un fichier supprimé, ne touche pas un fichier modifié', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-upd-'));
   const proj = path.join(dir, 'app');
   const setup = () => execFileSync(process.execPath, ['scripts/setup.mjs', '--source', '.', '--stack', 'saas', '--assistant', 'cursor', '--project', proj, '--no-skills', '--yes'], { cwd: ROOT, stdio: 'pipe', env: GIT_ENV });
@@ -34,8 +34,8 @@ test('intégration : update recrée un fichier supprimé, ne touche pas un fichi
   const onboarding = path.join(proj, 'docs/ONBOARDING.md');
   fs.writeFileSync(onboarding, 'MON CONTENU À MOI');
   fs.rmSync(path.join(proj, 'docs/ROADMAP.md'));
-  // update = re-joue le setup (non destructif)
-  execFileSync(process.execPath, ['scripts/update.mjs', '--project', proj], { cwd: ROOT, stdio: 'pipe', env: GIT_ENV });
+  // update lancé DEPUIS le dossier du projet (cwd = projet, PAS le kit) — l'usage réel documenté.
+  execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'update.mjs'), '--project', proj], { cwd: proj, stdio: 'pipe', env: GIT_ENV });
   assert.ok(fs.existsSync(path.join(proj, 'docs/ROADMAP.md')), 'fichier supprimé recréé');
   assert.equal(fs.readFileSync(onboarding, 'utf8'), 'MON CONTENU À MOI', 'fichier modifié préservé');
   fs.rmSync(dir, { recursive: true, force: true });

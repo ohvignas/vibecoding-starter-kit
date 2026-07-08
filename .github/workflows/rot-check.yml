@@ -10,15 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Dépôts de skills (GitHub)
+      - name: Dépôts de skills (GitHub) — doivent répondre 2xx/3xx
         run: |
           set -e
-          for r in better-auth/skills get-convex/agent-skills expo/skills google-labs-code/stitch-skills anthropics/skills; do
+          for r in \
+            better-auth/skills get-convex/agent-skills expo/skills \
+            google-labs-code/stitch-skills anthropics/skills \
+            vercel-labs/agent-skills nextlevelbuilder/ui-ux-pro-max-skill \
+            multica-ai/andrej-karpathy-skills ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "https://github.com/$r")
             echo "$r -> $code"
             [ "$code" -lt 400 ] || { echo "::error::dépôt de skills injoignable : $r ($code)"; exit 1; }
           done
-      - name: URLs de contexte (llms.txt / MCP)
+      - name: URLs de contexte (llms.txt / règles) — doivent répondre 2xx/3xx
         run: |
           set -e
           for u in \
@@ -26,9 +30,19 @@ jobs:
             https://tanstack.com/start/latest/llms.txt \
             https://better-auth.com/llms.txt \
             https://docs.expo.dev/llms.txt \
-            https://stitch.googleapis.com/mcp \
-            https://mcp.better-auth.com/mcp ; do
+            https://reactnative.dev/llms.txt ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
             echo "$u -> $code"
-            [ "$code" -lt 500 ] || { echo "::error::source de contexte injoignable : $u ($code)"; exit 1; }
+            [ "$code" -lt 400 ] || { echo "::error::source de contexte injoignable : $u ($code)"; exit 1; }
+          done
+      - name: Endpoints MCP — vivants si < 500 (401/403/405 sur GET nu = OK)
+        run: |
+          set -e
+          for u in \
+            https://stitch.googleapis.com/mcp \
+            https://mcp.better-auth.com/mcp \
+            https://mcp.expo.dev/mcp ; do
+            code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
+            echo "$u -> $code"
+            [ "$code" -lt 500 ] || { echo "::error::endpoint MCP injoignable : $u ($code)"; exit 1; }
           done

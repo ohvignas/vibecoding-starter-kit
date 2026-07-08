@@ -54,7 +54,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 | | Fonctionnalité | Ce que ça fait |
 |---|---|---|
-| 🚀 | **5 commandes** | `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor` — tout le cycle de vie |
+| 🚀 | **9 commandes** | `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor`, `/next`, `/sos`, `/debug`, `/deploy` — tout le cycle de vie |
 | 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework (`.mcp.json` mergé, checks warn-only, `docs/SETUP-AI.md` joué par l'IA) |
 | 💳 | **Catalogue de domaines** | paiement (Stripe/Polar…), email, storage, analytics, erreurs, push, cartes… **choisis d'après le PRD** (`docs/DOMAINS.md`) — pas tout d'un coup |
 | 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
@@ -64,6 +64,9 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🎨 | **Maquette-first** | ta maquette **Stitch** (importée), ta maquette **existante** (déposée), ou **l'IA la dessine** (wireframes) ; la **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné**, pas une interprétation du PRD |
 | 🎓 | **Mode apprentissage** | l'IA **explique** ce qu'elle construit et te pose **une question de compréhension** à chaque jalon — tu comprends, tu ne subis pas |
 | 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code |
+| 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` (revenir au dernier point vert) ; **règle des 3 essais** anti-boucle infernale ; tags git par jalon |
+| 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
+| 🔄 | **Mise à jour** | `node scripts/update.mjs` récupère les nouveautés du kit dans un projet existant, **sans toucher à ton travail** |
 
 ## ⚡ Démarrage rapide
 
@@ -142,8 +145,13 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 | **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
 | **`/next`** | « Je fais quoi maintenant ? » — l'IA lit l'état du projet et te donne ta **prochaine action** |
 | **`/sos`** | Quelque chose casse : diagnostic **rassurant** + 3 sorties (réparer / mettre de côté / revenir au dernier point vert) |
+| **`/debug`** | Débogage **méthodique** (reproduire → isoler → hypothèse → fix minimal → vérifier), avec la règle des 3 essais |
+| **`/deploy`** | Mettre l'app **en ligne** selon la stack (Convex + Vercel/Netlify · Expo EAS · electron-builder) — secrets prod jamais commités |
 
 Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
+
+> [!TIP]
+> **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt » avant de lancer `/new-project`. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md). **Récupérer les nouveautés du kit** dans un projet existant → `node <kit>/scripts/update.mjs` (ne touche jamais à ton travail).
 
 ## 🧱 Les 3 stacks
 
