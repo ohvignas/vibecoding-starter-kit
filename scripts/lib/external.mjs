@@ -4,7 +4,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { copyIfAbsent } from './fsops.mjs';
 
-const defaultRun = (cmd, args) => execFileSync(cmd, args, { stdio: 'inherit' });
+// Windows : `npx` est un script .cmd — depuis Node 20.12 (correctif CVE-2024-27980), execFileSync
+// exige le nom exact `npx.cmd` ET `shell: true` pour le lancer (sinon ENOENT/EINVAL).
+// `git` est un vrai .exe : inchangé sur toutes les plateformes.
+export function buildRunCommand(cmd, platform = process.platform) {
+  if (platform === 'win32' && cmd === 'npx') return { cmd: 'npx.cmd', options: { shell: true } };
+  return { cmd, options: {} };
+}
+
+const defaultRun = (cmd, args) => {
+  const rc = buildRunCommand(cmd);
+  return execFileSync(rc.cmd, args, { stdio: 'inherit', ...rc.options });
+};
 
 export function cloneRepo(repo, dest, run = defaultRun) {
   run('git', ['clone', '--depth', '1', repo, dest]);

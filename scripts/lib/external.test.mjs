@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { selectByTags, pickFromClone, installCaveman, buildSkillAddArgs, installSkills } from './external.mjs';
+import { selectByTags, pickFromClone, installCaveman, buildSkillAddArgs, installSkills, buildRunCommand } from './external.mjs';
 
 function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'vs-ext-')); }
 
@@ -58,4 +58,15 @@ test('installSkills : lance chaque spec, échec gracieux', () => {
   assert.match(res.failed[0], /ko .*offline/);
   assert.equal(calls.length, 3);
   assert.equal(calls[0][0], 'npx');
+});
+
+test('buildRunCommand : npx → npx.cmd + shell sur win32 uniquement', () => {
+  assert.deepEqual(buildRunCommand('npx', 'win32'), { cmd: 'npx.cmd', options: { shell: true } });
+  assert.deepEqual(buildRunCommand('npx', 'darwin'), { cmd: 'npx', options: {} });
+  assert.deepEqual(buildRunCommand('npx', 'linux'), { cmd: 'npx', options: {} });
+});
+
+test('buildRunCommand : git inchangé sur toutes les plateformes', () => {
+  assert.deepEqual(buildRunCommand('git', 'win32'), { cmd: 'git', options: {} });
+  assert.deepEqual(buildRunCommand('git', 'darwin'), { cmd: 'git', options: {} });
 });
