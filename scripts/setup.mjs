@@ -60,28 +60,43 @@ async function main() {
   const { assets, projectDir } = buildRunPlan(args, kitRoot);
   if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }
 
-  const done = [], failed = [];
+  const done = [], kept = [], failed = [];
   const opt = { force: args.force };
+  // 3 états honnêtes : créé (done) / conservé (kept, déjà présent, jamais écrasé) / échec (failed).
+  const track = (label, res) => { (res.status === 'copied' ? done : kept).push(label); };
+  const trackDir = (label, results) => {
+    const copied = results.filter((r) => r.status === 'copied').length;
+    if (results.length > 0 && copied === 0) kept.push(label);
+    else done.push(label);
+  };
 
   ensureDir(projectDir);
   const snip = (f) => { try { return fs.readFileSync(path.join(args.source, `templates/agents/${f}`), 'utf8'); } catch { return ''; } };
   const agents = renderProjectAgentsMd({ ...args, commandsDir: assets.commandsDir, loopSection: snip('loop-section.md'), designRule: snip('design-rule.md'), memoryRules: snip('memory-rules.md') });
-  // Toujours écrire les DEUX (AGENTS.md pour Cursor/Codex, CLAUDE.md pour Claude Code) — projet portable quel que soit l'assistant.
-  fs.writeFileSync(path.join(projectDir, 'AGENTS.md'), agents);
-  fs.writeFileSync(path.join(projectDir, 'CLAUDE.md'), agents);
+  // Toujours produire les DEUX (AGENTS.md pour Cursor/Codex, CLAUDE.md pour Claude Code) — projet portable.
+  // Jamais écraser un fichier existant : la nouvelle version part en .new, signalée dans le rapport.
+  for (const name of ['AGENTS.md', 'CLAUDE.md']) {
+    const dest = path.join(projectDir, name);
+    if (fs.existsSync(dest) && !args.force) {
+      fs.writeFileSync(`${dest}.new`, agents);
+      kept.push(`⚠️ ${name} existant conservé (nouvelle version : ${name}.new)`);
+    } else {
+      fs.writeFileSync(dest, agents);
+      done.push(name);
+    }
+  }
   ensureDir(path.join(projectDir, 'maquette'));
-  done.push('AGENTS.md + CLAUDE.md + maquette/');
 
   for (const c of assets.copies) {
     try {
       const src = path.join(args.source, c.from);
       const dest = path.join(projectDir, c.to);
-      if (c.transform === 'dir') copyDirIfAbsent(src, dest, opt);
+      if (c.transform === 'dir') trackDir(c.to, copyDirIfAbsent(src, dest, opt));
       else if (c.transform === 'mdc') {
         ensureDir(path.dirname(dest));
-        if (!fs.existsSync(dest) || args.force) fs.writeFileSync(dest, toCursorMdc({ description: c.description, body: fs.readFileSync(src, 'utf8'), alwaysApply: c.alwaysApply !== false }));
-      } else copyIfAbsent(src, dest, opt);
-      done.push(c.to);
+        if (!fs.existsSync(dest) || args.force) { fs.writeFileSync(dest, toCursorMdc({ description: c.description, body: fs.readFileSync(src, 'utf8'), alwaysApply: c.alwaysApply !== false })); done.push(c.to); }
+        else kept.push(c.to);
+      } else track(c.to, copyIfAbsent(src, dest, opt));
     } catch (e) { failed.push(`${c.to} (${e.message})`); }
   }
 
@@ -104,49 +119,52 @@ async function main() {
     try {
       const src = path.join(args.source, `templates/commands/${cmd}.md`);
       // Slash-commands typables pour tous : Cursor → .cursor/commands/, Claude → .claude/commands/, Codex → docs/commands/.
-      copyIfAbsent(src, path.join(projectDir, assets.commandsDir, `${cmd}.md`), opt);
-      done.push(`${assets.commandsDir}/${cmd}.md`);
+      track(`${assets.commandsDir}/${cmd}.md`, copyIfAbsent(src, path.join(projectDir, assets.commandsDir, `${cmd}.md`), opt));
     } catch (e) { failed.push(`commande ${cmd} (${e.message})`); }
   }
-  try { copyDirIfAbsent(path.join(args.source, 'templates/memory'), path.join(projectDir, 'docs/memory'), opt); done.push('docs/memory/'); }
+  try { trackDir('docs/memory/', copyDirIfAbsent(path.join(args.source, 'templates/memory'), path.join(projectDir, 'docs/memory'), opt)); }
   catch (e) { failed.push(`docs/memory (${e.message})`); }
   try {
-    copyIfAbsent(path.join(args.source, 'templates/dream/dream.yml'), path.join(projectDir, '.github/workflows/dream.yml'), opt);
-    copyIfAbsent(path.join(args.source, 'templates/dream/DREAM.md'), path.join(projectDir, 'docs/DREAM.md'), opt);
-    done.push('dream (.github/workflows + docs/DREAM.md)');
+    trackDir('dream (.github/workflows + docs/DREAM.md)', [
+      copyIfAbsent(path.join(args.source, 'templates/dream/dream.yml'), path.join(projectDir, '.github/workflows/dream.yml'), opt),
+      copyIfAbsent(path.join(args.source, 'templates/dream/DREAM.md'), path.join(projectDir, 'docs/DREAM.md'), opt),
+    ]);
   } catch (e) { failed.push(`dream (${e.message})`); }
 
   if (args.assistant === 'cursor') {
     try {
-      copyIfAbsent(path.join(args.source, 'templates/cursor/hooks.json'), path.join(projectDir, '.cursor/hooks.json'), opt);
-      copyDirIfAbsent(path.join(args.source, 'templates/cursor/hooks'), path.join(projectDir, '.cursor/hooks'), opt);
-      copyIfAbsent(path.join(args.source, 'templates/cursor/cursorignore'), path.join(projectDir, '.cursorignore'), opt);
-      copyIfAbsent(path.join(args.source, 'templates/cursor/rules/00-project.mdc'), path.join(projectDir, '.cursor/rules/00-project.mdc'), opt);
-      copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt);
-      done.push('.cursor/hooks.json + .cursorignore (mémoire auto)');
-      done.push('.cursor/rules/ (00-project + règles typées par framework)');
-      copyIfAbsent(path.join(args.source, 'templates/cursor/BUGBOT.md'), path.join(projectDir, '.cursor/BUGBOT.md'), opt);
-      copyIfAbsent(path.join(args.source, `templates/cursor/environment/${args.stack}.json`), path.join(projectDir, '.cursor/environment.json'), opt);
-      copyIfAbsent(path.join(args.source, 'templates/cursor/cursorindexingignore'), path.join(projectDir, '.cursorindexingignore'), opt);
-      done.push('.cursor/BUGBOT.md + .cursor/environment.json + .cursorindexingignore');
+      trackDir('.cursor/hooks.json + .cursorignore (mémoire auto)', [
+        copyIfAbsent(path.join(args.source, 'templates/cursor/hooks.json'), path.join(projectDir, '.cursor/hooks.json'), opt),
+        ...copyDirIfAbsent(path.join(args.source, 'templates/cursor/hooks'), path.join(projectDir, '.cursor/hooks'), opt),
+        copyIfAbsent(path.join(args.source, 'templates/cursor/cursorignore'), path.join(projectDir, '.cursorignore'), opt),
+      ]);
+      trackDir('.cursor/rules/ (00-project + règles typées par framework)', [
+        copyIfAbsent(path.join(args.source, 'templates/cursor/rules/00-project.mdc'), path.join(projectDir, '.cursor/rules/00-project.mdc'), opt),
+        ...copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt),
+      ]);
+      trackDir('.cursor/BUGBOT.md + .cursor/environment.json + .cursorindexingignore', [
+        copyIfAbsent(path.join(args.source, 'templates/cursor/BUGBOT.md'), path.join(projectDir, '.cursor/BUGBOT.md'), opt),
+        copyIfAbsent(path.join(args.source, `templates/cursor/environment/${args.stack}.json`), path.join(projectDir, '.cursor/environment.json'), opt),
+        copyIfAbsent(path.join(args.source, 'templates/cursor/cursorindexingignore'), path.join(projectDir, '.cursorindexingignore'), opt),
+      ]);
     } catch (e) { failed.push(`cursor extras (${e.message})`); }
   }
 
   // Sécurité (tous assistants) : .env.example par stack + scan de secrets gitleaks.
-  try { copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt); done.push('.env.example'); }
+  try { track('.env.example', copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt)); }
   catch (e) { failed.push(`.env.example (${e.message})`); }
-  try { copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt); done.push('scan secrets (gitleaks)'); }
+  try { track('scan secrets (gitleaks)', copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt)); }
   catch (e) { failed.push(`secrets (${e.message})`); }
 
   // CI par stack + onboarding (tous assistants).
-  try { copyIfAbsent(path.join(args.source, `templates/ci/${args.stack}.yml`), path.join(projectDir, '.github/workflows/ci.yml'), opt); done.push('.github/workflows/ci.yml'); }
+  try { track('.github/workflows/ci.yml', copyIfAbsent(path.join(args.source, `templates/ci/${args.stack}.yml`), path.join(projectDir, '.github/workflows/ci.yml'), opt)); }
   catch (e) { failed.push(`ci (${e.message})`); }
-  try { copyIfAbsent(path.join(args.source, 'templates/ONBOARDING.md'), path.join(projectDir, 'docs/ONBOARDING.md'), opt); done.push('docs/ONBOARDING.md'); }
+  try { track('docs/ONBOARDING.md', copyIfAbsent(path.join(args.source, 'templates/ONBOARDING.md'), path.join(projectDir, 'docs/ONBOARDING.md'), opt)); }
   catch (e) { failed.push(`onboarding (${e.message})`); }
 
-  try { copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt); done.push('docs/ROADMAP.md (squelette)'); }
+  try { track('docs/ROADMAP.md (squelette)', copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt)); }
   catch (e) { failed.push(`roadmap (${e.message})`); }
-  try { copyIfAbsent(path.join(args.source, `templates/run/${args.stack}.md`), path.join(projectDir, 'docs/RUN.md'), opt); done.push('docs/RUN.md'); }
+  try { track('docs/RUN.md', copyIfAbsent(path.join(args.source, `templates/run/${args.stack}.md`), path.join(projectDir, 'docs/RUN.md'), opt)); }
   catch (e) { failed.push(`run (${e.message})`); }
 
   try {
@@ -160,26 +178,25 @@ async function main() {
     }
   } catch (e) { failed.push(`backend note (${e.message})`); }
 
-  try { copyDirIfAbsent(path.join(args.source, 'templates/agents/subagents'), path.join(projectDir, '.claude/agents'), opt); done.push('.claude/agents/ (code-reviewer + security-reviewer)'); }
+  try { trackDir('.claude/agents/ (code-reviewer + security-reviewer)', copyDirIfAbsent(path.join(args.source, 'templates/agents/subagents'), path.join(projectDir, '.claude/agents'), opt)); }
   catch (e) { failed.push(`agents (${e.message})`); }
-  try { copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt); done.push('.gitignore'); }
+  try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
   catch (e) { failed.push(`.gitignore (${e.message})`); }
-  try { copyIfAbsent(path.join(args.source, 'templates/memory-consolidate/consolidate.yml'), path.join(projectDir, '.github/workflows/memory-consolidate.yml'), opt); done.push('consolidation mémoire (hebdo)'); }
+  try { track('consolidation mémoire (hebdo)', copyIfAbsent(path.join(args.source, 'templates/memory-consolidate/consolidate.yml'), path.join(projectDir, '.github/workflows/memory-consolidate.yml'), opt)); }
   catch (e) { failed.push(`memory-consolidate (${e.message})`); }
   try {
     const hook = path.join(projectDir, '.githooks/pre-commit');
-    copyIfAbsent(path.join(args.source, 'templates/hooks/pre-commit'), hook, opt);
+    track('.githooks/pre-commit', copyIfAbsent(path.join(args.source, 'templates/hooks/pre-commit'), hook, opt));
     if (fs.existsSync(hook)) fs.chmodSync(hook, 0o755);
-    done.push('.githooks/pre-commit');
   } catch (e) { failed.push(`pre-commit (${e.message})`); }
 
   try {
-    const env = writeStackEnvironment({ projectDir, source: args.source, stack: args.stack, assistant: args.assistant });
+    const env = writeStackEnvironment({ projectDir, source: args.source, stack: args.stack, assistant: args.assistant, skillsInstalled: !args.noSkills });
     done.push(...env.done);
     failed.push(...env.failed);
   } catch (e) { failed.push(`environnement (${e.message})`); }
 
-  try { copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt); done.push('docs/examples/feature-exemple.md'); }
+  try { track('docs/examples/feature-exemple.md', copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt)); }
   catch (e) { failed.push(`exemple (${e.message})`); }
 
   if (args.caveman) {
@@ -209,12 +226,15 @@ async function main() {
     } catch (e) { failed.push(`skills stack (${e.message})`); }
   }
 
-  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
+  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
+  if (failed.length) process.exitCode = 1; // rapport honnête : l'échec est visible aussi dans le code de sortie
   console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
   console.log('\n— Colle ce prompt dans ton assistant —\n');
   console.log([
     "Finalise l'install et démarre :",
-    '1. Ouvre docs/SETUP-AI.md → installe les plugins et autorise les MCP (/mcp). (Les skills — design + stack — sont déjà installés par le wizard.)',
+    args.noSkills
+      ? '1. Ouvre docs/SETUP-AI.md → installe les plugins, lance les commandes de skills listées (sections 2 et 5), autorise les MCP (/mcp).'
+      : '1. Ouvre docs/SETUP-AI.md → installe les plugins et autorise les MCP (/mcp). (Les skills — design + stack — sont déjà installés par le wizard.)',
     `2. Boucle superpowers : ${SUPERPOWERS[args.assistant]}`,
     '3. /doctor pour vérifier.',
     '4. /new-project (PRD + tech spec + design), puis /build.',
