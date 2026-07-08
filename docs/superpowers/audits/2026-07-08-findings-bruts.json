@@ -1,0 +1,1019 @@
+[
+ {
+  "axe": "robustesse",
+  "titre": "Le projet généré n'est pas un dépôt git — toute la sécu pre-commit est inerte",
+  "constat": "Le wizard ne fait jamais `git init` (aucune trace dans scripts/setup.mjs). Vérifié : `git status` dans le projet généré → « fatal: not a git repository ». docs/ONBOARDING.md:16 demande au débutant de lancer `git config core.hooksPath .githooks`, qui échoue avec ce même message cryptique. Résultat : .githooks/pre-commit (scan secrets + lint), pre-push et les workflows GitHub sont tous inactifs par défaut, alors que le README promet « scan de secrets, hook pre-commit » posés automatiquement.",
+  "gravite": "critique",
+  "reco": "Dans setup.mjs, après ensureDir : `git init` si pas de .git, puis `git config core.hooksPath .githooks`, puis un commit initial. Supprimer l'étape manuelle de ONBOARDING.md (ou la garder comme fallback avec la précondition « si le dossier n'est pas encore un dépôt git, lance d'abord git init »).",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "AGENTS.md/CLAUDE.md existants écrasés sans avertissement",
+  "constat": "scripts/setup.mjs:52-53 fait `fs.writeFileSync` inconditionnel sur AGENTS.md et CLAUDE.md (contrairement à tout le reste qui passe par copyIfAbsent). Testé : un dossier contenant déjà un AGENTS.md perso → contenu détruit silencieusement au premier run. Un élève qui relance le wizard sur un projet où /new-project a enrichi AGENTS.md (Phase 7) perd tout.",
+  "gravite": "critique",
+  "reco": "Aligner sur copyIfAbsent : ne réécrire que si absent ou --force ; sinon sauvegarder AGENTS.md.bak et le signaler dans le rapport (« ⚠ AGENTS.md existant conservé, nouveau contenu dans AGENTS.md.new »).",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Le rapport affiche ✅ même quand le fichier n'a PAS été écrit",
+  "constat": "copyIfAbsent saute les fichiers existants mais setup.mjs pousse quand même l'item dans `done` (lignes 57-68, 118-165). Testé : dossier avec un .gitignore réduit à « node_modules » → rapport « ✅ .gitignore » alors que le .gitignore posé n'ignore pas `.env`. Le débutant a une fausse confiance totale : le rapport ne distingue jamais « créé » de « déjà là, conservé tel quel ».",
+  "gravite": "important",
+  "reco": "Faire remonter le statut réel depuis fsops (created / kept) et afficher trois états dans le rapport : ✅ créé, ↷ conservé (déjà présent — vérifie-le), ✗ échec. /doctor rattrape en partie mais n'est lancé qu'en étape 3 du prompt.",
+  "effort": "M",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "cursor",
+  "titre": "64 règles .mdc hors-sujet (Angular, Solidity, Vue…) injectées dans un projet SaaS",
+  "constat": "Pour cursor, le wizard clone awesome-cursorrules et copie tout ce qui matche les tags ['typescript','react','clean-code'] (scripts/lib/matrix.mjs:10) → 64 fichiers avec `globs: **/*` dont angular-typescript, solidity-react-blockchain, hol-hedera, vue-3-nuxt-3, sveltekit, symfony, nestjs, chrome-extension, react-native-expo… dans un projet Convex+TanStack. Contenus contradictoires (« you are an expert Angular programmer using Angular 18 and Jest ») attachables à n'importe quel fichier, et un dossier .cursor/rules illisible pour un débutant qui l'ouvre.",
+  "gravite": "important",
+  "reco": "Remplacer le matching par tags par une liste blanche explicite par stack (saas : convex, tanstack, react, typescript, clean-code, better-auth ≈ 8-10 fichiers). Au minimum, exclure les frameworks concurrents (angular|vue|svelte|next|solidity|native).",
+  "effort": "M",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Commandes Claude Code dans les docs générées pour Cursor (/mcp, claude mcp add, .mcp.json)",
+  "constat": "docs/SETUP-AI.md généré pour cursor dit « lance `/mcp` pour connecter (déjà dans .mcp.json) » (scripts/lib/setup-ai.mjs:25, hardcodé quel que soit l'assistant) : `/mcp` n'existe pas dans Cursor et le fichier réel est `.cursor/mcp.json`. Même fuite dans docs/DOMAINS.md où chaque domaine donne « `claude mcp add --transport http stripe …` » à un utilisateur Cursor qui n'a pas le CLI claude. Le débutant Cursor tape /mcp, rien ne se passe, il est bloqué à l'étape 3 de sa checklist.",
+  "gravite": "important",
+  "reco": "Rendre les libellés par assistant dans setup-ai.mjs et domains.mjs : cursor → « Cursor ▸ Settings ▸ MCP : active convex/better-auth/shadcn (déjà dans .cursor/mcp.json) » ; claude-code → /mcp ; codex → config TOML.",
+  "effort": "M",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "« /add-plugin superpowers » : étape clé sans définition, sans vérification, sans plan B",
+  "constat": "L'unique action « à lancer DANS ton assistant » pour Cursor est `/add-plugin superpowers` (scripts/lib/matrix.mjs:3), répétée dans SETUP-AI.md:21 et le prompt final. Or ni guides/glossaire.md ni les guides ne définissent « plugin » ni « superpowers » (vérifié par grep : 0 occurrence), alors que MCP, PRD, jalon, worktree y sont. Aucune étape ne dit comment vérifier que l'installation a marché ni quoi faire si la commande n'existe pas dans la version de Cursor de l'élève — alors que toute la boucle AGENTS.md (superpowers:brainstorming, etc.) en dépend.",
+  "gravite": "important",
+  "reco": "Ajouter « plugin » et « superpowers » au glossaire ; dans SETUP-AI, ajouter une ligne de vérification (« tape /brainstorm ou vérifie la liste des plugins : tu dois voir superpowers ») et un fallback (lien d'install manuelle obra/superpowers) ; faire tester la présence du plugin par /doctor.",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "/new-project référence des chemins du kit absents du projet généré",
+  "constat": "templates/commands/new-project.md (copié tel quel dans .cursor/commands/) : Phase 3 « Réutilise `stacks/<stack>/` » et Phase 7 « intègre `templates/agents/loop-section.md` … » — or ni stacks/ ni templates/ n'existent dans le projet généré (vérifié dans /tmp/audit-parcours). L'IA improvisera ou échouera devant l'élève. Par ailleurs Phase 3 fait « choisir la stack » alors qu'elle est déjà figée par le wizard (rules .mdc, MCP, CI, .env déjà saas), et Phase 7 recrée AGENTS.md et docs/memory/ déjà posés — risque d'écrasement et de contradiction avec l'environnement installé.",
+  "gravite": "important",
+  "reco": "Générer new-project.md avec la stack injectée (« Stack : saas — déjà câblée, ne pas rechoisir ») ; en Phase 7, dire « complète l'AGENTS.md existant » au lieu de « écris » ; soit embarquer les snippets loop/design dans le projet, soit les référencer depuis AGENTS.md déjà généré.",
+  "effort": "M",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "La clé Stitch, geste le plus technique, est découverte trop tard et sans fallback",
+  "constat": "SETUP-AI.md range la clé Stitch sous « si tu n'as pas de design à fournir » (lignes 27-30) : un débutant saute la section, puis /new-project Phase 5 (new-project.md:77) exige le MCP Stitch en plein flux — il doit alors créer un compte Google, générer une clé API et coller un bloc JSON à la main dans ~/.cursor/mcp.json (le geste le plus technique de tout le parcours). Le runbook ne prévoit aucune branche « MCP Stitch non connecté ». De plus, avec --no-skills les docs affirment « ✅ skills Stitch déjà installés » alors qu'ils ne le sont pas (texte statique, setup-ai.mjs:36).",
+  "gravite": "important",
+  "reco": "1) Faire tester le MCP Stitch par /doctor. 2) Dans Phase 5, ajouter une branche explicite : « Stitch pas connecté → guide l'utilisateur via docs/SETUP-AI.md §Maquette maintenant, OU continue avec une maquette fournie / un design.md express ». 3) Conditionner les « ✅ déjà installés » au résultat réel de l'installation.",
+  "effort": "M",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Nom de projet relatif → l'app naît DANS le clone du kit",
+  "constat": "Le wizard demande « Nom du projet (dossier) » (scripts/lib/wizard.mjs:66) sans indiquer où il sera créé ; path.resolve (setup.mjs:21) le résout depuis le cwd, c'est-à-dire le clone vibecoding-starter-kit (le README fait `cd vibecoding-starter-kit` juste avant). Le projet de l'élève se retrouve imbriqué dans le dépôt git du kit : git status y montre le kit, les hooks du kit s'appliquent, et « ouvrir l'assistant dans le dossier du projet » devient ambigu.",
+  "gravite": "important",
+  "reco": "Dans le wizard, afficher le chemin absolu de destination et proposer par défaut `../<nom>` (hors du kit) ; combiné au `git init` du finding 1, le projet devient un dépôt indépendant même s'il est imbriqué.",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Sorties git brutes au lancement du wizard",
+  "constat": "Les deux premières lignes vues par le débutant sont « Cloning into '/var/folders/…/vs-clone-jlJxd4'… » (clones karpathy-skills + awesome-cursorrules, scripts/lib/external.mjs), avant même l'en-tête du rapport. Cryptique et anxiogène ; et en cas de coupure réseau, l'échec apparaît comme une URL GitHub dans la liste des échecs sans explication.",
+  "gravite": "mineur",
+  "reco": "Cloner avec `--quiet --depth 1` et stdio piped, afficher à la place « ⏳ Récupération des règles communautaires… » ; en cas d'échec réseau, message « pas de réseau — relance node scripts/setup.mjs plus tard, le reste est posé ».",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Incohérence .env vs .env.local entre ONBOARDING et .env.example",
+  "constat": "docs/ONBOARDING.md:19 : « Copie `.env.example` → `.env` » ; templates/env/saas.env.example (dernière ligne) : « Copie ce fichier en .env.local ». Deux noms différents pour la même action, sur un sujet (secrets) où le kit demande justement de la rigueur au débutant.",
+  "gravite": "mineur",
+  "reco": "Choisir un seul nom (`.env.local` couvert par .gitignore) et l'utiliser partout : ONBOARDING, env.example, RUN.md, /doctor.",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "ANTHROPIC_API_KEY demandée sans contexte (où, combien, optionnel ?)",
+  "constat": "docs/ONBOARDING.md:12 : « Ajoute le secret ANTHROPIC_API_KEY (Settings → Secrets → Actions) pour le dream hook ». Un débutant ne sait pas ce qu'est une clé API Anthropic, où l'obtenir (console.anthropic.com), que c'est payant, ni que le dream hook fonctionne très bien en « pas maintenant ». Même problème pour Bugbot (« active-le depuis le dashboard Cursor » — payant ? où ?).",
+  "gravite": "mineur",
+  "reco": "Marquer explicitement ces deux items « OPTIONNEL — tu peux faire tout le parcours sans » + une ligne : lien d'obtention, ordre de coût, conséquence si absent (le workflow dream échoue silencieusement dans Actions).",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Mode flags/non-TTY : pas de prompt final et erreurs sèches",
+  "constat": "Le bloc « — Colle ce prompt dans ton assistant — » n'est affiché que si fromWizard (setup.mjs:190-199) : tout run avec flags (formation encadrée, relance, scripts) ne montre que « ▸ superpowers : /add-plugin superpowers », en contradiction avec le README (« colle le prompt affiché par le wizard »). Et sans TTY ni arguments (élève qui lance depuis un contexte non interactif), on obtient trois erreurs de flags (« --stack doit valoir saas|mobile|desktop ») sans le conseil évident « ouvre un terminal et lance node scripts/setup.mjs sans arguments ».",
+  "gravite": "mineur",
+  "reco": "Afficher le prompt final dans tous les modes (il ne dépend que de args) ; si argv vide et non-TTY, message dédié : « lance cette commande dans un terminal interactif pour avoir le wizard, ou passe --stack --assistant --project ».",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Aucune vérification de bout en bout que « ça a marché »",
+  "constat": "Les deux gestes manuels (plugins + MCP) n'ont pas de test : /doctor (templates/commands/doctor.md) vérifie fichiers, hooksPath et cases restantes de SETUP-AI, mais ne teste ni la présence effective du plugin superpowers, ni que les MCP convex/better-auth/shadcn répondent, ni le MCP Stitch. Le débutant ne sait « que c'est bon » qu'au moment où /new-project plante — le pire moment.",
+  "gravite": "opportunite",
+  "reco": "Étendre /doctor : appeler un tool de chaque MCP déclaré (échec → instruction exacte par assistant), vérifier qu'un skill superpowers est invocable, tester le MCP Stitch si la Phase 5 IA est prévue. Faire de « /doctor tout vert » le critère explicite de fin d'onboarding dans ONBOARDING.md.",
+  "effort": "M",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "7 docs générées sans hiérarchie « pour toi » vs « pour l'IA »",
+  "constat": "Le projet généré contient ONBOARDING, SETUP-AI, RUN, ROADMAP, DOMAINS, DREAM, examples/ + AGENTS.md, en plus du README du kit, du glossaire et de 3 guides. Rien n'indique au débutant que seul ONBOARDING.md (28 lignes, bon format) est à lire par lui, que SETUP-AI/DOMAINS sont « joués par l'IA » et que ROADMAP/DREAM se remplissent tout seuls. Un débutant consciencieux lit tout et se noie ; un pressé ne lit rien, pas même l'ONBOARDING.",
+  "gravite": "opportunite",
+  "reco": "Bandeau en tête de chaque doc générée : « 👤 À lire par toi (2 min) » / « 🤖 Pour l'IA — tu n'as pas besoin de le lire ». Et faire du rapport final du wizard le point d'entrée unique : « Toi, tu n'as que 3 choses à faire : 1) ouvrir Cursor dans <chemin>, 2) coller ce prompt, 3) suivre les questions. »",
+  "effort": "S",
+  "source_agent": "parcours-debutant"
+ },
+ {
+  "axe": "parcours-formation",
+  "titre": "Aucun parcours 'leçon 1 → leçon N' : les guides s'arrêtent à 3 et deux chemins coexistent sans articulation",
+  "constat": "guides/ contient 01 (parler à l'IA), 02 (installer), 03 (sécurité/coûts, explicitement 'optionnel'). Ensuite l'élève bascule soit sur le wizard (README.md:67-105), soit sur le 'chemin débutant' manuel caché dans un <details> replié (README.md:98-105) avec stacks/saas/prompts-de-demarrage.md. Ces deux chemins enseignent des workflows différents (prompts 1-6 manuels vs /new-project→/build) sans jamais se référencer. Il n'existe ni progression numérotée de bout en bout, ni objectifs d'apprentissage par étape ('à la fin de cette leçon tu sauras…'), ni durée estimée par module.",
+  "gravite": "critique",
+  "reco": "Créer un fichier PARCOURS.md (ou guides/00-parcours.md) qui séquence la formation : Leçon 1 = parler à l'IA (guide 01) · Leçon 2 = installer (guide 02) · Leçon 3 = construire UNE page à la main avec prompts-de-demarrage (comprendre) · Leçon 4 = wizard + /new-project (automatiser) · Leçon 5 = /build jalon par jalon · Leçon 6 = publier (guide 03). Chaque leçon : objectif, durée, livrable observable, critère de réussite. Renuméroter les guides en conséquence.",
+  "effort": "M",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "scaffolding",
+  "titre": "L'élève subit la magie du wizard : ~30 artefacts générés, zéro explication du pourquoi",
+  "constat": "Le wizard (scripts/setup.mjs) pose hooks, CI, subagents, mémoire, MCP, skills, BUGBOT, dream hook… Le rapport final (scripts/lib/report.mjs:1-11) liste des ✅ techniques puis 'lance /new-project'. templates/ONBOARDING.md est une liste de gestes manuels, pas une visite guidée. Nulle part l'élève n'apprend ce qu'est chaque pièce de SON projet généré ni pourquoi elle existe — exactement le scénario 'magie subie' que la formation veut éviter. Le README explique les features au niveau marketing (README.md:53-66), pas au niveau élève.",
+  "gravite": "critique",
+  "reco": "Générer un docs/VISITE-GUIDEE.md dans chaque projet : pour chaque artefact posé, 3 lignes en français simple — 'c'est quoi / pourquoi tu en as besoin / quand tu le verras agir' (ex. 'le hook pre-commit = le vigile qui t'empêche de publier une clé API par accident ; tu le verras la première fois que tu commites'). Le rapport du wizard renvoie vers ce fichier. Bonus : chaque fichier généré reçoit un en-tête commenté d'une ligne expliquant son rôle.",
+  "effort": "M",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Pas de 'mode apprentissage' transverse : les runbooks font faire à l'IA sans obligation d'expliquer, et /build --all encourage le tout-automatique",
+  "constat": "Les 5 commandes sont des 'runbooks IA' écrits pour l'agent (vocabulaire expert : gates, tranche verticale, spine, élicitation) que l'élève ne lit jamais. Le mode 'Coaching' de /new-project (templates/commands/new-project.md:11-14) est le seul endroit qui impose la pédagogie, et il ne couvre que la fondation. /build (templates/commands/build.md:11) propose 'enchaîne tout' sans garde-fou pédagogique, et /new-feature est autonome du plan au merge — l'élève regarde. Rien ne force l'IA à expliquer ce qu'elle vient de construire.",
+  "gravite": "critique",
+  "reco": "Ajouter une question au wizard : 'Tu veux apprendre en construisant ? [O/n]' → si oui, injecter dans l'AGENTS.md généré une règle permanente : 'Après chaque jalon/feature : explique en 3 puces ce qui a été construit et pourquoi, puis pose UNE question de compréhension à l'élève avant de continuer'. En mode apprentissage, /build --all est désactivé (message : 'tu es en mode apprentissage, on avance jalon par jalon'). Le niveau est persisté dans docs/memory/ pour que toutes les commandes le respectent.",
+  "effort": "M",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "gestion-echec",
+  "titre": "La gestion de l'échec est dispersée : le prompt de débogage n'existe que sur le chemin manuel",
+  "constat": "La boucle de débogage (guides/01-comment-parler-a-l-IA.md:65-74) et le 'Prompt de débogage' (stacks/saas/prompts-de-demarrage.md:77-86) sont excellents, mais un élève passé par le wizard ne les croisera jamais : rien dans le projet généré ne les reprend. /doctor (templates/commands/doctor.md) vérifie la config, pas 'mon app ne démarre plus'. Il n'existe aucune FAQ des erreurs fréquentes de débutant (port occupé, mauvaise version de Node, npm install qui échoue, conflit git, .env manquant).",
+  "gravite": "important",
+  "reco": "Créer guides/04-quand-ca-casse.md : arbre de décision simple ('l'app ne démarre pas → /doctor ; erreur rouge → colle-la entière avec ce prompt ; l'IA tourne en rond → nouvelle conversation ; tout est cassé → reviens au dernier commit') + top 10 des erreurs débutant avec leur solution. Le générer AUSSI dans le projet (docs/SOS.md) et le référencer depuis le rapport du wizard et l'ONBOARDING.",
+  "effort": "M",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Charge cognitive du jour 1 trop élevée : ~10 gestes manuels présentés à plat, dont plusieurs différables",
+  "constat": "templates/ONBOARDING.md (annoncé '2 min') empile : indexation @Docs Cursor, Bugbot, mémoire native off, Background Agents, secret GitHub ANTHROPIC_API_KEY, git hooksPath, .env, clé API Stitch + MCP user-scope. docs/SETUP-AI.md (scripts/lib/setup-ai.mjs) ajoute 6 sections de cases à cocher. Or le secret dream hook, Bugbot et les Background Agents ne servent à rien le premier jour. Pour un débutant, tout est présenté au même niveau d'urgence — risque d'abandon ou de cases cochées sans comprendre.",
+  "gravite": "important",
+  "reco": "Restructurer ONBOARDING.md et SETUP-AI.md en deux blocs nets : '🟢 Maintenant (5 min) : hooks git, .env, plugins, MCP' et '🔵 Plus tard, quand tu en auras besoin : Bugbot (à ta 1re PR), secret dream hook (à ton 1er push GitHub), clé Stitch (au moment de la maquette dans /new-project)'. Chaque item différé indique SON déclencheur.",
+  "effort": "S",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Cursor est l'assistant principal de la formation mais le moins enseigné : 1 ligne dans le guide d'installation",
+  "constat": "guides/02-installer-les-outils.md:35 expédie Cursor en une ligne ('l'IA est déjà dedans, Cmd/Ctrl+L') alors que Claude Code a une section complète (lignes 36-46). Aucun document n'apprend à un débutant : ouvrir un dossier dans Cursor, différence chat/agent, taper une commande /new-project, lire et accepter un diff proposé, retrouver .cursor/commands. C'est pourtant le geste quotidien n°1 des élèves de la formation.",
+  "gravite": "important",
+  "reco": "Ajouter guides/02b-prendre-en-main-cursor.md avec captures d'écran : ouvrir le projet, le panneau de chat en mode Agent, taper une slash command, lire un diff (vert = ajouté, rouge = retiré) et l'accepter/refuser, où voir les fichiers générés. C'est aussi le support naturel d'une vidéo de la formation.",
+  "effort": "M",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "couts-vs-apprentissage",
+  "titre": "Le wizard tend un piège pédagogique : la question caveman est cadrée pour qu'un débutant dise oui",
+  "constat": "scripts/lib/wizard.mjs:74 demande 'Réduire les coûts IA (caveman) ? [o/N]' — qui refuse de réduire ses coûts ? Or le kit lui-même documente (guides/03-securite-et-couts.md:82-85) que caveman 'coupe les explications de l'IA' et que 'quand tu apprends, ces explications sont précieuses', avec la reco explicite de NE PAS l'activer au début. Le wizard contredit son propre guide : un élève qui répond 'o' perd l'essentiel de la valeur formative.",
+  "gravite": "important",
+  "reco": "Reformuler la question du wizard : 'Réduire les coûts IA (caveman) ? ⚠️ coupe les explications — déconseillé pour apprendre [o/N]'. Ou mieux : retirer la question du wizard pour les débutants et la laisser dans guide 03 comme option de niveau avancé (elle y est déjà documentée avec la commande d'installation).",
+  "effort": "S",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "evaluation",
+  "titre": "Aucun exercice ni checkpoint d'auto-évaluation dans tout le kit",
+  "constat": "Ni les guides, ni le glossaire, ni les commandes ne proposent de vérification de compréhension : pas de 'tu es prêt à passer à la suite si tu sais répondre à…', pas de mini-défi ('modifie le prompt 4 pour ajouter la suppression d'une réservation'), pas de quiz. Le glossaire (guides/glossaire.md) est riche mais purement passif. L'élève n'a aucun moyen de savoir s'il a compris ou s'il a juste copié-collé.",
+  "gravite": "important",
+  "reco": "Clore chaque guide/leçon par un encadré '✋ Checkpoint — tu es prêt si…' (3 questions à réponse courte, réponses en <details> repliés) + 1 mini-exercice pratique par leçon ('sans l'IA, dis ce que fait ce prompt' / 'casse volontairement l'app en supprimant une ligne, puis répare avec le prompt de débogage'). Coût faible, impact fort sur la rétention.",
+  "effort": "M",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "formateur",
+  "titre": "Rien pour le formateur : pas de plan de cours, pas de projet fil rouge, pas de suivi de progression",
+  "constat": "Le dépôt ne contient aucun support côté formation : pas de découpage en sessions/vidéos mappé sur le kit, pas de projet fil rouge terminé servant de référence ('voilà ce que tu dois obtenir à la fin du module 3'), pas de grille de critères pour évaluer le travail d'un élève, pas de mécanisme de suivi. Pourtant les artefacts générés (docs/ROADMAP.md cochée, docs/memory/, commits) constituent une trace naturelle de progression, inexploitée.",
+  "gravite": "important",
+  "reco": "Créer un dossier formation/ (ou un repo compagnon privé) : plan de cours par module (objectifs, démo à faire, pièges connus des élèves), un projet fil rouge complet commité étape par étape (1 tag git = 1 fin de module, l'élève peut se comparer), et une grille de revue formateur ('la roadmap a des ✅ Ce que tu vois observables ? la mémoire contient des gotchas réels ? les commits sont fréquents ?').",
+  "effort": "L",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "celebration",
+  "titre": "Les petites victoires existent (✅ Ce que tu vois) mais ne sont pas célébrées aux moments clés",
+  "constat": "Le pattern '✅ Ce que tu vois' de la roadmap (templates/roadmap/ROADMAP.md:14,20) est excellent : chaque jalon a un résultat observable. En revanche la fin du wizard est sèche ('Prochaine étape : lance /new-project', scripts/lib/report.mjs:9), /doctor n'est jamais prescrit comme premier succès, et rien ne marque la fin du jalon 0 ('ton app démarre — tu viens de faire ce que 90 % des gens n'osent pas commencer').",
+  "gravite": "opportunite",
+  "reco": "1) Rapport du wizard : conclure par une phrase de victoire + 'lance /doctor : tout vert = ta première victoire' (et câbler /doctor dans l'ONBOARDING). 2) Dans /build, après chaque jalon coché, l'IA récapitule en 1 phrase le chemin parcouru ('3/7 jalons — ton app sait maintenant X, Y, Z'). 3) Marquer spécialement le jalon 0 et le dernier jalon.",
+  "effort": "S",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "prompts-de-demarrage.md est le meilleur outil d'apprentissage du kit… et il est orphelin du flux principal",
+  "constat": "stacks/saas/prompts-de-demarrage.md est pédagogiquement remarquable : progressif (installer → schéma → auth → feature → UI → deploy), avec points d'arrêt ('attends ma validation'), demandes d'explication intégrées et prompt de débogage. Mais il n'est référencé que depuis le 'chemin débutant' replié du README et la fin du README de stack (stacks/saas/README.md:188) — jamais depuis le wizard, le playbook ou l'ONBOARDING. Un élève de la formation (chemin wizard) ne le verra probablement jamais.",
+  "gravite": "opportunite",
+  "reco": "Repositionner ce fichier comme la 'leçon découverte' officielle du parcours : faire UNE fois à la main (sur un projet jetable) ce que /new-project et /build automatiseront ensuite — c'est le meilleur vaccin contre la magie subie. Le référencer dans le PARCOURS.md (finding 1) et dans le rapport du wizard ('tu veux comprendre ce que ces commandes automatisent ? → prompts-de-demarrage').",
+  "effort": "S",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "securite-pedagogie",
+  "titre": "Le guide sécurité enseigne le réflexe 'curl | bash' sans avertissement — contradiction pédagogique",
+  "constat": "guides/03-securite-et-couts.md:23 (Strix) et :74 (caveman) font copier-coller 'curl … | bash' à des débutants, dans le guide même qui leur apprend à se méfier des secrets et des failles. Le kit installe par ailleurs scan de secrets et guard-shell, mais forme ici le réflexe inverse : exécuter du code distant les yeux fermés. Un débutant généralisera ce geste à n'importe quel tutoriel trouvé en ligne.",
+  "gravite": "important",
+  "reco": "Ajouter un encadré avant la première occurrence : '⚠️ curl | bash exécute un script téléchargé sur ta machine. Ne le fais QUE pour des projets dont tu as vérifié le dépôt (étoiles, licence, code du script). Réflexe : ouvre l'URL et lis le script avant.' — transformer le risque en leçon de sécurité. Proposer l'alternative plugin (déjà présente pour caveman, ligne 78) en premier choix.",
+  "effort": "S",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "francais",
+  "titre": "Frictions de cohérence qui casseront le copier-coller d'un débutant + une définition fausse au glossaire",
+  "constat": "1) guides/02-installer-les-outils.md:80 dit 'cd best_practices_vibecoding' alors que le README fait cloner 'vibecoding-starter-kit' (README.md:72-73) — le copier-coller échoue. 2) guides/02:88 renvoie vers un détail du script 'dans le README principal' qui n'y figure pas (juste mentionné README.md:199). 3) guides/glossaire.md:95 : l'entrée CRUD met en gras C-L-M-S ('Créer, Lire, Mettre à jour, Supprimer') qui n'épelle pas CRUD — illisible pour la cible. 4) Le README emploie subagent, warn-only, propose-only, squash sans lien vers le glossaire pourtant équipé d'ancres. Le ton (tutoiement, analogies) est par ailleurs excellent et très cohérent.",
+  "gravite": "mineur",
+  "reco": "Corriger le nom de dossier dans guide 02 ; corriger ou supprimer le renvoi au README ; réécrire CRUD ('les 4 opérations : Create (créer), Read (lire), Update (modifier), Delete (supprimer)') ; passer les docs élève au peigne pour lier chaque terme technique vers son ancre du glossaire (première occurrence seulement).",
+  "effort": "S",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "gestion-echec",
+  "titre": "/doctor diagnostique la config mais ne parle pas la langue d'un élève en panique",
+  "constat": "templates/commands/doctor.md vérifie 9 points de configuration (fichiers, MCP, hooks, secrets) — utile, mais c'est un check d'environnement, pas un outil de triage. L'élève qui tape /doctor le fera parce que 'ça ne marche plus' (app qui ne démarre pas, erreur rouge, IA qui tourne en rond), cas que le runbook ne couvre pas : il rendra 'tout est ✓' à un élève dont l'app est cassée, ce qui détruit la confiance dans l'outil.",
+  "gravite": "mineur",
+  "reco": "Étendre /doctor d'une étape 0 : 'Demande d'abord à l'utilisateur ce qui ne va pas. Si c'est un problème d'app (ne démarre pas, erreur à l'écran) : tente de lancer via docs/RUN.md, lis l'erreur, applique la boucle de débogage (guide 04 / docs/SOS.md). Si c'est un problème de config : déroule la checklist ci-dessous.' Et conclure toujours par la prochaine action concrète, pas seulement un rapport.",
+  "effort": "S",
+  "source_agent": "pedagogie"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Ctrl+C ne quitte JAMAIS le wizard — terminal gelé (confirmé en pty)",
+  "constat": "scripts/setup.mjs:31 crée readline sans gestionnaire SIGINT, et scripts/lib/wizard.mjs:46-57 boucle indéfiniment. Test réel en pseudo-terminal : après 2 Ctrl+C successifs le process est toujours vivant (readline capture SIGINT et se contente de 'pause'). Un débutant qui se trompe de réponse ou veut annuler est piégé : sa seule issue est de fermer la fenêtre du terminal — sur la TOUTE PREMIÈRE commande de la formation.",
+  "gravite": "critique",
+  "reco": "Ajouter rl.on('SIGINT', () => { rl.close(); console.log('\\nAnnulé.'); process.exit(130); }) juste après createInterface dans setup.mjs, + un test qui vérifie la présence du handler.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "windows",
+  "titre": "Windows : toutes les installs de skills échouent (execFileSync('npx') = ENOENT)",
+  "constat": "scripts/lib/external.mjs:7 (defaultRun = execFileSync sans shell) et :46 (installSkills lance 'npx'). Sur Windows npx est npx.cmd : depuis Node 20.12.2 (correctif CVE-2024-27980) spawn d'un .cmd sans shell:true jette EINVAL/ENOENT. Résultat : les 6 specs de skills (design + stack + Stitch) échouent toutes avec « spawnSync npx ENOENT » — cryptique pour un élève. installCaveman (external.mjs:30, 'bash -lc curl…|bash') échoue aussi hors Git Bash. Le kit exige Node ≥ 20.12, donc 100 % des élèves Windows sont touchés.",
+  "gravite": "critique",
+  "reco": "Dans defaultRun : const cmd = process.platform === 'win32' && ['npx','npm'].includes(c) ? c + '.cmd' : c, avec { shell: process.platform === 'win32' } ; pour caveman, détecter win32 et afficher une instruction manuelle au lieu de bash -lc. Ajouter un runner windows-latest en CI (voir finding CI).",
+  "effort": "M",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "windows",
+  "titre": "Git Bash (MinTTY) : le wizard ne se lance jamais — l'élève voit des erreurs de flags",
+  "constat": "scripts/lib/wizard.mjs:19-21 : needsWizard exige isTTY === true. Sous MinTTY (le terminal PAR DÉFAUT de Git for Windows, que le guide 02 fait installer), process.stdin.isTTY est undefined sans winpty. Confirmé par test stdin pipé : « node scripts/setup.mjs » affiche « --stack doit valoir saas|mobile|desktop / --assistant doit valoir… / --project : nom invalide » et exit 1. Le README:96 dit pourtant aux élèves Windows « lance avec node ». Premier contact = mur d'erreurs en franglais de flags.",
+  "gravite": "critique",
+  "reco": "Quand argv.length === 0 et !isTTY : afficher un message dédié (« Ce terminal ne permet pas le mode interactif. Sous Windows, lance depuis PowerShell/cmd, ou : winpty node scripts/setup.mjs ») au lieu de déléguer à validateArgs. Documenter PowerShell comme terminal recommandé pour le wizard dans guides/02.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Lancé hors de la racine du kit : 22 échecs ENOENT mais exit 0 et « Prochaine étape : /new-project »",
+  "constat": "scripts/lib/args.mjs:5 et wizard.mjs:26 codent source: '.' en dur : le script doit être lancé depuis la racine du kit, jamais vérifié. Test réel depuis un autre dossier : 22 ❌ ENOENT (toutes les commandes slash, mémoire, CI, hooks…), un projet à moitié généré (AGENTS.md avec sections vides, .mcp.json présent), et pourtant exit=0 + le rapport conclut « Prochaine étape : lance /new-project ». setup.mjs:189-203 n'utilise jamais failed.length pour le code de sortie.",
+  "gravite": "important",
+  "reco": "1) Dériver source du script lui-même : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..') comme défaut au lieu de '.'. 2) process.exit(1) (ou au minimum un bandeau rouge « installation INCOMPLÈTE ») quand failed.length > 0.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "core.hooksPath jamais configuré : pre-commit/pre-push sont des fichiers morts",
+  "constat": "setup.mjs:151-156 copie .githooks/pre-commit + chmod, environment.mjs:33-38 écrit pre-push, mais AUCUN code n'exécute git config core.hooksPath .githooks ni git init. La commande n'existe que comme étape manuelle dans templates/ONBOARDING.md:16 et comme check du /doctor (doctor.md:15). Un débutant ne la fera pas : le scan de secrets local et les checks pre-push — vendus comme sécurité du kit — ne tournent jamais. En plus le dossier projet n'est même pas un repo git à la fin du wizard.",
+  "gravite": "important",
+  "reco": "Dans setup.mjs, après la copie des hooks : si projectDir n'est pas un repo, exécuter git init, puis git -C projectDir config core.hooksPath .githooks (execFileSync git, déjà prérequis). Idempotent et sans risque.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "securite",
+  "titre": "Le scan de secrets pre-commit rate les formats de clés que le kit lui-même recommande",
+  "constat": "templates/hooks/pre-commit:4 : regex sk-[a-zA-Z0-9]{20,} — le tiret casse la détection. Testé : sk-proj-… (format OpenAI par défaut depuis 2024) RATÉ, sk-ant-api03-… (Anthropic — la clé que ONBOARDING.md:12 fait manipuler pour le dream hook) RATÉ, sk_live_… (Stripe = domaine paiement par défaut de matrix.mjs:82) RATÉ, re_… (Resend = email par défaut) RATÉ, clés de déploiement Convex RATÉES. Seuls les vieux sk-…48 OpenAI, AKIA et les clés PEM sont détectés. Faux sentiment de sécurité au cœur de la promesse du kit.",
+  "gravite": "important",
+  "reco": "Élargir : (sk-[A-Za-z0-9_-]{20,}|sk_(live|test)_[A-Za-z0-9]{10,}|re_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|(prod|dev):[a-z-]+:[A-Za-z0-9+/=]{20,}) et ajouter des tests dans guard-shell.test.mjs-like. Option : gitleaks protect --staged si gitleaks présent, fallback regex sinon.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "cursor",
+  "titre": "guard-shell : faux positifs sur des commandes banales, et il bloque l'installeur caveman du kit",
+  "constat": "templates/cursor/hooks/guard-shell.mjs:7 — testé : « rm -f *.log » BLOQUÉ, « rm -rf /tmp/build » BLOQUÉ, « rm -rf dist build * » BLOQUÉ (le motif \\s[\"']?(\\/|~|…|\\*) matche tout chemin commençant par / et tout glob *). Ligne 8 : la règle curl|sh bloque exactement la commande d'install caveman du kit (external.mjs:30) si l'agent la rejoue depuis le chat. À l'inverse « grep KEY .env » passe (grep absent de la liste ligne 10). L'agent Cursor d'un élève qui nettoie des artefacts sera bloqué avec un message anxiogène « ⛔ Commande bloquée (sécurité) ».",
+  "gravite": "important",
+  "reco": "Resserrer la règle rm : ne bloquer que si la cible est exactement /, ~, $HOME ou * seul en fin de commande (ancres), pas un sous-chemin (/tmp/x, dist *). Ajouter grep/awk/sed/node -e à la règle .env. Étendre guard-shell.test.mjs avec ces cas négatifs ET positifs.",
+  "effort": "M",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "cursor",
+  "titre": "awesome-cursorrules : 60+ règles hors-sujet déversées dans .cursor/rules/ (Angular, Next.js, Solidity…)",
+  "constat": "scripts/lib/matrix.mjs:10 (tags saas = ['typescript','react','clean-code']) + external.mjs:26 (f.includes(tag)) : vérifié sur le dépôt réel — 67 fichiers matchent sur la seule 1re page (257 entrées) de rules/ : angular-typescript, astro-typescript, nextjs-react-typescript (« You are an expert in Solidity… Next.js 14 App Router »), hedera, chrome-extension… copiés via setup.mjs:78 dans un projet Convex+TanStack Start. Le contexte de l'assistant PRINCIPAL de la formation est pollué de conventions contradictoires avec la stack enseignée, et le volume varie au gré du dépôt tiers.",
+  "gravite": "important",
+  "reco": "Remplacer matchTags par une liste blanche picks de 3-5 fichiers précis et vérifiés (clean-code.mdc, typescript…), comme c'est déjà fait pour karpathy. Ou supprimer ce clone : les règles typées du kit (templates/cursor/rules/<stack>/) couvrent déjà le besoin.",
+  "effort": "M",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "pourrissement",
+  "titre": "Zéro épinglage des dépendances externes + échec silencieux si un dépôt tiers se restructure",
+  "constat": "Clones sur HEAD sans SHA (matrix.mjs:8-9), npx skills @latest, get-convex/agent-skills --all (matrix.mjs:71 — installera ce qu'ils ajouteront demain), convex@latest/shadcn@latest/chrome-devtools-mcp@latest (matrix.mjs:65-67,132), URLs llms.txt jamais vérifiées (matrix.mjs:77-79,112-114), install.sh caveman pipé depuis main. Pire : setup.mjs:75 ignore le retour de pickFromClone — si karpathy renomme .cursor/rules/karpathy-guidelines.mdc, pickFromClone renvoie {status:'missing-src'} mais le rapport affiche ✅ pour le repo. Aucun timeout non plus sur git clone / npx (proxy d'entreprise = blocage infini sur « peut prendre ~1-2 min »).",
+  "gravite": "important",
+  "reco": "1) Surfacer missing-src dans failed (setup.mjs:75). 2) Épingler karpathy/cursorrules par SHA (clone puis checkout, ou tarball codeload). 3) Ajouter { timeout: 120000 } aux execFileSync réseau avec message français en cas de dépassement. 4) Un job CI hebdo « rot check » qui vérifie l'existence des chemins pickés et fait curl -sI sur chaque URL de rules.",
+  "effort": "L",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "doctor",
+  "titre": "/doctor ne vérifie ni les skills installés, ni la joignabilité des MCP, ni les URLs — que des présences de fichiers",
+  "constat": "templates/commands/doctor.md:1-21 : tous les checks sont « fichier présent » ou « git config ». Or les étapes les PLUS fragiles du setup (npx skills add ×6 — celles qui échouent sur Windows/réseau) et les endpoints distants (mcp.better-auth.com, mcp.expo.dev, stitch.googleapis.com) ne sont jamais re-vérifiés : un élève dont les skills ont échoué au wizard et qui lance /doctor obtient un bilan vert. Le point 8 « Node ≥ 20.12 » n'indique pas non plus la commande à exécuter (node --version).",
+  "gravite": "important",
+  "reco": "Ajouter au runbook : 10) skills : vérifier l'existence de ~/.claude/skills/ (ou .cursor/skills/) pour chaque skill attendu de la stack, sinon donner la commande npx skills add exacte (déjà listée dans SETUP-AI.md) ; 11) MCP : pour chaque serveur http de .mcp.json, curl -sI -m 5 <url> et signaler les 4xx/timeout ; 12) node --version et git --version explicites.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "ci",
+  "titre": "CI du kit : node --test seul — pas de smoke E2E du setup, pas de Windows, pas de Node 20.12",
+  "constat": ".github/workflows/ci.yml:1-11 : un seul job ubuntu + Node 22 qui lance node --test (les 129 tests unitaires). Aucune exécution réelle de scripts/setup.mjs, donc les bugs d'intégration constatés (exit 0 malgré 22 échecs, mauvais cwd) sont invisibles ; Windows jamais testé alors que 3 findings critiques y explosent ; et le minimum annoncé Node 20.12 (setup.mjs:39) n'est jamais exercé en CI.",
+  "gravite": "important",
+  "reco": "Matrice {ubuntu, windows, macos} × {20.12, 22} avec : node --test PUIS un smoke « node scripts/setup.mjs --stack saas --assistant cursor --project $RUNNER_TEMP/x --no-skills » + assertions (exit 0, fichiers clés présents, aucun ❌ dans la sortie) et le même smoke depuis un cwd différent (doit échouer proprement une fois le finding source corrigé).",
+  "effort": "M",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "idempotence",
+  "titre": "AGENTS.md et CLAUDE.md écrasés à chaque re-run, même sans --force",
+  "constat": "scripts/setup.mjs:52-53 : fs.writeFileSync inconditionnel, en contradiction avec la philosophie copyIfAbsent du reste du script. Un élève qui a personnalisé son AGENTS.md (ce que la formation encourage) et relance le wizard (par ex. après un échec réseau de skills, comme le rapport « Échecs (relance le script) » le lui demande explicitement) perd ses modifications sans avertissement. Par ailleurs le rapport affiche ✅ pour les fichiers 'skipped-exists', indistinguables des vrais copiés.",
+  "gravite": "mineur",
+  "reco": "N'écraser AGENTS.md/CLAUDE.md que si absent ou --force ; sinon écrire AGENTS.md.new + message. Dans le rapport, distinguer ✅ copié / • déjà présent (le status est déjà retourné par copyIfAbsent, il suffit de l'utiliser).",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "wizard",
+  "titre": "Nom de projet « ~/mon-app » accepté → dossier littéral « ~ » créé dans le cwd",
+  "constat": "scripts/lib/wizard.mjs:67 et args.mjs:29 : la regex /^[\\w./~-]+$/ autorise ~, mais path.resolve (setup.mjs:21) n'expanse pas le tilde — vérifié : « ~/mon-app » crée <cwd>/~/mon-app. L'élève ne trouve pas son projet, et le nettoyage naïf de ce dossier (« rm -rf ~ » suggéré par un shell ou un agent) est catastrophique — ironiquement la commande exacte que guard-shell bloque.",
+  "gravite": "mineur",
+  "reco": "Expanser ~ via os.homedir() (project.replace(/^~(?=\\/|$)/, os.homedir())) dans buildRunPlan, ou retirer ~ de la regex avec le message « écris le chemin complet ou un nom simple ».",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "environnements",
+  "titre": "Node trop vieux : le message français arrive après le wizard, ou jamais (crash d'import sous Node < 17)",
+  "constat": "scripts/setup.mjs:39 : meetsNode n'est vérifié qu'APRÈS le wizard complet — un élève sous Node 18/20.0 répond aux 5 questions avant d'apprendre qu'il doit tout refaire. Pire : sous Node 16 (encore répandu via de vieux nvm), l'import statique de node:readline/promises (setup.mjs:15, module ajouté en 17.0) fait crasher le script avec ERR_MODULE_NOT_FOUND avant toute sortie pédagogique — le message « Node ≥ 20.12 requis (voir guides/02…) » n'est jamais affiché.",
+  "gravite": "mineur",
+  "reco": "Déplacer le check version en toute première ligne de main() (il ne dépend que de process.version), et passer readline en import dynamique après ce check (const readline = await import('node:readline/promises')). Un try/catch autour des imports n'est pas possible en statique — le dynamic import est la seule voie propre.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "hooks-checks",
+  "titre": "checks.mjs lance « npx tsc » à chaque édition : risque d'installer le paquet npm « tsc » (stub déprécié) ou de bloquer",
+  "constat": "templates/hooks/framework/checks.mjs:11 : cmd ['npx','tsc','--noEmit'], gardé seulement par la présence de tsconfig.json — pas de node_modules. Cas réel : projet fraîchement cloné/scaffoldé, npm install pas encore lancé → npx ne trouve pas typescript localement et résout le paquet npm nommé « tsc » (stub déprécié sans rapport), avec prompt interactif possible en premier npx — dans un hook afterFileEdit/PostToolUse non interactif, à CHAQUE édition de fichier. Même motif pour biome/expo/electronegativity (lignes 12-16).",
+  "gravite": "mineur",
+  "reco": "Dans selectChecks, exiger aussi node_modules/.bin/<outil> (skip avec raison « lance npm install » sinon), et préfixer les cmd npx de -y pour neutraliser tout prompt. Le cas « tsconfig présent mais node_modules absent » mérite un test unitaire dans checks.test.mjs.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "ci",
+  "titre": "CI élève : npm ci sans lockfile = croix rouge dès le premier push",
+  "constat": "templates/ci/{saas,mobile,desktop}.yml:12 : npm ci échoue net (« can only install with an existing package-lock.json ») tant que le scaffold n'a pas généré de lockfile. Or le flux du kit pousse les workflows AVANT le scaffold applicatif (/new-project vient après le premier commit du squelette) : le premier push GitHub d'un débutant affiche CI et Secret scan en échec — anxiogène et contre-pédagogique.",
+  "gravite": "mineur",
+  "reco": "Remplacer par : - run: npm ci --no-audit || npm install --no-audit, ou conditionner le job à hashFiles('package-lock.json') != '' avec un step « skip » explicite. Idem pour l'appel npm test --if-present qui, lui, est déjà défensif — s'en inspirer.",
+  "effort": "S",
+  "source_agent": "robustesse"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Le clone awesome-cursorrules déverse ~201 règles .mdc dans le projet d'un débutant",
+  "constat": "scripts/lib/matrix.mjs:10 (CURSOR_TAGS saas = ['typescript','react','clean-code']) + scripts/lib/external.mjs:24-27 (selectByTags fait un simple includes() sur le nom de fichier) + scripts/setup.mjs:76-78. Vérifié en direct sur l'API GitHub : le dossier rules/ de PatrickJS/awesome-cursorrules contient 257 fichiers .mdc, et les tags saas en matchent 201 (mobile : 138) — dont angular-*, astro-*, nextjs-*, sveltekit-*, tous copiés dans .cursor/rules/. Pire : ces règles communautaires ont souvent 'globs: **/*' (vérifié sur nextjs-typescript-cursorrules-prompt-file.mdc), donc elles s'auto-attachent à TOUS les fichiers : un projet TanStack Start reçoit des consignes Next.js contradictoires, un projet Expo des règles Angular. Pollution massive de contexte, exactement l'anti-pattern que les docs rules déconseillent (https://cursor.com/docs/context/rules).",
+  "gravite": "critique",
+  "reco": "Remplacer le matching par tags par une liste blanche explicite de quelques fichiers réellement pertinents (ex. clean-code.mdc, react-native-expo-cursorrules-prompt-file.mdc), ou supprimer carrément ce clone : le kit a déjà ses propres règles .mdc typées par framework, de meilleure qualité et cohérentes avec la stack.",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Affirmation obsolète : Cursor interpole désormais ${env:...} dans les headers MCP",
+  "constat": "scripts/lib/matrix.mjs:41-44 justifie la config Stitch user-scope par « Cursor n'interpole pas ${env:...} dans les headers des MCP distants ». C'est faux dans les docs actuelles : l'interpolation ${env:NAME} est supportée dans command, args, env, url ET headers (+ ${userHome}, ${workspaceFolder}...), et un champ envFile existe pour les serveurs stdio (https://cursor.com/docs/context/mcp). Dans un kit de formation, une justification technique fausse sera répétée par le formateur.",
+  "gravite": "important",
+  "reco": "Corriger le commentaire : le choix user-scope reste défendable (la clé vit hors du repo, zéro variable d'env à configurer pour un débutant), mais la vraie raison est la simplicité, pas une limitation de Cursor. Documenter l'alternative devenue possible : .cursor/mcp.json projet avec \"X-Goog-Api-Key\": \"${env:STITCH_API_KEY}\" (commitable sans fuite).",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Pivot Skills (Cursor 2.4+) : les commands et règles dynamiques du kit sont l'ancien monde",
+  "constat": "Le kit livre 5 commandes dans .cursor/commands/ (setup.mjs:88) et convertit le AGENTS.md de stack en règle .mdc 'Agent Requested' (toCursorMdc, scripts/lib/templates.mjs:1). Or l'ancienne page docs des commands est devenue la page Skills : Cursor 2.4 a introduit les Skills comme mécanisme central (SKILL.md avec name/description/paths/disable-model-invocation, dossiers .cursor/skills/ et .agents/skills/, chargés aussi depuis .claude/skills/ en rétrocompatibilité), plus l'outil /migrate-to-skills qui convertit commands (→ disable-model-invocation: true) et règles dynamiques (https://cursor.com/docs/skills). Les commandes du kit fonctionnent encore, mais l'état de l'art et la doc officielle convergent vers les skills. Bonus vérifié : Cursor lisant .claude/skills/, les skills stack-* que le kit installe côté Claude seraient déjà exploitables par Cursor.",
+  "gravite": "important",
+  "reco": "Court terme : documenter /migrate-to-skills dans l'ONBOARDING. Moyen terme : livrer les 5 commandes comme skills (disable-model-invocation: true pour garder l'invocation /) et la règle stack-{stack}.mdc comme skill avec description — un seul format pour Cursor ET Claude Code, moins de code de conversion dans le wizard.",
+  "effort": "M",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Plan Mode (Shift+Tab) absent du kit et de l'onboarding — le mode central de 2026",
+  "constat": "Aucune mention de Plan Mode dans templates/ONBOARDING.md, README ni les commandes (grep vérifié). Docs actuelles : deux modes documentés, Agent et Plan ; Plan Mode = questions de clarification → recherche codebase → plan éditable avant exécution, bascule au Shift+Tab, plans sauvegardés en home ou déplaçables dans le workspace pour partage (https://cursor.com/docs/agent/modes). Le flux du kit (/new-project → PRD → spec → roadmap → /build jalon par jalon) est exactement une pédagogie plan-first : ne pas relier les deux est une occasion manquée, et un formateur Cursor 2026 DOIT enseigner Shift+Tab.",
+  "gravite": "important",
+  "reco": "Ajouter au bloc Cursor de l'ONBOARDING : « Shift+Tab = Plan Mode ; utilise-le pour tout jalon multi-fichiers ». Dans /build, suggérer explicitement de passer en Plan Mode pour chaque jalon et de relire le plan avant exécution (ça matérialise la boucle brainstorm→plan du kit dans l'UI native).",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Navigateur intégré + Design Mode : la boucle maquette du kit ne les exploite pas",
+  "constat": "templates/commands/build.md:9 demande « screenshot à l'appui, compare à maquette/ » et edit-design.md:11-16 des captures avant/après — sans dire avec quoi. Or l'agent Cursor a un navigateur intégré sans aucun MCP : navigation, clics, formulaires, screenshots, console, réseau (https://cursor.com/docs/agent/browser), et le Design Mode (3.7, juin 2026) permet l'édition visuelle overlay avec multi-sélection et entrée vocale (https://cursor.com/changelog). Le kit ne configure le MCP chrome-devtools que pour la stack desktop (matrix.mjs:132) et laisse les stacks saas/mobile sans outil de vérification visuelle nommé.",
+  "gravite": "important",
+  "reco": "Dans build.md et edit-design.md, ajouter une instruction spécifique Cursor : « utilise l'outil navigateur intégré de l'agent pour ouvrir l'app, capturer l'écran et le comparer au HTML de maquette/ ». Enseigner Design Mode comme la suite naturelle de /edit-design pour les retouches visuelles. Garder chrome-devtools MCP pour Electron uniquement.",
+  "effort": "M",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "L'ONBOARDING Cursor ignore la page Customize, l'app mobile et le tronc commun 2026",
+  "constat": "templates/ONBOARDING.md:5-8 couvre @Docs, Bugbot et la désactivation des Memories — c'est tout. Depuis, Cursor 3.9 (juin 2026) a ajouté la page « Customize » qui centralise plugins, skills, MCP, subagents, rules, commands et hooks (l'endroit idéal pour montrer à un débutant où vivent TOUS les artefacts installés par le wizard), plus l'app iOS en bêta publique avec Remote Control des agents desktop et Live Activities (https://cursor.com/changelog). Un formateur « qui connaît Cursor comme personne » doit structurer sa séance autour de : Tab, Agent vs Plan Mode, Customize, navigateur/Design Mode, Bugbot, cloud agents.",
+  "gravite": "important",
+  "reco": "Enrichir le bloc Cursor de l'ONBOARDING : 1) ouvre la page Customize et vérifie que rules/commands/hooks/MCP du kit y apparaissent (auto-diagnostic débutant), 2) Shift+Tab pour Plan Mode, 3) app mobile pour suivre un agent long. Créer un support de formation « tour de Cursor 2026 » aligné sur ces entrées.",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Packager le kit Cursor en plugin marketplace : une installation en une commande",
+  "constat": "Le wizard copie un à un rules/, commands/, hooks/, BUGBOT.md, mcp.json… soit exactement les composants qu'un plugin Cursor bundle nativement : manifeste .cursor-plugin/plugin.json (name kebab-case obligatoire) + dossiers rules/, skills/, agents/, commands/, hooks/hooks.json, mcp.json, découverte automatique des composants (https://cursor.com/docs/reference/plugins). Publication via cursor.com/marketplace/publish ; les Team Marketplaces (3.9/3.10) permettent même une distribution contrôlée à une cohorte avec modes Default On/Required (https://cursor.com/changelog). Un élève ferait « /add-plugin vibecoding-saas » au lieu de cloner le repo + lancer node scripts/setup.mjs.",
+  "gravite": "opportunite",
+  "reco": "Créer 3 plugins (un par stack) à partir de templates/cursor/ + les commandes, publiés sur le marketplace. Garder le wizard pour le scaffolding projet (roadmap, mémoire, CI) et déléguer la partie Cursor au plugin. Étape intermédiaire peu coûteuse : structurer templates/cursor/ au format plugin et tester en local via ~/.cursor/plugins/.",
+  "effort": "L",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Installation MCP Stitch : un deeplink « Add to Cursor » remplacerait le JSON à copier",
+  "constat": "matrix.mjs:50 fait copier au débutant un bloc JSON dans ~/.cursor/mcp.json via Settings → MCP. Cursor documente les liens d'installation en un clic : cursor://anysphere.cursor-deeplink/mcp/install?name=$NAME&config=$BASE64_CONFIG, format identique à mcp.json encodé en base64 (https://cursor.com/docs/context/mcp/install-links). Le geste manuel n°2 du modèle de friction du kit peut se réduire à un clic + coller la clé.",
+  "gravite": "opportunite",
+  "reco": "Faire générer par le wizard (renderSetupAi) un deeplink cliquable pour Stitch avec la config pré-remplie et un placeholder TA_CLÉ, en gardant l'instruction actuelle en fallback. Attention à ne jamais encoder la vraie clé dans un fichier committé.",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Hooks conformes, mais 3 événements récents serviraient directement le kit",
+  "constat": "templates/cursor/hooks.json est conforme au schéma actuel (version 1 ; sessionStart, afterFileEdit, beforeShellExecution tous documentés ; sorties permission/user_message/agent_message et additional_context correctes — https://cursor.com/docs/agent/hooks). La doc liste désormais bien plus : beforeSubmitPrompt, beforeMCPExecution/afterMCPExecution, beforeReadFile, preToolUse/postToolUse, preCompact, stop et subagentStop avec followup_message (auto-soumission d'un prompt suivant), afterAgentResponse, workspaceOpen, hooks Tab. Les hooks projet sont aussi chargés par les cloud agents (sauf hooks IDE).",
+  "gravite": "opportunite",
+  "reco": "1) Étendre guard-shell avec un hook beforeMCPExecution (mêmes patterns de danger côté outils MCP). 2) Étudier le hook stop + followup_message pour la boucle /build : à la fin d'un jalon vérifié, proposer automatiquement le suivant. 3) beforeSubmitPrompt pour détecter un secret collé dans le prompt — très adapté aux débutants.",
+  "effort": "M",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "cursor",
+  "titre": "environment.json valide mais minimal ; les cloud agents 3.7-3.9 méritent une place en formation",
+  "constat": "Les 3 fichiers templates/cursor/environment/*.json (install + terminals) sont conformes au schéma documenté ; le schéma complet offre aussi name, start, snapshot (démarrage rapide depuis état caché, créé automatiquement après install) et build.dockerfile/context (https://cursor.com/docs/cloud-agent/setup). Points absents du kit : les secrets cloud passent par l'onglet Secrets du dashboard, jamais .env (crucial pour les clés Convex si un élève lance un cloud agent) ; nouveautés /in-cloud (subagents cloud en VM isolée) et /babysit (préparer une PR au merge) en 3.7, app iOS 3.9 (https://cursor.com/docs/cloud-agent, https://cursor.com/changelog).",
+  "gravite": "opportunite",
+  "reco": "Ajouter \"name\": \"<stack> (kit vibecoding)\" aux environment.json, une note ONBOARDING « cloud agent : mets tes clés dans Settings → Secrets, pas dans .env », et prévoir en formation une démo /in-cloud (parallélisme = effet whaou, et le kit est déjà prêt grâce à environment.json).",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "guard-shell : bonne pratique confirmée, à replacer dans le modèle sandbox natif 2026",
+  "constat": "templates/cursor/hooks/guard-shell.mjs implémente exactement ce que Cursor recommande en complément des allowlists : la doc Terminal précise que « l'allowlist est best-effort, pas une frontière de sécurité » (https://cursor.com/docs/agent/tools/terminal), le sandboxing natif est déployé sur macOS/Linux/Windows (https://cursor.com/blog/agent-sandboxing), et CVE-2026-22708 a montré un bypass d'allowlist via les shell built-ins (advisory GitHub cursor/cursor GHSA). Le kit n'explique nulle part comment son hook s'articule avec le sandbox et l'allowlist de Cursor — un formateur doit savoir présenter les trois couches.",
+  "gravite": "opportunite",
+  "reco": "Ajouter 3 lignes dans l'ONBOARDING/formation : « Cursor a un sandbox natif (active Run in Sandbox), une allowlist (best-effort), et le kit ajoute guard-shell en 3e filet ». Vérifier en démo que le hook bloque bien rm -rf ~ même en Auto-Run.",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Cursor Automations : l'équivalent natif du « dream hook » du kit",
+  "constat": "Le dream hook du kit (templates/dream/dream.yml, GitHub Action propose-only) a désormais un équivalent natif : Cursor Automations (améliorées en 3.8, juin 2026) — skill /automate pour les créer en session locale, déclencheurs GitHub (5 nouveaux : commentaires d'issue, reviews de PR…), emoji Slack, exécution cloud, gestion des fichiers mémoire (suppression des souvenirs obsolètes par l'automation), computer-use pour produire des démos (https://cursor.com/changelog/06-18-26). Le kit n'en parle pas.",
+  "gravite": "opportunite",
+  "reco": "Garder le dream hook GitHub Action comme solution portable (multi-assistant), mais ajouter un encadré « équivalent natif Cursor : Automations (/automate) » dans l'ONBOARDING et la formation — notamment pour la consolidation mémoire hebdo, qu'une Automation peut faire sans CI.",
+  "effort": "M",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Bugbot : configuration conforme, nouveautés 2026 à mentionner",
+  "constat": "templates/cursor/BUGBOT.md est au bon emplacement (.cursor/BUGBOT.md, confirmé) et l'activation dashboard décrite ligne 9 est correcte. Nouveautés docs non reflétées : fichiers BUGBOT.md imbriqués (inclus en remontant depuis les fichiers modifiés), déclenchement manuel par commentaire PR « bugbot run » / « cursor review », skills /review-bugbot et /review dans l'IDE (3.7+), Autofix qui lance un cloud agent, tarification usage-based depuis mai 2026 avec niveaux d'effort, support GitLab et Bitbucket (https://cursor.com/docs/bugbot). Perf juin 2026 : review ~90 s (https://cursor.com/changelog).",
+  "gravite": "mineur",
+  "reco": "Ajouter à BUGBOT.md/ONBOARDING : « déclenche une review à la main en commentant bugbot run sur la PR, ou /review dans l'IDE » + une phrase sur le coût usage-based pour éviter les surprises aux élèves.",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Plugin Convex : /add-plugin marketplace plutôt que git clone ; /add-plugin superpowers validé",
+  "constat": "matrix.mjs:3 (« /add-plugin superpowers ») est correct : /add-plugin installe les plugins du Cursor Marketplace et superpowers y est publié (vérifié). En revanche matrix.mjs:61 fait cloner get-convex/convex-agent-plugins dans ~/.cursor/plugins/convex-agent-plugins : le README officiel du plugin dit lui-même « Install via the Cursor Marketplace or manually » (et clone sous le nom convex), et /add-plugin ne marche que pour les plugins marketplace — un git clone terminal est un geste manuel de plus pour un débutant, contraire au modèle de friction du kit (2 gestes).",
+  "gravite": "mineur",
+  "reco": "Vérifier le slug marketplace du plugin Convex et remplacer le git clone par « /add-plugin <slug> » dans le SETUP-AI (même geste chat que superpowers). Fallback : garder le clone mais sous ~/.cursor/plugins/convex comme le README officiel.",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Memories : la page docs dédiée a disparu, le kit doit rafraîchir son conseil",
+  "constat": "templates/ONBOARDING.md:8 dit de laisser « Generate Memories » désactivé. Constat vérifié : l'ancienne page docs.cursor.com/context/memories redirige vers la page Rules (plus de doc dédiée), et le modèle a évolué vers des « memory files » gérables : suppression en UI ou via Automations depuis la 3.8 (https://cursor.com/changelog/06-18-26). Le libellé « Generate Memories » du réglage peut donc ne plus correspondre à l'UI 3.x que verront les élèves. L'argument du kit (mémoire versionnée et portable dans docs/memory/) reste valide.",
+  "gravite": "mineur",
+  "reco": "Vérifier le libellé exact du réglage dans un Cursor 3.10 à jour et reformuler la ligne ONBOARDING (« si Cursor propose des memories natives, garde-les désactivées : le kit versionne sa mémoire dans docs/memory/ »). En formation, montrer les deux et expliquer pourquoi le kit a choisi les fichiers versionnés.",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Conformité vérifiée du socle Cursor du kit (rules, ignore, @Docs, environnement) — RAS",
+  "constat": "Vérifié contre les docs de juillet 2026 : format .mdc (description/globs CSV/alwaysApply, 4 types de règles) conforme — templates/cursor/rules/*.mdc et toCursorMdc génèrent un frontmatter valide (https://cursor.com/docs/context/rules) ; .cursorignore/.cursorindexingignore corrects, et le commentaire du kit « ne bloque PAS l'accès terminal/MCP » est littéralement confirmé par la doc (https://cursor.com/docs/context/ignore-files — noter : réglage hiérarchique déplacé vers Settings > Indexing en 3.11) ; @Docs existe toujours tel que décrit dans l'ONBOARDING ; le pick karpathy-guidelines.mdc répond 200. À noter : Cursor lit désormais nativement AGENTS.md (y compris imbriqués par sous-dossier), donc l'AGENTS.md racine du kit est chargé en plus de 00-project.mdc — chevauchement léger et volontaire, à surveiller pour éviter les doublons de consignes.",
+  "gravite": "mineur",
+  "reco": "Rien à corriger. Mettre en place une veille du changelog (cursor.com/changelog) avant chaque session de formation ; relire 00-project.mdc vs AGENTS.md pour supprimer toute consigne dupliquée mot pour mot.",
+  "effort": "S",
+  "source_agent": "cursor-etat-art"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Pas de mode non-interactif pour le wizard (setup en salle de formation)",
+  "constat": "scripts/setup.mjs (203 lignes) est purement interactif. Les concurrents create-better-t-stack (https://github.com/AmanVarshney01/create-better-t-stack) et claude-code-templates (https://github.com/davila7/claude-code-templates) supportent tous des flags non-interactifs (`npx claude-code-templates@latest --agent X --yes`) pour CI et installation en masse. En formation, 20 élèves qui répondent chacun aux questions = 20 sources d'erreurs et un formateur qui ne peut pas pré-configurer.",
+  "gravite": "important",
+  "reco": "Ajouter `node scripts/setup.mjs --stack saas --assistant cursor --yes` (+ éventuellement `--config reponses.json`) pour permettre au formateur de distribuer UNE commande par cohorte, et de re-exécuter le setup de façon idempotente. Testable dans setup.test.mjs.",
+  "effort": "S",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Deeplinks cursor:// pour éliminer le geste manuel MCP",
+  "constat": "Notre modèle de friction garde 2 gestes manuels (plugins + MCP). Or l'écosystème Cursor distribue les serveurs MCP via un bouton 'Add to Cursor' : un deeplink cursor:// avec la config encodée en base64 que Cursor écrit lui-même dans mcp.json après dialogue d'approbation (https://www.quadratichq.com/ai/mcp/cursor, https://liblab.com/docs/mcp/howto-connect-mcp-to-cursor). cursor.directory utilise ce pattern à grande échelle.",
+  "gravite": "important",
+  "reco": "Faire générer par setup.mjs des liens 'Ajouter à Cursor' (deeplink base64 par MCP de la stack) directement dans le ONBOARDING.md généré. Le geste MCP passe de 'copier du JSON' à 'cliquer un lien'. Garder le fallback manuel pour claude-code/codex.",
+  "effort": "M",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Voler le SPEC Kernel 5 champs de BMAD v6.8 pour le PRD débutant",
+  "constat": "BMAD-METHOD v6.8 distille toute spec en 5 champs : Problème, Capacités, Contraintes, Non-objectifs, Signal de succès (https://deepwiki.com/bmad-code-org/BMAD-METHOD/1.4-what's-new-in-v6). Notre /new-project (templates/commands/new-project.md) produit un PRD complet mais rien ne force le débutant à formuler les NON-objectifs — la cause n°1 de dérive de scope chez les débutants.",
+  "gravite": "opportunite",
+  "reco": "Ajouter en tête du PRD généré un encart 'mini-spec 5 champs' obligatoire (dont non-objectifs et signal de succès mesurable), que /build relit à chaque jalon pour refuser le hors-scope.",
+  "effort": "S",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Journal de décisions (.decision-log) absent — pattern BMAD v6",
+  "constat": "BMAD v6 enregistre chaque décision de workflow dans un .decision-log.md, ce qui permet de reprendre ou modifier un projet plus tard avec l'historique du POURQUOI (https://deepwiki.com/bmad-code-org/BMAD-METHOD/1.4-what's-new-in-v6). Notre mémoire projet (templates/memory/, docs/memory/) capture l'état mais pas la trace des choix (pourquoi Convex, pourquoi cette maquette, quelles variantes rejetées).",
+  "gravite": "opportunite",
+  "reco": "Ajouter docs/memory/decisions.md alimenté automatiquement par /new-project et /build (une ligne par décision : date, choix, alternatives écartées, raison). Très vendeur en formation : l'élève voit son raisonnement produit.",
+  "effort": "S",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Mode Rapide vs Coaché pour l'interview /new-project",
+  "constat": "Les skills de planning BMAD v6.7 offrent deux chemins : 'Fast' (l'IA batch ses hypothèses) et 'Coaching' (élicitation section par section), plus 3 intents Create/Update/Validate (https://deepwiki.com/bmad-code-org/BMAD-METHOD/1.4-what's-new-in-v6). Notre /new-project n'a qu'un mode et ne gère pas 'je reviens modifier mon PRD/ma maquette la semaine 3 de la formation'.",
+  "gravite": "opportunite",
+  "reco": "Ajouter à /new-project un choix initial Rapide/Coaché (Coaché par défaut pour débutants) et un intent 'mettre à jour' qui relit PRD + maquette existants au lieu de repartir de zéro.",
+  "effort": "M",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "adoption-existant",
+  "titre": "Aucun chemin pour un projet existant — Agent OS v3 fait de la découverte de standards",
+  "constat": "Agent OS v3 (Brian Casel) a pivoté sur : extraire les patterns d'un codebase EXISTANT en standards documentés, puis les injecter contextuellement (https://buildermethods.com/agent-os, https://github.com/buildermethods/agent-os). Notre kit est greenfield-only, or beaucoup d'élèves arrivent avec un projet Lovable/Bolt déjà commencé et cassé — c'est même un motif d'inscription en formation.",
+  "gravite": "important",
+  "reco": "Ajouter une 6e commande /adopter (ou une branche du wizard 'projet existant') : scan du code, génération d'AGENTS.md + règles .mdc dérivées des conventions détectées, diagnostic /doctor, puis raccrochage au flux maquette/roadmap.",
+  "effort": "L",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Format commands/ potentiellement legacy côté Claude Code — migration vers SKILL.md",
+  "constat": "L'écosystème awesome-claude-code rapporte l'unification des commandes custom avec les skills : .claude/commands/ serait legacy au profit de .claude/skills/<nom>/SKILL.md, qui garde l'invocation /nom et peut embarquer des fichiers de support (https://github.com/hesreallyhim/awesome-claude-code, https://claudefa.st/blog/tools/resources/awesome-claude-code). Nos 5 commandes vivent dans templates/commands/*.md. Risque de churn de format qui casserait le kit chez les élèves après une mise à jour de Claude Code.",
+  "gravite": "important",
+  "reco": "Vérifier le statut officiel, puis faire installer par setup.mjs le format SKILL.md pour claude-code (avec fichiers de support : le template PRD, la checklist maquette) tout en gardant commands/ en compat. Ajouter un check /doctor 'format des commandes à jour'.",
+  "effort": "M",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "couts",
+  "titre": "Garde-fous budget absents du flux — les kits débutants concurrents en font un argument central",
+  "constat": "Le vibe-coding-starter-kit de Neil10000 intègre un 'budget-conscious gate checking' : limite de dépense en config et analyse de coût à chaque phase avant d'ouvrir la porte suivante (https://github.com/Neil10000/vibe-coding-starter-kit). Chez nous, les coûts sont traités dans un guide statique (guides/03-securite-et-couts.md) mais rien dans le flux /new-project → /build ne rappelle ou vérifie le budget.",
+  "gravite": "opportunite",
+  "reco": "Ajouter une question budget au wizard (écrite dans environment.json ou docs/memory/) et un checkpoint dans /build en fin de jalon : 'vérifie ta conso Cursor/Convex, budget déclaré : X€/mois'. Zéro dépendance, pur prompt.",
+  "effort": "S",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Stack Builder web : générer la commande depuis une page, pattern create-better-t-stack",
+  "constat": "create-better-t-stack propose un builder visuel (https://better-t-stack.dev/new) qui génère la commande CLI ; claude-code-templates a un catalogue web avec Stack Builder et commande unique copiable (https://davila7.github.io/claude-code-templates/). Pour un débutant français qui a peur du terminal, choisir sa stack sur une page web AVANT d'ouvrir le terminal réduit fortement l'anxiété du premier geste.",
+  "gravite": "opportunite",
+  "reco": "Une page GitHub Pages statique (HTML pur, cohérent avec le zéro-dépendance) : 3 boutons stack + 3 boutons assistant → affiche la commande `node scripts/setup.mjs --stack ... --assistant ... --yes` à copier, avec la liste de ce qui sera installé. Dépend du mode non-interactif.",
+  "effort": "M",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "design",
+  "titre": "Two-Spine UX de BMAD : séparer identité visuelle et logique d'expérience",
+  "constat": "BMAD v6.8 sépare DESIGN.md (identité visuelle) d'EXPERIENCE.md (logique comportementale, parcours) (https://deepwiki.com/bmad-code-org/BMAD-METHOD/1.4-what's-new-in-v6). Notre design.md issu de la maquette Stitch mélange les deux, alors que notre flux maquette-first est justement notre différenciateur — les parcours/états dérivés de la maquette méritent leur propre artefact que /build peut vérifier écran par écran.",
+  "gravite": "opportunite",
+  "reco": "Scinder la sortie de /new-project : design.md (couleurs, typo, composants, thème tweakcn) + experience.md (parcours par écran de la maquette, états vides/erreur/chargement). /build compare le jalon aux DEUX fichiers.",
+  "effort": "S",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Docs vivantes auto-régénérées : le pattern VibeReady à voler pour la mémoire",
+  "constat": "VibeReady (kit payant 149-399$) vend une 'living documentation qui s'auto-régénère via hooks Git' + un Smart Context Router sur AGENTS.md pour ne charger que le contexte pertinent (https://vibeready.sh/vibe-coding-starter/). Nos hooks mémoire existent (templates/hooks/, templates/memory-consolidate/) mais la section 'état du projet' d'AGENTS.md peut devenir stale entre deux jalons — cause classique d'IA qui code contre une architecture périmée.",
+  "gravite": "opportunite",
+  "reco": "Ajouter un hook post-jalon (ou étape finale de /build) qui régénère la section 'état actuel' d'AGENTS.md + docs/memory/ à partir du code réel (routes, tables Convex, écrans). Argument marketing : on offre gratuitement ce que VibeReady facture 149$.",
+  "effort": "M",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "diagnostic",
+  "titre": "/doctor à enrichir façon health-check claude-code-templates",
+  "constat": "claude-code-templates fournit un Health Check de diagnostic complet + un Plugin Dashboard qui visualise l'état des composants installés (https://davila7.github.io/claude-code-templates/). Notre /doctor existe (templates/commands/doctor.md) — c'est un vrai atout à valoriser — mais il faut vérifier qu'il couvre : MCP joignables, plugin superpowers présent, hooks actifs, maquette/ présente, format des règles .mdc valide.",
+  "gravite": "mineur",
+  "reco": "Étendre /doctor avec une checklist exhaustive par stack (MCP ping, présence des 2 gestes manuels effectués, version des skills) et un affichage vert/orange/rouge lisible par un débutant, avec l'action réparatrice à côté de chaque item rouge.",
+  "effort": "M",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "ONBOARDING trop court face aux parcours guidés interactifs (easy-vibe)",
+  "constat": "templates/ONBOARDING.md fait 28 lignes. easy-vibe (datawhalechina, cours vibe coding le plus structuré trouvé) organise l'apprentissage en carte de progression 3 étapes, 'construis d'abord, comprends ensuite', avec annexe de 80+ notions (https://github.com/datawhalechina/easy-vibe). Nos guides/ (3 guides + glossaire) sont bons mais déconnectés du moment où l'élève en a besoin.",
+  "gravite": "mineur",
+  "reco": "Transformer l'ONBOARDING généré en carte de parcours : 'Tu es ici → prochain geste', avec liens contextuels vers guides/01-03 et le glossaire au moment pertinent (ex. lien sécurité juste avant le premier /build). Chaque commande slash pourrait pointer le guide associé en fin d'exécution.",
+  "effort": "S",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "positionnement",
+  "titre": "Positionnement : bon cap, trois leviers d'unicité à assumer",
+  "constat": "Analyse du champ 2025-2026 : BMAD = usine à agents pour power-users (https://github.com/bmad-code-org/BMAD-METHOD) ; Agent OS = standards pour équipes pro (https://buildermethods.com/agent-os) ; claude-code-templates = catalogue géant sans opinion (https://davila7.github.io/claude-code-templates/) ; kits vibe coding anglo = soit process sans code (Neil10000), soit boilerplate payant (VibeReady). En France : des FORMATIONS existent (Vibe Academy, IQ Project, https://www.nocodefactory.fr/blog/formation-vibe-coding) mais AUCUN kit open-source français outillé n'a été trouvé. Personne ne fait le flux maquette-validée → roadmap dérivée → build comparé à la maquette (BMAD v6.8 s'en approche seulement avec DESIGN.md/EXPERIENCE.md).",
+  "gravite": "opportunite",
+  "reco": "Assumer 3 différenciateurs dans le README et la communication : (1) seul kit FR open-source pensé pour une salle de formation (d'où : mode classroom non-interactif prioritaire), (2) maquette-first avec Stitch comme contrat de build — à breveter culturellement avant que BMAD y arrive, (3) zéro dépendance npm + hooks sécurité = installable sans risque par un débutant. Ne PAS courir après le catalogue de 600 agents ni le boilerplate payant.",
+  "effort": "S",
+  "source_agent": "concurrents"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Le curriculum standard 2025-26 converge vers le flux du kit — mais avec 2 modules que le kit n'a pas",
+  "constat": "Les cours de référence (DeepLearning.AI « Vibe Coding 101 with Replit », Coursera « Vibe Coding with Cursor AI », ZTM Bootcamp) enseignent tous la même séquence : prompting précis → planification via PRD + wireframes → build par petites tâches → debugging → déploiement. Le framework 5 compétences de Replit/Andrew Ng (thinking, frameworks, checkpoints, debugging, context) recoupe le flux PRD→maquette→roadmap→build du kit, MAIS tous consacrent des modules explicites au debugging et au déploiement, absents du flux actuel. Sources : https://www.deeplearning.ai/courses/vibe-coding-101-with-replit, https://www.coursera.org/learn/vibe-coding-with-cursor-ai, https://zerotomastery.io/courses/learn-vibe-coding/",
+  "gravite": "important",
+  "reco": "Ajouter au kit deux étapes de flux manquantes : un skill /debug pédagogique (méthode guidée : reproduire → isoler → décrire par écrit → une hypothèse à la fois) et un module « déployer » par stack (Convex deploy, EAS build Expo, electron-builder), avec checklist pré-déploiement dans l'ONBOARDING généré.",
+  "effort": "M",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Le « doom loop » est le point d'abandon n°1 documenté — le kit doit le détecter et le casser",
+  "constat": "Le cycle « IA corrige → nouveau bug → IA re-corrige » est LE moment où les débutants abandonnent : ils finissent sur des forums incapables d'expliquer leur propre code (LogRocket, ProductTalk, Ayala). Les antidotes documentés : requirements stables avant d'implémenter, session fraîche pour éviter la dégradation de contexte, agents séparés plan/code/review, et séparer le diagnostic de la correction. Sources : https://www.producttalk.org/vibe-coding-best-practices/, https://blog.logrocket.com/youre-doing-vibe-coding-wrong/, https://www.nicholasayala.com/blog/vibing-doom-loop",
+  "gravite": "critique",
+  "reco": "Câbler dans les règles Cursor du kit une « règle des 3 essais » : après 3 tentatives de fix ratées sur le même bug, l'agent doit s'arrêter et proposer la procédure de sortie : (1) git checkout du dernier état vert, (2) nouvelle conversation, (3) décrire le bug par écrit dans un fichier BUG.md avant tout nouveau prompt. En faire une page du glossaire/ONBOARDING (« la boucle infernale et comment en sortir »).",
+  "effort": "M",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Git enseigné comme filet de sécurité, pas comme sujet avancé — et automatisé",
+  "constat": "La littérature débutants (« Git for Vibe Coders ») montre que les non-devs voient Git comme un hobby de développeur, alors que c'est leur assurance-vie : l'IA fait des changements gros et rapides, donc le rayon d'erreur explose ; Git est ce qui permet de « toujours revenir à un état connu qui marche ». Source : https://medium.com/@markchen69/git-for-vibe-coders-a-beginners-survival-guide-360ac95562d1 + pratique « checkpoints » du framework Replit/DLAI.",
+  "gravite": "important",
+  "reco": "Le wizard du kit doit installer un réflexe checkpoint automatique : commit auto (ou proposé) à chaque étape de roadmap validée verte (hook ou règle Cursor), plus une commande en français simple type /retour-arriere qui fait un git revert au dernier commit vert sans jargon. Ne jamais enseigner Git en théorie : seulement 3 gestes (checkpoint, retour arrière, historique).",
+  "effort": "S",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "La compréhension du code généré est LA variable prédictive du succès (65% vs <40%)",
+  "constat": "Les builders qui posent des questions de suivi sur le code généré scorent 65%+ en compréhension du code, ceux qui acceptent tel quel scorent sous 40% — et ce comportement distingue ceux qui shippent de ceux qui abandonnent (codingwithvibe.com, 2026). La recherche CHI/metacognition recommande des reflection prompts et des checkpoints de pause délibérés plutôt que l'acceptation passive. Sources : https://codingwithvibe.com/vibe-coding-success-rate-non-developer/, https://arxiv.org/pdf/2511.04144, https://dl.acm.org/doi/10.1145/3772363.3798522",
+  "gravite": "critique",
+  "reco": "Ajouter au kit une checklist « je comprends ce que l'IA a fait » déclenchée à chaque fin d'étape roadmap : l'agent génère 3 questions courtes sur le code qu'il vient de produire (où est stockée la donnée ? que se passe-t-il si X échoue ? quel fichier gère Y ?) et l'élève doit répondre avant de passer à l'étape suivante. C'est le différenciateur pédagogique le plus rentable du kit.",
+  "effort": "M",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Le « Month 3 Wall » (63% d'abandon) valide la mémoire projet du kit — à renforcer côté architecture",
+  "constat": "63% des vibe coders abandonnent vers le 3e mois (phénomène nommé « Month 3 Wall » dans r/vibecoding) ; la cause structurelle documentée est que l'IA construit chaque feature en session isolée sans contexte système : routes qui contournent le middleware, logique dupliquée, casse en cascade. Les remèdes cités sont exactement ce que le kit fait déjà (mémoire projet, context files) plus un manquant : la doc d'architecture maintenue. Sources : https://codingwithvibe.com/vibe-coding-success-rate-non-developer/, https://www.buildthisnow.com/blog/guide/mechanics/vibe-coding-technical-debt",
+  "gravite": "important",
+  "reco": "Compléter la mémoire projet du kit avec un ARCHITECTURE.md auto-maintenu (l'agent le met à jour à chaque feature terminée : modules, routes, où vit chaque logique) + règle Cursor « relis mémoire + architecture avant toute nouvelle feature ». Vendre ce point dans le marketing du kit : « conçu pour passer le mur du 3e mois ».",
+  "effort": "S",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "securite",
+  "titre": "45% du code IA est vulnérable et les débutants exposent leurs secrets — il faut un garde-fou outillé, pas un chapitre théorique",
+  "constat": "Veracode 2025 : 45% des échantillons de code généré échouent aux tests de sécurité de base (XSS : 86% d'échec) ; scan Escape.tech sur 5 600 apps vibe-codées : 2 000+ vulnérabilités, 400+ secrets exposés, 175 fuites de PII ; 10,3% des apps Lovable scannées exploitables. Erreurs débutants types : clés API collées dans les prompts ou en dur, auth générique non adaptée, aucune validation d'input. Sources : https://www.aikido.dev/blog/vibe-coding-security, https://vibeappscanner.com/vibe-coding-for-beginners-security, https://evilmartians.com/chronicles/four-most-common-security-risks-when-vibe-coding-your-app",
+  "gravite": "critique",
+  "reco": "Le kit gère déjà « clé jamais commitée » pour Stitch — généraliser : règle Cursor globale « jamais de secret en dur ni dans un prompt, toujours .env », et un skill /check-securite pré-déploiement par stack (Convex : règles d'accès des functions ; Expo : secrets EAS ; Electron : audit du preload/contextIsolation via le skill electron:security-audit déjà dispo). Lancement obligatoire avant le module déploiement.",
+  "effort": "M",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "couts",
+  "titre": "Le coût de Cursor est une source documentée de choc et d'abandon — le kit doit inclure une éducation budget",
+  "constat": "Le passage de Cursor au pricing à l'usage (juin 2025) a produit un backlash massif : utilisateurs à court de crédits « après quelques prompts » sur les modèles Claude, témoignages de 350$ d'overage en une semaine, excuses publiques et remboursements de Cursor (juillet 2025). Les débutants ne comprennent ni le modèle crédits ni pourquoi une grosse tâche agentique coûte cher. Sources : https://techcrunch.com/2025/07/07/cursor-apologizes-for-unclear-pricing-changes-that-upset-users/, https://cursor.com/blog/june-2025-pricing, https://www.cloudzero.com/blog/cursor-ai-pricing/",
+  "gravite": "important",
+  "reco": "Ajouter au wizard une étape « budget » : explication en français du pricing Cursor (plan, crédits, modèle Auto vs modèles premium), réglages par défaut économes posés par le wizard (Auto pour l'itération, premium réservé au plan/review), et une page ONBOARDING « pourquoi ma facture monte » avec les 3 comportements coûteux (grosses tâches one-shot, conversations interminables, re-prompts en doom loop — lien avec la règle des 3 essais).",
+  "effort": "S",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "La recherche valide le scaffolding dégressif : garde-fous forts au début, retirés progressivement",
+  "constat": "La recherche 2025-26 sur les novices montre que la sur-reliance est le risque n°1 (les novices utilisent l'IA pour l'aide immédiate, pas pour apprendre), que les assistants avec guardrails conçus par des enseignants donnent de meilleurs résultats que ChatGPT/Copilot bruts, et propose un modèle de progression de persona IA en 4 étapes (Guide → Collaborateur → Pair → Lanceur) opérationnalisant le Gradual Release of Responsibility. Sources : https://aaltodoc.aalto.fi/bitstreams/e8807935-dd5e-4e0d-9590-33ebeb7d5cb1/download, https://arxiv.org/pdf/2401.11314 (CodeAid), https://arxiv.org/pdf/2604.23251",
+  "gravite": "opportunite",
+  "reco": "Introduire un « niveau élève » stocké dans la mémoire projet (débutant / intermédiaire / autonome) que les règles Cursor lisent : niveau 1 = l'agent explique chaque étape et demande validation + questions de compréhension systématiques ; niveau 2 = validation aux jalons seulement ; niveau 3 = mode normal. Le wizard pose la question au setup, l'élève peut monter de niveau quand il veut.",
+  "effort": "L",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Projet d'échauffement guidé AVANT le projet perso : le pattern des cours qui marchent",
+  "constat": "Les cours efficaces (DLAI/Replit : 2 apps imposées avec checkpoints ; recherche PBL 2025 : projets guidés où l'IA sert de scaffold métacognitif) font construire un petit projet imposé avant le projet libre ; les débutants qui attaquent directement leur grosse idée cumulent doom loop + Month 3 Wall. Le kit actuel démarre directement sur le projet de l'élève via PRD. Sources : https://www.deeplearning.ai/courses/vibe-coding-101-with-replit, https://link.springer.com/article/10.1007/s44322-025-00041-0, https://dev.to/atsushiambo/i-took-a-popular-vibe-coding-course-and-built-a-sample-app-3124",
+  "gravite": "important",
+  "reco": "Ajouter par stack un « projet d'échauffement » de 2h : template avec PRD pré-rempli, maquette Stitch fournie, roadmap de 5 étapes, ET 2 bugs volontaires à débugger en étapes 4-5 (pour pratiquer la sortie de doom loop en environnement sûr). Le wizard propose « échauffement ou projet perso ? » au premier lancement.",
+  "effort": "M",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "evaluation",
+  "titre": "L'évaluation qui monte en 2025-26 : critiquer du code IA bogué et expliquer son raisonnement, pas « l'app marche »",
+  "constat": "Les assessments AI-aware convergent : format « AI code review » (on présente du code généré avec bugs subtils, le candidat doit les identifier et expliquer pourquoi), entretiens où on observe COMMENT la personne utilise l'IA, et vérification de compréhension par discussion. « L'app tourne » n'est plus un critère suffisant puisque l'IA y arrive seule. Sources : https://www.hackerrank.com/writing/designing-ai-integrated-coding-assessments-real-world-work-2025-guide, https://coderscreen.com/blog/state-of-technical-interviews-2025-ai, https://arxiv.org/pdf/2604.07304",
+  "gravite": "opportunite",
+  "reco": "Pour la formation qui utilise le kit : évaluer par mini-défis « trouve le bug dans ce code IA » (banque d'exercices par stack) + un quiz oral/écrit de compréhension sur le projet de l'élève (généré par l'agent depuis le vrai code du projet). Le skill de checklist compréhension (finding 4) fournit déjà la matière première.",
+  "effort": "M",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "marche-fr",
+  "titre": "Marché FR : offre jeune, chère ou superficielle — vraie fenêtre pour un kit outillé structuré",
+  "constat": "L'offre française se partage entre : formations chères orientées business (Vibe Academy : 3 500 €, 8 semaines, Cursor/Next/Supabase, coaching hebdo + livrables obligatoires + garantie première vente), une formation RNCP 3 mois (GDU Campus, Lovable/Cursor), et une masse de blogs SEO (Ottho, IQ Project, Swanbase, PromptFacile) sans outillage. Personne ne propose en FR : un kit outillé gratuit/low-cost (wizard, skills, règles), ni de contenu débutant sur Convex/Expo/Electron. Sources : https://vibeacademy.eu, https://repha.fr/vibe-coding-formations-2026/, https://www.jedha.co/formation-ia/meilleures-formations-cursor-ai",
+  "gravite": "opportunite",
+  "reco": "Positionner le kit sur le créneau vide : « le kit outillé qui installe les bonnes pratiques dans ton Cursor », complémentaire (pas concurrent) des formations business. Reprendre le mécanisme qui fait tenir les élèves chez Vibe Academy — livrables hebdomadaires — sous forme de jalons roadmap. Les 3 stacks (Convex/Expo/Electron) sont un différenciateur FR net à mettre en avant.",
+  "effort": "S",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "suivi-eleve",
+  "titre": "Le suivi de progression visible est le mécanisme de rétention commun aux formations et à la recherche",
+  "constat": "Vibe Academy tient ses élèves par des livrables hebdo corrigés ; la recherche métacognition recommande des cycles de feedback itératifs et l'auto-évaluation guidée des lacunes ; et l'abandon (Month 3 Wall, doom loop) survient précisément quand l'élève perd la trace de où il en est et de ce qui marche. Sources : https://vibeacademy.eu, https://arxiv.org/pdf/2511.04144, https://arxiv.org/pdf/2604.23251",
+  "gravite": "opportunite",
+  "reco": "Faire générer par le kit un PROGRESS.md auto-maintenu : étapes roadmap terminées avec date, scores aux checklists de compréhension, bugs résolus seul vs avec IA, niveau élève courant. Partageable tel quel avec un formateur (ou un canal Discord de la formation) — ça donne au kit une brique « suivi élève » que ni les blogs ni les formations outillées FR n'offrent.",
+  "effort": "S",
+  "source_agent": "pedagogie-marche"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "MCP en 1 clic via deeplinks cursor:// — supprimer le dernier geste manuel",
+  "constat": "Le kit demande encore un geste manuel pour connecter le MCP Stitch (templates/ONBOARDING.md:24, commande exacte dans docs/SETUP-AI.md). Or Cursor supporte des liens d'installation 1-clic : un deeplink cursor://anysphere.cursor-deeplink/mcp/install?name=...&config=<base64> ouvre un dialogue d'approbation et écrit le serveur dans mcp.json (https://cursor.com/docs/context/mcp/install-links). Le registre MCP officiel (https://registry.modelcontextprotocol.io, preview depuis sept. 2025, GA à venir) pousse tout l'écosystème vers ce modèle « one button, every client ».",
+  "gravite": "important",
+  "reco": "Faire générer par le wizard (scripts/setup.mjs) un lien cursor:// prêt à cliquer dans ONBOARDING.md pour chaque MCP requis (config base64 générée localement, la clé restant demandée par Cursor au moment de l'approbation — jamais commitée). Fallback : la commande actuelle. Idem pour les plugins si un deeplink existe. Objectif : passer de « 2 gestes manuels » à « 2 clics ».",
+  "effort": "S",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Time-to-first-win < 5 min : finir le wizard sur un « wow » visuel, pas sur du texte",
+  "constat": "Lovable réduit le time-to-first-win avec un dashboard qui s'ouvre sur une grande boîte de prompt + des projets communautaires remixables ; Base44 amène des non-techs d'idée à app fonctionnelle en moins d'une heure (https://hostadvice.com/ai-app-builders/lovable-review/, https://www.usecarly.com/blog/what-is-base44/). Le wizard du kit se termine aujourd'hui sur des instructions texte : le premier résultat visuel n'arrive qu'après /new-project + maquette + /build jalon 0.",
+  "gravite": "important",
+  "reco": "À la fin de scripts/setup.mjs, servir immédiatement une page localhost « 🎉 Ton environnement est prêt » (http.createServer natif Node, zéro dépendance) qui liste ce qui a été installé, les 5 commandes, et un bouton/consigne « copie ce premier prompt dans Cursor ». Le débutant a son premier écran dans le navigateur en < 2 min, avant même la première ligne de code.",
+  "effort": "M",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Dashboard localhost de progression (roadmap + jalons + screenshots)",
+  "constat": "Les orchestrateurs locaux open source valident le pattern « UI web locale au-dessus d'agents CLI » : Vibe Kanban (Apache-2.0, npx vibe-kanban) offre kanban de tâches, diffs, preview navigateur intégrée au-dessus de Claude Code/Cursor & co (https://github.com/BloopAI/vibe-kanban) ; Conductor fait pareil sur Mac. Le kit a déjà toute la donnée : docs/ROADMAP.md (jalons cochés), docs/memory/, et des screenshots par jalon exigés par /build (templates/commands/build.md:9).",
+  "gravite": "opportunite",
+  "reco": "Ajouter un script `node scripts/dashboard.mjs` zéro-dépendance qui parse ROADMAP.md et sert sur localhost une page de progression : barre d'avancement, jalons cochés, dernier screenshot par jalon, prochaine étape. C'est le « chantier visible » des builders no-code, en local et offline. Pointer les curieux avancés vers vibe-kanban en option.",
+  "effort": "L",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Checkpoints nommés par jalon : le « time travel » de Bolt transposé en git",
+  "constat": "Bolt.new offre une timeline visuelle de versions nommées avec preview avant restauration (https://support.bolt.new/building/using-bolt/rollback-backup) et Replit Agent des rollbacks par checkpoint — c'est LE filet de sécurité psychologique des débutants. Le kit committe à chaque jalon (templates/commands/build.md, étape 5) mais ne nomme rien et n'offre aucun geste simple de retour arrière : « git revert » reste terrifiant pour la cible.",
+  "gravite": "important",
+  "reco": "Dans /build étape 5, créer un tag git `jalon-NN-nom` à chaque jalon coché. Ajouter une mini-commande /rewind (ou section dans /doctor) : lister les jalons en français (« Jalon 3 — page de connexion, il y a 2 h »), proposer « revenir voir » (checkout détaché + relance de l'app) ou « restaurer » (branche de secours automatique avant tout reset). Vocabulaire machine-à-remonter-le-temps, jamais de jargon git.",
+  "effort": "M",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Navigateur intégré Cursor 2.0 : l'agent vérifie lui-même le « ✅ Ce que tu vois »",
+  "constat": "Replit Agent 3 doit son succès à sa boucle d'auto-test : il teste l'app dans le navigateur et corrige seul, « 10x plus autonome » (https://blog.replit.com/introducing-agent-3-our-most-autonomous-agent-yet). Cursor 2.0 embarque désormais un navigateur in-editor avec sélection d'éléments et transfert du DOM à l'agent, qui peut tester ses changements front et itérer sans intervention (https://cursor.com/changelog/2-0). Le /build du kit exige déjà une vérification visuelle par jalon (templates/commands/build.md:9) mais ne dit pas à l'agent d'utiliser ce navigateur.",
+  "gravite": "important",
+  "reco": "Enrichir templates/commands/build.md étape 4 et la règle .mdc Cursor : « ouvre l'app dans le navigateur intégré de Cursor, vérifie le ✅ du jalon et compare à la maquette AVANT de me montrer ». La boucle auto-test de Replit devient gratuite côté kit. Prévoir le fallback screenshot pour Claude Code/Codex.",
+  "effort": "S",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "cursor",
+  "titre": "« Select element » : cliquer sur l'élément à modifier au lieu de le décrire",
+  "constat": "L'UX la plus louée de Lovable est le Select Element : cliquer un élément dans la preview pour le référencer dans le chat, et les éditions visuelles ne consomment pas de crédits (https://uibakery.io/blog/lovable-vs-bolt-vs-v0, https://addyo.substack.com/p/ai-driven-prototyping-v0-bolt-and). Le navigateur intégré de Cursor 2.0 offre exactement ça (sélection d'éléments + DOM forwardé à l'agent), mais /edit-design (templates/commands/edit-design.md) ne l'exploite pas : le débutant doit décrire « le bouton bleu en haut à droite ».",
+  "gravite": "important",
+  "reco": "Documenter dans /edit-design et le guide Cursor le geste « clique l'élément dans le navigateur intégré puis dis ce que tu veux changer ». Une page du glossaire/guide avec 2 captures suffit — c'est le pont direct entre l'UX Lovable et le kit.",
+  "effort": "S",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "positionnement",
+  "titre": "Argument sécurité chiffré : 170+ apps Lovable exposées, failles Base44 — le kit review par défaut",
+  "constat": "CVE-2025-48757 : 303 endpoints de 170+ projets Lovable (10,3 % des 1 645 analysés) lisibles sans authentification à cause de RLS Supabase manquantes (https://vibeappscanner.com/lovable-security) ; Base44 : XSS stocké + JWT du compte principal passé en URL, permettant des prises de contrôle de compte (https://www.imperva.com/blog/critical-flaws-in-base44-exposed-sensitive-data-and-allowed-account-takeovers/) ; 53 % des équipes découvrent des failles dans le code IA après la première review (https://getautonoma.com/blog/vibe-coding-security-risks). Le kit a déjà security-reviewer + scan de secrets + CI, mais ne s'en sert pas comme argument.",
+  "gravite": "important",
+  "reco": "Ajouter dans README.md et le support de formation un encadré « pourquoi pas juste Lovable ? » citant ces incidents chiffrés : sur les builders, la sécurité est invisible et subie ; dans le kit, chaque jalon passe security-reviewer. Vérifier que la règle stack SaaS impose le scoping par utilisateur (les exemples Convex le font déjà, templates/examples/saas.md — le dire explicitement).",
+  "effort": "S",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "positionnement",
+  "titre": "Coût visible vs crédits opaques : intégrer ccusage comme contre-argument pricing",
+  "constat": "Le pricing à crédits de Lovable et Bolt est jugé « très opaque et déroutant » (crédits mensuels + quotidiens + facturation Cloud séparée, rollover limité) (https://read.technically.dev/p/2026-vibe-coding-tool-comparison). En local, ccusage (4 800+ stars) lit les logs JSONL et affiche coûts par jour/session, offline, pour Claude Code/Codex/Gemini CLI et plus (https://github.com/ryoppippi/ccusage) ; Cursor et Claude Code ont aussi /usage natif.",
+  "gravite": "opportunite",
+  "reco": "Ajouter une section « combien ça coûte » dans /doctor ou le guide : `npx ccusage` pour voir sa dépense réelle, + tableau comparatif formation « abonnement builder ~25 €/mois à crédits opaques vs API à la consommation, visible à l'euro près ». Transforme la peur du coût API en avantage de transparence.",
+  "effort": "S",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Galerie de projets remixables : l'entrée « remix » plutôt que page blanche",
+  "constat": "Le point d'entrée n° 1 des builders n'est pas le prompt vide mais le remix : Lovable affiche des projets communautaires « à remixer » (frontend + backend fonctionnels) dès le dashboard, avec plusieurs entrées (prompt, template, remix, référence visuelle) (https://lovable.dev/guides/complete-guide-app-templates, https://hostadvice.com/ai-app-builders/lovable-review/). Le kit n'a que des exemples de code par stack (templates/examples/{saas,desktop,mobile}.md), pas de projet complet remixable.",
+  "gravite": "opportunite",
+  "reco": "Fournir par stack un « projet remix » complet : PRD rempli + maquette Stitch exportée + ROADMAP prête, que l'élève lance directement avec /build puis personnalise. En formation, tout le monde atteint un résultat visuel le jour 1 ; la page blanche devient l'option avancée.",
+  "effort": "M",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "Le « problème des 70 % » : les builders s'arrêtent où le kit commence",
+  "constat": "Analyse d'Addy Osmani : les builders no-code butent sur un « complexity threshold » qui force l'export vers un éditeur local — le fameux 70% problem — avec en prime lock-in écosystème (v0/Vercel) et corrections répétitives quand l'IA interprète mal (https://addyo.substack.com/p/ai-driven-prototyping-v0-bolt-and). Même les comparatifs pro-builders admettent que le versioning de la logique métier y devient opaque (https://shipper.now/lovable-vs-bolt/).",
+  "gravite": "opportunite",
+  "reco": "En faire le récit central du support de formation : « Lovable t'amène à 70 % puis tu exportes vers... exactement l'environnement que ce kit t'installe dès le jour 1 (vraie stack, git, review, mémoire). » Slide + paragraphe « Pourquoi ce projet » du README.md. Positionne le kit comme la destination, pas le concurrent.",
+  "effort": "S",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "« Connection flows » guidés pour les services externes (leçon Replit Agent 3)",
+  "constat": "Replit Agent 3 guide l'utilisateur dans un flux de connexion pas-à-pas quand une app a besoin de Notion, Linear, etc. (https://blog.replit.com/introducing-agent-3-our-most-autonomous-agent-yet) — c'est ce qui rend les intégrations accessibles aux non-devs. Le kit a le catalogue de domaines (docs/DOMAINS.md : Stripe, email, storage...) mais rien n'impose à l'IA d'accompagner la création de compte / récupération de clé / collage dans .env.local.",
+  "gravite": "mineur",
+  "reco": "Ajouter au template DOMAINS.md et à /build une consigne : quand un jalon nécessite un service externe, l'IA déroule un connection flow en français — où créer le compte, quelle clé copier, dans quel fichier la coller, comment vérifier que ça marche — un seul service à la fois, jamais « configure tes variables d'environnement » sec.",
+  "effort": "M",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "veille-mcp",
+  "titre": "Marketplaces de skills/agents mi-2026 : préparer le kit à la distribution par registre",
+  "constat": "Juin 2026 : Vercel skills.sh en GA (600 000 skills open source), Cline 3.0.16 avec bundling plugins+skills, Anthropic Managed Agents avec connecteurs MCP verticaux (https://www.totalum.app/blog/agent-skills-marketplaces-2026) ; le registre MCP officiel reste en preview avec GA annoncée (https://blog.modelcontextprotocol.io/posts/2025-09-08-mcp-registry-preview/). Le marché passe des annuaires fragmentés aux marketplaces curées. Le kit installe déjà ses skills via wizard, mais sa distribution reste « git clone ».",
+  "gravite": "opportunite",
+  "reco": "Deux pistes : (1) publier les commandes/skills du kit comme plugin Claude Code + entrée skills.sh pour l'acquisition (« installe le kit en 1 commande ») ; (2) dans le wizard, sourcer les MCP depuis le registre officiel dès sa GA plutôt que des configs en dur — moins de maintenance, et alignement avec le geste « one-click » que les élèves verront partout. À surveiller au prochain cycle de veille.",
+  "effort": "L",
+  "source_agent": "innovation"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Time-to-first-win beaucoup trop long : rien ne tourne avant 6 phases gated",
+  "constat": "Le scaffold + premier boot de l'app n'arrivent qu'en Phase 7 de /new-project (templates/commands/new-project.md:109-113) ou au jalon 0 de /build (templates/commands/build.md:13-14), c'est-à-dire APRÈS brainstorm (gate), PRD 9 sections (gate), choix stack, tech spec (gate), maquette Stitch itérée (gate), design.md (gate) et roadmap. Pour un débutant total, la première chose qui s'affiche à l'écran est à 1-3 h du clone — alors que la promesse produit est « tu vois ton produit grandir ».",
+  "gravite": "critique",
+  "reco": "Déplacer le scaffold + boot « hello world » juste après le choix de stack (ou : le wizard propose « démo express » qui scaffolde et lance l'app en fin d'install, avant même /new-project). Le débutant voit une fenêtre/page tourner en <15 min, PUIS on fait le travail de fond (PRD, maquette) avec la motivation acquise. Diviser le TTFW par 4 = réordonner, pas ajouter.",
+  "effort": "M",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "La clé API Google Stitch est sur le chemin critique du flux principal, sans fallback",
+  "constat": "Le pivot maquette-first fait de Stitch un passage obligé : Phase 5 de /new-project (templates/commands/new-project.md:77-81) suppose clé API Stitch + MCP user-scope déjà connectés (docs/ONBOARDING.md:21-24, SETUP-AI §Maquette). Un élève sans compte Google, avec un quota épuisé (~350 gén./mois) ou bloqué sur la création de clé se retrouve coincé AU MILIEU de /new-project. Aucun chemin de repli n'est écrit dans le runbook.",
+  "gravite": "critique",
+  "reco": "Ajouter un fallback explicite dans new-project.md Phase 5 : « pas de Stitch ? l'assistant génère lui-même des wireframes HTML statiques dans maquette/ » (l'IA sait très bien produire des maquettes HTML sobres ; le contrat en aval — fichiers HTML dans maquette/ que Phase 6 lit — reste identique). Stitch devient un enrichissement, pas un prérequis. Coût : quelques lignes de runbook.",
+  "effort": "S",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Le prompt final à coller — l'artefact le plus critique du handoff — n'existe qu'en sortie terminal",
+  "constat": "Le prompt de démarrage (setup.mjs:190-199) n'est imprimé QUE si fromWizard, après un long rapport qui le fait défiler ; il n'est écrit dans aucun fichier. Un élève qui ferme le terminal, scrolle mal, ou passe par le mode --flags (playbook Étape 3) le perd définitivement. De plus, report.mjs:9 imprime une « Prochaine étape : lance /new-project » qui contredit le prompt (qui dit : d'abord SETUP-AI + plugins + /mcp + /doctor).",
+  "gravite": "important",
+  "reco": "Écrire le prompt dans un fichier au nom impossible à rater à la racine du projet généré (ex. COLLE-MOI-DANS-L-IA.md), l'imprimer en dernier dans un cadre visuel, et aligner la ligne « prochaine étape » de report.mjs sur la vraie séquence. Bonus : /doctor vérifie si le fichier a été « joué » (cases SETUP-AI).",
+  "effort": "S",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "robustesse",
+  "titre": "Aucun versioning du kit : un élève avec un vieux clone ne reçoit jamais les correctifs",
+  "constat": "setup.mjs n'écrit aucun marqueur de version dans le projet généré (tout est copyIfAbsent, setup.mjs:57-67) ; le kit lui-même évolue vite (6 specs en 4 jours dans docs/superpowers/specs/) mais un projet généré la semaine 1 de la formation gardera pour toujours des commandes/hooks/runbooks obsolètes. --force écrase aveuglément, y compris les fichiers modifiés par l'élève.",
+  "gravite": "important",
+  "reco": "1) Écrire un manifest .vibecoding.json {kitVersion (git describe), stack, assistant, date} dans le projet généré. 2) Ajouter node scripts/update.mjs : compare la version, liste fichier par fichier « géré par le kit et modifié / non modifié », propose la mise à jour sûre (n'écrase que le non-modifié, diff pour le reste). 3) /doctor affiche « kit vX, dernière vY — lance update ».",
+  "effort": "M",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "~15 documents + 5 commandes + plugins + MCP + skills : surcharge conceptuelle jour 1",
+  "constat": "Le projet généré expose d'emblée : AGENTS.md, CLAUDE.md, SETUP-AI, DOMAINS, ROADMAP, RUN, ONBOARDING, DREAM, examples/, memory/ (5 fichiers), 5 commandes, subagents, hooks, BUGBOT, environment.json (setup.mjs:52-165). Le débutant ne sait pas ce qui est « pour lui » vs « pour l'IA ». Aucun fichier ne hiérarchise : ONBOARDING.md liste 6 sections de réglages au même niveau que « Démarrer ».",
+  "gravite": "important",
+  "reco": "Progressive disclosure structurelle : (a) un unique docs/START.md « les 3 choses à faire maintenant » ; (b) ranger les artefacts « machine » (DREAM, DOMAINS, memory internals, examples) sous docs/interne/ ou les préfixer d'un en-tête « 🤖 fichier lu par l'IA — tu n'as pas besoin de l'ouvrir » ; (c) au jour 1 ne présenter que /new-project et /build — /new-feature, /edit-design, /doctor apparaissent dans le message de fin de /build jalon 0.",
+  "effort": "M",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "pedagogie",
+  "titre": "PRD et tech spec calibrés « entreprise » pour un public qui fait son premier projet",
+  "constat": "Phase 2 de /new-project impose 9 sections (JTBD, contre-métriques, index des hypothèses, clusters conformité…) + checklist qualité, et Phase 4 une spine d'architecture avec diagramme Mermaid de dépendances et blocs AD-n (templates/commands/new-project.md:27-68). C'est excellent pédagogiquement mais représente 45-90 min de gates textuelles pour « mon premier SaaS todo » — le moment exact où un débutant décroche.",
+  "gravite": "important",
+  "reco": "Ajouter à la question « mode Rapide / Coaching » (new-project.md:11-14) une dimension taille : « projet d'apprentissage » → PRD 1 page (vision, 3 parcours UJ, périmètre MVP, non-objectifs) et spec réduite aux AD réellement non-évidents ; le template complet reste le défaut pour un vrai produit. Le squelette long peut être « déplié » plus tard par une commande (« /approfondir-prd »).",
+  "effort": "S",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Deux dossiers (le kit cloné + le projet généré) : point de confusion classique débutant",
+  "constat": "Le flux impose git clone du kit puis génération du projet via path.resolve(args.project) relatif au cwd (setup.mjs:21) — le projet atterrit DANS ou À CÔTÉ du clone du kit selon ce que tape l'élève. « J'ouvre quel dossier dans Cursor ? » sera la question n°1 en salle. Le playbook fallback ajoute même un .vibe-stack-src temporaire (playbook/00-START.md:8).",
+  "gravite": "important",
+  "reco": "Publier le moteur en npm create vibecoding@latest (zéro dépendance runtime conservée : le paquet n'embarque que scripts/ + templates/) : une seule commande, pas de clone, le wizard demande le nom et crée LE dossier — puis affiche « ouvre CE dossier dans ton assistant ». À défaut : le wizard termine par le chemin absolu du projet en gros + le proposer de l'ouvrir (open/explorer).",
+  "effort": "M",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "cursor",
+  "titre": "Étape manuelle git hooksPath alors que le wizard a déjà git sous la main",
+  "constat": "docs/ONBOARDING.md:15-16 demande à l'élève de lancer git config core.hooksPath .githooks à la main, et /doctor le vérifie (templates/commands/doctor.md:15) — mais setup.mjs exige déjà git (prereqs, setup.mjs:40) et écrit .githooks/pre-commit (setup.mjs:151-156). Un des « 2 gestes manuels » restants est en fait automatisable.",
+  "gravite": "mineur",
+  "reco": "Dans setup.mjs : si projectDir n'est pas un repo → git init ; puis git config core.hooksPath .githooks. Échec gracieux comme le reste. L'ONBOARDING ne garde que les gestes réellement non-automatisables (secret GitHub, clé Stitch).",
+  "effort": "S",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "onboarding",
+  "titre": "Question « caveman » : jargon sans explication, posée au débutant à la question 5",
+  "constat": "wizard.mjs:74 demande « Réduire les coûts IA (caveman) ? [o/N] » sans aucun hint — la spec du wizard exigeait pourtant d'expliquer « que ça coupe les explications utiles » (docs/superpowers/specs/2026-07-07-installeur-interactif-wizard-design.md:35). Un débutant jour 1 ne peut pas répondre en connaissance de cause, et couper les explications est précisément anti-pédagogique pour lui.",
+  "gravite": "mineur",
+  "reco": "Retirer la question du wizard (garder --caveman en flag pour les avancés), ou a minima ajouter le hint « réponses IA ultra-compressées : économise des tokens mais supprime les explications — déconseillé pour apprendre » avec défaut Non.",
+  "effort": "S",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Feature : commande /next — le GPS permanent du débutant",
+  "constat": "Entre wizard → prompt collé → SETUP-AI → /doctor → /new-project (7 phases) → /build, un élève perdu n'a aucune commande qui réponde à « je fais quoi maintenant ? ». /doctor diagnostique (✓/✗) mais ne prescrit pas LA prochaine action unique (templates/commands/doctor.md).",
+  "gravite": "opportunite",
+  "reco": "Ajouter une 6e commande /next (runbook md, zéro code) : l'IA inspecte l'état réel — cases restantes dans docs/SETUP-AI.md, existence de docs/PRD.md / maquette/ / design.md, premier jalon non coché de ROADMAP.md — et répond en 3 lignes : où tu en es, LA prochaine commande à taper, pourquoi. C'est la commande refuge à enseigner en formation : « perdu ? tape /next ».",
+  "effort": "S",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Feature : barre de progression générée — voir « 3 jalons sur 12 » hors markdown",
+  "constat": "La progression n'existe que sous forme de checkboxes dans docs/ROADMAP.md (templates/roadmap/ROADMAP.md:11-21) ; aucun feedback visuel de type « tu as fini X/N ». Or la boucle de motivation est LE levier n°1 sur ce public.",
+  "gravite": "opportunite",
+  "reco": "À l'étape 5 de /build (coche + commit, templates/commands/build.md:10), régénérer aussi : (a) une barre en tête du README du projet élève (« Progression : ▓▓▓░░░░ 3/12 — dernier jalon : Dashboard ») et (b) un docs/progress.html statique zéro-dép (liste des jalons, ✅/⬜, captures des « Ce que tu vois »). Le script de génération est ~40 lignes de node, testable node --test.",
+  "effort": "S",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Feature : mode cohorte opt-in — visibilité formateur sur la progression des élèves",
+  "constat": "Aucun mécanisme ne permet à Antoine de voir où en sont 15 élèves (qui est bloqué au jalon 0, qui a fini). Le kit pousse déjà chaque élève vers GitHub (CI, dream hook, PRs) — l'infrastructure de télémétrie « gratuite » existe donc déjà.",
+  "gravite": "opportunite",
+  "reco": "Wizard : question optionnelle « code formation ? » (vide = rien). Si renseigné : une GitHub Action légère (comme dream.yml) committe docs/progress.json (jalons cochés, timestamps wizard/premier boot/jalons) à chaque push. Côté formateur : scripts/cohorte.mjs prend la liste des repos élèves et agrège via gh api en un tableau terminal/HTML. 100 % opt-in, données dans le repo de l'élève (pas de serveur), et les timestamps donnent en bonus la mesure réelle du time-to-first-win par cohorte.",
+  "effort": "M",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Feature : galerie maquette/index.html — la revue de maquette en un seul endroit",
+  "constat": "La boucle créer→itérer→valider de la Phase 5 exporte chaque écran en HTML dans maquette/ (new-project.md:80), mais l'élève doit ouvrir les fichiers un par un pour valider ; /build compare ensuite écran par écran. L'étape de validation — le gate le plus important du flux — n'a pas d'outillage.",
+  "gravite": "opportunite",
+  "reco": "En fin de Phase 5, générer maquette/index.html : grille d'iframes (un par écran, avec nom + parcours UJ couvert) que l'élève ouvre dans son navigateur pour valider d'un regard. Le même index sert de damier de comparaison pendant /build (« ouvre maquette/index.html à côté de l'app »). Zéro dépendance, gabarit HTML statique.",
+  "effort": "S",
+  "source_agent": "produit"
+ },
+ {
+  "axe": "innovation",
+  "titre": "Feature : /sos — le bouton panique qui exploite les commits par jalon",
+  "constat": "Un débutant qui casse son app entre deux jalons n'a pas de chemin de récupération guidé : superpowers:systematic-debugging est pensé pour l'IA, pas pour rassurer l'humain. Or /build committe déjà à chaque jalon vert (templates/commands/build.md:10) — il existe donc toujours un état « dernier jalon qui marchait ».",
+  "gravite": "opportunite",
+  "reco": "Commande /sos (runbook md) : 1) git status + résumé humain de ce qui a changé depuis le dernier commit de jalon ; 2) propose 3 sorties claires — « on répare » (systematic-debugging), « on met de côté » (stash), « on revient au dernier jalon qui marchait » (reset au commit du jalon, avec explication de ce qui sera perdu) ; 3) note le piège dans docs/memory/gotchas.md. Marketing formation en or : « tu ne peux jamais vraiment casser ton projet ».",
+  "effort": "S",
+  "source_agent": "produit"
+ }
+]
