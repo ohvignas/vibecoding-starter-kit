@@ -26,12 +26,16 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   } else L.push('- [ ] (aucun)');
   L.push('');
   L.push('## 3. MCP à autoriser');
+  const connect = assistant === 'cursor'
+    ? 'ouvre **Settings → MCP** dans Cursor et active-le'
+    : 'lance `/mcp` pour connecter';
   for (const [name, cfg] of Object.entries(manifest.mcp)) {
-    L.push(`- [ ] ${name} : lance \`/mcp\` pour connecter${cfg.needsAuth ? ' (login requis)' : ' (déjà dans .mcp.json)'}`);
+    L.push(`- [ ] ${name} : ${connect}${cfg.needsAuth ? ' (login requis)' : ''}`);
   }
   L.push('');
   L.push('## 4. Boucle superpowers');
   L.push(`- [ ] ${superpowersCmd}`);
+  L.push('- [ ] Vérifie que c\'est actif : tape `/brainstorm` — si la commande est reconnue, superpowers est installé. Sinon, réinstalle le plugin (voir « plugin » au glossaire).');
   L.push('');
   L.push('## 5. Design');
   if (skillsInstalled) {

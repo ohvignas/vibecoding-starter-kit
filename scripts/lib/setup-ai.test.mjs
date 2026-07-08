@@ -36,3 +36,16 @@ test('SETUP-AI --no-skills : liste les commandes à lancer, ne ment pas', () => 
   assert.match(md, /\[ \] `npx -y skills add better-auth\/skills/);          // skills stack en cases à cocher
   assert.match(md, /\[ \] `npx -y skills add github\.com\/anthropics\/skills/); // skills design en cases à cocher
 });
+
+test('SETUP-AI Cursor : jamais /mcp ni claude mcp add, mais Settings MCP', () => {
+  const md = call('saas', 'cursor');
+  assert.doesNotMatch(md, /lance `\/mcp`/);
+  assert.doesNotMatch(md, /claude mcp add/);
+  assert.match(md, /Settings.*MCP/i);
+  assert.match(md, /\/brainstorm/); // ligne de vérification du plugin superpowers
+});
+
+test('SETUP-AI Claude Code : /mcp reste correct', () => {
+  const md = call('saas', 'claude-code');
+  assert.match(md, /\/mcp/);
+});
