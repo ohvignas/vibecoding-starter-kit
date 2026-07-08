@@ -12,10 +12,10 @@ test('kitRootFromModuleUrl : racine du kit = dossier parent de scripts/', () => 
   assert.equal(kitRootFromModuleUrl(import.meta.url), ROOT);
 });
 
-test('buildRunPlan : nom nu → projet créé À CÔTÉ du kit (../<nom>)', () => {
-  const { assets, projectDir } = buildRunPlan({ stack: 'saas', assistant: 'cursor', project: 'mon-app' }, path.join(path.sep, 'tmp', 'kit'));
+test('buildRunPlan : nom nu → projet créé dans le baseDir fourni', () => {
+  const { assets, projectDir } = buildRunPlan({ stack: 'saas', assistant: 'cursor', project: 'mon-app' }, path.join(path.sep, 'tmp', 'base'));
   assert.equal(assets.commandsDir, '.cursor/commands');
-  assert.equal(projectDir, path.resolve(path.join(path.sep, 'tmp', 'kit'), '..', 'mon-app'));
+  assert.equal(projectDir, path.resolve(path.join(path.sep, 'tmp', 'base'), 'mon-app'));
 });
 
 test('buildRunPlan : chemin explicite (relatif avec séparateur, ou absolu) respecté', () => {

@@ -21,7 +21,10 @@ export function parseArgs(argv) {
       case '--no-skills': args.noSkills = true; break;
       case '--no-learning': args.learning = false; break;
       case '--yes': args.yes = true; break;
-      default: throw new Error(`Argument inconnu : ${a}`);
+      default:
+        // Nom de projet positionnel (npm create vibecoding mon-app). --project reste prioritaire.
+        if (!a.startsWith('-') && args.project === null) { args.project = a; break; }
+        throw new Error(`Argument inconnu : ${a}`);
     }
   }
   return args;
@@ -49,8 +52,16 @@ export function expandHome(p, home) {
 
 // Un nom nu (sans séparateur) atterrit EN DEHORS du clone du kit : ../<nom> par rapport à la
 // racine du kit. Un chemin explicite (relatif avec séparateur, ou absolu) est respecté tel quel.
-export function resolveProjectDir(project, kitRoot) {
+// Dossier de base où créer le projet, calculé par l'appelant (voir projectBaseDir).
+export function resolveProjectDir(project, baseDir) {
   if (path.isAbsolute(project)) return path.resolve(project);
   if (project.includes('/') || project.includes('\\')) return path.resolve(project);
-  return path.resolve(kitRoot, '..', project);
+  return path.resolve(baseDir, project);
+}
+
+// Où créer le projet par défaut :
+// - clone du kit → à CÔTÉ du clone (kitRoot/..), pour ne pas polluer le dépôt du kit ;
+// - installé via npm/npx (kitRoot dans node_modules) → dans le cwd de l'utilisateur.
+export function projectBaseDir(kitRoot, cwd) {
+  return kitRoot.includes('node_modules') ? cwd : path.join(kitRoot, '..');
 }

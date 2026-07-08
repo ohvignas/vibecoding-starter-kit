@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { parseArgs, validateArgs, expandHome, resolveProjectDir } from './args.mjs';
+import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './args.mjs';
 
 test('parseArgs lit les drapeaux', () => {
   const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'mon-app', '--dry-run']);
@@ -57,10 +57,21 @@ test('expandHome : ~ et ~/… étendus, le reste intact', () => {
   assert.equal(expandHome(null, home), null);
 });
 
-test('resolveProjectDir : nom nu → ../<nom> à côté du kit ; chemins explicites respectés', () => {
-  const kit = path.join(path.sep, 'tmp', 'kit');
-  assert.equal(resolveProjectDir('mon-app', kit), path.resolve(kit, '..', 'mon-app'));
-  assert.equal(resolveProjectDir('apps/mon-app', kit), path.resolve('apps/mon-app'));
+test('resolveProjectDir : nom nu résolu contre baseDir ; chemins explicites respectés', () => {
+  const base = path.join(path.sep, 'tmp');
+  assert.equal(resolveProjectDir('mon-app', base), path.resolve(base, 'mon-app'));
+  assert.equal(resolveProjectDir('apps/mon-app', base), path.resolve('apps/mon-app'));
   const abs = path.resolve(path.sep, 'ailleurs', 'app');
-  assert.equal(resolveProjectDir(abs, kit), abs);
+  assert.equal(resolveProjectDir(abs, base), abs);
+});
+
+test('projectBaseDir : cwd si installé (node_modules), sinon à côté du clone', () => {
+  const cwd = path.join(path.sep, 'home', 'eleve', 'projets');
+  assert.equal(projectBaseDir(path.join(path.sep, 'home', 'eleve', 'vibecoding-starter-kit'), cwd), path.join(path.sep, 'home', 'eleve'));
+  assert.equal(projectBaseDir(path.join(path.sep, 'home', 'eleve', '.npm', '_npx', 'abc', 'node_modules', 'create-vibecoding'), cwd), cwd);
+});
+
+test('parseArgs : nom de projet positionnel (npm create vibecoding mon-app)', () => {
+  assert.equal(parseArgs(['mon-app', '--stack', 'saas']).project, 'mon-app');
+  assert.equal(parseArgs(['--stack', 'saas', '--project', 'x']).project, 'x'); // --project explicite marche toujours
 });

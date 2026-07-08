@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseArgs, validateArgs, expandHome, resolveProjectDir } from './lib/args.mjs';
+import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './lib/args.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { renderProjectAgentsMd, toCursorMdc } from './lib/templates.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
@@ -22,9 +22,9 @@ export function kitRootFromModuleUrl(moduleUrl) {
   return path.resolve(path.dirname(fileURLToPath(moduleUrl)), '..');
 }
 
-export function buildRunPlan(args, kitRoot = process.cwd()) {
+export function buildRunPlan(args, baseDir = process.cwd()) {
   const assets = resolveAssets(args.stack, args.assistant);
-  const projectDir = resolveProjectDir(args.project, kitRoot);
+  const projectDir = resolveProjectDir(args.project, baseDir);
   return { assets, projectDir };
 }
 
@@ -56,8 +56,9 @@ async function main() {
   }
   args.source = args.source ?? kitRoot;
   args.project = expandHome(args.project, os.homedir());
+  const baseDir = projectBaseDir(kitRoot, process.cwd());
 
-  const { assets, projectDir } = buildRunPlan(args, kitRoot);
+  const { assets, projectDir } = buildRunPlan(args, baseDir);
   if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }
 
   const done = [], kept = [], failed = [];
