@@ -111,7 +111,7 @@ async function main() {
     finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 
-  for (const cmd of ['new-project', 'new-feature', 'edit-design', 'doctor', 'build']) {
+  for (const cmd of ['new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos']) {
     try {
       const src = path.join(args.source, `templates/commands/${cmd}.md`);
       // Slash-commands typables pour tous : Cursor → .cursor/commands/, Claude → .claude/commands/, Codex → docs/commands/.
