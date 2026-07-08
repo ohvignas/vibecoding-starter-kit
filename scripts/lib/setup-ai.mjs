@@ -2,6 +2,7 @@
 // Les skills design sont déjà installés par le wizard.
 import { buildSkillAddArgs } from './external.mjs';
 import { DESIGN_SKILL_SPECS, STITCH } from './matrix.mjs';
+import { cursorDeeplink } from './deeplink.mjs';
 
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
 export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shadcnNote, skillsInstalled = true }) {
@@ -31,6 +32,7 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
     : 'lance `/mcp` pour connecter';
   for (const [name, cfg] of Object.entries(manifest.mcp)) {
     L.push(`- [ ] ${name} : ${connect}${cfg.needsAuth ? ' (login requis)' : ''}`);
+    if (assistant === 'cursor' && !cfg.apiKey) L.push(`  - ou clique pour l'ajouter : ${cursorDeeplink(name, cfg)}`);
   }
   L.push('');
   L.push('## 4. Boucle superpowers');
