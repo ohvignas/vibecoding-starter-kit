@@ -157,6 +157,9 @@ Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/comma
 > [!TIP]
 > **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt » avant de lancer `/new-project`. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md). **Récupérer les nouveautés du kit** dans un projet existant → `node <kit>/scripts/update.mjs` (ne touche jamais à ton travail).
 
+> [!TIP]
+> **Déjà un projet Cursor et tu veux juste les commandes ?** Installe le **plugin Cursor** `vibecoding` (`/add-plugin`, via une Team Marketplace ou la marketplace Cursor) — tu obtiens les 9 commandes + la règle de base sans rien scaffolder. Le plugin est dans [`cursor-plugin/`](cursor-plugin/) (voir [`PUBLISH.md`](PUBLISH.md)). Pour un **nouveau** projet complet, préfère `npm create vibecoding`.
+
 ## 🧱 Les 3 stacks
 
 | Type d'app | Stack |
