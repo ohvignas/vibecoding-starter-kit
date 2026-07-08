@@ -7,6 +7,8 @@
   ·
   <a href="#-comment-ça-marche">Comment ça marche</a>
   ·
+  <a href="guides/glossaire.md">📖 Glossaire du vibecodeur</a>
+  ·
   <a href="https://github.com/ohvignas/vibecoding-starter-kit/issues">Signaler un bug</a>
 </p>
 
