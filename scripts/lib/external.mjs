@@ -32,11 +32,6 @@ export function pickFromClone(cloneDir, picks, projectDir) {
   return out;
 }
 
-export function selectByTags(rulesDir, tags) {
-  if (!fs.existsSync(rulesDir)) return [];
-  return fs.readdirSync(rulesDir).filter(f => tags.some(t => f.toLowerCase().includes(t)));
-}
-
 export function installCaveman(run = defaultRun) {
   run('bash', ['-lc', 'curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash']);
 }

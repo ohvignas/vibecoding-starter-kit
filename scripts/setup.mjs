@@ -8,7 +8,7 @@ import { parseArgs, validateArgs, expandHome, resolveProjectDir } from './lib/ar
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { renderProjectAgentsMd, toCursorMdc } from './lib/templates.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
-import { cloneRepo, pickFromClone, selectByTags, installCaveman, installSkills } from './lib/external.mjs';
+import { cloneRepo, pickFromClone, installCaveman, installSkills } from './lib/external.mjs';
 import { initProjectGit } from './lib/gitinit.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
@@ -106,10 +106,6 @@ async function main() {
       tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-clone-'));
       cloneRepo(cl.repo, tmp);
       if (cl.picks) pickFromClone(tmp, cl.picks, projectDir);
-      else if (cl.matchTags) {
-        const rulesDir = path.join(tmp, 'rules');
-        for (const f of selectByTags(rulesDir, cl.matchTags)) copyIfAbsent(path.join(rulesDir, f), path.join(projectDir, cl.to, f), opt);
-      }
       done.push(cl.repo);
     } catch (e) { failed.push(`${cl.repo} (${e.message})`); }
     finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }

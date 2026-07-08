@@ -6,8 +6,9 @@ export const SUPERPOWERS = {
 };
 export const DESIGN_SKILLS = 'frontend-design, ui-ux-pro-max, web-design-guidelines, shadcnblocks, brand-guidelines';
 const KARPATHY_REPO = 'https://github.com/multica-ai/andrej-karpathy-skills';
-const CURSORRULES_REPO = 'https://github.com/PatrickJS/awesome-cursorrules';
-const CURSOR_TAGS = { saas: ['typescript', 'react', 'clean-code'], mobile: ['react-native', 'typescript', 'expo'], desktop: ['typescript', 'clean-code'] };
+// awesome-cursorrules : SUPPRIMÉ. Le matching par tags déversait 64-201 règles .mdc hors-sujet
+// (Angular, Solidity…) avec `globs: **/*` — l'anti-pattern des docs Cursor. Les règles typées
+// du kit (templates/cursor/rules/) couvrent le besoin.
 
 export function resolveAssets(stack, assistant) {
   if (!TARGET[assistant]) throw new Error(`Assistant inconnu : ${assistant} (attendu: ${Object.keys(TARGET).join('|')})`);
@@ -29,9 +30,6 @@ export function resolveAssets(stack, assistant) {
       ? [{ src: '.cursor/rules/karpathy-guidelines.mdc', to: '.cursor/rules/karpathy.mdc' }]
       : [{ src: 'CLAUDE.md', to: 'AGENTS-karpathy.md' }],
   });
-  if (isCursor) clones.push({ repo: CURSORRULES_REPO, matchTags: CURSOR_TAGS[stack], to: '.cursor/rules' });
-  else skipped.push({ name: 'awesome-cursorrules', reason: 'Format .mdc spécifique à Cursor' });
-
   inAssistant.push({ name: 'superpowers', command: SUPERPOWERS[assistant] });
 
   return { copies, clones, inAssistant, skipped, commandsDir: TARGET[assistant] };

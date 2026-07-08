@@ -4,15 +4,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { selectByTags, pickFromClone, installCaveman, buildSkillAddArgs, installSkills, buildRunCommand } from './external.mjs';
+import { pickFromClone, installCaveman, buildSkillAddArgs, installSkills, buildRunCommand } from './external.mjs';
 
 function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'vs-ext-')); }
-
-test('selectByTags filtre par sous-chaîne', () => {
-  const d = tmp();
-  for (const f of ['typescript.mdc', 'react.mdc', 'python.mdc']) fs.writeFileSync(path.join(d, f), '');
-  assert.deepEqual(selectByTags(d, ['typescript', 'react']).sort(), ['react.mdc', 'typescript.mdc']);
-});
 
 test('pickFromClone signale une source manquante', () => {
   const clone = tmp(), proj = tmp();
