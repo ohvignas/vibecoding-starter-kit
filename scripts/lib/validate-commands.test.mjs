@@ -8,7 +8,7 @@ import { validateNewProjectCommand } from './validate-commands.mjs';
 
 const PHASES = ['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
 const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/superpowers/specs', 'docs/memory', 'docs/DREAM.md'];
-const DEPTH = ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses', 'Invariants', 'Graine structurelle', 'EXPERIENCE.md', 'maquette', 'index.html'];
+const DEPTH = ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses', 'Invariants', 'Graine structurelle', 'EXPERIENCE.md', 'maquette', 'index.html', 'ui.shadcn.com/create'];
 
 function makeRoot({ omitPhase = null, omitTemplate = false, omitDepth = null } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'vp-'));
