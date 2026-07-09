@@ -4,9 +4,11 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const NODE = process.execPath;
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+// fileURLToPath (pas new URL(...).pathname) : sur Windows .pathname renvoie /D:/… → cwd cassé.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const GIT_ENV = {
   ...process.env,
   GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@vibecoding.local',

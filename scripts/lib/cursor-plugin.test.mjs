@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildCursorPlugin, pluginManifest } from '../build-cursor-plugin.mjs';
 
-const KIT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+// fileURLToPath (pas new URL(...).pathname) : sur Windows .pathname renvoie /D:/… → chemin cassé.
+const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 test('buildCursorPlugin : manifeste + 9 commandes + règle, fidèles aux templates', () => {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-plugin-'));

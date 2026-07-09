@@ -25,6 +25,7 @@ test('validateArgs signale stack/assistant/projet invalides', () => {
   assert.deepEqual(validateArgs(parseArgs(['--stack','x','--assistant','y','--project','!!'])).length, 3);
   assert.deepEqual(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','ok'])), []);
   assert.deepEqual(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','/tmp/vibe-demo'])), []);
+  assert.deepEqual(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','C:\\Users\\eleve\\app'])), []); // chemin absolu Windows
   assert.equal(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','a b'])).length, 1);
 });
 

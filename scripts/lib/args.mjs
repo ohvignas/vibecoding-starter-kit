@@ -34,7 +34,8 @@ export function validateArgs(args) {
   const errors = [];
   if (!STACKS.includes(args.stack)) errors.push(`--stack doit valoir ${STACKS.join('|')}`);
   if (!ASSISTANTS.includes(args.assistant)) errors.push(`--assistant doit valoir ${ASSISTANTS.join('|')}`);
-  if (!args.project || !/^[\w./~-]+$/.test(args.project)) errors.push('--project : nom invalide');
+  // `:` et `\` autorisés pour les chemins absolus Windows (ex. C:\Users\eleve\app). Espace toujours refusé.
+  if (!args.project || !/^[\w.:/~\\-]+$/.test(args.project)) errors.push('--project : nom invalide');
   if (args.backend !== undefined && !['cloud', 'local'].includes(args.backend)) errors.push('--backend doit valoir cloud|local');
   return errors;
 }
