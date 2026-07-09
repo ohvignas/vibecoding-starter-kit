@@ -11,7 +11,7 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
 7. **Workflows** : `.github/workflows/{ci,secrets,dream,memory-consolidate}.yml` présents.
 8. **Node ≥ 20.12** et **git** disponibles.
 9. **Environnement IA de la stack** :
-   - `.mcp.json` (ou `.cursor/mcp.json`) contient les serveurs MCP de la stack (SaaS : convex, better-auth, shadcn ; mobile : convex, expo ; desktop : chrome-devtools).
+   - `.mcp.json` (ou `.cursor/mcp.json`) contient les serveurs MCP de la stack (SaaS : convex, better-auth, shadcn ; mobile : convex, expo ; desktop : chrome-devtools ; vitrine : astro-docs, shadcn).
    - `.githooks/checks.mjs` présent + `.githooks/pre-push` présent + `git config core.hooksPath` vaut `.githooks` (sinon : `git config core.hooksPath .githooks`).
    - Câblage checks : `.cursor/hooks.json` (Cursor) ou `.claude/settings.json` (Claude Code) référence `checks.mjs`.
    - Scripts `package.json` : `typecheck` (+ `lint` hors mobile) présents.

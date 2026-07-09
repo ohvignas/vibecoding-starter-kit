@@ -42,6 +42,13 @@ let log = '';
 try { log = execFileSync('git', ['-C', project, 'log', '--oneline'], { encoding: 'utf8', env: gitEnv }); } catch {}
 check('commit initial présent', /environnement vibecoding initial/.test(log));
 
+// 1bis. Même run pour la stack vitrine (Astro, sans backend), dans un dossier frère
+const projectVitrine = path.join(base, 'demo-vitrine');
+execFileSync(process.execPath, [setup, '--stack', 'vitrine', '--assistant', 'cursor', '--project', projectVitrine, '--no-skills', '--yes'], { stdio: 'inherit', env: gitEnv });
+
+check('vitrine : fichier docs/A-FAIRE.md', fs.existsSync(path.join(projectVitrine, 'docs', 'A-FAIRE.md')));
+check('vitrine : fichier .cursor/rules/stack-vitrine.mdc', fs.existsSync(path.join(projectVitrine, '.cursor', 'rules', 'stack-vitrine.mdc')));
+
 // 2. Cas d'échec attendu : stack inconnue → code de sortie ≠ 0 (hors-ligne friendly)
 let code = 0;
 try { execFileSync(process.execPath, [setup, '--stack', 'inexistante', '--assistant', 'cursor', '--project', path.join(base, 'x'), '--no-skills', '--yes'], { stdio: 'pipe', env: gitEnv }); }

@@ -96,6 +96,8 @@
 - **Storage (stockage de fichiers)** — Stocker et servir des **fichiers** (images, PDF, avatars). *Ex. : Convex File Storage, intégré, pour l'avatar d'un utilisateur.*
 - **PostHog / analytics** — Mesurer **comment les gens utilisent** ton produit (pages vues, entonnoirs, feature flags). *Ex. : « combien d'utilisateurs finissent l'inscription ? ».*
 - **Sentry / suivi d'erreurs** — Être **alerté quand ça plante en production**, avec la trace de l'erreur. *Ex. : « l'app a crashé pour 3 utilisateurs à 14h ».*
+- <a id="seo"></a>**SEO (Search Engine Optimization)** — Faire en sorte que **Google** trouve et classe bien ton site : titres, descriptions, sitemap, vitesse. *La stack vitrine le fait par défaut.*
+- <a id="geo"></a>**GEO (Generative Engine Optimization)** — Le SEO des **IA** : faire en sorte que ChatGPT, Perplexity ou Claude **citent ton site** dans leurs réponses. Outils : données structurées (JSON-LD) + un fichier `llms.txt` qui résume ton site pour les IA. *La stack vitrine le fait par défaut.*
 - **Auth (authentification)** — Vérifier **qui est l'utilisateur** (connexion, session, permissions). *Ex. : « seul le propriétaire voit ses rendez-vous ».*
 - **API (Application Programming Interface)** — Une **interface** qui laisse deux logiciels communiquer, souvent via REST ou GraphQL. *Ex. : ton front demande les données au backend via une API.*
 - **CRUD** — Les 4 opérations de base sur des données : **C**réer, **L**ire (Read), **M**ettre à jour (Update), **S**upprimer (Delete). *Ex. : un carnet de rendez-vous = du CRUD.*

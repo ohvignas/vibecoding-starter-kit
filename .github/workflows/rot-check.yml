@@ -30,7 +30,9 @@ jobs:
             https://tanstack.com/start/latest/llms.txt \
             https://better-auth.com/llms.txt \
             https://docs.expo.dev/llms.txt \
-            https://reactnative.dev/llms.txt ; do
+            https://reactnative.dev/llms.txt \
+            https://ui.shadcn.com/docs/installation/astro \
+            https://keystatic.com/docs/installation-astro ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
             echo "$u -> $code"
             [ "$code" -lt 400 ] || { echo "::error::source de contexte injoignable : $u ($code)"; exit 1; }
@@ -41,7 +43,8 @@ jobs:
           for u in \
             https://stitch.googleapis.com/mcp \
             https://mcp.better-auth.com/mcp \
-            https://mcp.expo.dev/mcp ; do
+            https://mcp.expo.dev/mcp \
+            https://mcp.docs.astro.build/mcp ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
             echo "$u -> $code"
             [ "$code" -lt 500 ] || { echo "::error::endpoint MCP injoignable : $u ($code)"; exit 1; }

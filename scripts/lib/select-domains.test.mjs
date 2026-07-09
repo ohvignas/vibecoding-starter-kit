@@ -28,3 +28,9 @@ test('robustesse apostrophe : droite ET courbe sélectionnent le domaine', () =>
   assert.deepEqual(selectDomains('période d' + C + 'essai', DOMAIN_TRIGGERS), ['licensing']);
   assert.deepEqual(selectDomains('ajouter au panier d' + C + 'achat', DOMAIN_TRIGGERS), ['payment']);
 });
+
+test('triggers vitrine : formulaire de contact + multilingue détectés', () => {
+  const picked = selectDomains('Un site vitrine avec un formulaire de contact, disponible en français et en anglais.', DOMAIN_TRIGGERS);
+  assert.ok(picked.includes('forms'), 'forms détecté');
+  assert.ok(picked.includes('i18n'), 'i18n détecté');
+});
