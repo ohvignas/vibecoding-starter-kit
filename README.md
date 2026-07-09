@@ -267,7 +267,7 @@ _(Cursor à la place : `.cursor/commands/` (mêmes slash-commands) · `.cursor/r
 ```text
 vibecoding-starter-kit/
 ├── guides/            # comment parler à l'IA · installer les outils · sécurité & coûts
-├── stacks/            # saas · mobile · desktop (README + AGENTS.md + prompts)
+├── stacks/            # saas · mobile · desktop · vitrine (README + AGENTS.md + prompts)
 ├── ai-context/        # llms.txt + règles officielles (via scripts/download-ai-context.sh)
 ├── playbook/          # le runbook que l'IA suit pour installer
 ├── templates/         # commandes, agents, mémoire, dream, CI, env, exemples

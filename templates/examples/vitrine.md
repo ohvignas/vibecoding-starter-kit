@@ -31,7 +31,6 @@ const temoignages = await getCollection('temoignages');
 ## Îlot interactif — `src/components/carousel-temoignages.tsx` (UN seul .tsx)
 ```tsx
 // Tous les composants shadcn interactifs liés vivent ICI (le contexte React n'existe qu'à l'intérieur d'un îlot).
-'use client';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 export default function CarouselTemoignages({ items }: { items: { auteur: string; citation: string }[] }) {
   return (<Carousel><CarouselContent>{items.map((t) => <CarouselItem key={t.auteur}>{t.citation}</CarouselItem>)}</CarouselContent></Carousel>);

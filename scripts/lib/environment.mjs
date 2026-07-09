@@ -58,7 +58,7 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
 
   // 6. A-FAIRE.md
   try { write('docs/A-FAIRE.md', renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE, skillsInstalled })); done.push('docs/A-FAIRE.md'); }
-  catch (e) { failed.push(`SETUP-AI (${e.message})`); }
+  catch (e) { failed.push(`A-FAIRE (${e.message})`); }
 
   // 6b. DOMAINS.md (catalogue métier de la stack)
   try { write('docs/DOMAINS.md', renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS })); done.push('docs/DOMAINS.md'); }

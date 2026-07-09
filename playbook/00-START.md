@@ -22,7 +22,7 @@ Seulement si l'élève ne peut pas lancer le wizard. **GATE DUR** : commence par
 Ouvre **`docs/SETUP-AI.md`** dans le projet généré et exécute chaque case (plugins, skills, MCP à autoriser). Détails : `playbook/install-tooling.md`.
 
 ## Étape 5 — Détails par stack
-Ouvre le fichier correspondant : `playbook/stack-saas.md` · `playbook/stack-mobile.md` · `playbook/stack-desktop.md`.
+Ouvre le fichier correspondant : `playbook/stack-saas.md` · `playbook/stack-mobile.md` · `playbook/stack-desktop.md` · `playbook/stack-vitrine.md`.
 
 ## Étape 6 — Démarrer le projet
 - **Première fois** : lance **`/new-project`** (fondation : PRD + tech spec + design + roadmap).

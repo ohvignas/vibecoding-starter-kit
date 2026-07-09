@@ -4,7 +4,7 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
 
 1. **AGENTS.md** et **CLAUDE.md** présents à la racine.
 2. **docs/memory/index.md** présent (+ gotchas/conventions/decisions/archive).
-3. **MCP** : `.mcp.json` (Claude Code/Codex) ou `.cursor/mcp.json` (Cursor) présent si stack SaaS/mobile.
+3. **MCP** : `.mcp.json` (Claude Code/Codex) ou `.cursor/mcp.json` (Cursor) présent (toutes les stacks ont des MCP — détail par stack à l'item 9).
 4. **Secrets non commités** : `git ls-files | grep -E '(^|/)\.env$'` doit être VIDE. Sinon → alerte : retire le fichier du suivi (`git rm --cached <fichier>`) et vérifie `.gitignore`.
 5. **.gitignore** ignore bien `.env`.
 6. **Commandes** installées : `/new-project`, `/new-feature`, `/edit-design`.

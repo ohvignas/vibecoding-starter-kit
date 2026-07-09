@@ -38,7 +38,7 @@ export function resolveAssets(stack, assistant) {
 // Stitch (Google Labs) — design/maquette par IA. Skills officiels auto-installés + MCP distant.
 // SÉCURITÉ : le MCP Stitch se configure au niveau UTILISATEUR (hors dépôt) — la clé n'est jamais commitée.
 // (Cursor sait interpoler ${env:...} dans les headers MCP ; on garde le user-scope pour la simplicité :
-// une seule clé, tous les projets, rien à mettre dans le mcp.json du dépôt.) Rendu par SETUP-AI (renderSetupAi).
+// une seule clé, tous les projets, rien à mettre dans le mcp.json du dépôt.) Rendu dans A-FAIRE.md (renderSetupAi).
 export const STITCH = {
   url: 'https://stitch.googleapis.com/mcp',
   keyUrl: 'https://stitch.withgoogle.com',

@@ -5,7 +5,7 @@ import { resolveAssets } from './matrix.mjs';
 const REQUIRED = [
   'AGENTS.md',
   'playbook/00-START.md', 'playbook/stack-saas.md', 'playbook/stack-mobile.md',
-  'playbook/stack-desktop.md', 'playbook/install-tooling.md',
+  'playbook/stack-desktop.md', 'playbook/stack-vitrine.md', 'playbook/install-tooling.md',
   'templates/commands/new-project.md',
   'templates/commands/new-feature.md',
   'templates/commands/edit-design.md',
