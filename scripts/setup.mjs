@@ -224,14 +224,14 @@ async function main() {
   if (!args.noSkills) {
     console.log('\nInstallation des skills (npx skills add — peut prendre ~1-2 min)…');
     try {
-      const skl = installSkills(DESIGN_SKILL_SPECS, args.assistant);
+      const skl = installSkills(DESIGN_SKILL_SPECS, args.assistant, undefined, projectDir);
       done.push(...skl.done.map((d) => `skill design : ${d}`));
       failed.push(...skl.failed.map((f) => `skill design : ${f}`));
     } catch (e) { failed.push(`skills design (${e.message})`); }
     try {
       const stackSkills = resolveStackManifest(args.stack, args.assistant).skills;
       if (stackSkills.length) {
-        const skl = installSkills(stackSkills, args.assistant);
+        const skl = installSkills(stackSkills, args.assistant, undefined, projectDir);
         done.push(...skl.done.map((d) => `skill stack : ${d}`));
         failed.push(...skl.failed.map((f) => `skill stack : ${f}`));
       }

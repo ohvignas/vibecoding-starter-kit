@@ -12,9 +12,9 @@ export function buildRunCommand(cmd, platform = process.platform) {
   return { cmd, options: {} };
 }
 
-const defaultRun = (cmd, args) => {
+const defaultRun = (cmd, args, opts = {}) => {
   const rc = buildRunCommand(cmd);
-  return execFileSync(rc.cmd, args, { stdio: 'inherit', ...rc.options });
+  return execFileSync(rc.cmd, args, { stdio: 'inherit', ...rc.options, ...opts });
 };
 
 export function cloneRepo(repo, dest, run = defaultRun) {
@@ -46,10 +46,12 @@ export function buildSkillAddArgs(spec, assistant) {
 }
 
 // Installe une liste de skills (CLI skills.sh) pour l'assistant choisi. Échec gracieux.
-export function installSkills(specs, assistant, run = defaultRun) {
+// cwd = le dossier du PROJET : sans lui, `npx skills add` installe dans le cwd de l'appelant
+// (le dossier d'où on lance `npm create`), PAS dans le projet généré → skills au mauvais endroit.
+export function installSkills(specs, assistant, run = defaultRun, cwd) {
   const done = [], failed = [];
   for (const spec of specs) {
-    try { run('npx', buildSkillAddArgs(spec, assistant)); done.push(spec.label); }
+    try { run('npx', buildSkillAddArgs(spec, assistant), cwd ? { cwd } : {}); done.push(spec.label); }
     catch (e) { failed.push(`${spec.label} (${e.message})`); }
   }
   return { done, failed };

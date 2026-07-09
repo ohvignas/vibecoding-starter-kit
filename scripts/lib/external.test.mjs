@@ -54,6 +54,13 @@ test('installSkills : lance chaque spec, échec gracieux', () => {
   assert.equal(calls[0][0], 'npx');
 });
 
+test('installSkills : passe cwd (le projet) à chaque run — sinon skills au mauvais endroit', () => {
+  const cwds = [];
+  const run = (cmd, args, opts) => { cwds.push(opts && opts.cwd); };
+  installSkills([{ label: 'a', repo: 'a/b' }, { label: 'c', repo: 'c/d' }], 'cursor', run, '/proj');
+  assert.deepEqual(cwds, ['/proj', '/proj']);
+});
+
 test('buildRunCommand : npx → npx.cmd + shell sur win32 uniquement', () => {
   assert.deepEqual(buildRunCommand('npx', 'win32'), { cmd: 'npx.cmd', options: { shell: true } });
   assert.deepEqual(buildRunCommand('npx', 'darwin'), { cmd: 'npx', options: {} });
