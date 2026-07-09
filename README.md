@@ -71,29 +71,17 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 ## ⚡ Démarrage rapide
 
-**1. Installe le kit** — deux façons :
-
-**Option A — une commande** *(publié sur npm ✅)* :
+**1. Installe le kit** — dans un dossier vide *(publié sur npm ✅)* :
 
 ```bash
 npm create vibecoding-kit@latest
 ```
 
-> Le wizard peut demander un **code d'accès** (reçu par email via la page d'inscription). Appuie sur **Entrée** pour passer, il n'est jamais bloquant.
-
-**Option B — cloner** *(marche tout de suite, sans rien publier)* :
-
-```bash
-git clone https://github.com/ohvignas/vibecoding-starter-kit
-cd vibecoding-starter-kit
-node scripts/setup.mjs
-```
-
-> Prérequis : **Node.js ≥ 20.12 + git**. Le wizard demande stack/assistant/nom (+ Convex cloud/local) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack).
+> **Prérequis : Node.js ≥ 20.12 + git.** Le wizard demande stack/assistant/nom (+ Convex cloud/local) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack). Il peut demander un **code d'accès** (reçu par email) : appuie sur **Entrée** pour passer, jamais bloquant.
 
 **2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
 
-Il installe les plugins (superpowers + éventuel plugin de stack) et autorise les MCP. Ensuite, lance :
+Ton assistant te guide pour les **2 seuls gestes manuels** : installer le plugin **superpowers** (`/add-plugin superpowers`) et autoriser les **MCP** (`/mcp`). Les skills, eux, sont déjà installés par le wizard. Ensuite, lance :
 
 ```
 /new-project
@@ -130,7 +118,7 @@ flowchart TD
     E1 --> F["Skills (design + stack) + hooks + mémoire + dream + CI + subagents posés auto"]
     E2 --> F
     E3 --> F
-    F --> G0["Colle le prompt du wizard : plugins (superpowers + stack) + /mcp"]
+    F --> G0["Gestes manuels : installe superpowers (/add-plugin) + autorise /mcp"]
     G0 --> G["Dans ton assistant : /new-project « ton idée »"]
     G --> M["Maquette (Stitch) : crée → itère → valide"]
     M --> R["Roadmap dérivée de la maquette (chaque écran = un jalon)"]
