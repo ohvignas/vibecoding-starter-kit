@@ -5,6 +5,7 @@ const STACKS = [
   { key: 'saas', label: 'SaaS web', hint: 'Convex + TanStack Start + Better Auth' },
   { key: 'mobile', label: 'Mobile', hint: 'React Native (Expo) + Convex' },
   { key: 'desktop', label: 'Desktop', hint: 'Electron' },
+  { key: 'vitrine', label: 'Site vitrine / blog', hint: 'Astro + shadcn/ui + Keystatic (CMS) — SEO/GEO' },
 ];
 const ASSISTANTS = [
   { key: 'cursor', label: 'Cursor' },
@@ -53,7 +54,7 @@ export function renderNonTtyHelp() {
   return [
     'Terminal non interactif : le wizard ne peut pas poser ses questions ici.',
     'Deux options :',
-    '  1. Passe tout en drapeaux : node scripts/setup.mjs --stack saas|mobile|desktop --assistant cursor|claude-code|codex --project ../mon-app',
+    '  1. Passe tout en drapeaux : node scripts/setup.mjs --stack saas|mobile|desktop|vitrine --assistant cursor|claude-code|codex --project ../mon-app',
     '  2. Relance depuis un vrai terminal. Sous Windows, lance depuis PowerShell, pas Git Bash (MinTTY n\'est pas vu comme un terminal interactif).',
   ].join('\n');
 }

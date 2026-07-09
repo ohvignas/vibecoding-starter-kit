@@ -81,3 +81,7 @@ test('parseArgs : nom de projet positionnel (npm create vibecoding-kit mon-app)'
   assert.equal(parseArgs(['mon-app', '--stack', 'saas']).project, 'mon-app');
   assert.equal(parseArgs(['--stack', 'saas', '--project', 'x']).project, 'x'); // --project explicite marche toujours
 });
+
+test('validateArgs : vitrine est une stack valide', () => {
+  assert.deepEqual(validateArgs(parseArgs(['--stack','vitrine','--assistant','cursor','--project','x'])), []);
+});

@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-const STACKS = ['saas', 'mobile', 'desktop'];
+const STACKS = ['saas', 'mobile', 'desktop', 'vitrine'];
 const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
 
 export function parseArgs(argv) {

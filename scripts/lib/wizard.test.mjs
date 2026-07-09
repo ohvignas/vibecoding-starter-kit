@@ -61,6 +61,12 @@ test('runWizard : redemande sur choix invalide (mobile → pas de backend)', asy
   assert.deepEqual(a, { stack: 'mobile', assistant: 'cursor', project: 'app', backend: 'cloud', caveman: false, learning: false, license: '' });
 });
 
+test('runWizard : vitrine (choix 4) → pas de question backend', async () => {
+  const ask = scripted(['4', '1', 'site', 'n', 'n', '']); // vitrine, cursor, nom, caveman non, apprentissage non, code vide
+  const a = await runWizard(ask, false, NULL_OUT);
+  assert.deepEqual(a, { stack: 'vitrine', assistant: 'cursor', project: 'site', backend: 'cloud', caveman: false, learning: false, license: '' });
+});
+
 test('wireSigint : Ctrl+C → message + exit 130', () => {
   const handlers = {};
   const rl = { on(evt, cb) { handlers[evt] = cb; } };
