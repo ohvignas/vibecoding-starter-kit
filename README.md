@@ -79,6 +79,8 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 npm create vibecoding-kit@latest
 ```
 
+> Le wizard peut demander un **code d'accès** (reçu par email via la page d'inscription). Appuie sur **Entrée** pour passer, il n'est jamais bloquant.
+
 **Option B — cloner** *(marche tout de suite, sans rien publier)* :
 
 ```bash

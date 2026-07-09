@@ -29,6 +29,11 @@ test('validateArgs signale stack/assistant/projet invalides', () => {
   assert.equal(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','a b'])).length, 1);
 });
 
+test('parseArgs : --license capturé, défaut null', () => {
+  assert.equal(parseArgs(['--stack','saas','--assistant','cursor','--project','x']).license, null);
+  assert.equal(parseArgs(['--project','x','--license','VIBE-7K4Q-9F2P-XR31']).license, 'VIBE-7K4Q-9F2P-XR31');
+});
+
 test('--backend : parsé et validé (cloud|local)', () => {
   const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--backend', 'local']);
   assert.equal(a.backend, 'local');

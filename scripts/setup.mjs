@@ -15,6 +15,7 @@ import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
 import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
 import { supportsColor, ok } from './lib/ui.mjs';
+import { checkLicense } from './lib/license.mjs';
 
 // Racine du kit = dossier parent de scripts/ — fiable quel que soit le cwd de lancement
 // (fini les 22 ENOENT silencieux quand on lance le script depuis un autre dossier).
@@ -57,6 +58,13 @@ async function main() {
   args.source = args.source ?? kitRoot;
   args.project = expandHome(args.project, os.homedir());
   const baseDir = projectBaseDir(kitRoot, process.cwd());
+
+  // Code d'accès (entonnoir email) — mode DOUX : on informe, on ne bloque JAMAIS.
+  if (args.license && String(args.license).trim()) {
+    console.log(checkLicense(args.license)
+      ? ok('Licence validée — merci !', on)
+      : "Code d'accès non reconnu — on continue quand même (mode doux).");
+  }
 
   const { assets, projectDir } = buildRunPlan(args, baseDir);
   if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }

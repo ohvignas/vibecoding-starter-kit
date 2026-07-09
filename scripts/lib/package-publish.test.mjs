@@ -15,6 +15,11 @@ test('package.json est publiable en scaffolder npm', () => {
   for (const d of ['docs', 'formateur', '.superpowers']) assert.ok(!pkg.files.includes(d), `files ne doit PAS inclure ${d}`);
 });
 
+test('version bumpée pour la release licence (≥ 0.3.0)', () => {
+  const [maj, min] = pkg.version.split('.').map(Number);
+  assert.ok(maj > 0 || min >= 3, `version ${pkg.version} attendue ≥ 0.3.0`);
+});
+
 test('le bin pointe un fichier réel avec shebang node', () => {
   const bin = fs.readFileSync(new URL('../../scripts/setup.mjs', import.meta.url), 'utf8');
   assert.match(bin.split('\n')[0], /^#!.*node/);

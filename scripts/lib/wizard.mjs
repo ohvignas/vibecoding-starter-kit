@@ -33,6 +33,7 @@ export function buildArgsFromAnswers(a, base = {}) {
     caveman: Boolean(a.caveman), backend: a.backend || 'cloud',
     noSkills: Boolean(base.noSkills), yes: Boolean(base.yes),
     learning: a.learning !== false,
+    license: a.license ?? base.license ?? null,
   };
   const errs = validateArgs(args);
   if (errs.length) throw new Error(errs.join(' ; '));
@@ -105,5 +106,7 @@ export async function runWizard(ask, on, out = process.stdout) {
   const learning = !['n', 'non', 'no'].includes(rawL);
   out.write(ok(learning ? 'mode apprentissage activé' : 'mode apprentissage désactivé', on) + '\n\n');
 
-  return { stack, assistant, project, backend, caveman, learning };
+  const license = (await ask('  Code d\'accès (format VIBE-XXXX-XXXX-XXXX, reçu par email) — Entrée pour passer : ')).trim();
+
+  return { stack, assistant, project, backend, caveman, learning, license };
 }
