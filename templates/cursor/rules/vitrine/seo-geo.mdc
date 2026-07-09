@@ -1,0 +1,10 @@
+---
+description: SEO + GEO (sitemap, robots, JSON-LD, llms.txt)
+globs: src/pages/**,public/**
+alwaysApply: false
+---
+
+- Chaque page : title unique, meta description, canonical, Open Graph. Une seule h1.
+- `@astrojs/sitemap` + champ `site` dans astro.config ; `public/robots.txt` pointe le sitemap et AUTORISE GPTBot/PerplexityBot/ClaudeBot.
+- JSON-LD par type de page (Organization/LocalBusiness, FAQPage, Article, BreadcrumbList).
+- `public/llms.txt` = aperçu du site pour les IA — à mettre à jour à CHAQUE nouvelle page.

@@ -15,7 +15,7 @@ const REQUIRED = [
 export function validatePlaybook(root) {
   const errors = [];
   for (const f of REQUIRED) if (!fs.existsSync(path.join(root, f))) errors.push(`fichier manquant : ${f}`);
-  for (const stack of ['saas', 'mobile', 'desktop']) {
+  for (const stack of ['saas', 'mobile', 'desktop', 'vitrine']) {
     for (const assistant of ['cursor', 'claude-code', 'codex']) {
       for (const c of resolveAssets(stack, assistant).copies) {
         if (!fs.existsSync(path.join(root, c.from))) errors.push(`source de copie manquante (${stack}/${assistant}) : ${c.from}`);

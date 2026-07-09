@@ -1,0 +1,10 @@
+---
+description: Astro 5 (îlots, content collections, assets)
+globs: src/**/*.astro,src/content/**,astro.config.*
+alwaysApply: false
+---
+
+- Statique d'abord : `client:load`/`client:visible` UNIQUEMENT sur l'interactif réel.
+- Contenu structuré = content collections (`src/content/`), jamais en dur dans les pages.
+- Images : `astro:assets` `<Image />`, jamais `<img>` brut sur une photo.
+- API incertaine → interroge le MCP `astro-docs` (Astro n'a plus de llms.txt).

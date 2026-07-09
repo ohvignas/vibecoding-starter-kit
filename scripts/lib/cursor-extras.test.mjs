@@ -10,7 +10,7 @@ test('BUGBOT.md a la checklist sécu', () => {
 });
 
 test('environment.json par stack : JSON valide avec terminals', () => {
-  for (const s of ['saas', 'mobile', 'desktop']) {
+  for (const s of ['saas', 'mobile', 'desktop', 'vitrine']) {
     const j = JSON.parse(fs.readFileSync(`templates/cursor/environment/${s}.json`, 'utf8'));
     assert.ok(j.install, `${s}: install`);
     assert.ok(Array.isArray(j.terminals) && j.terminals.length, `${s}: terminals`);

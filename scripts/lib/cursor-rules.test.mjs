@@ -15,6 +15,9 @@ test('règles auto-attachées : frontmatter globs + alwaysApply:false', () => {
     ['saas/tanstack.mdc', 'src/routes/\\*\\*'],
     ['mobile/expo.mdc', 'app/\\*\\*'],
     ['desktop/electron-security.mdc', 'preload'],
+    ['vitrine/astro.mdc', 'astro\\.config'],
+    ['vitrine/shadcn-islands.mdc', 'src/components'],
+    ['vitrine/seo-geo.mdc', 'src/pages'],
   ];
   for (const [f, needle] of cases) {
     const t = fs.readFileSync(`templates/cursor/rules/${f}`, 'utf8');

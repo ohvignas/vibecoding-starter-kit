@@ -75,14 +75,14 @@ export function validateExtras(root) {
   const files = [
     'templates/cursor/hooks.json', 'templates/cursor/hooks/inject-memory.mjs', 'templates/cursor/hooks/log-edit.mjs', 'templates/cursor/cursorignore',
     'templates/security/secrets.yml', 'templates/ONBOARDING.md',
-    'templates/env/saas.env.example', 'templates/env/mobile.env.example', 'templates/env/desktop.env.example',
-    'templates/ci/saas.yml', 'templates/ci/mobile.yml', 'templates/ci/desktop.yml',
+    'templates/env/saas.env.example', 'templates/env/mobile.env.example', 'templates/env/desktop.env.example', 'templates/env/vitrine.env.example',
+    'templates/ci/saas.yml', 'templates/ci/mobile.yml', 'templates/ci/desktop.yml', 'templates/ci/vitrine.yml',
     'templates/agents/subagents/code-reviewer.md', 'templates/agents/subagents/security-reviewer.md',
-    'templates/gitignore/saas.gitignore', 'templates/gitignore/mobile.gitignore', 'templates/gitignore/desktop.gitignore',
+    'templates/gitignore/saas.gitignore', 'templates/gitignore/mobile.gitignore', 'templates/gitignore/desktop.gitignore', 'templates/gitignore/vitrine.gitignore',
     'templates/memory-consolidate/consolidate.yml',
     'templates/commands/doctor.md',
     'templates/hooks/pre-commit',
-    'templates/examples/saas.md', 'templates/examples/mobile.md', 'templates/examples/desktop.md',
+    'templates/examples/saas.md', 'templates/examples/mobile.md', 'templates/examples/desktop.md', 'templates/examples/vitrine.md',
   ];
   for (const f of files) if (!fs.existsSync(path.join(root, f))) errors.push(`extra manquant : ${f}`);
   return errors;

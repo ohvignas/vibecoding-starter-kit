@@ -1,0 +1,9 @@
+---
+description: shadcn/ui en îlots React (contexte non partagé)
+globs: src/components/**/*.tsx
+alwaysApply: false
+---
+
+- ⚠️ Le contexte React n'est PAS partagé entre îlots : composants shadcn interactifs liés = UN seul fichier .tsx, importé une fois avec `client:*`.
+- Composants via `npx shadcn@latest add <c>` — jamais recopiés/modifiés à la main.
+- Thème = variables CSS du preset (ui.shadcn.com/create ou tweakcn) ; classes tokens (`bg-primary`), pas de couleur en dur.

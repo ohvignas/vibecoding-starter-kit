@@ -1,0 +1,9 @@
+---
+description: Conventions TypeScript
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+
+- Types explicites aux frontières (params/retours). Pas de `any` implicite.
+- Préfère `type`/`interface` nommés aux types inline répétés.
+- Gère les cas d'erreur ; pas de `catch` vide.
