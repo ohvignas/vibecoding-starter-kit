@@ -127,6 +127,7 @@ export const STACKS = {
     },
     mcp: {
       'chrome-devtools': { command: 'npx', args: ['chrome-devtools-mcp@latest', '--browser-url=http://127.0.0.1:9222'] },
+      shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
     },
     skills: [STITCH_SKILL],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: ['security'] },
@@ -140,6 +141,34 @@ export const STACKS = {
       'auto-update': { label: 'Mises à jour automatiques', options: ['update-electron-app (feed gratuit update.electronjs.org)', 'electron-updater (feed self-host)'], when: 'macOS exige la signature de code (payante).' },
       persistence: { label: 'Persistance locale', options: ['electron-store (réglages)', 'better-sqlite3 (SQL local ; module natif → @electron/rebuild, skill electron:native-node-modules)'] },
       'error-tracking': { label: `Suivi d'erreurs`, mcp: 'error-tracking', options: ['@sentry/electron'] },
+    },
+  },
+  vitrine: {
+    plugins: { 'claude-code': [], cursor: [], codex: [] },
+    mcp: {
+      // Astro a RETIRÉ son llms.txt (05/2026) : le MCP Docs officiel est la source à jour.
+      'astro-docs': { command: 'npx', args: ['-y', 'mcp-remote', 'https://mcp.docs.astro.build/mcp'] },
+      shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
+    },
+    skills: [
+      { label: 'shadcn/ui (officiel : CLI, thèmes, registry)', repo: 'shadcn/ui' },
+      { label: 'seo+geo (audit · schema · programmatic · contenu)', repo: 'boraoztunc/skills', skills: ['seo-audit', 'schema-markup', 'programmatic-seo', 'content-strategy'] },
+      STITCH_SKILL,
+    ],
+    checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: [] },
+    scripts: { typecheck: 'astro check', lint: 'biome check .' },
+    rules: [
+      { label: 'shadcn × Astro (installation officielle)', url: 'https://ui.shadcn.com/docs/installation/astro' },
+      { label: 'Keystatic × Astro', url: 'https://keystatic.com/docs/installation-astro' },
+      { label: 'Déployer Astro', url: 'https://docs.astro.build/en/guides/deploy/' },
+    ],
+    domains: {
+      seo: { label: 'SEO technique', options: ['@astrojs/sitemap (officiel — exige `site` dans astro.config)', 'astro-seo (meta + Open Graph par page)', 'robots.txt dans public/ (pointe le sitemap + autorise GPTBot/PerplexityBot/ClaudeBot)'], when: 'TOUJOURS pour un site vitrine — dès le premier jalon.' },
+      geo: { label: 'GEO — être cité par les IA (ChatGPT, Perplexity…)', options: ['public/llms.txt maintenu par l\'IA (aperçu sémantique du site, zéro dépendance)', 'JSON-LD schema.org par type de page (Organization, LocalBusiness, FAQPage, Article, BreadcrumbList)'], when: 'TOUJOURS. Google lit le JSON-LD ; ChatGPT/Perplexity/Claude lisent JSON-LD + llms.txt.' },
+      forms: { label: 'Formulaire de contact', options: ['Web3Forms (gratuit, clé publique)', 'Formspree', 'Netlify Forms (si déployé sur Netlify)'], when: 'Site statique → service externe, jamais de backend maison.', secrets: ['PUBLIC_WEB3FORMS_KEY'] },
+      analytics: { label: 'Analytics', mcp: 'analytics', options: ['Plausible (léger, sans cookie banner)', 'posthog-js'], when: 'Vitrine → léger et RGPD-friendly par défaut.' },
+      images: { label: 'Images optimisées', options: ['astro:assets `<Image />` (built-in, défaut)'], when: 'Built-in par défaut — jamais de <img> brut sur une photo lourde.' },
+      i18n: { label: 'Multilingue', options: ['routing i18n Astro (built-in)'], when: 'Seulement si le PRD demande plusieurs langues.' },
     },
   },
 };

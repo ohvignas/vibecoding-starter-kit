@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STACKS, resolveStackManifest, DESIGN_SKILLS, STITCH } from './matrix.mjs';
 
-test('STACKS a les 3 stacks avec la bonne forme', () => {
-  for (const s of ['saas', 'mobile', 'desktop']) {
+test('STACKS a les 4 stacks avec la bonne forme', () => {
+  for (const s of ['saas', 'mobile', 'desktop', 'vitrine']) {
     assert.ok(STACKS[s], `stack ${s} présente`);
     assert.ok(STACKS[s].mcp && typeof STACKS[s].mcp === 'object');
     assert.ok(Array.isArray(STACKS[s].checks.preCommit));
@@ -31,6 +31,20 @@ test('resolveStackManifest(desktop, claude-code) : MCP chrome-devtools, security
   assert.ok(m.checks.prePush.includes('security'));
 });
 
+test('vitrine : MCP astro-docs + shadcn ; skills seo + shadcn ; domaines SEO/GEO', () => {
+  const m = resolveStackManifest('vitrine', 'claude-code');
+  assert.ok(m.mcp['astro-docs'], 'MCP astro-docs présent');
+  assert.ok(m.mcp.shadcn, 'MCP shadcn présent');
+  assert.ok(m.skills.some((s) => s.repo === 'shadcn/ui'), 'skill officiel shadcn/ui');
+  assert.ok(m.skills.some((s) => (s.skills || []).includes('seo-audit')), 'skills SEO');
+  assert.ok(m.domains.seo && m.domains.geo, 'domaines seo + geo');
+  assert.match(m.scripts.typecheck, /astro check/);
+});
+
+test('desktop : MCP shadcn ajouté (renderer React = shadcn possible)', () => {
+  assert.ok(resolveStackManifest('desktop', 'cursor').mcp.shadcn, 'desktop a le MCP shadcn');
+});
+
 test('stack inconnue → throw', () => {
   assert.throws(() => resolveStackManifest('flutter', 'cursor'), /Stack inconnue/);
 });
@@ -47,8 +61,8 @@ test('skills stack = specs installables (repo + label ; convex en --all)', () =>
   assert.ok(resolveStackManifest('saas', 'cursor').skills.find((s) => s.repo === 'get-convex/agent-skills').all);
 });
 
-test('Stitch (maquette IA) : skill officiel sur les 3 stacks, MCP hors du projet (clé jamais commitée)', () => {
-  for (const stack of ['saas', 'mobile', 'desktop']) {
+test('Stitch (maquette IA) : skill officiel sur les 4 stacks, MCP hors du projet (clé jamais commitée)', () => {
+  for (const stack of ['saas', 'mobile', 'desktop', 'vitrine']) {
     const m = resolveStackManifest(stack, 'cursor');
     const skill = m.skills.find((k) => k.repo === 'google-labs-code/stitch-skills');
     assert.ok(skill && skill.skills.includes('stitch::generate-design'), `${stack}: skill Stitch officiel auto-installé`);
