@@ -22,7 +22,7 @@
 
 ---
 
-Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (3 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur (wizard interactif)** qui génère un environnement de développement complet — 9 commandes, mémoire persistante, revue de code, CI, filet de sécurité — pour **Cursor, Claude Code et Codex**.
+Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (4 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur (wizard interactif)** qui génère un environnement de développement complet — 9 commandes, mémoire persistante, revue de code, CI, filet de sécurité — pour **Cursor, Claude Code et Codex**.
 
 > [!TIP]
 > Pas besoin de choisir un seul assistant : l'installeur configure celui que tu utilises, et le projet reste **portable** (les mêmes règles marchent partout).
@@ -35,7 +35,7 @@ Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation *
 - [Démarrage rapide](#-démarrage-rapide)
 - [Comment ça marche](#-comment-ça-marche)
 - [Les commandes](#-les-commandes)
-- [Les 3 stacks](#-les-3-stacks)
+- [Les 4 stacks](#-les-4-stacks)
 - [Ce qui est généré](#-ce-qui-est-généré)
 - [Mémoire & dream hook](#-mémoire--dream-hook)
 - [Structure du dépôt](#-structure-du-dépôt)
@@ -68,6 +68,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🚫 | **Anti-flemme** | l'IA **finit le travail** : zéro placeholder / `// TODO` / stub, zéro report « plus tard » ; « fini » = **vérifié** (test vert + résultat à l'écran). Règle non négociable dans `AGENTS.md` + `.cursor/rules/` |
 | 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
 | 🔄 | **Mise à jour** | `node scripts/update.mjs` récupère les nouveautés du kit dans un projet existant, **sans toucher à ton travail** |
+| 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt du site, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
 
@@ -120,7 +121,7 @@ Vérifie : tape `/brainstorm`. Si la commande est reconnue, c'est bon.
 
 ### Geste 2 — installe le plugin de ta stack *(seulement si ton combo en a un)*
 
-C'est le plugin propre à la techno de ta stack. Certaines combinaisons stack × assistant n'en ont **pas** (rien à faire alors).
+C'est le plugin propre à la techno de ta stack. Certaines combinaisons stack × assistant n'en ont **pas** (rien à faire alors) — c'est le cas de la stack **Vitrine**, qui n'a aucun plugin dédié.
 
 | Ta stack | Plugin | Disponible pour |
 |---|---|---|
@@ -143,6 +144,7 @@ Tape `/mcp` (ou, sur Cursor, **Settings → MCP**). Les serveurs à activer selo
 | **SaaS** | Convex · Better Auth · shadcn |
 | **Mobile** | Convex · Expo *(login requis)* |
 | **Desktop** | Chrome DevTools |
+| **Vitrine** | Astro Docs · shadcn |
 
 ### Optionnel — design par IA (Stitch)
 
@@ -211,13 +213,14 @@ Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/comma
 > [!TIP]
 > **Déjà un projet Cursor et tu veux juste les commandes ?** Installe le **plugin Cursor** `vibecoding` (`/add-plugin`, via une Team Marketplace ou la marketplace Cursor) — tu obtiens les 9 commandes + la règle de base sans rien scaffolder. Le plugin est dans [`cursor-plugin/`](cursor-plugin/) (voir [`PUBLISH.md`](PUBLISH.md)). Pour un **nouveau** projet complet, préfère `npm create vibecoding-kit`.
 
-## 🧱 Les 3 stacks
+## 🧱 Les 4 stacks
 
 | Type d'app | Stack |
 |---|---|
 | 💻 **SaaS / web** | Convex + TanStack Start + Better Auth |
 | 📱 **Mobile iOS/Android** | React Native (Expo) + Convex |
 | 🖥️ **Desktop** | Electron |
+| 🌐 **Vitrine** | Astro + shadcn/ui + Keystatic — site vitrine, portfolio, blog, SEO + GEO (cité par les IA) |
 
 Chaque stack : explication débutant, **docs officielles vérifiées**, `AGENTS.md`, `llms.txt` téléchargeables (`ai-context/`), et un **exemple de feature** (`docs/examples/`).
 

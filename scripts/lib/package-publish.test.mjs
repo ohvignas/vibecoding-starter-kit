@@ -15,9 +15,9 @@ test('package.json est publiable en scaffolder npm', () => {
   for (const d of ['docs', 'formateur', '.superpowers']) assert.ok(!pkg.files.includes(d), `files ne doit PAS inclure ${d}`);
 });
 
-test('version bumpée pour la release licence (≥ 0.3.0)', () => {
+test('version bumpée pour la release vitrine (≥ 0.4.0)', () => {
   const [maj, min] = pkg.version.split('.').map(Number);
-  assert.ok(maj > 0 || min >= 3, `version ${pkg.version} attendue ≥ 0.3.0`);
+  assert.ok(maj > 0 || min >= 4, `version ${pkg.version} attendue ≥ 0.4.0`);
 });
 
 test('le bin pointe un fichier réel avec shebang node', () => {
