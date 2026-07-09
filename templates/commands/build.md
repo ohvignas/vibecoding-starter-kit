@@ -11,7 +11,7 @@ Tu exécutes `docs/ROADMAP.md` **une tranche à la fois**, en montrant un résul
 6. **Gate** : demande « on continue au jalon suivant ? » — sauf si l'utilisateur a dit « enchaîne tout » (ou `/build --all`) → boucle automatiquement jusqu'à la fin, en montrant le visuel + une ligne de progrès à chaque tour.
 
 ## Jalon 0 (fondations)
-Joue `docs/SETUP-AI.md` (plugins/skills/MCP), scaffold la stack, fais **démarrer** l'app. Visuel = l'app boote.
+Joue `docs/A-FAIRE.md` (plugins/skills/MCP), scaffold la stack, fais **démarrer** l'app. Visuel = l'app boote.
 
 ## Fini quand
 Tous les jalons de `docs/ROADMAP.md` sont cochés **et** chaque `✅ Ce que tu vois` a été constaté en vrai. Si un blocage externe empêche d'aller au bout → dis exactement ce qui manque.

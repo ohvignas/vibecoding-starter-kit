@@ -1,4 +1,4 @@
-// Rend docs/SETUP-AI.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
+// Rend docs/A-FAIRE.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
 // Les skills design sont déjà installés par le wizard.
 import { buildSkillAddArgs } from './external.mjs';
 import { DESIGN_SKILL_SPECS, STITCH } from './matrix.mjs';
@@ -7,9 +7,9 @@ import { cursorDeeplink } from './deeplink.mjs';
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
 export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shadcnNote, skillsInstalled = true }) {
   const L = [];
-  L.push(`# Setup IA — stack ${stack} · assistant ${assistant}`);
+  L.push(`# À faire — installe ça, puis lance /new-project  (stack ${stack} · ${assistant})`);
   L.push('');
-  L.push('Joue chaque case dans ton assistant IA. Coche au fur et à mesure.');
+  L.push('Le **seul** fichier « à installer ». Ouvre-le dans ton assistant, fais chaque case, coche au fur et à mesure. (`/new-project` y ajoutera une section « Pour ton projet ».)');
   L.push('');
   L.push('## 1. Plugins');
   if (manifest.plugins.length) for (const p of manifest.plugins) L.push(`- [ ] ${p.cmd}   (${p.name})`);

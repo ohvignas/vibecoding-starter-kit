@@ -24,7 +24,7 @@ Déjà actif : l'installeur a fait `git init` et `git config core.hooksPath .git
 ## Maquette IA (Stitch) — si tu n'as pas de design à fournir
 - Les **skills Stitch sont déjà installés** ; `/new-project` s'en sert pour créer/itérer ta maquette.
 - Crée ta **clé API** : stitch.withgoogle.com → Settings → Create API Key (garde-la **secrète**).
-- Connecte le **MCP Stitch au niveau utilisateur** (hors dépôt → clé jamais commitée) — commande exacte dans `docs/SETUP-AI.md`.
+- Connecte le **MCP Stitch au niveau utilisateur** (hors dépôt → clé jamais commitée) — commande exacte dans `docs/A-FAIRE.md`.
 
 ## Démarrer
 - `/new-project "<ton idée>"` : PRD + tech spec + **maquette** (Stitch, ou la tienne) + design + **roadmap dérivée de la maquette**.

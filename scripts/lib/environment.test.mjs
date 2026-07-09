@@ -19,7 +19,7 @@ test('SaaS/claude-code : MCP, checks.mjs, pre-push, settings, SETUP-AI', () => {
   assert.ok(fs.existsSync(path.join(dir, '.githooks/pre-push')), 'pre-push écrit');
   const settings = JSON.parse(fs.readFileSync(path.join(dir, '.claude/settings.json'), 'utf8'));
   assert.equal(settings.hooks.PostToolUse[0].matcher, 'Edit|Write');
-  const setup = fs.readFileSync(path.join(dir, 'docs/SETUP-AI.md'), 'utf8');
+  const setup = fs.readFileSync(path.join(dir, 'docs/A-FAIRE.md'), 'utf8');
   assert.match(setup, /convex@claude-plugins-official/);
 });
 

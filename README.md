@@ -55,7 +55,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | | Fonctionnalité | Ce que ça fait |
 |---|---|---|
 | 🚀 | **9 commandes** | `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor`, `/next`, `/sos`, `/debug`, `/deploy` — tout le cycle de vie |
-| 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework (`.mcp.json` mergé, checks warn-only, `docs/SETUP-AI.md` joué par l'IA) |
+| 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework (`.mcp.json` mergé, checks warn-only, `docs/A-FAIRE.md` joué par l'IA) |
 | 💳 | **Catalogue de domaines** | paiement (Stripe/Polar…), email, storage, analytics, erreurs, push, cartes… **choisis d'après le PRD** (`docs/DOMAINS.md`) — pas tout d'un coup |
 | 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
 | 🌙 | **Dream hook** | GitHub Action qui analyse les commits et **propose** features/bugs/idées (propose-only) |
@@ -81,14 +81,14 @@ npm create vibecoding-kit@latest
 
 **2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
 
-Ton assistant te guide pour les **gestes manuels** (détaillés dans « [Après l'install](#-après-linstall--ce-quil-te-reste-à-faire) » ci-dessous et dans `docs/SETUP-AI.md`, adapté à ta stack) : installer **superpowers**, le **plugin de ta stack** s'il en existe un, et autoriser les **MCP**. Les skills, eux, sont déjà posés par le wizard. Ensuite, lance :
+Ton assistant te guide pour les **gestes manuels** (détaillés dans « [Après l'install](#-après-linstall--ce-quil-te-reste-à-faire) » ci-dessous et dans `docs/A-FAIRE.md`, adapté à ta stack) : installer **superpowers**, le **plugin de ta stack** s'il en existe un, et autoriser les **MCP**. Les skills, eux, sont déjà posés par le wizard. Ensuite, lance :
 
 ```
 /new-project
 ```
 
 > [!TIP]
-> La liste exacte des plugins/MCP à cocher est dans **`docs/SETUP-AI.md`**. Tout le reste est déjà posé.
+> La liste exacte des plugins/MCP à cocher est dans **`docs/A-FAIRE.md`**. Tout le reste est déjà posé.
 
 > [!NOTE]
 > **Windows** : lance avec `node` (pas de script `.sh`). Les hooks Git tournent sous **Git Bash**. Prérequis : Node.js ≥ 20.12 + git.
@@ -104,7 +104,7 @@ Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** expliq
 
 ## ✅ Après l'install — ce qu'il te reste à faire
 
-Le wizard a **déjà tout posé dans le projet**. Il reste 2 à 3 gestes **dans ton assistant IA** (impossible pour un scaffolder d'installer un plugin ou de connecter un compte à ta place). La liste exacte, **adaptée à ta stack et ton assistant**, est aussi dans **`docs/SETUP-AI.md`** (avec des cases à cocher).
+Le wizard a **déjà tout posé dans le projet**. Il reste 2 à 3 gestes **dans ton assistant IA** (impossible pour un scaffolder d'installer un plugin ou de connecter un compte à ta place). La liste exacte, **adaptée à ta stack et ton assistant**, est aussi dans **`docs/A-FAIRE.md`** (avec des cases à cocher).
 
 **Déjà fait automatiquement — n'y touche pas :** `AGENTS.md`/`CLAUDE.md`, les 9 commandes, les règles, la mémoire, git + hooks (scan de secrets), la CI, `.vibecoding.json`, les **skills** (design + stack) et les **fichiers** de config MCP.
 
@@ -128,7 +128,7 @@ C'est le plugin propre à la techno de ta stack. Certaines combinaisons stack ×
 | **Mobile** | Expo (+ Convex) | Claude Code, Codex |
 | **Desktop** | Electron | Claude Code |
 
-La **commande exacte** est dans `docs/SETUP-AI.md` § 1 (elle dépend de ton assistant). Exemple pour **Cursor + SaaS** :
+La **commande exacte** est dans `docs/A-FAIRE.md` § 1 (elle dépend de ton assistant). Exemple pour **Cursor + SaaS** :
 
 ```bash
 git clone https://github.com/get-convex/convex-agent-plugins ~/.cursor/plugins/convex-agent-plugins
@@ -146,7 +146,7 @@ Tape `/mcp` (ou, sur Cursor, **Settings → MCP**). Les serveurs à activer selo
 
 ### Optionnel — design par IA (Stitch)
 
-Si tu n'as **pas** de maquette à fournir : crée une clé API sur [stitch.withgoogle.com](https://stitch.withgoogle.com) (Settings → Create API Key), puis branche le MCP Stitch **au niveau utilisateur** (pas dans le dépôt → la clé n'est jamais commitée). Étapes exactes dans `docs/SETUP-AI.md` § 5.
+Si tu n'as **pas** de maquette à fournir : crée une clé API sur [stitch.withgoogle.com](https://stitch.withgoogle.com) (Settings → Create API Key), puis branche le MCP Stitch **au niveau utilisateur** (pas dans le dépôt → la clé n'est jamais commitée). Étapes exactes dans `docs/A-FAIRE.md` § 5.
 
 ### Puis tu codes
 
@@ -235,7 +235,7 @@ mon-app/
 │   ├── skills/stack-*             # règles de la stack
 │   └── agents/                    # code-reviewer + security-reviewer
 ├── docs/
-│   ├── SETUP-AI.md                # plugins/skills/MCP à installer (joué par l'IA)
+│   ├── A-FAIRE.md                # plugins/skills/MCP à installer (joué par l'IA)
 │   ├── DOMAINS.md                 # catalogue des capacités métier de la stack
 │   ├── ROADMAP.md                 # jalons (✅ ce que tu vois) — piloté par /build
 │   ├── RUN.md                     # comment lancer l'app + ce que tu dois voir

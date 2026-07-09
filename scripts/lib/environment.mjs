@@ -56,8 +56,8 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
     else { write('.claude/settings.json', claudeSettings(read('.claude/settings.json'), manifest.checks.onEdit)); done.push('.claude/settings.json (checks)'); }
   } catch (e) { failed.push(`hooks assistant (${e.message})`); }
 
-  // 6. SETUP-AI.md
-  try { write('docs/SETUP-AI.md', renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE, skillsInstalled })); done.push('docs/SETUP-AI.md'); }
+  // 6. A-FAIRE.md
+  try { write('docs/A-FAIRE.md', renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE, skillsInstalled })); done.push('docs/A-FAIRE.md'); }
   catch (e) { failed.push(`SETUP-AI (${e.message})`); }
 
   // 6b. DOMAINS.md (catalogue métier de la stack)

@@ -31,7 +31,7 @@ for (const f of [
   'AGENTS.md', 'CLAUDE.md', '.gitignore', '.env.example',
   '.githooks/pre-commit', '.githooks/pre-push',
   '.cursor/rules/00-project.mdc', '.cursor/commands/new-project.md',
-  'docs/SETUP-AI.md', 'docs/ONBOARDING.md', 'docs/ROADMAP.md',
+  'docs/A-FAIRE.md', 'docs/ONBOARDING.md', 'docs/ROADMAP.md',
 ]) check(`fichier ${f}`, fs.existsSync(path.join(project, f)));
 
 check('dépôt git initialisé (.git présent)', fs.existsSync(path.join(project, '.git')));

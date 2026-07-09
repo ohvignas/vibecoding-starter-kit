@@ -10,7 +10,7 @@
 
 - [ ] ## 0. Fondations — le projet démarre
   - Dépend de : —
-  - Livre : environnement IA installé (`docs/SETUP-AI.md` joué) + scaffold de la stack + app qui démarre
+  - Livre : environnement IA installé (`docs/A-FAIRE.md` joué) + scaffold de la stack + app qui démarre
   - ✅ Ce que tu vois : l'app démarre (page / écran / fenêtre « hello ») — voir `docs/RUN.md`
   - Plan : docs/superpowers/plans/00-fondations.md
 

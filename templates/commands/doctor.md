@@ -15,14 +15,15 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
    - `.githooks/checks.mjs` présent + `.githooks/pre-push` présent + `git config core.hooksPath` vaut `.githooks` (sinon : `git config core.hooksPath .githooks`).
    - Câblage checks : `.cursor/hooks.json` (Cursor) ou `.claude/settings.json` (Claude Code) référence `checks.mjs`.
    - Scripts `package.json` : `typecheck` (+ `lint` hors mobile) présents.
-   - `docs/SETUP-AI.md` : s'il reste des cases `[ ]`, rappelle de les jouer.
+   - `docs/A-FAIRE.md` : s'il reste des cases `[ ]`, rappelle de les jouer.
    - (desktop) le scan sécu `@doyensec/electronegativity` est câblé dans `.githooks/pre-push` (il tourne au `git push` et en CI).
-10. **Skills installés** : le dossier `.claude/skills/` (Claude Code/Codex) ou `.cursor/…` (Cursor) **du projet** contient bien les skills attendus (design + stack). Sinon → relance les commandes de `docs/SETUP-AI.md` section Skills.
+10. **Skills installés** : le dossier `.claude/skills/` (Claude Code/Codex) ou `.cursor/…` (Cursor) **du projet** contient bien les skills attendus (design + stack). Sinon → relance les commandes de `docs/A-FAIRE.md` section Skills.
 11. **MCP joignables** : pour chaque serveur HTTP de `.cursor/mcp.json`/`.mcp.json`, teste `curl -m 5 -o /dev/null -s -w '%{http_code}' <url>` — un code (même 401/405) prouve qu'il répond ; « timeout » = pas joignable.
 12. **Plugin superpowers** : demande à l'utilisateur de taper `/brainstorm` — si reconnu, c'est bon ; sinon, réinstaller (`/add-plugin superpowers`).
 13. **Maquette Stitch (optionnel)** : si l'utilisateur veut Stitch, vérifie que le MCP `stitch` est configuré (user-scope) et que la clé `STITCH_API_KEY` est présente dans l'environnement.
-14. **docs/A-INSTALLER.md (après `/new-project`)** : s'il existe, liste les cases `[ ]` non cochées — ce sont les installs **spécifiques à ce projet** (paquets / MCP / secrets par domaine) que l'utilisateur doit encore faire.
 
-**Verdict final** : si TOUT est ✓ (1 à 14), écris clairement : « ✅ Ton environnement est prêt — tu peux lancer `/new-project` ». C'est le **critère officiel de fin d'installation**. Sinon, liste les ✗ et la commande exacte pour chacun.
+> `docs/A-FAIRE.md` est le **seul** fichier d'install : l'étape 9 couvre déjà toutes ses cases `[ ]` (gestes de base **+** section « Pour ton projet » ajoutée par `/new-project`).
+
+**Verdict final** : si TOUT est ✓ (1 à 13), écris clairement : « ✅ Ton environnement est prêt — tu peux lancer `/new-project` ». C'est le **critère officiel de fin d'installation**. Sinon, liste les ✗ et la commande exacte pour chacun.
 
 Termine par un résumé : ce qui va, ce qui manque, et les commandes exactes pour corriger.

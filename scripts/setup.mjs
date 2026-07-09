@@ -244,8 +244,8 @@ async function main() {
   const promptLines = [
     "Finalise l'install et démarre :",
     args.noSkills
-      ? '1. Ouvre docs/SETUP-AI.md → installe les plugins, lance les commandes de skills listées (sections 2 et 5), autorise les MCP (/mcp).'
-      : '1. Ouvre docs/SETUP-AI.md → installe les plugins et autorise les MCP (/mcp). (Les skills — design + stack — sont déjà installés par le wizard.)',
+      ? '1. Ouvre docs/A-FAIRE.md → installe les plugins, lance les commandes de skills listées (sections 2 et 5), autorise les MCP (/mcp).'
+      : '1. Ouvre docs/A-FAIRE.md → installe les plugins et autorise les MCP (/mcp). (Les skills — design + stack — sont déjà installés par le wizard.)',
     `2. Boucle superpowers : ${SUPERPOWERS[args.assistant]}`,
     '3. /doctor pour vérifier.',
     '4. /new-project (PRD + tech spec + design), puis /build.',
