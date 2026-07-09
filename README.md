@@ -73,10 +73,10 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 **1. Installe le kit** — deux façons :
 
-**Option A — une commande** *(après publication npm, voir [`PUBLISH.md`](PUBLISH.md))* :
+**Option A — une commande** *(publié sur npm ✅)* :
 
 ```bash
-npm create vibecoding@latest
+npm create vibecoding-kit@latest
 ```
 
 **Option B — cloner** *(marche tout de suite, sans rien publier)* :
@@ -120,7 +120,7 @@ Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** expliq
 
 ```mermaid
 flowchart TD
-    A["Tu lances : npm create vibecoding (ou node scripts/setup.mjs)"] --> C{"Réponds : stack ? assistant ? nom ? Convex cloud/local ?"}
+    A["Tu lances : npm create vibecoding-kit (ou node scripts/setup.mjs)"] --> C{"Réponds : stack ? assistant ? nom ? Convex cloud/local ?"}
     C --> D["setup.mjs génère l'environnement"]
     D --> E1["Cursor : .cursor/commands + rules .mdc + hooks + BUGBOT"]
     D --> E2["Claude Code : CLAUDE.md + .claude/skills"]
@@ -158,7 +158,7 @@ Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/comma
 > **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt » avant de lancer `/new-project`. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md). **Récupérer les nouveautés du kit** dans un projet existant → `node <kit>/scripts/update.mjs` (ne touche jamais à ton travail).
 
 > [!TIP]
-> **Déjà un projet Cursor et tu veux juste les commandes ?** Installe le **plugin Cursor** `vibecoding` (`/add-plugin`, via une Team Marketplace ou la marketplace Cursor) — tu obtiens les 9 commandes + la règle de base sans rien scaffolder. Le plugin est dans [`cursor-plugin/`](cursor-plugin/) (voir [`PUBLISH.md`](PUBLISH.md)). Pour un **nouveau** projet complet, préfère `npm create vibecoding`.
+> **Déjà un projet Cursor et tu veux juste les commandes ?** Installe le **plugin Cursor** `vibecoding` (`/add-plugin`, via une Team Marketplace ou la marketplace Cursor) — tu obtiens les 9 commandes + la règle de base sans rien scaffolder. Le plugin est dans [`cursor-plugin/`](cursor-plugin/) (voir [`PUBLISH.md`](PUBLISH.md)). Pour un **nouveau** projet complet, préfère `npm create vibecoding-kit`.
 
 ## 🧱 Les 3 stacks
 

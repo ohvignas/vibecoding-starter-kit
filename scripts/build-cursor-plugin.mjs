@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Assemble un plugin Cursor (cursor-plugin/) à partir des templates du kit — source de vérité unique.
 // Publiable via cursor.com/marketplace ou une Team Marketplace : donne les 9 commandes + la règle de base
-// dans Cursor sans cloner ni scaffolder. Le scaffold complet d'un projet reste `npm create vibecoding`.
+// dans Cursor sans cloner ni scaffolder. Le scaffold complet d'un projet reste `npm create vibecoding-kit`.
 // Structure Cursor : .cursor-plugin/plugin.json + commands/*.md + rules/*.mdc (auto-découverts).
 import fs from 'node:fs';
 import path from 'node:path';

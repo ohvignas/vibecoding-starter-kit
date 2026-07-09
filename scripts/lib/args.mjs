@@ -22,7 +22,7 @@ export function parseArgs(argv) {
       case '--no-learning': args.learning = false; break;
       case '--yes': args.yes = true; break;
       default:
-        // Nom de projet positionnel (npm create vibecoding mon-app). --project reste prioritaire.
+        // Nom de projet positionnel (npm create vibecoding-kit mon-app). --project reste prioritaire.
         if (!a.startsWith('-') && args.project === null) { args.project = a; break; }
         throw new Error(`Argument inconnu : ${a}`);
     }

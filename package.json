@@ -1,13 +1,13 @@
 {
-  "name": "create-vibecoding",
+  "name": "create-vibecoding-kit",
   "version": "0.2.0",
   "description": "Générateur d'environnement de dev IA pour débutants (Cursor, Claude Code, Codex) — une commande, zéro dépendance.",
   "type": "module",
   "license": "MIT",
-  "bin": { "create-vibecoding": "scripts/setup.mjs" },
+  "bin": { "create-vibecoding-kit": "scripts/setup.mjs" },
   "files": ["scripts", "templates", "stacks", "ai-context", "guides", "README.md", "LICENSE"],
   "engines": { "node": ">=20.12" },
-  "repository": { "type": "git", "url": "https://github.com/ohvignas/vibecoding-starter-kit.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/ohvignas/vibecoding-starter-kit.git" },
   "homepage": "https://github.com/ohvignas/vibecoding-starter-kit#readme",
   "keywords": ["vibecoding", "scaffold", "cursor", "claude-code", "convex", "expo", "electron", "starter"],
   "scripts": { "test": "node --test" }

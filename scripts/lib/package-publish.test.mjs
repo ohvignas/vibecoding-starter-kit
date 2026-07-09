@@ -5,10 +5,10 @@ import fs from 'node:fs';
 const pkg = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
 
 test('package.json est publiable en scaffolder npm', () => {
-  assert.equal(pkg.name, 'create-vibecoding');           // `npm create vibecoding`
+  assert.equal(pkg.name, 'create-vibecoding-kit');       // `npm create vibecoding-kit`
   assert.equal(pkg.private, undefined, 'pas de private:true (sinon npm publish refuse)');
   assert.equal(pkg.type, 'module');
-  assert.equal(pkg.bin['create-vibecoding'], 'scripts/setup.mjs');
+  assert.equal(pkg.bin['create-vibecoding-kit'], 'scripts/setup.mjs');
   assert.ok(pkg.engines && pkg.engines.node, 'engines.node présent');
   // La whitelist embarque ce que setup lit au runtime, et RIEN de superflu.
   for (const d of ['scripts', 'templates', 'stacks', 'ai-context']) assert.ok(pkg.files.includes(d), `files doit inclure ${d}`);

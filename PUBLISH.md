@@ -1,14 +1,14 @@
-# Publier `create-vibecoding` sur npm
+# Publier `create-vibecoding-kit` sur npm
 
 Une seule fois : `npm login` (compte npm).
 
 À chaque version :
 1. Bumpe la version : `npm version patch` (ou `minor`).
 2. Vérifie le contenu du paquet : `npm pack --dry-run` (doit lister `scripts/`, `templates/`, `stacks/`, `ai-context/`, `guides/` — PAS `docs/` ni `formateur/`).
-3. Publie : `npm publish` (le paquet est public ; nom `create-vibecoding`).
-4. Teste : dans un dossier vide, `npm create vibecoding@latest`.
+3. Publie : `npm publish` (le paquet est public ; nom `create-vibecoding-kit`).
+4. Teste : dans un dossier vide, `npm create vibecoding-kit@latest`.
 
-Le nom `create-vibecoding` fait fonctionner `npm create vibecoding@latest` (npm mappe `create X` → `create-X`).
+Le nom `create-vibecoding-kit` fait fonctionner `npm create vibecoding-kit@latest` (npm mappe `create X` → `create-X`).
 
 ---
 
@@ -21,4 +21,4 @@ Deux voies de distribution :
 2. **Marketplace officielle** : soumets `cursor-plugin/` sur `cursor.com/marketplace/publish`.
 3. **Test local** : copie `cursor-plugin/` dans `~/.cursor/plugins/local/vibecoding`.
 
-Le plugin donne les 9 commandes + la règle de base. Il **ne scaffolde pas** (pas de git/CI/MCP) — pour un nouveau projet complet, `npm create vibecoding`.
+Le plugin donne les 9 commandes + la règle de base. Il **ne scaffolde pas** (pas de git/CI/MCP) — pour un nouveau projet complet, `npm create vibecoding-kit`.

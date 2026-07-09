@@ -68,10 +68,10 @@ test('resolveProjectDir : nom nu résolu contre baseDir ; chemins explicites res
 test('projectBaseDir : cwd si installé (node_modules), sinon à côté du clone', () => {
   const cwd = path.join(path.sep, 'home', 'eleve', 'projets');
   assert.equal(projectBaseDir(path.join(path.sep, 'home', 'eleve', 'vibecoding-starter-kit'), cwd), path.join(path.sep, 'home', 'eleve'));
-  assert.equal(projectBaseDir(path.join(path.sep, 'home', 'eleve', '.npm', '_npx', 'abc', 'node_modules', 'create-vibecoding'), cwd), cwd);
+  assert.equal(projectBaseDir(path.join(path.sep, 'home', 'eleve', '.npm', '_npx', 'abc', 'node_modules', 'create-vibecoding-kit'), cwd), cwd);
 });
 
-test('parseArgs : nom de projet positionnel (npm create vibecoding mon-app)', () => {
+test('parseArgs : nom de projet positionnel (npm create vibecoding-kit mon-app)', () => {
   assert.equal(parseArgs(['mon-app', '--stack', 'saas']).project, 'mon-app');
   assert.equal(parseArgs(['--stack', 'saas', '--project', 'x']).project, 'x'); // --project explicite marche toujours
 });
