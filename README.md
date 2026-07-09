@@ -81,7 +81,7 @@ npm create vibecoding-kit@latest
 
 **2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
 
-Ton assistant te guide pour les **2 seuls gestes manuels** : installer le plugin **superpowers** (`/add-plugin superpowers`) et autoriser les **MCP** (`/mcp`). Les skills, eux, sont déjà installés par le wizard. Ensuite, lance :
+Ton assistant te guide pour les **gestes manuels** (détaillés dans « [Après l'install](#-après-linstall--ce-quil-te-reste-à-faire) » ci-dessous et dans `docs/SETUP-AI.md`, adapté à ta stack) : installer **superpowers**, le **plugin de ta stack** s'il en existe un, et autoriser les **MCP**. Les skills, eux, sont déjà posés par le wizard. Ensuite, lance :
 
 ```
 /new-project
@@ -101,6 +101,67 @@ Clone le dépôt, lis [`guides/01-comment-parler-a-l-IA.md`](guides/01-comment-p
 Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** explique tout le vocabulaire (LLM, MCP, stack, MVP, hook…) simplement.
 
 </details>
+
+## ✅ Après l'install — ce qu'il te reste à faire
+
+Le wizard a **déjà tout posé dans le projet**. Il reste 2 à 3 gestes **dans ton assistant IA** (impossible pour un scaffolder d'installer un plugin ou de connecter un compte à ta place). La liste exacte, **adaptée à ta stack et ton assistant**, est aussi dans **`docs/SETUP-AI.md`** (avec des cases à cocher).
+
+**Déjà fait automatiquement — n'y touche pas :** `AGENTS.md`/`CLAUDE.md`, les 9 commandes, les règles, la mémoire, git + hooks (scan de secrets), la CI, `.vibecoding.json`, les **skills** (design + stack) et les **fichiers** de config MCP.
+
+### Geste 1 — installe superpowers (le pilote de la boucle)
+
+| Assistant | Commande |
+|---|---|
+| Cursor | `/add-plugin superpowers` |
+| Claude Code | `/plugin install superpowers@claude-plugins-official` |
+| Codex | ouvre `/plugins`, cherche « Superpowers », installe |
+
+Vérifie : tape `/brainstorm`. Si la commande est reconnue, c'est bon.
+
+### Geste 2 — installe le plugin de ta stack *(seulement si ton combo en a un)*
+
+C'est le plugin propre à la techno de ta stack. Certaines combinaisons stack × assistant n'en ont **pas** (rien à faire alors).
+
+| Ta stack | Plugin | Disponible pour |
+|---|---|---|
+| **SaaS** | Convex | Cursor, Claude Code |
+| **Mobile** | Expo (+ Convex) | Claude Code, Codex |
+| **Desktop** | Electron | Claude Code |
+
+La **commande exacte** est dans `docs/SETUP-AI.md` § 1 (elle dépend de ton assistant). Exemple pour **Cursor + SaaS** :
+
+```bash
+git clone https://github.com/get-convex/convex-agent-plugins ~/.cursor/plugins/convex-agent-plugins
+```
+
+### Geste 3 — autorise les MCP
+
+Tape `/mcp` (ou, sur Cursor, **Settings → MCP**). Les serveurs à activer selon ta stack :
+
+| Ta stack | Serveurs MCP |
+|---|---|
+| **SaaS** | Convex · Better Auth · shadcn |
+| **Mobile** | Convex · Expo *(login requis)* |
+| **Desktop** | Chrome DevTools |
+
+### Optionnel — design par IA (Stitch)
+
+Si tu n'as **pas** de maquette à fournir : crée une clé API sur [stitch.withgoogle.com](https://stitch.withgoogle.com) (Settings → Create API Key), puis branche le MCP Stitch **au niveau utilisateur** (pas dans le dépôt → la clé n'est jamais commitée). Étapes exactes dans `docs/SETUP-AI.md` § 5.
+
+### Puis tu codes
+
+```
+/new-project « ton idée »
+```
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/new-project` | PRD + tech spec + **maquette** + roadmap dérivée |
+| `/build` | construit **jalon par jalon**, comparé à la maquette (visuel à chaque étape) |
+| `/doctor` | vérifie que plugins / MCP / skills sont bien branchés |
+| `/next` · `/sos` · `/debug` · `/deploy` | quoi faire ensuite · débloquer · corriger un bug · mettre en ligne |
+
+Bloqué ? Lance **`/doctor`** : il te dit précisément ce qui manque.
 
 ## 🔍 Comment ça marche
 
