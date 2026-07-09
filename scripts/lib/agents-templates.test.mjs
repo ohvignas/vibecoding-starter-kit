@@ -20,3 +20,16 @@ test('design-rule : les 5 skills design + design.md', () => {
     assert.match(t, new RegExp(s.replace(/[-.]/g, '\\$&')));
   }
 });
+
+test('stacks/vitrine : AGENTS.md + README + prompts présents et complets', () => {
+  const a = read('stacks/vitrine/AGENTS.md');
+  assert.match(a, /îlot/i);
+  assert.match(a, /client:/);
+  assert.match(a, /llms\.txt/);
+  assert.match(a, /JSON-LD/);
+  assert.match(a, /robots\.txt/);
+  assert.match(a, /@astrojs\/sitemap/);
+  assert.match(a, /Keystatic/);
+  assert.ok(read('stacks/vitrine/README.md').length > 800);
+  assert.ok(read('stacks/vitrine/prompts-de-demarrage.md').includes('shadcn'));
+});
