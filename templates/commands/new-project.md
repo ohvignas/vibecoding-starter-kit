@@ -107,7 +107,15 @@ Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-gui
 
 ## Phase 6 — Analyse de la maquette + domaines → Roadmap `docs/ROADMAP.md`
 
-1. **Sélection des domaines** : lis `docs/DOMAINS.md` (le catalogue de la stack) et repère, dans le PRD, les **domaines métier** nécessaires (paiement, email, storage, analytics, erreurs, push, caméra, cartes, auto-update, licence…). Ajoute les secrets correspondants à `.env.example` et leurs commandes à `docs/SETUP-AI.md`. Règle : préfère le **built-in / officiel** ; n'ajoute un externe que si le PRD le justifie.
+1. **Sélection des domaines + doc d'install SUR MESURE** : lis `docs/DOMAINS.md` (le catalogue de la stack) et repère, dans le PRD, les **domaines métier** nécessaires (paiement, email, storage, analytics, erreurs, jobs, recherche, push, caméra, cartes, auto-update, licence…). Règle : préfère le **built-in / officiel** ; n'ajoute un externe que si le PRD le justifie.
+
+   Puis **écris `docs/A-INSTALLER.md`** : la checklist **sur mesure de CE projet**, en français simple, pour que l'utilisateur n'ait **rien à deviner** (il ne peut pas savoir quoi installer **en plus** de ce qui est auto — ce doc le lui dit). Structure :
+   - **## Déjà fait (n'y touche pas)** : fichiers, git, hooks, CI et **skills** (design + stack) sont déjà posés par le wizard.
+   - **## À installer — gestes de base** (repris de `docs/SETUP-AI.md`, adaptés) : le plugin **superpowers**, l'éventuel **plugin de ta stack**, les **MCP** de la stack à autoriser. Une case `- [ ]` + la commande exacte par item.
+   - **## À installer — pour TON projet** : **une entrée par domaine détecté** dans le PRD. Pour chacune : une ligne « à quoi ça sert », le **paquet** à ajouter (option built-in/officielle par défaut, tirée de `DOMAINS.md`), la **commande MCP** s'il y en a une (ex. paiement → `claude mcp add --transport http stripe https://mcp.stripe.com`), et le **secret** à mettre dans `.env.example` (ou l'env Convex). Chaque item en case `- [ ]`, commande copiable, **rien d'inventé** (tout vient de `DOMAINS.md`).
+   - **## Ordre conseillé** : superpowers → plugin de stack → MCP de la stack → domaines de ton projet, puis `/doctor`.
+
+   En parallèle, garde `docs/SETUP-AI.md` à jour (secrets → `.env.example`, commandes MCP ajoutées). `docs/SETUP-AI.md` = la checklist que **l'IA** joue ; `docs/A-INSTALLER.md` = la version **humaine et sur mesure** que **l'utilisateur** suit.
 2. **Analyse la maquette validée** (`maquette/`) : lis les fichiers exportés et **liste chaque écran + chaque flux** qu'elle montre. C'est la **cible concrète** que le build doit réaliser — la roadmap existe pour rendre ces écrans réels.
 3. **Roadmap exhaustive** : remplis `docs/ROADMAP.md` (squelette déjà présent) en **pensant à tout** — **Fondations d'abord**, puis balaie les dimensions : Modèle de données, Auth, **réaliser chaque écran/flux de la maquette**, **chaque feature du PRD**, **domaines sélectionnés**, États (chargement/vide/erreur), Tests, passe sécu, Déploiement, Docs.
 4. Chaque jalon = une **tranche verticale** avec une ligne **`✅ Ce que tu vois :`** — idéalement **l'écran de la maquette qui devient réel** dans l'app — et un chemin de plan `docs/superpowers/plans/NN-<slug>.md`.
@@ -117,8 +125,8 @@ Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-gui
 
 ## Phase 7 — Mise en place du projet
 1. Scaffold la stack choisie (`npm create convex …` / `create-expo-app` / `create-electron-app`).
-2. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle de jouer `docs/SETUP-AI.md` (plugins/skills/MCP) et d'utiliser `docs/RUN.md` pour lancer l'app.
+2. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, **`docs/A-INSTALLER.md`**, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle d'ouvrir **`docs/A-INSTALLER.md`** (ce qu'il reste à installer pour CE projet), de jouer `docs/SETUP-AI.md` (plugins/skills/MCP), et d'utiliser `docs/RUN.md` pour lancer l'app.
 3. Crée le squelette `docs/memory/` (index + gotchas/conventions/decisions/archive) et `docs/DREAM.md` (vide, avec en-tête).
 
 ## Fini quand
-Les fichiers fondation existent + le projet est scaffoldé + `AGENTS.md` contient la boucle et la règle design. Ensuite : « pour tout construire dans l'ordre avec un visuel à chaque étape, lance `/build` ; pour une feature isolée, `/new-feature` ».
+Les fichiers fondation existent + `docs/A-INSTALLER.md` liste **ce qu'il reste à installer pour CE projet** + le projet est scaffoldé + `AGENTS.md` contient la boucle et la règle design. Dis à l'utilisateur d'ouvrir `docs/A-INSTALLER.md` et de cocher les installs. Ensuite : « pour tout construire dans l'ordre avec un visuel à chaque étape, lance `/build` ; pour une feature isolée, `/new-feature` ».

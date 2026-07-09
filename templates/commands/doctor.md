@@ -17,11 +17,12 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
    - Scripts `package.json` : `typecheck` (+ `lint` hors mobile) présents.
    - `docs/SETUP-AI.md` : s'il reste des cases `[ ]`, rappelle de les jouer.
    - (desktop) le scan sécu `@doyensec/electronegativity` est câblé dans `.githooks/pre-push` (il tourne au `git push` et en CI).
-10. **Skills installés** : le dossier `.agents/skills/` (ou `.cursor/…`) contient bien les skills attendus (design + stack). Sinon → relance les commandes de `docs/SETUP-AI.md` section Skills.
+10. **Skills installés** : le dossier `.claude/skills/` (Claude Code/Codex) ou `.cursor/…` (Cursor) **du projet** contient bien les skills attendus (design + stack). Sinon → relance les commandes de `docs/SETUP-AI.md` section Skills.
 11. **MCP joignables** : pour chaque serveur HTTP de `.cursor/mcp.json`/`.mcp.json`, teste `curl -m 5 -o /dev/null -s -w '%{http_code}' <url>` — un code (même 401/405) prouve qu'il répond ; « timeout » = pas joignable.
 12. **Plugin superpowers** : demande à l'utilisateur de taper `/brainstorm` — si reconnu, c'est bon ; sinon, réinstaller (`/add-plugin superpowers`).
 13. **Maquette Stitch (optionnel)** : si l'utilisateur veut Stitch, vérifie que le MCP `stitch` est configuré (user-scope) et que la clé `STITCH_API_KEY` est présente dans l'environnement.
+14. **docs/A-INSTALLER.md (après `/new-project`)** : s'il existe, liste les cases `[ ]` non cochées — ce sont les installs **spécifiques à ce projet** (paquets / MCP / secrets par domaine) que l'utilisateur doit encore faire.
 
-**Verdict final** : si TOUT est ✓ (1 à 13), écris clairement : « ✅ Ton environnement est prêt — tu peux lancer `/new-project` ». C'est le **critère officiel de fin d'installation**. Sinon, liste les ✗ et la commande exacte pour chacun.
+**Verdict final** : si TOUT est ✓ (1 à 14), écris clairement : « ✅ Ton environnement est prêt — tu peux lancer `/new-project` ». C'est le **critère officiel de fin d'installation**. Sinon, liste les ✗ et la commande exacte pour chacun.
 
 Termine par un résumé : ce qui va, ce qui manque, et les commandes exactes pour corriger.
