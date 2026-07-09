@@ -30,7 +30,7 @@ test('robustesse apostrophe : droite ET courbe sélectionnent le domaine', () =>
 });
 
 test('triggers vitrine : formulaire de contact + multilingue détectés', () => {
-  const picked = selectDomains('Un site vitrine avec un formulaire de contact, disponible en français et en anglais.', DOMAIN_TRIGGERS);
+  const picked = selectDomains('Un site vitrine avec un formulaire de contact, disponible en plusieurs langues.', DOMAIN_TRIGGERS);
   assert.ok(picked.includes('forms'), 'forms détecté');
   assert.ok(picked.includes('i18n'), 'i18n détecté');
 });

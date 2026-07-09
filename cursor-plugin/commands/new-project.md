@@ -77,7 +77,7 @@ La **maquette est le pivot** : on dessine les écrans **avant** de coder, on **i
 
 Demande d'abord à l'utilisateur laquelle correspond :
 
-- **(a) « J'ai déjà une maquette sur Stitch »** → connecte le MCP Stitch (voir `docs/SETUP-AI.md`), puis `list_projects` → `list_screens` → pour chaque écran validé, récupère le `htmlCode` (`get_screen`) et **écris-le dans `maquette/<ecran>.html`**.
+- **(a) « J'ai déjà une maquette sur Stitch »** → connecte le MCP Stitch (voir `docs/A-FAIRE.md`), puis `list_projects` → `list_screens` → pour chaque écran validé, récupère le `htmlCode` (`get_screen`) et **écris-le dans `maquette/<ecran>.html`**.
 - **(b) « J'ai une maquette ailleurs » (Figma, images, HTML)** → demande-lui de **déposer ses exports/captures dans `maquette/`** (un fichier par écran). Tu t'en serviras de référence visuelle.
 - **(c) « Je n'ai pas de maquette »** → on la crée :
   - Si le MCP Stitch est connecté : `generate_screen_from_text` (skill `stitch::generate-design`) → itère → importe le HTML dans `maquette/`.
@@ -97,6 +97,8 @@ Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-gui
 - *Marque & style* · *Couleurs* (rôle) · *Typographie* (rôles, échelle) · *Layout & espacements* (grille, breakpoints) · *Élévation* (ombres) · *Formes* (rayons) · *Composants* (specs par composant) · *À faire / à éviter*.
 - shadcn/Tailwind : réfère les tokens par nom plutôt que de tout redéfinir.
 > **Affiner la palette** (shadcn/Tailwind) : régler couleurs/typo/rayons sur **[tweakcn.com](https://tweakcn.com)** (gratuit, export variables CSS) → colle dans `globals.css` + les *tokens* de `docs/design.md`.
+> **Preset shadcn (stacks web : saas, desktop, vitrine)** : propose à l'utilisateur de composer son thème sur **[ui.shadcn.com/create](https://ui.shadcn.com/create)** (couleurs, rayons, typo, en visuel) et de te donner son **code de preset**. Note-le pour la Phase 7 : le scaffold l'appliquera (`npx shadcn@latest init --preset <code>`). S'il n'en a pas → défaut shadcn, réglable plus tard sur tweakcn. **Mobile : jamais shadcn** (c'est du DOM web) → NativeWind + les patterns RN.
+> Si tu génères les wireframes toi-même (cas c) sur une stack web : fais-les **en composants shadcn avec ce preset** — la maquette EST déjà le design final.
 
 **B. EXPERIENCE.md — le comportement**
 - *Fondation* (form-factor, système d'UI) · *Architecture de l'information* · *Voix & ton* (microcopy) · *Patterns de composants* + *d'état* (chargement/vide/erreur/succès) · *Primitives d'interaction* · *Plancher d'accessibilité* · *Flux clés* (parcours avec protagoniste nommé + climax).
@@ -107,7 +109,13 @@ Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-gui
 
 ## Phase 6 — Analyse de la maquette + domaines → Roadmap `docs/ROADMAP.md`
 
-1. **Sélection des domaines** : lis `docs/DOMAINS.md` (le catalogue de la stack) et repère, dans le PRD, les **domaines métier** nécessaires (paiement, email, storage, analytics, erreurs, push, caméra, cartes, auto-update, licence…). Ajoute les secrets correspondants à `.env.example` et leurs commandes à `docs/SETUP-AI.md`. Règle : préfère le **built-in / officiel** ; n'ajoute un externe que si le PRD le justifie.
+1. **Sélection des domaines + doc d'install SUR MESURE** : lis `docs/DOMAINS.md` (le catalogue de la stack) et repère, dans le PRD, les **domaines métier** nécessaires (paiement, email, storage, analytics, erreurs, jobs, recherche, push, caméra, cartes, auto-update, licence…). Règle : préfère le **built-in / officiel** ; n'ajoute un externe que si le PRD le justifie.
+
+   **Stack vitrine** : les domaines `seo`, `geo` et `images` sont **toujours sélectionnés** (raison d'être de la stack), quel que soit le PRD — les triggers ne servent que pour `forms`, `analytics`, `i18n`…
+
+   Puis **complète le fichier unique `docs/A-FAIRE.md`** (déjà créé par le wizard avec les gestes de base) en y ajoutant, à la fin, une section **`## Pour ton projet`** : **une entrée par domaine détecté**, en français simple, pour que l'utilisateur n'ait **rien à deviner**. Pour chacune : une ligne « à quoi ça sert », le **paquet** à installer (option officielle par défaut, tirée de `DOMAINS.md`), la **commande MCP** s'il y en a une (ex. paiement → `claude mcp add --transport http stripe https://mcp.stripe.com`), et le **secret** à mettre dans `.env.example` (ou l'env Convex). Chaque item en case `- [ ]`, commande copiable, **rien d'inventé** (tout vient de `DOMAINS.md`). Ajoute aussi les secrets à `.env.example`.
+
+   **Un seul fichier d'install** : `docs/A-FAIRE.md` = gestes de base (posés par le wizard) **+** la section « Pour ton projet » que tu viens d'ajouter. Ne crée **aucun** autre doc d'install.
 2. **Analyse la maquette validée** (`maquette/`) : lis les fichiers exportés et **liste chaque écran + chaque flux** qu'elle montre. C'est la **cible concrète** que le build doit réaliser — la roadmap existe pour rendre ces écrans réels.
 3. **Roadmap exhaustive** : remplis `docs/ROADMAP.md` (squelette déjà présent) en **pensant à tout** — **Fondations d'abord**, puis balaie les dimensions : Modèle de données, Auth, **réaliser chaque écran/flux de la maquette**, **chaque feature du PRD**, **domaines sélectionnés**, États (chargement/vide/erreur), Tests, passe sécu, Déploiement, Docs.
 4. Chaque jalon = une **tranche verticale** avec une ligne **`✅ Ce que tu vois :`** — idéalement **l'écran de la maquette qui devient réel** dans l'app — et un chemin de plan `docs/superpowers/plans/NN-<slug>.md`.
@@ -116,9 +124,14 @@ Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-gui
 ---
 
 ## Phase 7 — Mise en place du projet
-1. Scaffold la stack choisie (`npm create convex …` / `create-expo-app` / `create-electron-app`).
-2. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle de jouer `docs/SETUP-AI.md` (plugins/skills/MCP) et d'utiliser `docs/RUN.md` pour lancer l'app.
+1. Scaffold la stack choisie, **avec le preset shadcn** noté en Phase 5 :
+   - **vitrine** : `npx shadcn@latest init --preset <code> --template astro` (crée l'app Astro complète avec le thème), puis Keystatic (`npx astro add react markdoc` + `@keystatic/core @keystatic/astro`).
+   - **saas** : `npm create convex@latest` (TanStack Start + Convex), puis **dans le projet** : `npx shadcn@latest init --preset <code>`.
+   - **desktop** : `create-electron-app` (vite+react), puis **dans le renderer** : `npx shadcn@latest init --preset <code>`.
+   - **mobile** : `create-expo-app` + **NativeWind** (pas de shadcn en React Native).
+   - Sans preset → `init` sans `--preset` (défaut).
+2. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, **`docs/A-FAIRE.md`**, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle d'ouvrir **`docs/A-FAIRE.md`** (tout ce qu'il reste à installer : gestes de base + ton projet) et d'utiliser `docs/RUN.md` pour lancer l'app.
 3. Crée le squelette `docs/memory/` (index + gotchas/conventions/decisions/archive) et `docs/DREAM.md` (vide, avec en-tête).
 
 ## Fini quand
-Les fichiers fondation existent + le projet est scaffoldé + `AGENTS.md` contient la boucle et la règle design. Ensuite : « pour tout construire dans l'ordre avec un visuel à chaque étape, lance `/build` ; pour une feature isolée, `/new-feature` ».
+Les fichiers fondation existent + `docs/A-FAIRE.md` liste **tout ce qu'il reste à installer** (gestes de base + section « Pour ton projet ») + le projet est scaffoldé + `AGENTS.md` contient la boucle et la règle design. Dis à l'utilisateur d'ouvrir `docs/A-FAIRE.md` et de cocher. Ensuite : « pour tout construire dans l'ordre avec un visuel à chaque étape, lance `/build` ; pour une feature isolée, `/new-feature` ».

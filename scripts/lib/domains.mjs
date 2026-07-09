@@ -25,8 +25,8 @@ export const DOMAIN_TRIGGERS = {
   'auto-update':    /mise à jour|auto-?update|nouvelle version/i,
   licensing:        /licence|clé d[\u0027\u2019]activation|activation de licence|débloquer l[\u0027\u2019]app|essai gratuit|période d[\u0027\u2019]essai|trial/i,
   persistence:      /base (de données )?locale|offline|hors-?ligne|persistance|réglages|sauvegarde locale/i,
-  forms:            /formulaire|nous contacter|prise de contact|demande de devis|devis en ligne/i,
-  i18n:             /multilingue|plusieurs langues|en anglais|traduction|version anglaise|bilingue/i,
+  forms:            /formulaire|nous contacter|formulaire de contact|demande de devis|devis en ligne/i,
+  i18n:             /multilingue|plusieurs langues|traduction|version (anglaise|espagnole|allemande)|bilingue/i,
 };
 
 // Rend docs/DOMAINS.md : le catalogue de capacités de la stack que l'IA lit pour choisir selon le PRD.
