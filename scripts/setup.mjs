@@ -248,4 +248,9 @@ async function main() {
   console.log(promptLines.join('\n'));
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main().catch((e) => { console.error(e?.message || e); process.exit(1); });
+// Entrée CLI. `npm create` / `npx` lancent via un symlink `node_modules/.bin/…` :
+// process.argv[1] est alors le symlink, import.meta.url le realpath → jamais égaux.
+// Sans realpath, main() ne tourne pas sous npx → scaffold no-op silencieux (exit 0).
+let invokedHref = '';
+try { if (process.argv[1]) invokedHref = pathToFileURL(fs.realpathSync(process.argv[1])).href; } catch { /* argv[1] absent (REPL) */ }
+if (import.meta.url === invokedHref) main().catch((e) => { console.error(e?.message || e); process.exit(1); });
