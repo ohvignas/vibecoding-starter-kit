@@ -9,7 +9,7 @@ import { buildCursorPlugin, pluginManifest } from '../build-cursor-plugin.mjs';
 // fileURLToPath (pas new URL(...).pathname) : sur Windows .pathname renvoie /D:/… → chemin cassé.
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-test('buildCursorPlugin : manifeste + 9 commandes + règle, fidèles aux templates', () => {
+test('buildCursorPlugin : manifeste + 10 commandes + règle, fidèles aux templates', () => {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-plugin-'));
   buildCursorPlugin(KIT, out);
 
