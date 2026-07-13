@@ -109,6 +109,10 @@ async function main() {
     } catch (e) { failed.push(`${c.to} (${e.message})`); }
   }
 
+  // Les clones sont des guidelines EXTERNES optionnelles (ex. karpathy) : un échec (réseau coupé,
+  // github down) ne doit PAS marquer l'install comme ratée. → rangé en « Sauté » (non-bloquant),
+  // jamais en « Échec » (l'essentiel — fichiers, git, config — a déjà réussi).
+  const cloneSkipped = [];
   for (const cl of assets.clones) {
     let tmp;
     try {
@@ -116,7 +120,7 @@ async function main() {
       cloneRepo(cl.repo, tmp);
       if (cl.picks) pickFromClone(tmp, cl.picks, projectDir);
       done.push(cl.repo);
-    } catch (e) { failed.push(`${cl.repo} (${e.message})`); }
+    } catch { cloneSkipped.push({ name: cl.repo, reason: 'non récupéré (réseau ?) — optionnel, relance plus tard' }); }
     finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 
@@ -238,7 +242,7 @@ async function main() {
     } catch (e) { failed.push(`skills stack (${e.message})`); }
   }
 
-  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: assets.skipped, failed }));
+  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: [...assets.skipped, ...cloneSkipped], failed }));
   if (failed.length) process.exitCode = 1; // rapport honnête : l'échec est visible aussi dans le code de sortie
   console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
   const promptLines = [
