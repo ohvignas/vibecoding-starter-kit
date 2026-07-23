@@ -118,7 +118,7 @@ Puis **affine par un vrai aller-retour, une question à la fois** (mode coaching
 **Itère jusqu'à validation** : montre, applique les retours, recommence. Vrai aller-retour, pas un one-shot.
 
 ### Le design system → `docs/design.md` (deux volets)
-Avec les 5 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX volets :
+Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX volets :
 
 **A. DESIGN.md — l'identité visuelle** *(format google-labs design.md)*
 - *Frontmatter tokens* (machine) : `colors` (nom→hex), `typography` (fontFamily/size/weight/lineHeight), `rounded`, `spacing`, `components` (composant→tokens).

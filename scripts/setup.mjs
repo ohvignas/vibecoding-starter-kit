@@ -209,10 +209,11 @@ async function main() {
   try { track('docs/examples/feature-exemple.md', copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt)); }
   catch (e) { failed.push(`exemple (${e.message})`); }
 
-  // Manifeste : mémorise stack+assistant pour que `scripts/update.mjs` puisse récupérer les nouveaux fichiers du kit.
+  // Manifeste : mémorise stack+assistant (+ version du kit) pour que `scripts/update.mjs` puisse récupérer les nouveaux fichiers du kit.
   try {
     const mf = path.join(projectDir, '.vibecoding.json');
-    if (!fs.existsSync(mf) || args.force) { fs.writeFileSync(mf, JSON.stringify({ stack: args.stack, assistant: args.assistant, generatedBy: 'vibecoding-starter-kit' }, null, 2) + '\n'); done.push('.vibecoding.json'); }
+    let kitVersion; try { kitVersion = JSON.parse(fs.readFileSync(path.join(args.source, 'package.json'), 'utf8')).version; } catch { /* source sans package.json */ }
+    if (!fs.existsSync(mf) || args.force) { fs.writeFileSync(mf, JSON.stringify({ stack: args.stack, assistant: args.assistant, generatedBy: 'vibecoding-starter-kit', ...(kitVersion ? { kitVersion } : {}) }, null, 2) + '\n'); done.push('.vibecoding.json'); }
     else kept.push('.vibecoding.json');
   } catch (e) { failed.push(`.vibecoding.json (${e.message})`); }
 

@@ -36,7 +36,7 @@ export function validateNewFeatureCommand(root) {
   const rb = path.join(root, 'templates/commands/new-feature.md');
   if (!fs.existsSync(rb)) { errors.push('manquant : templates/commands/new-feature.md'); return errors; }
   const txt = fs.readFileSync(rb, 'utf8');
-  const steps = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', '/verify', 'security-review', 'commit-push-pr', 'gh run watch', 'finishing-a-development-branch', 'dev'];
+  const steps = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'commit-push-pr', 'gh run watch', 'finishing-a-development-branch', 'dev'];
   for (const s of steps) if (!txt.includes(s)) errors.push(`new-feature : étape non référencée « ${s} »`);
   if (!txt.includes('loop-section.md')) errors.push('new-feature : ne référence pas templates/agents/loop-section.md');
   // Profondeur : la spec de feature (story + critères d'acceptation) doit être présente, pas un simple « brainstorm ».

@@ -10,7 +10,7 @@ Tout changement suit ce cycle. Chaque flèche = un livrable validé avant la sui
 | Plan | `superpowers:writing-plans` |
 | Exécution (TDD) | `superpowers:subagent-driven-development` + `superpowers:test-driven-development` |
 | Review code | `superpowers:requesting-code-review` + `/code-review` |
-| Test live | `/verify` + `/run` (navigateur pour le web, fenêtre pour desktop, smoke pour mobile) |
+| Test live | **« Règle de vérification »** (ce fichier) + `docs/RUN.md` — navigateur/screenshot web · fenêtre desktop · simulateur mobile, parcours E2E via le sous-agent `test-runner` |
 | Sécurité | `/security-review` |
 | Commit | `commit-commands:commit` (Conventional Commits) |
 | PR | `commit-commands:commit-push-pr` |

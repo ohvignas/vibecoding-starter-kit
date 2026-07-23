@@ -42,7 +42,7 @@ test('SETUP-AI Cursor : jamais /mcp ni claude mcp add, mais Settings MCP', () =>
   assert.doesNotMatch(md, /lance `\/mcp`/);
   assert.doesNotMatch(md, /claude mcp add/);
   assert.match(md, /Settings.*MCP/i);
-  assert.match(md, /\/brainstorm/); // ligne de vérification du plugin superpowers
+  assert.match(md, /superpowers:brainstorming/); // ligne de vérification du plugin superpowers (v6 : skill préfixé, plus de commande /brainstorm)
 });
 
 test('SETUP-AI Claude Code : /mcp reste correct', () => {

@@ -14,6 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/ohvignas/vibecoding-starter-kit/actions"><img src="https://img.shields.io/github/actions/workflow/status/ohvignas/vibecoding-starter-kit/ci.yml?branch=main&label=tests" alt="Tests"></a>
+  <a href="https://www.npmjs.com/package/create-vibecoding-kit"><img src="https://img.shields.io/npm/v/create-vibecoding-kit?logo=npm&color=cb3837" alt="npm"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/ohvignas/vibecoding-starter-kit" alt="Licence"></a>
   <img src="https://img.shields.io/badge/Node-%E2%89%A520.12-339933?logo=node.js&logoColor=white" alt="Node">
   <img src="https://img.shields.io/badge/Cursor%20·%20Claude%20Code%20·%20Codex-support%C3%A9-2b7fff" alt="Assistants">
@@ -201,7 +202,7 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 | **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **design system** (`design.md`, thème shadcn) **d'abord**, **puis maquette** (un **sous-agent par écran** en shadcn/ui, ou **Stitch**/la tienne) + **domaines** + **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) |
 | **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » ou « enchaîne tout » |
 | **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `dev` |
-| **`/edit-design`** | Charge les **5 skills design** + `design.md` **avant** de toucher l'UI |
+| **`/edit-design`** | Charge les **4 skills design** + `design.md` **avant** de toucher l'UI (+ blocs pré-faits `@shadcnblocks` au besoin) |
 | **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
 | **`/next`** | « Je fais quoi maintenant ? » — l'IA lit l'état du projet et te donne ta **prochaine action** |
 | **`/sos`** | Quelque chose casse : diagnostic **rassurant** + 3 sorties (réparer / mettre de côté / revenir au dernier point vert) |

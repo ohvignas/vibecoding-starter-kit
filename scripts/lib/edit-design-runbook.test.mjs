@@ -7,6 +7,6 @@ import { validateEditDesignCommand } from './validate-commands.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-test('le runbook /edit-design est cohérent (5 skills + design.md)', () => {
+test('le runbook /edit-design est cohérent (4 skills + design.md)', () => {
   assert.deepEqual(validateEditDesignCommand(ROOT), []);
 });

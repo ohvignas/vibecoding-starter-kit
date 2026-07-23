@@ -38,7 +38,7 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push('');
   L.push('## 4. Boucle superpowers');
   L.push(`- [ ] ${superpowersCmd}`);
-  L.push('- [ ] Vérifie que c\'est actif : tape `/brainstorm` — si la commande est reconnue, superpowers est installé. Sinon, réinstalle le plugin (voir « plugin » au glossaire).');
+  L.push('- [ ] Vérifie que c\'est actif : tape `/` puis « brainstorm » — si `/superpowers:brainstorming` apparaît dans le menu, superpowers est installé. Sinon, réinstalle le plugin (voir « plugin » au glossaire).');
   L.push('');
   L.push('## 5. Design');
   if (skillsInstalled) {

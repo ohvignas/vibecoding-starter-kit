@@ -33,7 +33,7 @@ Tâche par tâche, test rouge → vert (cadre de délégation : **« Règle sous
 ### 4. Review code (`superpowers:requesting-code-review` + `/code-review`)
 Bugs, conventions, sécurité du diff. Peut lancer le subagent `code-reviewer` sur le diff.
 
-### 5. Test live — vérifie CHAQUE critère d'acceptation en vrai (`/verify` + `/run`)
+### 5. Test live — vérifie CHAQUE critère d'acceptation en vrai
 Lance l'app et **valide chaque `AC-n`** de la spec : navigateur pour le web, fenêtre pour desktop, smoke pour mobile. Screenshot(s) à l'appui (voir **« Règle de vérification »** dans `AGENTS.md`). Un AC non satisfait → retour étape 3 (`superpowers:systematic-debugging`).
 
 ### 6. Sécu (`/security-review`)

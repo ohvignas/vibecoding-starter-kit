@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { validateNewFeatureCommand } from './validate-commands.mjs';
 
-const STEPS = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', '/verify', 'security-review', 'commit-push-pr', 'gh run watch', 'finishing-a-development-branch', 'dev'];
+const STEPS = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'commit-push-pr', 'gh run watch', 'finishing-a-development-branch', 'dev'];
 const DEPTH = ["Critères d'acceptation", 'En tant que', 'Périmètre'];
 
 function makeRoot({ omitStep = null, omitLoopRef = false, omitRunbook = false, omitDepth = null } = {}) {

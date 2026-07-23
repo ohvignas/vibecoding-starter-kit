@@ -30,7 +30,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const projectDir = path.resolve(i !== -1 ? process.argv[i + 1] : process.cwd());
   try {
     const manifest = readVibecodingManifest(projectDir);
-    console.log(`Mise à jour de ${projectDir} (${manifest.stack} / ${manifest.assistant})…`);
+    console.log(`Mise à jour de ${projectDir} (${manifest.stack} / ${manifest.assistant}${manifest.kitVersion ? `, généré avec le kit ${manifest.kitVersion}` : ''})…`);
     execFileSync(process.execPath, buildUpdateArgs(manifest, projectDir, kitRoot), { stdio: 'inherit' });
     console.log('\nÀ jour. Tes fichiers existants n\'ont pas été touchés ; seuls les nouveaux fichiers du kit ont été ajoutés.');
   } catch (e) { console.error(e.message); process.exit(1); }
