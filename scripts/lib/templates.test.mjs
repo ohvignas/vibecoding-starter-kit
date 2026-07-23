@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toCursorMdc, renderProjectAgentsMd, toSkillMd } from './templates.mjs';
+import { MARK_START, MARK_END } from './managed-section.mjs';
 
 test('toCursorMdc encadre le corps avec un frontmatter', () => {
   const out = toCursorMdc({ description: 'Règles X', body: 'CONTENU' });
@@ -46,4 +47,11 @@ test('mode apprentissage : section présente par défaut, absente si learning:fa
   assert.match(on, /question de compréhension/i);
   const off = renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor', learning: false });
   assert.doesNotMatch(off, /Mode apprentissage/);
+});
+
+test('renderProjectAgentsMd : corps managé entre marqueurs + zone utilisateur dessous', () => {
+  const out = renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor', loopSection: 'BOUCLE' });
+  assert.ok(out.includes(MARK_START) && out.includes(MARK_END), 'marqueurs présents');
+  assert.ok(out.indexOf('BOUCLE') > out.indexOf(MARK_START) && out.indexOf('BOUCLE') < out.indexOf(MARK_END), 'boucle DANS le bloc managé');
+  assert.ok(out.indexOf('Tes règles à toi') > out.indexOf(MARK_END), 'zone utilisateur APRÈS le bloc');
 });

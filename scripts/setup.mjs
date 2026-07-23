@@ -6,7 +6,8 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './lib/args.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
-import { renderProjectAgentsMd, toCursorMdc } from './lib/templates.mjs';
+import { toCursorMdc } from './lib/templates.mjs';
+import { renderAgentsFile } from './lib/agents-file.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, installCaveman, installSkills } from './lib/external.mjs';
 import { initProjectGit } from './lib/gitinit.mjs';
@@ -80,8 +81,7 @@ async function main() {
   };
 
   ensureDir(projectDir);
-  const snip = (f) => { try { return fs.readFileSync(path.join(args.source, `templates/agents/${f}`), 'utf8'); } catch { return ''; } };
-  const agents = renderProjectAgentsMd({ ...args, commandsDir: assets.commandsDir, loopSection: snip('loop-section.md'), designRule: snip('design-rule.md'), subagentsRule: snip('subagents-rule.md'), verifyRule: snip('verify-rule.md'), secretsRule: snip('secrets-cost-rule.md'), cssMaquetteRule: snip('css-maquette-rule.md'), memoryRules: snip('memory-rules.md') });
+  const agents = renderAgentsFile({ source: args.source, stack: args.stack, assistant: args.assistant, commandsDir: assets.commandsDir, learning: args.learning });
   // Toujours produire les DEUX (AGENTS.md pour Cursor/Codex, CLAUDE.md pour Claude Code) — projet portable.
   // Jamais écraser un fichier existant : la nouvelle version part en .new, signalée dans le rapport.
   for (const name of ['AGENTS.md', 'CLAUDE.md']) {
