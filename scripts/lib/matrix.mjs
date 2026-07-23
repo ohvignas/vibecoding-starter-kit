@@ -4,7 +4,7 @@ export const SUPERPOWERS = {
   'claude-code': '/plugin install superpowers@claude-plugins-official',
   codex: '/plugins  (chercher « Superpowers » puis installer)',
 };
-export const DESIGN_SKILLS = 'frontend-design, ui-ux-pro-max, web-design-guidelines, shadcnblocks, brand-guidelines';
+export const DESIGN_SKILLS = 'frontend-design, ui-ux-pro-max, web-design-guidelines, brand-guidelines';
 const KARPATHY_REPO = 'https://github.com/multica-ai/andrej-karpathy-skills';
 // awesome-cursorrules : SUPPRIMÉ. Le matching par tags déversait 64-201 règles .mdc hors-sujet
 // (Angular, Solidity…) avec `globs: **/*` — l'anti-pattern des docs Cursor. Les règles typées
@@ -194,11 +194,12 @@ export function resolveStackManifest(stack, assistant) {
   };
 }
 
-// Skills design auto-installables (headless) via le CLI skills. shadcnblocks à part (clé payante).
+// Skills design auto-installables (headless) via le CLI skills. Les blocs shadcnblocks ne sont PAS un skill :
+// ils s'ajoutent via le registry natif du CLI shadcn (voir SHADCN_NOTE + /new-project Phase 7).
 export const DESIGN_SKILL_SPECS = [
   { label: 'frontend-design + brand-guidelines', repo: 'github.com/anthropics/skills', skills: ['frontend-design', 'brand-guidelines'] },
   { label: 'web-design-guidelines', repo: 'github.com/vercel-labs/agent-skills', skills: ['web-design-guidelines'] },
   { label: 'ui-ux-pro-max', repo: 'github.com/nextlevelbuilder/ui-ux-pro-max-skill', skills: ['ui-ux-pro-max'] },
 ];
 
-export const SHADCN_NOTE = 'shadcnblocks (optionnel) : `npx -y skills add masonjames/Shadcnblocks-Skill -a <assistant> --yes` — nécessite une clé API ShadcnBlocks (payante) + `jq` pour récupérer des blocs.';
+export const SHADCN_NOTE = 'Blocs pré-faits **shadcnblocks** via le CLI shadcn natif : `npx shadcn add @shadcnblocks/<bloc>` (ex. `@shadcnblocks/hero125`). Le registry `@shadcnblocks` est ajouté à `components.json` au scaffold (voir /new-project Phase 7). Blocs **gratuits sans clé** ; pour les blocs **pro**, mets `SHADCNBLOCKS_API_KEY` dans `.env`.';

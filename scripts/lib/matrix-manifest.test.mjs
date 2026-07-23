@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STACKS, resolveStackManifest, DESIGN_SKILLS, STITCH } from './matrix.mjs';
+import { STACKS, resolveStackManifest, DESIGN_SKILLS, SHADCN_NOTE, STITCH } from './matrix.mjs';
 
 test('STACKS a les 4 stacks avec la bonne forme', () => {
   for (const s of ['saas', 'mobile', 'desktop', 'vitrine']) {
@@ -86,7 +86,16 @@ test('STITCH expose l\'URL + les commandes MCP user-scope par assistant', () => 
   assert.match(STITCH.mcp.cursor, /~\/\.cursor\/mcp\.json|globale/i);
 });
 
-test('DESIGN_SKILLS liste les 5 skills design', () => {
+test('DESIGN_SKILLS = 4 skills design (shadcnblocks n\'est PAS un skill : registry CLI)', () => {
   assert.match(DESIGN_SKILLS, /frontend-design/);
-  assert.match(DESIGN_SKILLS, /shadcnblocks/);
+  assert.match(DESIGN_SKILLS, /brand-guidelines/);
+  assert.doesNotMatch(DESIGN_SKILLS, /shadcnblocks/);
+  assert.equal(DESIGN_SKILLS.split(',').length, 4);
+});
+
+test('SHADCN_NOTE : registry natif @shadcnblocks (gratuit sans clé, pro via env)', () => {
+  assert.match(SHADCN_NOTE, /@shadcnblocks/);
+  assert.match(SHADCN_NOTE, /shadcn add/);
+  assert.match(SHADCN_NOTE, /SHADCNBLOCKS_API_KEY/);
+  assert.doesNotMatch(SHADCN_NOTE, /masonjames|payante/i);
 });
