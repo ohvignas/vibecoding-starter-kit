@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './lib/args.mjs';
+import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
@@ -39,6 +40,23 @@ async function main() {
   const on = supportsColor(process.stdout, process.env);
   const isTTY = Boolean(process.stdin.isTTY);
   const kitRoot = kitRootFromModuleUrl(import.meta.url);
+
+  // Mode --refresh : met à jour un projet DÉJÀ généré (règles + fichiers 100% kit), sans scaffolder.
+  // Early return AVANT toute la logique wizard/validate/scaffold → le scaffold par défaut est inchangé.
+  if (argv.includes('--refresh')) {
+    const a = parseArgs(argv);
+    a.source = a.source ?? kitRoot;
+    const baseDir = projectBaseDir(kitRoot, process.cwd());
+    const projectDir = resolveProjectDir(expandHome(a.project ?? '.', os.homedir()), baseDir);
+    const manifest = readVibecodingManifest(projectDir);
+    const { changed, migrated } = refreshProject({ source: a.source, projectDir, manifest, dryRun: a.dryRun });
+    console.log(a.dryRun ? '[dry-run] Régénérerait :' : 'Régénéré (kit) :');
+    for (const c of changed) console.log(`  ~ ${c}`);
+    if (!changed.length) console.log('  (déjà à jour)');
+    if (migrated.length) console.log(`\n⚠️ Ancienne version détectée : nouvelles règles ajoutées en haut de ${migrated.join(', ')} — supprime l'ancien bloc en double sous « vibecoding:end ».`);
+    console.log('\nsrc/, docs/ (PRD/design/mémoire), ta zone perso : NON touchés.');
+    return;
+  }
   let args;
   if (needsWizard(argv, isTTY)) {
     const base = parseArgs(argv); // drapeaux partiels (--no-skills, --source…) conservés

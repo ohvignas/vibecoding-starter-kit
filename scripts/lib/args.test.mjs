@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './args.mjs';
 
+test('parseArgs : --refresh', () => {
+  assert.equal(parseArgs(['--refresh']).refresh, true);
+  assert.equal(parseArgs([]).refresh, false);
+});
+
 test('parseArgs lit les drapeaux', () => {
   const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'mon-app', '--dry-run']);
   assert.equal(a.stack, 'saas');
