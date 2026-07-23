@@ -3,6 +3,7 @@
 L'utilisateur veut savoir **quelles commandes existent et à quoi elles servent**. Ne modifie RIEN. Affiche la liste ci-dessous en français simple, groupée. **Adapte à sa situation** : regarde si `docs/ROADMAP.md` existe — s'il n'existe pas, pousse `/new-project` ; s'il existe, pousse `/build`.
 
 ## Pour démarrer / avancer
+- **/init-vibecoding** — **Le tout-en-un pour démarrer** : l'IA installe l'environnement pour toi (ou met à jour ton projet) et te guide pas à pas. C'est la 1re commande à taper.
 - **/new-project** — Lance un **nouveau produit de zéro** : l'IA t'aide à cadrer l'idée (PRD), l'architecture, la maquette, puis la feuille de route. C'est ton point de départ.
 - **/build** — Construit ton app **jalon par jalon** en suivant la roadmap, avec un résultat **visible à chaque étape**.
 - **/new-feature** — Ajoute **une** fonctionnalité à un projet qui existe déjà, proprement (plan → tests → review → PR).

@@ -21,4 +21,4 @@ Deux voies de distribution :
 2. **Marketplace officielle** : soumets `cursor-plugin/` sur `cursor.com/marketplace/publish`.
 3. **Test local** : copie `cursor-plugin/` dans `~/.cursor/plugins/local/vibecoding`.
 
-Le plugin donne les 9 commandes + la règle de base. Il **ne scaffolde pas** (pas de git/CI/MCP) — pour un nouveau projet complet, `npm create vibecoding-kit`.
+Le plugin donne les commandes vibecoding (dont **/init-vibecoding** pour tout installer) + la règle de base. Il **ne scaffolde pas** (pas de git/CI/MCP) — pour un nouveau projet complet, `npm create vibecoding-kit`.

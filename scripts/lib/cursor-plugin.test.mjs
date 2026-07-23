@@ -17,7 +17,7 @@ test('buildCursorPlugin : manifeste + 10 commandes + règle, fidèles aux templa
   assert.equal(manifest.name, 'vibecoding');
   assert.equal(manifest.name, pluginManifest().name);
 
-  for (const c of ['new-project', 'build', 'sos', 'debug', 'deploy']) {
+  for (const c of ['init-vibecoding', 'new-project', 'build', 'sos', 'debug', 'deploy']) {
     assert.ok(fs.existsSync(path.join(out, 'commands', `${c}.md`)), `commands/${c}.md`);
   }
   assert.ok(fs.existsSync(path.join(out, 'rules', '00-project.mdc')), 'rules/00-project.mdc');

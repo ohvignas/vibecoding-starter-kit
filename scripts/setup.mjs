@@ -142,7 +142,7 @@ async function main() {
     finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 
-  for (const cmd of ['help', 'new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'debug', 'deploy']) {
+  for (const cmd of ['init-vibecoding', 'help', 'new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'debug', 'deploy']) {
     try {
       const src = path.join(args.source, `templates/commands/${cmd}.md`);
       // Slash-commands typables pour tous : Cursor → .cursor/commands/, Claude → .claude/commands/, Codex → docs/commands/.

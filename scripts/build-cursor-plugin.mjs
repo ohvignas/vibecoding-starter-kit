@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const COMMANDS = ['help', 'new-project', 'build', 'new-feature', 'edit-design', 'doctor', 'next', 'sos', 'debug', 'deploy'];
+const COMMANDS = ['init-vibecoding', 'help', 'new-project', 'build', 'new-feature', 'edit-design', 'doctor', 'next', 'sos', 'debug', 'deploy'];
 
 export function pluginManifest() {
   return {
