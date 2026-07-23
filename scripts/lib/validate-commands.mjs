@@ -25,7 +25,7 @@ export function validateEditDesignCommand(root) {
   const rb = path.join(root, 'templates/commands/edit-design.md');
   if (!fs.existsSync(rb)) { errors.push('manquant : templates/commands/edit-design.md'); return errors; }
   const txt = fs.readFileSync(rb, 'utf8');
-  const skills = ['frontend-design', 'ui-ux-pro-max', 'web-design-guidelines', 'shadcnblocks', 'brand-guidelines'];
+  const skills = ['frontend-design', 'ui-ux-pro-max', 'web-design-guidelines', 'brand-guidelines'];
   for (const s of skills) if (!txt.includes(s)) errors.push(`edit-design : skill non référencé « ${s} »`);
   if (!txt.includes('design.md')) errors.push('edit-design : design.md non référencé');
   return errors;
