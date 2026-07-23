@@ -62,6 +62,8 @@ export const STACKS = {
       convex: { command: 'npx', args: ['-y', 'convex@latest', 'mcp', 'start'] },
       'better-auth': { type: 'http', url: 'https://mcp.better-auth.com/mcp' },
       shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
+      // Test E2E fonctionnel : pilote un vrai navigateur (navigate/click/fill/assert) + tests rejouables en CI.
+      playwright: { command: 'npx', args: ['-y', '@playwright/mcp@latest'] },
     },
     skills: [
       { label: 'better-auth', repo: 'better-auth/skills' },
@@ -149,6 +151,8 @@ export const STACKS = {
       // Astro a RETIRÉ son llms.txt (05/2026) : le MCP Docs officiel est la source à jour.
       'astro-docs': { command: 'npx', args: ['-y', 'mcp-remote', 'https://mcp.docs.astro.build/mcp'] },
       shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
+      // Test E2E fonctionnel : pilote un vrai navigateur (navigate/click/fill/assert) + tests rejouables en CI.
+      playwright: { command: 'npx', args: ['-y', '@playwright/mcp@latest'] },
     },
     skills: [
       { label: 'shadcn/ui (officiel : CLI, thèmes, registry)', repo: 'shadcn/ui' },

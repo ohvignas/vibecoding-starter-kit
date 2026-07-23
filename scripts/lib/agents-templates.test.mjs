@@ -28,9 +28,9 @@ test('subagents-rule : quand déléguer + contrat + parallèle indépendant', ()
   }
 });
 
-test('verify-rule : test auto + navigateur + screenshot + compare maquette', () => {
+test('verify-rule : rendu + fonctionnement E2E + Playwright + trous QA', () => {
   const t = read('templates/agents/verify-rule.md');
-  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion']) {
+  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'erreurs API', 'FONCTIONNEMENT']) {
     assert.match(t, new RegExp(s));
   }
 });

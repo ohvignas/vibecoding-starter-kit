@@ -14,8 +14,15 @@ test('resolveStackManifest(saas, claude-code) : plugin convex + MCP shadcn + lin
   const m = resolveStackManifest('saas', 'claude-code');
   assert.ok(m.plugins.some((p) => p.cmd.includes('convex@claude-plugins-official')));
   assert.ok('shadcn' in m.mcp);
+  assert.ok('playwright' in m.mcp, 'MCP Playwright (test E2E fonctionnel) présent en saas');
   assert.ok(m.checks.preCommit.includes('lint'));
   assert.equal(m.scripts.typecheck, 'tsc --noEmit');
+});
+
+test('MCP Playwright (E2E fonctionnel) sur les stacks web pures : saas + vitrine, pas mobile', () => {
+  assert.ok('playwright' in resolveStackManifest('saas', 'cursor').mcp);
+  assert.ok('playwright' in resolveStackManifest('vitrine', 'cursor').mcp);
+  assert.equal('playwright' in resolveStackManifest('mobile', 'cursor').mcp, false, 'mobile = simulateur, pas Playwright');
 });
 
 test('resolveStackManifest(mobile, cursor) : pas de plugin cursor, MCP expo avec needsAuth, lint-expo', () => {
