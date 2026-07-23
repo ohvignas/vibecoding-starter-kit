@@ -1,6 +1,6 @@
 // Fichiers 100% kit (aucune édition utilisateur attendue) → régénérables par `update --refresh`.
 // Retourne des paires { from (relatif au kit), to (relatif au projet) }. JAMAIS de chemin utilisateur.
-const COMMANDS = ['help', 'new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'debug', 'deploy'];
+const COMMANDS = ['init-vibecoding', 'help', 'new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'debug', 'deploy'];
 const CMD_DIR = { cursor: '.cursor/commands', 'claude-code': '.claude/commands', codex: 'docs/commands' };
 
 export function kitOwnedFiles(stack, assistant) {

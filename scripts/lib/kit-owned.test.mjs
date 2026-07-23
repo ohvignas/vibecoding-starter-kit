@@ -10,6 +10,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 test('kitOwnedFiles(saas, claude-code) : commandes + subagents, sources existantes', () => {
   const files = kitOwnedFiles('saas', 'claude-code');
   assert.ok(files.some((f) => f.to === '.claude/commands/new-project.md'));
+  assert.ok(files.some((f) => f.to === '.claude/commands/init-vibecoding.md'), 'la commande d\'entrée est régénérable par --refresh');
   assert.ok(files.some((f) => f.to === '.claude/agents/test-runner.md'));
   for (const f of files) assert.ok(fs.existsSync(path.join(ROOT, f.from)), `source existe : ${f.from}`);
 });
