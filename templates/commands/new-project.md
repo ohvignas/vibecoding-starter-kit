@@ -71,34 +71,58 @@ La stack a été **choisie par le wizard** : lis-la dans `AGENTS.md` (et les rè
 
 ## Phase 5 — Maquette + Design → `maquette/` + `docs/design.md` (gate)
 
-La **maquette est le pivot** : on dessine les écrans **avant** de coder, on **itère dessus** jusqu'à validation, puis la roadmap en découle (Phase 6). Ne code rien ici.
+La **maquette est le pivot** : on fixe le design **avant** de coder, on **itère** jusqu'à validation, puis la roadmap en découle (Phase 6). Ne code rien ici.
 
-**1. La maquette (le pivot) — 3 entrées possibles, aucune ne bloque**
+**Demande d'abord à l'utilisateur son cas** (pour les écrans) — aucune réponse ne bloque :
 
-Demande d'abord à l'utilisateur laquelle correspond :
+- **(a)** « J'ai déjà une maquette sur **Stitch** »
+- **(b)** « J'ai une maquette **ailleurs** » (Figma, images, HTML)
+- **(c)** « Je **n'ai pas** de maquette »
 
-- **(a) « J'ai déjà une maquette sur Stitch »** → connecte le MCP Stitch (voir `docs/A-FAIRE.md`), puis `list_projects` → `list_screens` → pour chaque écran validé, récupère le `htmlCode` (`get_screen`) et **écris-le dans `maquette/<ecran>.html`**.
-- **(b) « J'ai une maquette ailleurs » (Figma, images, HTML)** → demande-lui de **déposer ses exports/captures dans `maquette/`** (un fichier par écran). Tu t'en serviras de référence visuelle.
-- **(c) « Je n'ai pas de maquette »** → on la crée :
-  - Si le MCP Stitch est connecté : `generate_screen_from_text` (skill `stitch::generate-design`) → itère → importe le HTML dans `maquette/`.
-  - **Sinon (pas de Stitch — cas par défaut)** : **génère toi-même des wireframes HTML/CSS sobres** (Tailwind CDN, gris/noir/blanc, pas de logique) directement dans `maquette/<ecran>.html`, un par écran porteur (entrée canonique, écran héros du flux le plus complexe, un overlay, la vue liste/dashboard). Appuie-toi sur les parcours **UJ-*** du PRD.
+L'ordre du travail dépend du cas : si une maquette existe déjà (a/b), on en **dérive** le design ; s'il n'y en a pas (c), on fixe le **design d'abord**, puis on dessine.
+
+### Cas (a) / (b) — une maquette existe → on en dérive le design
+1. Récupère la maquette dans `maquette/` :
+   - **(a) Stitch** : connecte le MCP (voir `docs/A-FAIRE.md`), `list_projects` → `list_screens` → pour chaque écran validé `get_screen` (`htmlCode`) → écris-le dans `maquette/<ecran>.html`.
+   - **(b) Ailleurs** : demande à l'utilisateur de **déposer ses exports/captures dans `maquette/`** (un fichier par écran) ; ça te sert de référence visuelle.
+2. **Dérive `docs/design.md`** de la maquette validée (les deux volets « Le design system » ci-dessous).
+3. Génère la galerie **`maquette/index.html`** : une page qui liste chaque écran dans une `<iframe>` (titre + aperçu), pour tout valider d'un coup d'œil.
+
+> Beaucoup d'écrans ? **délègue un sous-agent par écran** pour les importer/normaliser sur `docs/design.md` (mêmes skills : `AGENTS.md → « Règle design »`).
+
+### Cas (c) — pas de maquette → **design d'abord, maquette ensuite** (étape par étape)
+
+**Étape 1 — `docs/design.md` D'ABORD (préférences shadcn → questions → skills).**
+Charge les **5 skills design** (`frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`) + le skill **`design-md`**.
+
+- **Stack web (saas / desktop / vitrine) — commence par récupérer les préférences visuelles :** demande à l'utilisateur d'**ouvrir le compositeur de thème shadcn** en partant de ce preset de départ → **[ui.shadcn.com/create?preset=b27GcrRo](https://ui.shadcn.com/create?preset=b27GcrRo)**, de régler **en visuel** couleurs / rayons / typo, puis de te **renvoyer son code de preset** (l'URL `?preset=<code>`). Ces préférences = **base de `docs/design.md`** (palette/typo/rayons) ; **note le preset pour la Phase 7** (le scaffold l'appliquera). Pour affiner encore : **[tweakcn.com](https://tweakcn.com)** (export variables CSS).
+- **Mobile** : jamais shadcn (c'est du DOM web) → NativeWind + patterns RN.
+
+Puis **affine par un vrai aller-retour, une question à la fois** (mode coaching) — ce que le preset ne dit pas : ambiance/personnalité de la marque, références qui plaisent, public visé, densité, clair/sombre. Appuie-toi sur les parcours **UJ-*** du PRD. Écris le tout dans **`docs/design.md`** (volets A/B ci-dessous). **→ fais VALIDER `docs/design.md` avant de dessiner.**
+
+**Étape 2 — la maquette ENSUITE : un sous-agent par page (en parallèle), en shadcn/ui.**
+`docs/design.md` validé → dessine, **une page = un sous-agent** :
+1. Liste les **écrans porteurs** (des parcours **UJ-*** du PRD) : entrée canonique, écran héros du flux le plus complexe, un overlay, la vue liste/dashboard.
+2. **Délègue chaque écran à un sous-agent, en parallèle.** Chaque sous-agent, **à chaque fois** :
+   - **charge les skills design** → voir **`AGENTS.md` → section « Règle design »** (la liste de référence : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`) ;
+   - lit **`docs/design.md`** (preset + tokens) — **même source pour tous = maquette cohérente** ;
+   - produit **sa page** calquée shadcn/ui (composants type shadcn, tokens du preset, Tailwind CDN) → écrit `maquette/parts/<ecran>.html` ;
+   - **auto-vérifie** : ouvre sa `part` dans le navigateur + screenshot, corrige si c'est cassé, **avant** de la rendre.
+3. **Assemble** les parts en **UN SEUL fichier `maquette/index.html`** — chaque écran = une **section pleine largeur, titrée, empilée**. Fais une **passe de cohérence** (mêmes boutons/espacements/typo partout), puis un seul fichier à ouvrir pour tout voir.
+- **Stitch connecté** : à la place, un `generate_screen_from_text` par écran (skill `stitch::generate-design`) en passant le design → importe dans `maquette/`.
+- **Mobile** : sous-agents calqués **NativeWind / patterns RN** (pas shadcn).
+
+> Rappel : la maquette **EST** le design final (le scaffold Phase 7 la transforme en **vrais composants shadcn**, même preset), pas un wireframe gris.
 
 **Itère jusqu'à validation** : montre, applique les retours, recommence. Vrai aller-retour, pas un one-shot.
 
-**Génère la galerie `maquette/index.html`** : une page qui liste chaque écran dans une `<iframe>` (titre + aperçu), pour valider toute la maquette d'un coup d'œil dans le navigateur.
-
-> Stitch est un **bonus** (maquettes IA plus léchées), jamais un péage : sans clé, le chemin (c) par wireframes HTML produit exactement le même livrable (`maquette/*.html`) pour la Phase 6. Le skill **`design-md`** aligne `docs/design.md` (§2).
-
-**2. Design system → `docs/design.md`** *(dérivé de la maquette validée)*
-Charge les 5 skills design : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`. Extrais de la maquette DEUX volets :
+### Le design system → `docs/design.md` (deux volets)
+Avec les 5 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX volets :
 
 **A. DESIGN.md — l'identité visuelle** *(format google-labs design.md)*
 - *Frontmatter tokens* (machine) : `colors` (nom→hex), `typography` (fontFamily/size/weight/lineHeight), `rounded`, `spacing`, `components` (composant→tokens).
 - *Marque & style* · *Couleurs* (rôle) · *Typographie* (rôles, échelle) · *Layout & espacements* (grille, breakpoints) · *Élévation* (ombres) · *Formes* (rayons) · *Composants* (specs par composant) · *À faire / à éviter*.
-- shadcn/Tailwind : réfère les tokens par nom plutôt que de tout redéfinir.
-> **Affiner la palette** (shadcn/Tailwind) : régler couleurs/typo/rayons sur **[tweakcn.com](https://tweakcn.com)** (gratuit, export variables CSS) → colle dans `globals.css` + les *tokens* de `docs/design.md`.
-> **Preset shadcn (stacks web : saas, desktop, vitrine)** : propose à l'utilisateur de composer son thème sur **[ui.shadcn.com/create](https://ui.shadcn.com/create)** (couleurs, rayons, typo, en visuel) et de te donner son **code de preset**. Note-le pour la Phase 7 : le scaffold l'appliquera (`npx shadcn@latest init --preset <code>`). S'il n'en a pas → défaut shadcn, réglable plus tard sur tweakcn. **Mobile : jamais shadcn** (c'est du DOM web) → NativeWind + les patterns RN.
-> Si tu génères les wireframes toi-même (cas c) sur une stack web : fais-les **en composants shadcn avec ce preset** — la maquette EST déjà le design final.
+- shadcn/Tailwind : réfère les tokens par nom plutôt que de tout redéfinir. Affine sur **[tweakcn.com](https://tweakcn.com)** → colle dans `globals.css` + les *tokens* de `docs/design.md`. Le scaffold appliquera le preset en Phase 7 (`npx shadcn@latest init --preset <code>`).
 
 **B. EXPERIENCE.md — le comportement**
 - *Fondation* (form-factor, système d'UI) · *Architecture de l'information* · *Voix & ton* (microcopy) · *Patterns de composants* + *d'état* (chargement/vide/erreur/succès) · *Primitives d'interaction* · *Plancher d'accessibilité* · *Flux clés* (parcours avec protagoniste nommé + climax).
