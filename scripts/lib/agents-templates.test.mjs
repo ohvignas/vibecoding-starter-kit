@@ -14,9 +14,9 @@ test('loop-section : boucle superpowers, def-of-done dev, pas de BMAD', () => {
   }
   assert.doesNotMatch(t, /BMAD/i);
 });
-test('design-rule : les 5 skills design + design.md', () => {
+test('design-rule : 4 skills design + design.md + blocs @shadcnblocks via CLI', () => {
   const t = read('templates/agents/design-rule.md');
-  for (const s of ['frontend-design', 'ui-ux-pro-max', 'web-design-guidelines', 'shadcnblocks', 'brand-guidelines', 'design.md']) {
+  for (const s of ['frontend-design', 'ui-ux-pro-max', 'web-design-guidelines', 'brand-guidelines', 'design.md', '@shadcnblocks']) {
     assert.match(t, new RegExp(s.replace(/[-.]/g, '\\$&')));
   }
 });

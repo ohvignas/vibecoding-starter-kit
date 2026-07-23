@@ -6,7 +6,7 @@ const PHASES = ['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap
 const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/superpowers/specs', 'docs/memory', 'docs/DREAM.md'];
 const AGENTS_TEMPLATES = ['templates/agents/loop-section.md', 'templates/agents/design-rule.md', 'templates/agents/subagents-rule.md', 'templates/agents/verify-rule.md', 'templates/agents/secrets-cost-rule.md', 'templates/agents/css-maquette-rule.md'];
 // Marqueurs de profondeur : prouvent que les templates PRD/archi/design sont bien intégrés (pas un runbook « one-liner »).
-const DEPTH = ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses', 'Invariants', 'Graine structurelle', 'EXPERIENCE.md', 'maquette', 'index.html', 'ui.shadcn.com/create'];
+const DEPTH = ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses', 'Invariants', 'Graine structurelle', 'EXPERIENCE.md', 'maquette', 'index.html', 'ui.shadcn.com/create', '@shadcnblocks'];
 
 export function validateNewProjectCommand(root) {
   const errors = [];

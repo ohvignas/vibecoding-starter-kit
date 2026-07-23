@@ -93,7 +93,7 @@ L'ordre du travail dépend du cas : si une maquette existe déjà (a/b), on en *
 ### Cas (c) — pas de maquette → **design d'abord, maquette ensuite** (étape par étape)
 
 **Étape 1 — `docs/design.md` D'ABORD (préférences shadcn → questions → skills).**
-Charge les **5 skills design** (`frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`) + le skill **`design-md`**.
+Charge les **4 skills design** (`frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `brand-guidelines`) + le skill **`design-md`**.
 
 - **Stack web (saas / desktop / vitrine) — commence par récupérer les préférences visuelles :** demande à l'utilisateur d'**ouvrir le compositeur de thème shadcn** en partant de ce preset de départ → **[ui.shadcn.com/create?preset=b27GcrRo](https://ui.shadcn.com/create?preset=b27GcrRo)**, de régler **en visuel** couleurs / rayons / typo, puis de te **renvoyer son code de preset** (l'URL `?preset=<code>`). Ces préférences = **base de `docs/design.md`** (palette/typo/rayons) ; **note le preset pour la Phase 7** (le scaffold l'appliquera). Pour affiner encore : **[tweakcn.com](https://tweakcn.com)** (export variables CSS).
 - **Mobile** : jamais shadcn (c'est du DOM web) → NativeWind + patterns RN.
@@ -104,9 +104,10 @@ Puis **affine par un vrai aller-retour, une question à la fois** (mode coaching
 `docs/design.md` validé → dessine, **une page = un sous-agent** :
 1. Liste les **écrans porteurs** (des parcours **UJ-*** du PRD) : entrée canonique, écran héros du flux le plus complexe, un overlay, la vue liste/dashboard.
 2. **Délègue chaque écran à un sous-agent, en parallèle.** Chaque sous-agent, **à chaque fois** :
-   - **charge les skills design** → voir **`AGENTS.md` → section « Règle design »** (la liste de référence : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `shadcnblocks`, `brand-guidelines`) ;
+   - **charge les skills design** → voir **`AGENTS.md` → section « Règle design »** (la liste de référence : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `brand-guidelines`) ;
    - lit **`docs/design.md`** (preset + tokens) — **même source pour tous = maquette cohérente** ;
    - produit **sa page** calquée shadcn/ui (composants type shadcn, tokens du preset, Tailwind CDN) → écrit `maquette/parts/<ecran>.html` ;
+   - pour aller vite : pioche des **blocs pré-faits** `npx shadcn add @shadcnblocks/<bloc>` (gratuits sans clé), puis adapte-les au preset ;
    - **auto-vérifie** : ouvre sa `part` dans le navigateur + screenshot, corrige si c'est cassé, **avant** de la rendre.
 3. **Assemble** les parts en **UN SEUL fichier `maquette/index.html`** — chaque écran = une **section pleine largeur, titrée, empilée**. Fais une **passe de cohérence** (mêmes boutons/espacements/typo partout), puis un seul fichier à ouvrir pour tout voir.
 - **Stitch connecté** : à la place, un `generate_screen_from_text` par écran (skill `stitch::generate-design`) en passant le design → importe dans `maquette/`.
@@ -152,6 +153,11 @@ Avec les 5 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX 
    - **vitrine** : `npx shadcn@latest init --preset <code> --template astro` (crée l'app Astro complète avec le thème), puis Keystatic (`npx astro add react markdoc` + `@keystatic/core @keystatic/astro`).
    - **saas** : `npm create convex@latest` (TanStack Start + Convex), puis **dans le projet** : `npx shadcn@latest init --preset <code>`.
    - **desktop** : `create-electron-app` (vite+react), puis **dans le renderer** : `npx shadcn@latest init --preset <code>`.
+   - **Blocs shadcnblocks** (saas / desktop / vitrine) : après `shadcn init`, ajoute le registry à **`components.json`** (fusionne, n'écrase pas) —
+     ```json
+     { "registries": { "@shadcnblocks": { "url": "https://www.shadcnblocks.com/r/{name}", "headers": { "Authorization": "Bearer ${SHADCNBLOCKS_API_KEY}" } } } }
+     ```
+     puis `npx shadcn add @shadcnblocks/<bloc>` fonctionne (gratuits **sans clé** ; `SHADCNBLOCKS_API_KEY` dans `.env` pour le pro).
    - **mobile** : `create-expo-app` + **NativeWind** (pas de shadcn en React Native).
    - Sans preset → `init` sans `--preset` (défaut).
 2. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, **`docs/A-FAIRE.md`**, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle d'ouvrir **`docs/A-FAIRE.md`** (tout ce qu'il reste à installer : gestes de base + ton projet) et d'utiliser `docs/RUN.md` pour lancer l'app.
