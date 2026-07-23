@@ -215,6 +215,11 @@ Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/comma
 > **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt » avant de lancer `/new-project`. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md). **Récupérer les nouveautés du kit** dans un projet existant → `node <kit>/scripts/update.mjs` (ne touche jamais à ton travail).
 
 > [!TIP]
+> **Récupérer les nouveautés du kit dans un vieux projet** :
+> - `node <kit>/scripts/update.mjs` — **ajoute** les fichiers neufs, n'écrase rien.
+> - `node <kit>/scripts/update.mjs --refresh` — **régénère aussi** les règles (`AGENTS.md`, entre les marqueurs) + runbooks + subagents. Ta zone « Tes règles à toi », ton `src/` et tes `docs/` (PRD, design, mémoire) ne sont **jamais** touchés. Ajoute `--dry-run` pour prévisualiser.
+
+> [!TIP]
 > **Déjà un projet Cursor et tu veux juste les commandes ?** Installe le **plugin Cursor** `vibecoding` (`/add-plugin`, via une Team Marketplace ou la marketplace Cursor) — tu obtiens les 10 commandes + la règle de base sans rien scaffolder. Le plugin est dans [`cursor-plugin/`](cursor-plugin/) (voir [`PUBLISH.md`](PUBLISH.md)). Pour un **nouveau** projet complet, préfère `npm create vibecoding-kit`.
 
 ## 🧱 Les 4 stacks
