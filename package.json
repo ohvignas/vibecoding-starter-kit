@@ -1,6 +1,6 @@
 {
   "name": "create-vibecoding-kit",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "Générateur d'environnement de dev IA pour débutants (Cursor, Claude Code, Codex) — une commande, zéro dépendance.",
   "type": "module",
   "license": "MIT",
