@@ -70,7 +70,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` (revenir au dernier point vert) ; **règle des 3 essais** anti-boucle infernale ; tags git par jalon |
 | 🚫 | **Anti-flemme** | l'IA **finit le travail** : zéro placeholder / `// TODO` / stub, zéro report « plus tard » ; « fini » = **vérifié** (test vert + résultat à l'écran). Règle non négociable dans `AGENTS.md` + `.cursor/rules/` |
 | 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
-| 🔄 | **Mise à jour** | `node scripts/update.mjs` récupère les nouveautés du kit dans un projet existant, **sans toucher à ton travail** |
+| 🔄 | **Mise à jour pro** | `node scripts/update.mjs` ajoute les fichiers neufs ; `--refresh` **régénère aussi** les règles (`AGENTS.md`, entre marqueurs) + runbooks + subagents — ta zone perso, `src/` et `docs/` **jamais touchés** (`--dry-run` pour prévisualiser) |
 | 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt du site, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
