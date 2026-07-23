@@ -81,7 +81,7 @@ async function main() {
 
   ensureDir(projectDir);
   const snip = (f) => { try { return fs.readFileSync(path.join(args.source, `templates/agents/${f}`), 'utf8'); } catch { return ''; } };
-  const agents = renderProjectAgentsMd({ ...args, commandsDir: assets.commandsDir, loopSection: snip('loop-section.md'), designRule: snip('design-rule.md'), memoryRules: snip('memory-rules.md') });
+  const agents = renderProjectAgentsMd({ ...args, commandsDir: assets.commandsDir, loopSection: snip('loop-section.md'), designRule: snip('design-rule.md'), subagentsRule: snip('subagents-rule.md'), verifyRule: snip('verify-rule.md'), secretsRule: snip('secrets-cost-rule.md'), cssMaquetteRule: snip('css-maquette-rule.md'), memoryRules: snip('memory-rules.md') });
   // Toujours produire les DEUX (AGENTS.md pour Cursor/Codex, CLAUDE.md pour Claude Code) — projet portable.
   // Jamais écraser un fichier existant : la nouvelle version part en .new, signalée dans le rapport.
   for (const name of ['AGENTS.md', 'CLAUDE.md']) {
@@ -149,6 +149,7 @@ async function main() {
       ]);
       trackDir('.cursor/rules/ (00-project + règles typées par framework)', [
         copyIfAbsent(path.join(args.source, 'templates/cursor/rules/00-project.mdc'), path.join(projectDir, '.cursor/rules/00-project.mdc'), opt),
+        copyIfAbsent(path.join(args.source, 'templates/cursor/rules/10-css-maquette.mdc'), path.join(projectDir, '.cursor/rules/10-css-maquette.mdc'), opt),
         ...copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt),
       ]);
       trackDir('.cursor/BUGBOT.md + .cursor/environment.json + .cursorindexingignore', [

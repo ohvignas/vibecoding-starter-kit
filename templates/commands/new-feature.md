@@ -28,13 +28,13 @@ Scopé à la feature, référence `docs/PRD.md` (glossaire, UJ, FR concernés). 
 Plan TDD, tâches bite-sized, **dérivées des critères d'acceptation** (chaque AC → au moins un test). → **gate (validation)**.
 
 ### 3. Exécution (`superpowers:subagent-driven-development` + TDD)
-Tâche par tâche, test rouge → vert. Un `[À CLARIFIER]` bloquant → repasse par la gate.
+Tâche par tâche, test rouge → vert (cadre de délégation : **« Règle sous-agents »** dans `AGENTS.md`). Un `[À CLARIFIER]` bloquant → repasse par la gate.
 
 ### 4. Review code (`superpowers:requesting-code-review` + `/code-review`)
 Bugs, conventions, sécurité du diff. Peut lancer le subagent `code-reviewer` sur le diff.
 
 ### 5. Test live — vérifie CHAQUE critère d'acceptation en vrai (`/verify` + `/run`)
-Lance l'app et **valide chaque `AC-n`** de la spec : navigateur pour le web, fenêtre pour desktop, smoke pour mobile. Screenshot(s) à l'appui. Un AC non satisfait → retour étape 3 (`superpowers:systematic-debugging`).
+Lance l'app et **valide chaque `AC-n`** de la spec : navigateur pour le web, fenêtre pour desktop, smoke pour mobile. Screenshot(s) à l'appui (voir **« Règle de vérification »** dans `AGENTS.md`). Un AC non satisfait → retour étape 3 (`superpowers:systematic-debugging`).
 
 ### 6. Sécu (`/security-review`)
 Revue sécurité des changements de la branche. Peut lancer le subagent `security-reviewer`.

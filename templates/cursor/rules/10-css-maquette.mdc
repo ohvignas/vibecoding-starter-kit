@@ -1,0 +1,10 @@
+---
+globs: **/styles/**
+alwaysApply: false
+---
+
+# CSS maquette → app
+- Interdit : extraire du CSS par **plages de lignes** sans vérifier l'équilibre des accolades. **Fichier entier** ou **règles complètes** (jusqu'au `}` fermant).
+- Après toute modif de `src/styles/*` : vérifier que le bundler compile le CSS (pas d'erreur Tailwind/Vite, pas de page HTML servie à la place du `.css`) **et** qu'une capture login montre la couleur **primaire** du design (ex. bouton `#FF7043`), pas un gris système.
+- Ne colle **pas** de gros blocs maquette mélangés (CRM + auth…) ; extrais **uniquement** les sélecteurs complets du domaine (auth/onboarding) dans un fichier dédié (ex. `auth.css`).
+- La maquette est une **référence visuelle**. Écrans React → **shadcn/ui + Tailwind** d'abord.

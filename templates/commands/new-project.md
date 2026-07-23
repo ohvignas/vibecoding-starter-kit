@@ -1,7 +1,7 @@
 # /new-project — Fondation d'un nouveau projet (runbook IA)
 
 Tu construis la **FONDATION complète** d'un nouveau produit à partir de l'idée donnée en argument.
-Va **phase par phase**, en français. **Chaque artefact attend la validation de l'utilisateur avant le suivant** (gate). Pour aller en profondeur, **lance des sous-agents en parallèle** (recherche, rédaction) puis synthétise.
+Va **phase par phase**, en français. **Chaque artefact attend la validation de l'utilisateur avant le suivant** (gate). Pour aller en profondeur, **lance des sous-agents en parallèle** (recherche, rédaction) puis synthétise — cadre : **« Règle sous-agents »** dans `AGENTS.md` (quand déléguer, comment).
 
 Argument : `$ARGUMENTS` = description libre de l'idée.
 > Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), **demande la description à l'utilisateur** avant de commencer.

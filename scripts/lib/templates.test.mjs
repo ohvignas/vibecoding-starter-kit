@@ -26,10 +26,14 @@ test('toSkillMd produit un SKILL.md avec frontmatter name+description', () => {
 });
 
 test('renderProjectAgentsMd compose la boucle + @import mémoire, sans BMAD', () => {
-  const out = renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor', commandsDir: '.cursor/commands', loopSection: 'BOUCLE-SP', designRule: 'REGLE-DESIGN', memoryRules: 'REGLES-MEMOIRE' });
+  const out = renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor', commandsDir: '.cursor/commands', loopSection: 'BOUCLE-SP', designRule: 'REGLE-DESIGN', subagentsRule: 'REGLE-SUBAGENTS', verifyRule: 'REGLE-VERIF', secretsRule: 'REGLE-SECRETS', cssMaquetteRule: 'REGLE-CSS', memoryRules: 'REGLES-MEMOIRE' });
   assert.match(out, /@docs\/memory\/index\.md/);
   assert.match(out, /BOUCLE-SP/);
   assert.match(out, /REGLE-DESIGN/);
+  assert.match(out, /REGLE-SUBAGENTS/);
+  assert.match(out, /REGLE-VERIF/);
+  assert.match(out, /REGLE-SECRETS/);
+  assert.match(out, /REGLE-CSS/);
   assert.match(out, /REGLES-MEMOIRE/);
   assert.match(out, /saas/);
   assert.match(out, /new-project/);

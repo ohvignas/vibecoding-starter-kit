@@ -21,6 +21,40 @@ test('design-rule : les 5 skills design + design.md', () => {
   }
 });
 
+test('subagents-rule : quand déléguer + contrat + parallèle indépendant', () => {
+  const t = read('templates/agents/subagents-rule.md');
+  for (const s of ['subagent-driven-development', 'parallèle', 'contexte frais', 'artefact', 'Règle design']) {
+    assert.match(t, new RegExp(s));
+  }
+});
+
+test('verify-rule : test auto + navigateur + screenshot + compare maquette', () => {
+  const t = read('templates/agents/verify-rule.md');
+  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion']) {
+    assert.match(t, new RegExp(s));
+  }
+});
+
+test('secrets-cost-rule : .env + jamais commit + coûts/modèle', () => {
+  const t = read('templates/agents/secrets-cost-rule.md');
+  for (const s of ['\\.env', 'pre-commit', 'destructive', 'Modèle adapté', 'fan-out']) {
+    assert.match(t, new RegExp(s));
+  }
+});
+
+test('css-maquette-rule : pas de slice lignes + accolades + vrai CSS + couleur primaire', () => {
+  const t = read('templates/agents/css-maquette-rule.md');
+  for (const s of ['plages de lignes', 'Accolades', 'vrai CSS', 'shadcn', 'primaire']) {
+    assert.match(t, new RegExp(s));
+  }
+});
+
+test('règle Cursor CSS scoped : globs styles + non-alwaysApply', () => {
+  const t = read('templates/cursor/rules/10-css-maquette.mdc');
+  assert.match(t, /globs:\s*\*\*\/styles\/\*\*/);
+  assert.match(t, /alwaysApply:\s*false/);
+});
+
 test('stacks/vitrine : AGENTS.md + README + prompts présents et complets', () => {
   const a = read('stacks/vitrine/AGENTS.md');
   assert.match(a, /îlot/i);

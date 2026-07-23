@@ -21,6 +21,10 @@ function makeRoot({ omitPhase = null, omitTemplate = false, omitDepth = null } =
   if (!omitTemplate) {
     fs.writeFileSync(path.join(root, 'templates/agents/loop-section.md'), 'boucle');
     fs.writeFileSync(path.join(root, 'templates/agents/design-rule.md'), 'design');
+    fs.writeFileSync(path.join(root, 'templates/agents/subagents-rule.md'), 'subagents');
+    fs.writeFileSync(path.join(root, 'templates/agents/verify-rule.md'), 'verify');
+    fs.writeFileSync(path.join(root, 'templates/agents/secrets-cost-rule.md'), 'secrets');
+    fs.writeFileSync(path.join(root, 'templates/agents/css-maquette-rule.md'), 'css');
   }
   return root;
 }
