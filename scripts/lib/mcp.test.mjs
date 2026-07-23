@@ -16,11 +16,15 @@ test('préserve un serveur existant, ajoute le nouveau', () => {
   assert.ok(j.mcpServers.shadcn, 'ajoute le nouveau');
 });
 
-test('retire la méta needsAuth du fichier écrit', () => {
-  const out = mergeMcpConfig(null, { expo: { type: 'http', url: 'https://mcp.expo.dev/mcp', needsAuth: true } });
+test('retire les métas needsAuth + prereq du fichier écrit', () => {
+  const out = mergeMcpConfig(null, {
+    expo: { type: 'http', url: 'https://mcp.expo.dev/mcp', needsAuth: true },
+    maestro: { command: 'maestro', args: ['mcp'], prereq: 'installe le Maestro CLI' },
+  });
   const j = JSON.parse(out);
   assert.equal(j.mcpServers.expo.url, 'https://mcp.expo.dev/mcp');
   assert.equal('needsAuth' in j.mcpServers.expo, false);
+  assert.deepEqual(j.mcpServers.maestro, { command: 'maestro', args: ['mcp'] }, 'prereq strippé, config propre');
 });
 
 test('idempotent', () => {

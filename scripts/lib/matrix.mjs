@@ -99,6 +99,9 @@ export const STACKS = {
     mcp: {
       convex: { command: 'npx', args: ['-y', 'convex@latest', 'mcp', 'start'] },
       expo: { type: 'http', url: 'https://mcp.expo.dev/mcp', needsAuth: true },
+      // Test E2E fonctionnel mobile : pilote le simulateur iOS / émulateur Android + flows Maestro.
+      // Bundlé dans le Maestro CLI (pas npx) → prérequis à installer une fois.
+      maestro: { command: 'maestro', args: ['mcp'], prereq: 'installe le Maestro CLI : `curl -fsSL "https://get.maestro.mobile.dev" | bash` (+ un simulateur iOS ou émulateur Android)' },
     },
     skills: [
       { label: 'expo', repo: 'expo/skills' },

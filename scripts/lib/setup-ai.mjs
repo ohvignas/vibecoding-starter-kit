@@ -32,6 +32,7 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
     : 'lance `/mcp` pour connecter';
   for (const [name, cfg] of Object.entries(manifest.mcp)) {
     L.push(`- [ ] ${name} : ${connect}${cfg.needsAuth ? ' (login requis)' : ''}`);
+    if (cfg.prereq) L.push(`  - ⚠️ prérequis : ${cfg.prereq}`);
     if (assistant === 'cursor' && !cfg.apiKey) L.push(`  - ou clique pour l'ajouter : ${cursorDeeplink(name, cfg)}`);
   }
   L.push('');

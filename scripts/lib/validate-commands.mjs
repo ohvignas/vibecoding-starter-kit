@@ -77,7 +77,7 @@ export function validateExtras(root) {
     'templates/security/secrets.yml', 'templates/ONBOARDING.md',
     'templates/env/saas.env.example', 'templates/env/mobile.env.example', 'templates/env/desktop.env.example', 'templates/env/vitrine.env.example',
     'templates/ci/saas.yml', 'templates/ci/mobile.yml', 'templates/ci/desktop.yml', 'templates/ci/vitrine.yml',
-    'templates/agents/subagents/code-reviewer.md', 'templates/agents/subagents/security-reviewer.md',
+    'templates/agents/subagents/code-reviewer.md', 'templates/agents/subagents/security-reviewer.md', 'templates/agents/subagents/test-runner.md',
     'templates/gitignore/saas.gitignore', 'templates/gitignore/mobile.gitignore', 'templates/gitignore/desktop.gitignore', 'templates/gitignore/vitrine.gitignore',
     'templates/memory-consolidate/consolidate.yml',
     'templates/commands/doctor.md',

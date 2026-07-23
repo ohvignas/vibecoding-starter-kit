@@ -28,9 +28,16 @@ test('subagents-rule : quand déléguer + contrat + parallèle indépendant', ()
   }
 });
 
-test('verify-rule : rendu + fonctionnement E2E + Playwright + trous QA', () => {
+test('verify-rule : rendu + fonctionnement E2E + Playwright/Maestro + test-runner + trous QA', () => {
   const t = read('templates/agents/verify-rule.md');
-  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'erreurs API', 'FONCTIONNEMENT']) {
+  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'Maestro', 'test-runner', 'contexte frais', 'erreurs API', 'FONCTIONNEMENT']) {
+    assert.match(t, new RegExp(s));
+  }
+});
+
+test('subagent test-runner : contexte frais, Playwright/Maestro, verdict court, ne code pas', () => {
+  const t = read('templates/agents/subagents/test-runner.md');
+  for (const s of ['Playwright', 'Maestro', 'critères', 'Verdict', 'ne codes? rien']) {
     assert.match(t, new RegExp(s));
   }
 });
