@@ -22,7 +22,7 @@
 
 ---
 
-Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (4 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur (wizard interactif)** qui génère un environnement de développement complet — 10 commandes, mémoire persistante, revue de code, CI, filet de sécurité — pour **Cursor, Claude Code et Codex**.
+Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (4 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur (wizard interactif)** qui génère un environnement de développement complet — 10 commandes, mémoire persistante, revue de code, **test E2E** (design + fonctionnel), CI, filet de sécurité — pour **Cursor, Claude Code et Codex**.
 
 > [!TIP]
 > Pas besoin de choisir un seul assistant : l'installeur configure celui que tu utilises, et le projet reste **portable** (les mêmes règles marchent partout).
@@ -59,9 +59,11 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 💳 | **Catalogue de domaines** | paiement (Stripe/Polar…), email, storage, analytics, erreurs, push, cartes… **choisis d'après le PRD** (`docs/DOMAINS.md`) — pas tout d'un coup |
 | 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
 | 🌙 | **Dream hook** | GitHub Action qui analyse les commits et **propose** features/bugs/idées (propose-only) |
-| 🛡️ | **Revue + sécu** | Subagents `code-reviewer` + `security-reviewer`, scan de secrets, CI, hook pre-commit |
+| 🛡️ | **Revue + sécu + test** | Subagents `code-reviewer` · `security-reviewer` · `test-runner`, scan de secrets, CI, hook pre-commit |
+| 🧪 | **Test complet (design + fonctionnel)** | après **chaque** implémentation : test auto + **navigateur & screenshot** (le rendu) **et** le **parcours E2E** de la feature refait en vrai (Playwright web · **Maestro** mobile · Chrome DevTools desktop), exécuté par un **sous-agent `test-runner` isolé** → économe en tokens |
+| 📏 | **Règles permanentes** | injectées dans `AGENTS.md` : **sous-agents** (quand/comment déléguer) · **vérification** · **secrets & coûts** · **CSS-maquette** (pas de slice, vrai CSS, couleur primaire) · design + **accessibilité** |
 | 🤖 | **Multi-assistant** | Cursor (règles `.mdc` typées + commandes + hooks sécu + Bugbot), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
-| 🎨 | **Maquette-first** | ta maquette **Stitch** (importée), ta maquette **existante** (déposée), ou **l'IA la dessine** (wireframes) ; la **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné**, pas une interprétation du PRD |
+| 🎨 | **Design-first → maquette** | on fixe d'abord le **design system** (`design.md`, thème composé en visuel sur [shadcn/ui create](https://ui.shadcn.com/create)) **puis** la maquette (**un sous-agent par écran**, en shadcn/ui) ; **Stitch** ou tes exports marchent aussi. La **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné** |
 | 🎓 | **Mode apprentissage** | l'IA **explique** ce qu'elle construit et te pose **une question de compréhension** à chaque jalon — tu comprends, tu ne subis pas |
 | 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code |
 | 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` (revenir au dernier point vert) ; **règle des 3 essais** anti-boucle infernale ; tags git par jalon |
@@ -141,10 +143,10 @@ Tape `/mcp` (ou, sur Cursor, **Settings → MCP**). Les serveurs à activer selo
 
 | Ta stack | Serveurs MCP |
 |---|---|
-| **SaaS** | Convex · Better Auth · shadcn |
-| **Mobile** | Convex · Expo *(login requis)* |
-| **Desktop** | Chrome DevTools |
-| **Vitrine** | Astro Docs · shadcn |
+| **SaaS** | Convex · Better Auth · shadcn · **Playwright** *(test E2E)* |
+| **Mobile** | Convex · Expo *(login requis)* · **Maestro** *(test E2E — installe le CLI d'abord, voir A-FAIRE)* |
+| **Desktop** | Chrome DevTools *(test E2E)* |
+| **Vitrine** | Astro Docs · shadcn · **Playwright** *(test E2E)* |
 
 ### Optionnel — design par IA (Stitch)
 
@@ -183,7 +185,8 @@ flowchart TD
     E3 --> F
     F --> G0["Gestes manuels : installe superpowers (/add-plugin) + autorise /mcp"]
     G0 --> G["Dans ton assistant : /new-project « ton idée »"]
-    G --> M["Maquette (Stitch) : crée → itère → valide"]
+    G --> DZ["design.md (thème shadcn) validé D'ABORD"]
+    DZ --> M["Maquette : 1 sous-agent par écran (shadcn/ui) — ou Stitch/la tienne"]
     M --> R["Roadmap dérivée de la maquette (chaque écran = un jalon)"]
     R --> H["/build : jalon par jalon, comparé à la maquette (visuel à chaque étape)"]
     H -.->|jalon suivant| H
@@ -195,7 +198,7 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 
 | Commande | Rôle |
 |---|---|
-| **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **maquette** (créée/itérée sur **Stitch**, ou la tienne) + **design system** (`design.md`) + **domaines** + **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) |
+| **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **design system** (`design.md`, thème shadcn) **d'abord**, **puis maquette** (un **sous-agent par écran** en shadcn/ui, ou **Stitch**/la tienne) + **domaines** + **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) |
 | **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » ou « enchaîne tout » |
 | **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `dev` |
 | **`/edit-design`** | Charge les **5 skills design** + `design.md` **avant** de toucher l'UI |
@@ -236,7 +239,7 @@ mon-app/
 │   ├── commands/                  # /new-project /build /new-feature /edit-design /doctor
 │   ├── settings.json              # hooks PostToolUse → checks framework (warn-only)
 │   ├── skills/stack-*             # règles de la stack
-│   └── agents/                    # code-reviewer + security-reviewer
+│   └── agents/                    # code-reviewer + security-reviewer + test-runner
 ├── docs/
 │   ├── A-FAIRE.md                # plugins/skills/MCP à installer (joué par l'IA)
 │   ├── DOMAINS.md                 # catalogue des capacités métier de la stack
