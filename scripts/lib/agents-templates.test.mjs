@@ -21,9 +21,9 @@ test('design-rule : 4 skills design + design.md + blocs @shadcnblocks via CLI', 
   }
 });
 
-test('subagents-rule : quand déléguer + contrat + parallèle indépendant', () => {
+test('subagents-rule : quand déléguer + contrat + parallèle + modèle sonnet 5', () => {
   const t = read('templates/agents/subagents-rule.md');
-  for (const s of ['subagent-driven-development', 'parallèle', 'contexte frais', 'artefact', 'Règle design']) {
+  for (const s of ['subagent-driven-development', 'parallèle', 'contexte frais', 'artefact', 'Règle design', 'claude-sonnet-5']) {
     assert.match(t, new RegExp(s));
   }
 });

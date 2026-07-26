@@ -12,6 +12,7 @@ Un **sous-agent** = une copie de l'IA lancée sur **une tâche isolée**, avec u
 
 ### Comment créer un sous-agent (le contrat)
 Il ne voit pas le chat → donne-lui **tout** dans son prompt :
+0. **Modèle** : dispatche **tous** les sous-agents sur **`claude-sonnet-5`** (Claude Code : paramètre `model` du sous-agent ; Cursor : sélectionne Sonnet 5). Les sous-agents **design** (maquette, UI) chargent **en plus** les skills design (voir « Règle design »).
 1. **Sa tâche** — précise, une seule.
 2. **Les skills à charger** — ex. design → voir **« Règle design »** ci-dessus. Chaque sous-agent charge **ses** skills, **à chaque fois**.
 3. **Les fichiers à lire** — chemins exacts (`docs/design.md`, `docs/PRD.md`…).
