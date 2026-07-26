@@ -29,3 +29,10 @@ test('Phase 6 : audit de complétude + panel critique en parallèle avant roadma
   assert.match(np, /en parallèle/);
   assert.match(np, /toutes? les features/i);
 });
+
+test('help : présente l\'équipe d\'agents invocables', () => {
+  const h = read('templates/commands/help.md');
+  assert.match(h, /L'équipe d'agents/);
+  assert.match(h, /critique-ux/);
+  assert.match(h, /test-runner/);
+});
