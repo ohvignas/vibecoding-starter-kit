@@ -169,7 +169,9 @@ Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX 
    - **`critique-produit`** (Vera) — features/écrans/parcours oubliés ;
    - **`critique-donnees`** (Marc) — données réelles, modèle, câblage, zéro mock, permissions ;
    - **`critique-ux`** (Lina) — états vide/chargement/erreur, impasses, responsive, accessibilité.
-   Donne à chacun : maquette + PRD + inventaire + roadmap. Ils rendent des `MANQUE : …`. **Fusionne**, intègre dans la roadmap, **relance le panel** — boucle jusqu'à ce que les trois disent « complet ». Seulement alors la roadmap est validée.
+   Donne à chacun : maquette + PRD + inventaire + roadmap. Chaque `MANQUE` doit citer sa **preuve** (l'écran/élément de la maquette ou la ligne du PRD) — **sans preuve, jette-le**. Puis **dédoublonne** les rapports (les lentilles se recoupent) et intègre dans la roadmap.
+
+   **Deux passes MAXIMUM** (la 2ᵉ ne relit que ce qui vient d'être ajouté). Ne boucle pas au-delà : au-delà de 2 tours, une revue multi-agents produit surtout des **faux positifs** et des sur-corrections — on gagne du bruit, pas de la qualité. S'il reste un doute après la 2ᵉ passe, **tranche avec l'utilisateur**, pas avec un 3ᵉ tour.
 
    > Ces agents vivent dans `.claude/agents/` : tu peux les **appeler n'importe quand** (« lance `critique-ux` sur cet écran »), pas seulement ici.
 6. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.

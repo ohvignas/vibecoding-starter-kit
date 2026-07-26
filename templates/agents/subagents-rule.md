@@ -18,6 +18,14 @@ Il ne voit pas le chat → donne-lui **tout** dans son prompt :
 3. **Les fichiers à lire** — chemins exacts (`docs/design.md`, `docs/PRD.md`…).
 4. **L'artefact à rendre** — un **fichier** (ex. `maquette/parts/<ecran>.html`) ou un **résumé court** — jamais 10 000 tokens de blabla.
 
+### Panel de critiques (quand plusieurs agents relisent le même travail)
+L'équipe du kit vit dans `.claude/agents/` — tu peux l'appeler **n'importe quand** (`critique-produit` · `critique-donnees` · `critique-ux` · `test-runner` · `code-reviewer` · `security-reviewer`). Améliore un agent **là** et tous les projets en profitent.
+- **Diversité par la lentille, pas par le tempérament** : ce qui fait trouver des trous différents, c'est un **périmètre différent** (produit / données / UX). Un ton « sévère » n'ajoute rien et provoque des sur-corrections.
+- **Preuve obligatoire** : chaque finding cite **où** il se vérifie (écran, élément, ligne du PRD). Sans preuve → jeté. Une vérification concrète tue un faux positif mieux que n'importe quel ton adversarial.
+- **2 passes maximum** : au-delà, une revue multi-agents fabrique surtout des **faux positifs** (le rappel monte, la précision s'effondre). Doute restant → tranche avec l'utilisateur.
+- **Dédoublonne** les rapports avant d'agir (les lentilles se recoupent).
+- Le critique est **détaché** de celui qui a produit le travail (contexte frais) : c'est ce détachement qui lui fait voir ce que l'auteur ne voit plus.
+
 ### Règles d'or
 - **Parallèle seulement si indépendant** — sinon conflits (2 agents qui écrivent le même fichier). Fais-les écrire dans des fichiers séparés, tu assembles.
 - **Même source pour tous** (`docs/design.md`, preset) → résultat cohérent.
