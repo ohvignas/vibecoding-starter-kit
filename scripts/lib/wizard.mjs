@@ -25,13 +25,14 @@ export function needsWizard(argv, isTTY) {
   return !['--stack', '--assistant', '--project'].every((f) => argv.includes(f));
 }
 
-// base = drapeaux déjà passés en CLI (--source, --force, --no-skills…) : conservés.
-// Les réponses du wizard priment pour stack/assistant/projet/backend/caveman.
+// base = drapeaux déjà passés en CLI (--source, --force, --no-skills, --caveman…) : conservés.
+// Les réponses du wizard priment pour stack/assistant/projet/backend.
+// caveman : OFF par défaut, activable UNIQUEMENT par le flag --caveman (donc via base) — le wizard ne le propose plus.
 export function buildArgsFromAnswers(a, base = {}) {
   const args = {
     stack: a.stack, assistant: a.assistant, project: a.project,
     mockup: base.mockup ?? null, source: base.source ?? null, dryRun: Boolean(base.dryRun), force: Boolean(base.force),
-    caveman: Boolean(a.caveman), backend: a.backend || 'cloud',
+    caveman: Boolean(base.caveman), backend: a.backend || 'cloud',
     noSkills: Boolean(base.noSkills), yes: Boolean(base.yes),
     learning: a.learning !== false,
     license: a.license ?? base.license ?? null,
@@ -99,15 +100,11 @@ export async function runWizard(ask, on, out = process.stdout) {
   let backend = 'cloud';
   if (stack === 'saas') backend = await pickOne(ask, on, out, 'Backend Convex ?', BACKENDS);
 
-  const raw = (await ask('  (avancé) Réponses IA plus courtes pour réduire les coûts ? [o/N] : ')).trim().toLowerCase();
-  const caveman = ['o', 'oui', 'y', 'yes'].includes(raw);
-  out.write(ok(caveman ? 'caveman activé' : 'caveman désactivé', on) + '\n\n');
-
   const rawL = (await ask('  Mode apprentissage — l\'IA t\'explique ce qu\'elle fait et vérifie que tu suis ? [O/n] : ')).trim().toLowerCase();
   const learning = !['n', 'non', 'no'].includes(rawL);
   out.write(ok(learning ? 'mode apprentissage activé' : 'mode apprentissage désactivé', on) + '\n\n');
 
   const license = (await ask('  Code d\'accès (format VIBE-XXXX-XXXX-XXXX, reçu par email) — Entrée pour passer : ')).trim();
 
-  return { stack, assistant, project, backend, caveman, learning, license };
+  return { stack, assistant, project, backend, learning, license };
 }
