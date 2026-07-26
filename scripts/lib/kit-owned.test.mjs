@@ -12,6 +12,9 @@ test('kitOwnedFiles(saas, claude-code) : commandes + subagents, sources existant
   assert.ok(files.some((f) => f.to === '.claude/commands/new-project.md'));
   assert.ok(files.some((f) => f.to === '.claude/commands/init-vibecoding.md'), 'la commande d\'entrée est régénérable par --refresh');
   assert.ok(files.some((f) => f.to === '.claude/agents/test-runner.md'));
+  for (const c of ['critique-produit', 'critique-donnees', 'critique-ux']) {
+    assert.ok(files.some((f) => f.to === `.claude/agents/${c}.md`), `panel : ${c} régénérable`);
+  }
   for (const f of files) assert.ok(fs.existsSync(path.join(ROOT, f.from)), `source existe : ${f.from}`);
 });
 
