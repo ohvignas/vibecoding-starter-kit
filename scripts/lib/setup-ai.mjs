@@ -1,7 +1,7 @@
 // Rend docs/A-FAIRE.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
 // Les skills design sont déjà installés par le wizard.
 import { buildSkillAddArgs } from './external.mjs';
-import { DESIGN_SKILL_SPECS, STITCH } from './matrix.mjs';
+import { DESIGN_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE } from './matrix.mjs';
 import { cursorDeeplink } from './deeplink.mjs';
 
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
@@ -56,6 +56,11 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push(`- [ ] Crée ta **clé API Stitch** : ${STITCH.keyUrl} → ${STITCH.keySteps} → copie-la (garde-la **secrète**, ne la commite jamais).`);
   L.push(`- [ ] Connecte le **MCP Stitch au niveau utilisateur** (hors dépôt → la clé n'est jamais commitée) : ${STITCH.mcp[assistant]}`);
   L.push('');
+  if (VISUAL_CHECK_STACKS.includes(stack)) {
+    L.push('### Vérif visuelle — PixelRAG (obligatoire UI web)');
+    L.push(`- [ ] ${PIXELRAG_NOTE}`);
+    L.push('');
+  }
   L.push('## 6. Scripts package.json (à ajouter si absents après le scaffold)');
   for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);
   L.push('');

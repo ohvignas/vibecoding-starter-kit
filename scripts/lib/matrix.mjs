@@ -205,3 +205,9 @@ export const DESIGN_SKILL_SPECS = [
 ];
 
 export const SHADCN_NOTE = 'Blocs pré-faits **shadcnblocks** via le CLI shadcn natif : `npx shadcn add @shadcnblocks/<bloc>` (ex. `@shadcnblocks/hero125`). Le registry `@shadcnblocks` est ajouté à `components.json` au scaffold (voir /new-project Phase 7). Blocs **gratuits sans clé** ; pour les blocs **pro**, mets `SHADCNBLOCKS_API_KEY` dans `.env`.';
+
+// Stacks à UI web (rendu HTML/Chrome) → vérif de cohérence visuelle maquette↔page par PixelRAG.
+// Mobile exclu (React Native, pas de rendu Chrome).
+export const VISUAL_CHECK_STACKS = ['saas', 'desktop', 'vitrine'];
+
+export const PIXELRAG_NOTE = 'PixelRAG (vérif visuelle maquette↔page — OBLIGATOIRE UI web) : `pip install pixelrag` (Python 3.10+) + Chrome. À chaque page/élément et au contrôle complet, l\'agent rend la page générée ET l\'écran de `maquette/` avec `pixelshot`, puis compare la similarité visuelle → corrige si écart. Claude Code : skill `pixelbrowse`.';
