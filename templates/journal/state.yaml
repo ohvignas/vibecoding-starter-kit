@@ -1,0 +1,7 @@
+# État courant du projet — lu/écrit par les agents. Complété au fil du build.
+status: draft            # draft | in-progress | in-review | done | blocked
+current_milestone: null  # ex. 03-authentification
+current_task: null
+repair_attempts: 0       # max 3 → status: blocked
+blocked_reason: null
+last_proof: null         # dernière commande ayant prouvé un résultat

@@ -65,6 +65,15 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
   try { write('docs/DOMAINS.md', renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS })); done.push('docs/DOMAINS.md'); }
   catch (e) { failed.push(`DOMAINS (${e.message})`); }
 
+  // 6c. Journal de mission partagé (append-only) — jamais écrasé : c'est la mémoire du crew.
+  try {
+    for (const [rel, seed] of [['docs/agents/JOURNAL.md', 'templates/journal/JOURNAL.md'], ['docs/agents/state.yaml', 'templates/journal/state.yaml']]) {
+      if (read(rel) !== null) continue;
+      write(rel, fs.readFileSync(path.join(source, seed), 'utf8'));
+      done.push(rel);
+    }
+  } catch (e) { failed.push(`journal (${e.message})`); }
+
   // 7. Scripts package.json si présent
   try {
     const pkg = read('package.json');

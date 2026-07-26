@@ -80,6 +80,7 @@ export function validateExtras(root) {
     'templates/agents/subagents/code-reviewer.md', 'templates/agents/subagents/security-reviewer.md', 'templates/agents/subagents/test-runner.md',
     'templates/agents/subagents/critique-produit.md', 'templates/agents/subagents/critique-donnees.md', 'templates/agents/subagents/critique-ux.md',
     'templates/gitignore/saas.gitignore', 'templates/gitignore/mobile.gitignore', 'templates/gitignore/desktop.gitignore', 'templates/gitignore/vitrine.gitignore',
+    'templates/journal/JOURNAL.md', 'templates/journal/state.yaml',
     'templates/memory-consolidate/consolidate.yml',
     'templates/commands/doctor.md',
     'templates/hooks/pre-commit',

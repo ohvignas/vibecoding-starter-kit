@@ -13,3 +13,12 @@ test('proof-rule : statuts, hiérarchie, interdits, max 3 tentatives', () => {
     assert.match(t, new RegExp(s));
   }
 });
+
+test('journal : graines JOURNAL.md + state.yaml (append-only, statuts)', () => {
+  const j = read('templates/journal/JOURNAL.md');
+  assert.match(j, /append-only/);
+  assert.match(j, /lit ce fichier avant/);
+  const s = read('templates/journal/state.yaml');
+  assert.match(s, /repair_attempts/);
+  assert.match(s, /blocked_reason/);
+});
