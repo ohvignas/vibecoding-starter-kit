@@ -24,6 +24,7 @@ function makeRoot({ omitPhase = null, omitTemplate = false, omitDepth = null } =
     fs.writeFileSync(path.join(root, 'templates/agents/subagents-rule.md'), 'subagents');
     fs.writeFileSync(path.join(root, 'templates/agents/verify-rule.md'), 'verify');
     fs.writeFileSync(path.join(root, 'templates/agents/reality-rule.md'), 'reality');
+    fs.writeFileSync(path.join(root, 'templates/agents/proof-rule.md'), 'proof');
     fs.writeFileSync(path.join(root, 'templates/agents/secrets-cost-rule.md'), 'secrets');
     fs.writeFileSync(path.join(root, 'templates/agents/css-maquette-rule.md'), 'css');
   }

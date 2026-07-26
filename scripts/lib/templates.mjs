@@ -8,7 +8,7 @@ export function toSkillMd({ name, description, body }) {
   return `---\nname: ${name}\ndescription: ${JSON.stringify(String(description).replace(/\r?\n/g, ' '))}\n---\n\n${body}\n`;
 }
 
-export function renderProjectAgentsMd({ stack, assistant, commandsDir = '', loopSection = '', designRule = '', subagentsRule = '', verifyRule = '', realityRule = '', secretsRule = '', cssMaquetteRule = '', memoryRules = '', learning = true }) {
+export function renderProjectAgentsMd({ stack, assistant, commandsDir = '', loopSection = '', designRule = '', subagentsRule = '', verifyRule = '', realityRule = '', proofRule = '', secretsRule = '', cssMaquetteRule = '', memoryRules = '', learning = true }) {
   const learningSection = learning === false ? '' : `## Mode apprentissage
 À chaque jalon terminé : (1) explique en **3 puces simples** ce que tu viens de construire et **pourquoi** ; (2) pose **une question de compréhension** à l'utilisateur et **attends sa réponse** avant de continuer ; (3) \`/build --all\` est **désactivé** (on avance jalon par jalon). Objectif : l'utilisateur comprend, il ne subit pas.
 
@@ -28,6 +28,8 @@ ${subagentsRule}
 ${verifyRule}
 
 ${realityRule}
+
+${proofRule}
 
 ${secretsRule}
 
