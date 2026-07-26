@@ -12,6 +12,8 @@ Tu n'as **pas fini** tant que tu ne l'as pas **vu marcher** — le **design** ET
    Il rend un **rapport court** (chaque AC ✅/❌ + capture + 1er point cassé), pas 10k tokens de contexte.
    - **Trous que le `test-runner` vérifie** : états **vide / chargement / erreur** · **erreurs API** (4xx/5xx) · bouton **désactivé** pendant l'envoi · **message d'erreur réel** affiché · valeurs **limites** (champ vide, texte très long, caractères spéciaux, espaces).
 
-**4. Cassé ?** → `superpowers:systematic-debugging`. On **ne passe pas** à la suite sur un écran cassé **ou** une feature qui ne marche pas.
+**4. Cohérence visuelle vs maquette — OBLIGATOIRE (stacks web : saas/desktop/vitrine)** — l'IA lit mal la maquette et dérive. À **chaque** page/élément créé ou modifié **et** au **contrôle complet** de l'app : vérifie que le rendu colle à l'écran de `maquette/` avec **PixelRAG** — `pixelshot <page-générée>` + `pixelshot <écran-maquette>`, puis compare la similarité visuelle (Claude Code : skill `pixelbrowse`). **Écart → corrige avant de continuer.** (Mobile : compare l'écran du simulateur à la maquette, PixelRAG ne s'applique pas.)
+
+**5. Cassé ?** → `superpowers:systematic-debugging`. On **ne passe pas** à la suite sur un écran cassé **ou** une feature qui ne marche pas.
 
 Ne dis **jamais** « c'est fait » sans **test vert + screenshot + le parcours de la feature refait en vrai**.

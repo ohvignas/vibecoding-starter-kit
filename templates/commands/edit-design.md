@@ -14,6 +14,6 @@ Argument : `$ARGUMENTS` = ce qu'il faut changer dans l'UI.
 Puis seulement :
 
 4. Édite l'UI demandée en **respectant le design system + la marque** (composants shadcn existants, tokens, espacements).
-5. **Re-screenshot** et compare : le rendu respecte-t-il `docs/design.md` ? Sinon, corrige avant de conclure.
+5. **Re-screenshot** et compare : le rendu respecte-t-il `docs/design.md` ? Sinon, corrige avant de conclure. Sur stack web, vérifie la **cohérence PixelRAG** entre le rendu et `maquette/` avant de conclure.
 
 Rappel : la règle design permanente est déjà dans l'`AGENTS.md` du projet (issue de `templates/agents/design-rule.md`) — elle s'applique aussi hors de cette commande.

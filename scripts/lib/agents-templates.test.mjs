@@ -30,7 +30,7 @@ test('subagents-rule : quand déléguer + contrat + parallèle + modèle sonnet 
 
 test('verify-rule : rendu + fonctionnement E2E + Playwright/Maestro + test-runner + trous QA', () => {
   const t = read('templates/agents/verify-rule.md');
-  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'Maestro', 'test-runner', 'contexte frais', 'erreurs API', 'FONCTIONNEMENT']) {
+  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'Maestro', 'test-runner', 'contexte frais', 'erreurs API', 'FONCTIONNEMENT', 'PixelRAG']) {
     assert.match(t, new RegExp(s));
   }
 });
