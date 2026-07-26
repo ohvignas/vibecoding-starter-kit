@@ -123,7 +123,7 @@ Puis **affine par un vrai aller-retour, une question à la fois** (mode coaching
    - lit **`docs/design.md`** (preset + tokens) — **même source pour tous = maquette cohérente** ;
    - produit **sa page** calquée shadcn/ui (composants type shadcn, tokens du preset, Tailwind CDN) → écrit `maquette/parts/<ecran>.html` ;
    - pour aller vite : pioche des **blocs pré-faits** `npx shadcn add @shadcnblocks/<bloc>` (gratuits sans clé), puis adapte-les au preset ;
-   - **auto-vérifie** : ouvre sa `part` dans le navigateur + screenshot, corrige si c'est cassé, **avant** de la rendre.
+   - **auto-vérifie** : ouvre sa `part` dans le navigateur + screenshot, corrige si c'est cassé + **cohérence PixelRAG** vs l'écran maquette (voir « Règle de vérification »), **avant** de la rendre.
 3. **Assemble** les parts en **UN SEUL fichier `maquette/index.html`** — chaque écran = une **section pleine largeur, titrée, empilée**. Fais une **passe de cohérence** (mêmes boutons/espacements/typo partout), puis un seul fichier à ouvrir pour tout voir.
 - **Stitch connecté** : à la place, un `generate_screen_from_text` par écran (skill `stitch::generate-design`) en passant le design → importe dans `maquette/`.
 - **Mobile** : sous-agents calqués **NativeWind / patterns RN** (pas shadcn).
