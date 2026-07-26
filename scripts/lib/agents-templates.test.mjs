@@ -56,6 +56,13 @@ test('css-maquette-rule : pas de slice lignes + accolades + vrai CSS + couleur p
   }
 });
 
+test('reality-rule : zéro mock + boutons câblés + maquette à l\'identique', () => {
+  const t = read('templates/agents/reality-rule.md');
+  for (const s of ['mock', 'vrai backend', 'MARCHE', 'PixelRAG', 'Prends le temps']) {
+    assert.match(t, new RegExp(s));
+  }
+});
+
 test('règle Cursor CSS scoped : globs styles + non-alwaysApply', () => {
   const t = read('templates/cursor/rules/10-css-maquette.mdc');
   assert.match(t, /globs:\s*\*\*\/styles\/\*\*/);

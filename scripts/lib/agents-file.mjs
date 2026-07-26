@@ -9,6 +9,7 @@ export function renderAgentsFile({ source, stack, assistant, commandsDir, learni
     stack, assistant, commandsDir, learning,
     loopSection: snip('loop-section.md'), designRule: snip('design-rule.md'),
     subagentsRule: snip('subagents-rule.md'), verifyRule: snip('verify-rule.md'),
+    realityRule: snip('reality-rule.md'),
     secretsRule: snip('secrets-cost-rule.md'), cssMaquetteRule: snip('css-maquette-rule.md'),
     memoryRules: snip('memory-rules.md'),
   });
