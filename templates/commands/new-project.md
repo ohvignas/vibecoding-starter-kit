@@ -8,17 +8,32 @@ Argument : `$ARGUMENTS` = description libre de l'idée.
 
 > **Attribution** : la structure des templates PRD & architecture ci-dessous est **adaptée de BMAD-METHOD** (MIT © 2025 BMad Code, LLC). Le format `DESIGN.md` suit le spec **google-labs-code/design.md** (Apache-2.0, Google Labs). Adaptée/traduite ; « BMAD » est une marque de BMad Code, LLC (non affiliée).
 
+## Ce qu'on va faire ensemble — explique le parcours (à dire à l'utilisateur, EN PREMIER)
+Avant toute question, dis-lui en **langage simple** ce qu'on va faire et ce qu'il obtiendra :
+> « On va, ensemble : **1)** bien comprendre ton idée (quelques questions simples) · **2)** écrire le **plan** de ton app · **3)** **dessiner les écrans** (maquette) · **4)** en tirer une **feuille de route**. Ensuite `/build` construit, écran par écran. À la fin de cette étape tu auras un **plan clair + un design + une roadmap** — pas encore de code, et c'est normal. »
+Puis propose le mode de travail. Garde ce cap : à chaque phase, redis en une phrase **ce que tu fais et ce que ça lui apporte**.
+
+---
+
 ## Mode de travail (demande au début)
 Propose 2 modes et laisse l'utilisateur choisir :
-- **Rapide** : tu rédiges les brouillons d'un coup, en marquant tes suppositions avec des tags `[HYPOTHÈSE: …]` que l'utilisateur corrigera.
-- **Coaching** (par défaut) : tu avances **section par section**, avec des questions **ouvertes** (« parle-moi de X » plutôt que QCM). *L'élicitation, c'est la valeur* — ne propose pas TES idées à la place des siennes.
+- **Rapide** : tu proposes des brouillons d'un coup avec tes suppositions taguées `[HYPOTHÈSE: …]` ; l'utilisateur corrige. **Moins de questions** — bien si l'idée est déjà claire.
+- **Coaching** (par défaut) : tu avances **section par section** avec des questions. Plus guidé, mais **plus de questions** — dis-le pour qu'il choisisse en connaissance de cause.
 
 Discipline transverse : tag `[HYPOTHÈSE: …]`, `[NON-OBJECTIF v1]`, `[À CLARIFIER]` inline dans les brouillons ; balaie-les à la fin dans les sections dédiées.
 
 ---
 
-## Phase 1 — Brainstorm produit (gate)
-Invoque `superpowers:brainstorming`. Explore : intention, users/personas, contraintes, périmètre, critères de succès. Pose les questions **une à la fois**. → fais valider avant de continuer.
+## Phase 1 — Brainstorm : comprendre l'idée (gate)
+Invoque `superpowers:brainstorming`, **adapté débutant** :
+- **Peu de questions** (vise **4-6 essentielles**), **une à la fois**, en **langage simple**, **zéro jargon** dans la question.
+- **Un exemple concret à chaque question** (« ex. : … ») pour qu'il voie ce que tu attends.
+- **Le pourquoi** en une demi-ligne (« ça m'aide à … »).
+- **Reformule** sa réponse après coup (« donc ton app fait X, pour Y »).
+- Si tu peux **deviner**, propose une **hypothèse** (`[HYPOTHÈSE: …]`) au lieu de demander.
+- L'essentiel à couvrir : **c'est quoi** l'app · **pour qui** · le **truc principal** qu'elle fait · **2-3 fonctions** must-have · ce que ce **n'est pas** (v1).
+
+Le vocabulaire technique (personas, JTBD, exigences…) va dans le **document** `docs/PRD.md`, **jamais** dans les questions posées. → fais valider avant de continuer.
 
 ---
 
