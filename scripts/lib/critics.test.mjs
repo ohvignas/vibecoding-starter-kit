@@ -20,3 +20,12 @@ test('panel de critiques : personas distincts, format MANQUE, ne codent pas', ()
   assert.match(bodies[0], /Vera/); assert.match(bodies[1], /Marc/); assert.match(bodies[2], /Lina/);
   assert.match(bodies[1], /mock/i); assert.match(bodies[2], /chargement/i);
 });
+
+test('Phase 6 : audit de complétude + panel critique en parallèle avant roadmap', () => {
+  const np = read('templates/commands/new-project.md');
+  assert.match(np, /Audit complet de complétude/);
+  assert.match(np, /inventaire de complétude/);
+  for (const c of ['critique-produit', 'critique-donnees', 'critique-ux']) assert.match(np, new RegExp(c));
+  assert.match(np, /en parallèle/);
+  assert.match(np, /toutes? les features/i);
+});
