@@ -31,6 +31,7 @@ test('resolveStackManifest(mobile, cursor) : pas de plugin cursor, MCP expo avec
   assert.equal(m.mcp.expo.needsAuth, true);
   assert.ok('maestro' in m.mcp, 'MCP Maestro (E2E fonctionnel mobile) présent');
   assert.ok(m.mcp.maestro.prereq, 'Maestro annonce son prérequis CLI');
+  assert.match(m.mcp.maestro.command, /^~\/\.maestro\/bin\/maestro$/, 'chemin absolu (pas `maestro` nu → évite spawn ENOENT sur Cursor)');
   assert.ok(m.checks.preCommit.includes('lint-expo'));
 });
 

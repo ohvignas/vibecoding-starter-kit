@@ -1,6 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeMcpConfig } from './mcp.mjs';
+import { mergeMcpConfig, expandMcpCommands } from './mcp.mjs';
+
+test('expandMcpCommands : ~/… → absolu (GUI sans PATH shell), le reste inchangé', () => {
+  const out = expandMcpCommands({
+    maestro: { command: '~/.maestro/bin/maestro', args: ['mcp'] },
+    convex: { command: 'npx', args: ['-y', 'convex@latest'] },
+  }, '/Users/eleve');
+  assert.equal(out.maestro.command, '/Users/eleve/.maestro/bin/maestro');
+  assert.equal(out.convex.command, 'npx', 'command nu (npx sur le PATH) non touché');
+});
 
 test('crée depuis rien', () => {
   const out = mergeMcpConfig(null, { convex: { command: 'npx', args: ['-y', 'convex@latest', 'mcp', 'start'] } });

@@ -1,7 +1,8 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { resolveStackManifest, SUPERPOWERS, SHADCN_NOTE } from './matrix.mjs';
-import { mergeMcpConfig } from './mcp.mjs';
+import { mergeMcpConfig, expandMcpCommands } from './mcp.mjs';
 import { extendCursorHooks, claudeSettings, prePushScript, preCommitCheckLine } from './hooks.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
 import { renderDomains, SHARED_DOMAINS } from './domains.mjs';
@@ -19,7 +20,7 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
   // 1. MCP mergé (par stack)
   try {
     const rel = isCursor ? '.cursor/mcp.json' : '.mcp.json';
-    write(rel, mergeMcpConfig(read(rel), manifest.mcp));
+    write(rel, mergeMcpConfig(read(rel), expandMcpCommands(manifest.mcp, os.homedir())));
     done.push(`${rel} (MCP)`);
   } catch (e) { failed.push(`mcp (${e.message})`); }
 

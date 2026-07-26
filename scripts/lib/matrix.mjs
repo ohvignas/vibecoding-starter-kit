@@ -101,7 +101,9 @@ export const STACKS = {
       expo: { type: 'http', url: 'https://mcp.expo.dev/mcp', needsAuth: true },
       // Test E2E fonctionnel mobile : pilote le simulateur iOS / émulateur Android + flows Maestro.
       // Bundlé dans le Maestro CLI (pas npx) → prérequis à installer une fois.
-      maestro: { command: 'maestro', args: ['mcp'], prereq: 'installe le Maestro CLI : `curl -fsSL "https://get.maestro.mobile.dev" | bash` (+ un simulateur iOS ou émulateur Android)' },
+      // Chemin ABSOLU (pas `maestro` nu) : Cursor/GUI n'héritent pas du PATH du shell → `spawn ENOENT`.
+      // `~/…` est étendu en absolu au moment d'écrire la config (voir expandMcpCommands).
+      maestro: { command: '~/.maestro/bin/maestro', args: ['mcp'], prereq: 'installe le Maestro CLI : `curl -fsSL "https://get.maestro.mobile.dev" | bash` (chemin par défaut `~/.maestro/bin`) + un simulateur iOS / émulateur Android. Après install, **reteste le serveur depuis l\'UI MCP** (Cursor n\'a pas le PATH du terminal). Erreur Java → ajoute `JAVA_HOME` dans `env`.' },
     },
     skills: [
       { label: 'expo', repo: 'expo/skills' },
