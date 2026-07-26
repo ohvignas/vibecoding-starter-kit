@@ -21,6 +21,14 @@ test('panel de critiques : personas distincts, format MANQUE, ne codent pas', ()
   assert.match(bodies[1], /mock/i); assert.match(bodies[2], /chargement/i);
 });
 
+test('crew : chaque agent déclare son modèle et lit le journal', () => {
+  for (const a of ['code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux']) {
+    const t = read(`templates/agents/subagents/${a}.md`);
+    assert.match(t, /model: claude-(opus|sonnet)-5/, `${a} : modèle déclaré`);
+    assert.match(t, /JOURNAL\.md/, `${a} : lit/écrit le journal`);
+  }
+});
+
 test('Phase 6 : audit de complétude + panel critique en parallèle avant roadmap', () => {
   const np = read('templates/commands/new-project.md');
   assert.match(np, /Audit complet de complétude/);
