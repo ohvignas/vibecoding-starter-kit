@@ -156,12 +156,23 @@ Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX 
    Puis **complète le fichier unique `docs/A-FAIRE.md`** (déjà créé par le wizard avec les gestes de base) en y ajoutant, à la fin, une section **`## Pour ton projet`** : **une entrée par domaine détecté**, en français simple, pour que l'utilisateur n'ait **rien à deviner**. Pour chacune : une ligne « à quoi ça sert », le **paquet** à installer (option officielle par défaut, tirée de `DOMAINS.md`), la **commande MCP** s'il y en a une (ex. paiement → `claude mcp add --transport http stripe https://mcp.stripe.com`), et le **secret** à mettre dans `.env.example` (ou l'env Convex). Chaque item en case `- [ ]`, commande copiable, **rien d'inventé** (tout vient de `DOMAINS.md`). Ajoute aussi les secrets à `.env.example`.
 
    **Un seul fichier d'install** : `docs/A-FAIRE.md` = gestes de base (posés par le wizard) **+** la section « Pour ton projet » que tu viens d'ajouter. Ne crée **aucun** autre doc d'install.
-2. **Analyse la maquette validée** (`maquette/`) : lis les fichiers exportés et **liste chaque écran + chaque flux** qu'elle montre. C'est la **cible concrète** que le build doit réaliser — la roadmap existe pour rendre ces écrans réels.
+2. **Audit complet de complétude — AVANT d'écrire la roadmap.** But : ne **rien** oublier, pour que la roadmap couvre **tout** le produit designé (**toutes les features**, pas un sous-ensemble — on ne coupe pas).
+   - **Analyse EXHAUSTIVE de la maquette** (`maquette/`) avec **PixelRAG** (`pixelshot` sur chaque écran) + lecture des fichiers : liste **chaque écran** ET **chaque élément** (bouton, champ, liste, filtre, onglet, modale, menu) et les **états** (vide/chargement/erreur/succès). PixelRAG te fait **voir** tout ce que le design contient — l'IA rate ce qu'elle ne regarde pas.
+   - **Pour chaque page**, détermine **tout ce dont elle a besoin pour FONCTIONNER** : vraies **données** (quel modèle, d'où), **features** déclenchées, **connexions backend** (auth, API, domaines), **permissions**, **états**.
+   - **Croise** avec le PRD (chaque feature, chaque `UJ-*`) et les domaines. Appuie-toi sur les **docs/skills** de la stack — **rien d'inventé**.
+   - Produis un **inventaire de complétude** (écrans × éléments × données × features × états × domaines) : c'est la **base** de la roadmap.
 3. **Roadmap exhaustive** : remplis `docs/ROADMAP.md` (squelette déjà présent) en **pensant à tout** — **Fondations d'abord**, puis balaie les dimensions : Modèle de données, Auth, **réaliser chaque écran/flux de la maquette**, **chaque feature du PRD**, **domaines sélectionnés**, États (chargement/vide/erreur), Tests, passe sécu, Déploiement, Docs.
 
    Chaque jalon précise **les données** : quelles **vraies** données l'écran montre/écrit, d'où elles viennent (modèle de données, API, auth), et leur **câblage réel** — **zéro mock, zéro fausse donnée**. Si le modèle de données manque, il passe **avant** l'écran qui l'utilise.
 4. Chaque jalon = une **tranche verticale** avec **`✅ Ce que tu vois :`** = **un bouton/une action qui MARCHE avec de la vraie donnée** (l'écran de la maquette devenu réel, pas une coquille) — + un chemin de plan `docs/superpowers/plans/NN-<slug>.md`.
-5. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.
+5. **Panel critique — avant de figer la roadmap.** Dispatche les **3 agents critiques du kit en parallèle** (contexte frais, `claude-sonnet-5`) — chacun a **sa lentille**, donc ils trouvent des trous **différents** :
+   - **`critique-produit`** (Vera) — features/écrans/parcours oubliés ;
+   - **`critique-donnees`** (Marc) — données réelles, modèle, câblage, zéro mock, permissions ;
+   - **`critique-ux`** (Lina) — états vide/chargement/erreur, impasses, responsive, accessibilité.
+   Donne à chacun : maquette + PRD + inventaire + roadmap. Ils rendent des `MANQUE : …`. **Fusionne**, intègre dans la roadmap, **relance le panel** — boucle jusqu'à ce que les trois disent « complet ». Seulement alors la roadmap est validée.
+
+   > Ces agents vivent dans `.claude/agents/` : tu peux les **appeler n'importe quand** (« lance `critique-ux` sur cet écran »), pas seulement ici.
+6. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.
 
 ---
 

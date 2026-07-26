@@ -20,6 +20,14 @@ L'utilisateur veut savoir **quelles commandes existent et à quoi elles servent*
 ## Mettre en ligne
 - **/deploy** — Met ton app **en ligne** (checklist + étapes selon ta stack).
 
+## L'équipe d'agents (appelable quand tu veux)
+Des assistants spécialisés, dans `.claude/agents/`. Dis simplement « lance **<nom>** sur … » :
+- **critique-produit** (Vera) — « qu'est-ce qu'on a oublié ? » features, écrans, parcours.
+- **critique-donnees** (Marc) — « d'où vient cette donnée ? » modèle, câblage réel, zéro mock.
+- **critique-ux** (Lina) — « et quand ça se passe mal ? » états vide/erreur, responsive, accessibilité.
+- **test-runner** — teste une feature en vrai dans le navigateur/simulateur et rend un verdict.
+- **code-reviewer** · **security-reviewer** — relisent le code et la sécurité d'un changement.
+
 ## Aide-mémoire (dis-le à l'utilisateur)
 - Tu démarres → **/new-project**
 - Tu as déjà une roadmap → **/build**
