@@ -27,6 +27,8 @@ L'équipe du kit vit dans `.claude/agents/` — tu peux l'appeler **n'importe qu
 - Le critique est **détaché** de celui qui a produit le travail (contexte frais) : c'est ce détachement qui lui fait voir ce que l'auteur ne voit plus.
 
 ### Règles d'or
+- **Les sous-agents qui ÉCRIVENT du code ne travaillent jamais en parallèle** sur la même feature : chaque action porte des décisions implicites, et deux décisions contradictoires donnent un résultat inassemblable. Le fan-out parallèle est réservé à la **lecture** (recherche, critique, vérification). Pour construire : **un implémenteur à la fois**, en séquence.
+- **Un sous-agent ne voit ni `AGENTS.md` ni `CLAUDE.md`** : il ne reçoit que son propre prompt. Donne-lui donc **ses règles** (ou les fichiers exacts à lire) dans son brief — sinon il travaille sans les règles du projet.
 - **Parallèle seulement si indépendant** — sinon conflits (2 agents qui écrivent le même fichier). Fais-les écrire dans des fichiers séparés, tu assembles.
 - **Même source pour tous** (`docs/design.md`, preset) → résultat cohérent.
 - **Tu synthétises** : les sous-agents produisent, toi tu assembles + fais une **passe de cohérence**.

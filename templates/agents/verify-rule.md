@@ -12,7 +12,10 @@ Tu n'as **pas fini** tant que tu ne l'as pas **vu marcher** — le **design** ET
    Il rend un **rapport court** (chaque AC ✅/❌ + capture + 1er point cassé), pas 10k tokens de contexte.
    - **Trous que le `test-runner` vérifie** : états **vide / chargement / erreur** · **erreurs API** (4xx/5xx) · bouton **désactivé** pendant l'envoi · **message d'erreur réel** affiché · valeurs **limites** (champ vide, texte très long, caractères spéciaux, espaces).
 
-**4. Cohérence visuelle vs maquette — OBLIGATOIRE (stacks web : saas/desktop/vitrine)** — l'IA lit mal la maquette et dérive. À **chaque** page/élément créé ou modifié **et** au **contrôle complet** de l'app : vérifie que le rendu colle à l'écran de `maquette/` avec **PixelRAG** — `pixelshot <page-générée>` + `pixelshot <écran-maquette>`, puis compare la similarité visuelle (Claude Code : skill `pixelbrowse`). **Écart → corrige avant de continuer.** (Mobile : compare l'écran du simulateur à la maquette, PixelRAG ne s'applique pas.)
+**4. Cohérence avec la maquette — le gate est déterministe.** L'IA dérive du design : il faut un contrôle, mais un contrôle qui **décide juste**.
+   - **Ce qui bloque** : `expect(page).toMatchAriaSnapshot()` (structure, rôles, noms accessibles — stable, insensible aux pixels/polices/OS) **+** chaque élément interactif produit un signal (URL, DOM, **requête réseau**) **+** l'état survit à un **rechargement**.
+   - **Signal indicatif, non bloquant** : compare visuellement le rendu à l'écran de `maquette/` (capture, ou **PixelRAG** si installé). Un score de similarité ne décide pas — un rendu identique à lui-même ne score pas 1,0 — mais un écart franc **mérite un coup d'œil**. Traite-le comme une alerte, pas comme un verdict.
+   - Écart réel constaté → corrige **avant** de continuer.
 
 **5. Cassé ?** → `superpowers:systematic-debugging`. On **ne passe pas** à la suite sur un écran cassé **ou** une feature qui ne marche pas.
 

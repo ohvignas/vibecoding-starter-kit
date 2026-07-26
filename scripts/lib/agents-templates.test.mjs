@@ -23,14 +23,14 @@ test('design-rule : 4 skills design + design.md + blocs @shadcnblocks via CLI', 
 
 test('subagents-rule : quand déléguer + contrat + parallèle + modèle sonnet 5', () => {
   const t = read('templates/agents/subagents-rule.md');
-  for (const s of ['subagent-driven-development', 'parallèle', 'contexte frais', 'artefact', 'Règle design', 'claude-sonnet-5']) {
+  for (const s of ['subagent-driven-development', 'parallèle', 'contexte frais', 'artefact', 'Règle design', 'claude-sonnet-5', 'jamais en parallèle']) {
     assert.match(t, new RegExp(s));
   }
 });
 
 test('verify-rule : rendu + fonctionnement E2E + Playwright/Maestro + test-runner + trous QA', () => {
   const t = read('templates/agents/verify-rule.md');
-  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'Maestro', 'test-runner', 'contexte frais', 'erreurs API', 'FONCTIONNEMENT', 'PixelRAG']) {
+  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'Maestro', 'test-runner', 'contexte frais', 'erreurs API', 'FONCTIONNEMENT', 'PixelRAG', 'toMatchAriaSnapshot', 'non bloquant']) {
     assert.match(t, new RegExp(s));
   }
 });
