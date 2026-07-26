@@ -63,6 +63,14 @@ test('reality-rule : zéro mock + boutons câblés + maquette à l\'identique', 
   }
 });
 
+test('ROADMAP + Phase 6 : données/câblage réel par jalon (zéro mock)', () => {
+  const roadmap = read('templates/roadmap/ROADMAP.md');
+  const np = read('templates/commands/new-project.md');
+  assert.match(roadmap, /Données \/ câblage réel/);
+  assert.match(np, /vraie donnée/i);
+  assert.match(np, /zéro mock/i);
+});
+
 test('règle Cursor CSS scoped : globs styles + non-alwaysApply', () => {
   const t = read('templates/cursor/rules/10-css-maquette.mdc');
   assert.match(t, /globs:\s*\*\*\/styles\/\*\*/);

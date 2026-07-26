@@ -11,13 +11,15 @@
 - [ ] ## 0. Fondations — le projet démarre
   - Dépend de : —
   - Livre : environnement IA installé (`docs/A-FAIRE.md` joué) + scaffold de la stack + app qui démarre
+  - Données / câblage réel : le scaffold branche le **vrai** backend de la stack (base/API/auth), pas de faux serveur ni de données bidon — l'app démarre connectée pour de vrai.
   - ✅ Ce que tu vois : l'app démarre (page / écran / fenêtre « hello ») — voir `docs/RUN.md`
   - Plan : docs/superpowers/plans/00-fondations.md
 
 - [ ] ## 1. <titre de la première tranche>
   - Dépend de : 0
   - Livre : <ce que la tranche apporte>
-  - ✅ Ce que tu vois : <résultat OBSERVABLE dans l'app>
+  - Données / câblage réel : <quelles vraies données, d'où (table/API/auth), câblées au backend — ZÉRO mock>
+  - ✅ Ce que tu vois : <résultat OBSERVABLE : un bouton/action qui MARCHE avec de vraies données>
   - Plan : docs/superpowers/plans/01-<slug>.md
 
-<!-- Ajoute un jalon par tranche jusqu'à couvrir toutes les dimensions. -->
+<!-- Ajoute un jalon par tranche jusqu'à couvrir toutes les dimensions — chaque jalon câble de VRAIES données (zéro mock). -->
