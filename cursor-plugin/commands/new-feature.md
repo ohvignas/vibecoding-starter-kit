@@ -13,7 +13,7 @@ Suis la **boucle d'itération** de l'`AGENTS.md` (issue de `templates/agents/loo
 ## Boucle
 
 ### 1. Brainstorm → **Spec de feature** (`superpowers:brainstorming`) — gate
-Scopé à la feature, référence `docs/PRD.md` (glossaire, UJ, FR concernés). Pose les questions **une à la fois**. Produis une **spec de feature** avec ce template, puis fais valider :
+D'abord, dis en une phrase **ce qu'on va faire** (« on cadre ta feature, puis je la construis et je la teste en vrai »). Puis pose **peu de questions** (2-4), **une à la fois**, en **langage simple**, avec un **exemple concret** à chaque fois et le **pourquoi** ; reformule la réponse. Zéro jargon dans les questions — le vocabulaire (UJ, FR, AC…) reste dans le document. Scopé à la feature, référence `docs/PRD.md`. Produis ensuite une **spec de feature** avec ce template, puis fais valider :
 
 - **Intention** — quelle capacité, quel(s) parcours (UJ-X) et exigence(s) (FR-Y) du PRD ça réalise.
 - **Story(s)** — format `En tant que [persona], je veux [action] [sous conditions], pour [bénéfice].` (numérote Story-1, Story-2… si plusieurs).
