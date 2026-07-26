@@ -17,3 +17,12 @@ test('new-project : parcours expliqué + Phase 1 débutant, validateur vert', ()
   assert.match(t, /\bBrainstorm\b/); // le mot isolé requis par le validateur reste présent
   assert.deepEqual(validateNewProjectCommand(ROOT), []);
 });
+
+test('new-feature : brainstorm débutant, validateur vert', () => {
+  const t = read('templates/commands/new-feature.md');
+  assert.match(t, /langage simple/i);
+  assert.match(t, /exemple concret/i);
+  assert.match(t, /brainstorming/); // requis par le validateur
+  assert.match(t, /Critères d'acceptation/); // template conservé
+  assert.deepEqual(validateNewFeatureCommand(ROOT), []);
+});
