@@ -12,7 +12,7 @@ export function kitOwnedFiles(stack, assistant) {
     pairs.push({ from: 'templates/cursor/rules/10-css-maquette.mdc', to: '.cursor/rules/10-css-maquette.mdc' });
   }
   if (assistant === 'claude-code') {
-    for (const a of ['code-reviewer', 'security-reviewer', 'test-runner', 'critique-produit', 'critique-donnees', 'critique-ux']) {
+    for (const a of ['code-reviewer', 'security-reviewer', 'test-runner', 'verificateur', 'critique-produit', 'critique-donnees', 'critique-ux']) {
       pairs.push({ from: `templates/agents/subagents/${a}.md`, to: `.claude/agents/${a}.md` });
     }
   }

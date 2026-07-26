@@ -14,6 +14,13 @@ test('proof-rule : statuts, hiérarchie, interdits, max 3 tentatives', () => {
   }
 });
 
+test('verificateur : contexte frais, checks anti-faux-succès, verdict', () => {
+  const t = read('templates/agents/subagents/verificateur.md');
+  for (const s of ['model: claude-sonnet-5', 'PROUVÉ', 'oxlint', 'knip', 'JOURNAL', 'ne codes? pas', 'expect-expect']) {
+    assert.match(t, new RegExp(s));
+  }
+});
+
 test('journal : graines JOURNAL.md + state.yaml (append-only, statuts)', () => {
   const j = read('templates/journal/JOURNAL.md');
   assert.match(j, /append-only/);
