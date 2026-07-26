@@ -21,6 +21,13 @@ test('verificateur : contexte frais, checks anti-faux-succès, verdict', () => {
   }
 });
 
+test('security-reviewer : outils réels + tests négatifs + artefact', () => {
+  const t = read('templates/agents/subagents/security-reviewer.md');
+  for (const s of ['semgrep', 'gitleaks', 'osv-scanner', 'IDOR', 'tests négatifs', '\\.security/', 'model: claude-opus-5']) {
+    assert.match(t, new RegExp(s));
+  }
+});
+
 test('journal : graines JOURNAL.md + state.yaml (append-only, statuts)', () => {
   const j = read('templates/journal/JOURNAL.md');
   assert.match(j, /append-only/);
