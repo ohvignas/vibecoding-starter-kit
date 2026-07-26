@@ -37,7 +37,7 @@ test('verify-rule : rendu + fonctionnement E2E + Playwright/Maestro + test-runne
 
 test('subagent test-runner : contexte frais, Playwright/Maestro, verdict court, ne code pas', () => {
   const t = read('templates/agents/subagents/test-runner.md');
-  for (const s of ['Playwright', 'Maestro', 'critères', 'Verdict', 'ne codes? rien']) {
+  for (const s of ['Playwright', 'Maestro', 'critères', 'Verdict', 'ne codes? rien', 'toMatchAriaSnapshot', 'waitForRequest', 'rechargement', 'model:']) {
     assert.match(t, new RegExp(s));
   }
 });
