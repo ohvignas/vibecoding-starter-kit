@@ -14,6 +14,14 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const agent = (a) => read(`templates/agents/subagents/${a}.md`);
 const rule = (f) => read(`templates/agents/${f}`);
+// Les règles injectées dans AGENTS.md ET les 7 fichiers d'agents, en un seul ensemble : les deux
+// sont recopiés chez l'assistant, et une attribution de verdict fautive vaut la même chose dans
+// l'un ou dans l'autre. Chemins relatifs à `templates/agents/`, donc lisibles par `rule()`.
+const md = (d) => fs.readdirSync(path.join(ROOT, d)).filter((n) => n.endsWith('.md')).sort();
+const FICHIERS_REGLES = () => [
+  ...md('templates/agents'),
+  ...md('templates/agents/subagents').map((n) => `subagents/${n}`),
+];
 
 const CREW = ['verificateur', 'test-runner', 'security-reviewer', 'code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux'];
 // Voulu : les deux rédacteurs d'artefact écrivent, les cinq autres sont bridés (cf. proof.test.mjs).
@@ -29,19 +37,35 @@ const CRITIQUES = ['critique-produit', 'critique-donnees', 'critique-ux'];
 const B = (s) => `(?<!\\p{L})(?:${s})(?!\\p{L})`;
 
 // L'ordre d'écrire le journal. Filet SECONDAIRE, et assumé comme tel : énumérer les verbes est
-// une course perdue (« consigne », « appose », « paraphe », « en ajoutant »…). Le filet
-// principal est la liste blanche des phrases à sujet universel (R1), qui ne regarde aucun verbe.
-const VERBE_ECRIRE = 'écris|écrit|écrivent|écrivez|ajoute|ajoutes|ajouter|ajoutent|consigne|consignes|consigner|consignent|note|notes|noter|notent|inscris|inscrit|inscrire|inscrivent|renseigne|renseignes|complète|complètes|journalise|journalises|reporte|reportes';
-const OBJET_LIGNE = '(?:une|ta|sa|ma|leur|cette|la) ligne|(?:ton|son|leur) passage|ici';
+// une course perdue (« consigne », « appose », « paraphe », « en ajoutant »…). Dans la graine,
+// le filet PRINCIPAL est désormais le texte de référence de R1, qui ne regarde ni verbe ni
+// tournure ; ce motif-ci ne sert plus qu'à expliquer pourquoi la graine dit ce qu'elle dit.
+// Les formes fléchies sortent de la borne `(?!\p{L})` (« écrit » ne couvre pas « écrite ») :
+// on les écrit, au lieu de compter sur une borne pour les attraper.
+const VERBE_ECRIRE = [
+  'écris', 'écrit(?:e|s|es)?', 'écrire', 'écrivent', 'écrivez',
+  'ajoute(?:s|nt|z|r)?', 'ajouté(?:e|s|es)?',
+  'consigne(?:s|nt|z|r)?', 'consigné(?:e|s|es)?',
+  'note(?:s|nt|z|r)?', 'noté(?:e|s|es)?',
+  'inscris', 'inscrit(?:e|s|es)?', 'inscrire', 'inscrivent', 'inscrivez',
+  'renseigne(?:s|nt|z|r)?', 'renseigné(?:e|s|es)?',
+  'complète(?:s|nt)?', 'complét(?:er|ez)', 'complété(?:e|s|es)?',
+  'journalise(?:s|nt|z|r)?', 'journalisé(?:e|s|es)?',
+  'reporte(?:s|nt|z|r)?', 'reporté(?:e|s|es)?',
+].join('|');
+const OBJET_LIGNE = '(?:une|ta|sa|ma|ton|son|leur|leurs|ses|mes|tes|cette|ces|la|les|des) lignes?|(?:ton|son|leur|leurs|ses) passages?|ici';
 const ORDRE_D_ECRIRE = new RegExp(
   `${B(`(?:${VERBE_ECRIRE})-y`)}|${B(VERBE_ECRIRE)}[^.\\n]{0,15}?${B(OBJET_LIGNE)}`, 'iu');
 
-// Le SUJET universel, lui, est un ensemble FERMÉ : le français n'a qu'une poignée de
-// quantificateurs universels, et aucun néologisme n'en crée. C'est le sujet — jamais le verbe —
-// qui fait qu'une consigne atteint les cinq bridés, incapables de l'exécuter. D'où R1 : on
-// n'énumère plus les fautes, on énumère les phrases à sujet universel AUTORISÉES.
-const ACTEUR = '(?:sous-)?agents?|membres?|relecteurs?|critiques?|crew|équipe';
-const DETERMINANT_UNIVERSEL = 'chaque|tout|toute|tous|toutes|aucun|aucune|nul|nulle|n\'importe quel|n\'importe quelle';
+// Le sujet universel. Les quantificateurs du français sont peu nombreux, mais ce motif ne
+// reconnaît qu'un sujet EXPLICITE : une tournure impersonnelle (« il est attendu de qui rend un
+// rapport qu'il grave sa ligne ici ») s'adresse mécaniquement aux cinq bridés sans en porter
+// aucun, et lui échappe. Ce n'est donc pas un filet complet, et R1 ne s'y fie plus pour la
+// sensibilité : il compare la graine à son texte de référence. Ce motif garde deux rôles —
+// documenter pourquoi les phrases de la liste blanche sont admises, et rattraper une mise à
+// jour étourdie de ce texte de référence.
+const ACTEUR = '(?:sous-)?agents?|membres?|relect(?:eur|rice)s?|critiques?|crew|équipes?';
+const DETERMINANT_UNIVERSEL = 'chaque|tout|toute|tous|toutes|aucun|aucune|aucuns|aucunes|nul|nulle|nuls|nulles|n\'importe quel|n\'importe quelle|n\'importe quels|n\'importe quelles';
 const PRONOM_UNIVERSEL = 'chacun|chacune|quiconque|personne|on|tous|toutes';
 const SUJET_UNIVERSEL = new RegExp(
   `${B(DETERMINANT_UNIVERSEL)}[^.\\n]{0,25}?${B(ACTEUR)}|${B('les')}\\s+${B('(?:sous-)?agents')}|${B(PRONOM_UNIVERSEL)}`, 'iu');
@@ -145,6 +169,25 @@ test('C6 — les 7 portent le MÊME bloc de règles, aux valeurs de la Règle Pr
   for (const s of ['PROUVÉ', 'NON PROUVÉ', 'BLOQUÉ', 'MANQUE']) assert.match(b, new RegExp(s), `statut ${s}`);
 });
 
+// La graine du journal, MOT POUR MOT. C'est un fichier court, stable, possédé par le kit : on
+// peut donc le tenir en entier, au lieu d'essayer de deviner par motifs si une phrase française
+// donne un ordre. Toute modification, quelle qu'en soit la formulation — un verbe non prévu, une
+// tournure impersonnelle sans sujet (« il est attendu de qui rend un rapport qu'il grave sa ligne
+// ici »), une phrase coupée en deux — change ce texte et fait échouer R1. C'est la seule
+// assertion de ce fichier dont la sensibilité soit totale par construction.
+const GRAINE_JOURNAL = [
+  '# Journal des agents (append-only)',
+  '',
+  "Chaque agent **lit ce fichier avant** de commencer — c'est la mémoire partagée du crew. On n'efface jamais, on ajoute.",
+  '',
+  "La ligne de fin de mission : `verificateur` et `security-reviewer` écrivent la leur ; les autres sous-agents, bridés en écriture, la **rendent** dans leur rapport et c'est l'**orchestrateur** qui l'ajoute ici.",
+  '',
+  'Format : `AAAA-MM-JJ · <agent> · <mission> · <statut> · <preuve> · <décision>`',
+  '',
+  '- `2026-01-01 · exemple · mise en place du journal · PROUVÉ · (aucune commande) · format retenu : une ligne par mission`',
+  '',
+].join('\n');
+
 // R1 — la contradiction levée par C1 dans les fichiers d'agents ne doit pas revenir par la
 // GRAINE que ces mêmes agents ont l'ordre de lire. Le lien est réel, pas cosmétique :
 // `environment.mjs` pose `templates/journal/JOURNAL.md` en `docs/agents/JOURNAL.md`, et cinq
@@ -157,6 +200,18 @@ test('R1 — la graine du journal n\'ordonne pas d\'écrire aux agents bridés q
   assert.deepEqual(lecteurs, BRIDES, 'les cinq bridés reçoivent l\'ordre de lire exactement ce fichier');
 
   const seed = read('templates/journal/JOURNAL.md');
+  assert.equal(seed, GRAINE_JOURNAL, [
+    'La graine `templates/journal/JOURNAL.md` ne correspond plus à son texte de référence.',
+    `Elle est recopiée en \`docs/agents/JOURNAL.md\`, et les cinq sous-agents bridés en écriture (${BRIDES.join(', ')})`,
+    'ont l\'ordre de la LIRE : tout ce qu\'elle demande, ils le reçoivent sans pouvoir l\'exécuter.',
+    `Avant de valider : vérifie qu'elle n'ordonne à PERSONNE d'écrire ici — seuls l'orchestrateur, ${ECRIVAINS.join(' et ')}`,
+    'en ont le droit — puis recopie le nouveau texte dans la constante GRAINE_JOURNAL de ce test.',
+  ].join('\n'));
+
+  // Les assertions qui suivent NE portent plus la sensibilité (l'égalité ci-dessus la porte
+  // entière) : elles disent POURQUOI le texte de référence est celui-là, et rattrapent une mise
+  // à jour étourdie de cette constante — recopier la graine fautive dans GRAINE_JOURNAL sans la
+  // relire ne suffit pas à faire passer le test.
   const phrases = seed.split(/(?<=[.;])\s+|\n/).map((p) => p.trim()).filter(Boolean);
 
   // LISTE BLANCHE. Une phrase à sujet universel s'adresse mécaniquement aux cinq bridés :
@@ -212,11 +267,11 @@ const RESERVE = new RegExp([
   B('seul|seule|seuls|seules'),
   B('que par'),
   '(?<!\\p{L})réserv',
-  `${B('reste|revient|appartient')}\\s+\\*{0,2}${B('au|aux|à')}`,
+  `${B('reste|restent|revient|reviennent|appartient|appartiennent')}\\s+\\*{0,2}${B('au|aux|à')}`,
   `${B('c\'est')}\\s+\\*{0,2}(?:${B('lui|elle|au|aux|à')}|à\\s+\\*{0,2}${B('lui|elle')})`,
   B('uniquement'),
   '(?<!\\p{L})exclusi',
-  `${B('nul|nulle|aucun|aucune')}\\s+${B('autre|autres')}`,
+  `${B('nul|nulle|nuls|nulles|aucun|aucune|aucuns|aucunes')}\\s+${B('autre|autres')}`,
   `${B('personne|pas|rien')}\\s+d['’]${B('autre|autres')}`,
   B('rien que'),
   `${B('à')}\\s+${B('lui')}\\s+${B('de|seul')}`,
@@ -229,7 +284,10 @@ const SECTION_CANON = '### Qui prononce PROUVÉ';
 // Le vocabulaire du verdict. `PROUVÉ` est le mot du canon ; « verdict » en est le synonyme
 // courant dans les règles — l'ignorer laissait passer « verdict par `verificateur` », qui donne
 // à lui seul un gate incomplet (une feature en exige deux).
-const VERDICT = new RegExp(B('PROUVÉ|verdict|verdicts'), 'iu');
+// `PROUVÉ` s'accorde (« les PROUVÉS restent au … », « une feature PROUVÉE ») : la borne de fin
+// `(?!\p{L})` refusait ces sur-mots, là où l'ancien `/PROUVÉ/` sans borne les prenait. Les
+// accords sont donc explicites ; la borne ne sert plus qu'à ne pas matcher en milieu de mot.
+const VERDICT = new RegExp(B('PROUVÉ(?:es|e|s)?|verdicts?'), 'iu');
 // Une ligne se lit en clauses : `;`, `:`, et le point suivi d'une espace — jamais celui d'un
 // numéro (« **6. Verdict final** »).
 const clauses = (line) => line.split(/\s*[;:]\s*|(?<![0-9])\.\s+/).map((c) => c.trim()).filter(Boolean);
@@ -287,25 +345,33 @@ test('R2 — ni un agent ni une règle injectée ne réserve un PROUVÉ que le g
     }
   }
 
-  // 2. Les règles injectées dans AGENTS.md, relues à CHAQUE message. Le filtre littéral
-  // « la ligne contient jalon ou feature » était l'échappatoire : retirer les deux mots
-  // suffisait à passer. On le remplace par QUATRE conditions de structure — aucune ne dépend
-  // d'une tournure, donc aucune reformulation ne les contourne :
+  // 2. Les règles injectées dans AGENTS.md (relues à CHAQUE message) ET les 7 fichiers d'agents.
+  // Le filtre littéral « la ligne contient jalon ou feature » était l'échappatoire : retirer les
+  // deux mots suffisait à passer. On le remplace par QUATRE conditions de structure :
   //   (i)   la ligne dit de QUOI elle parle. Une attribution non qualifiée vaut pour tout,
   //         donc aussi pour une feature : le lecteur en tire un gate incomplet.
   //   (ii)  elle nomme TOUS les agents que la Règle Preuve désigne pour ces objets.
   //   (iii) elle nomme au moins un juge de la Règle Preuve.
   //   (iv)  elle les nomme DANS une clause qui parle du verdict : un agent relégué à
   //         « rend un avis » dans la clause voisine n'est pas présenté comme juge.
-  // Suit l'ancien contrôle d'exclusivité, conservé intact (rien de ce qu'il attrapait n'est
-  // rendu) — devenu un filet d'appoint derrière les quatre.
+  // Ces quatre conditions portent sur la structure de la ligne — de quoi elle parle, qui elle
+  // nomme, où — et non sur ses mots. Leur limite est connue et n'est pas réparable ici : elles
+  // constatent des présences, elles ne lisent pas un sens. Une ligne qui NOMME un juge puis le
+  // disqualifie dans la clause voisine (« le `security-reviewer` donne un avis, pas un verdict »)
+  // les satisfait toutes les quatre. C'est R3 — l'inventaire, qui exige que le texte exact de la
+  // ligne ait été relu — qui couvre ce cas ; ici on attrape la faute DANS une ligne inventoriée.
+  // Suit l'ancien contrôle d'exclusivité. Il n'est PAS atteint sur tout ce qu'il attrapait jadis :
+  // il teste `/PROUVÉ/` sans borne, mais il est placé derrière le filtre `VERDICT`, qui en a une.
+  // Le cas rendu était réel — « les PROUVÉS restent au … », que le pluriel faisait sortir de la
+  // borne ; il est couvert deux fois depuis : par l'accord explicite ajouté à `VERDICT`, et par
+  // R3, que le seul nom d'agent déclenche.
   const proofLines = rule('proof-rule.md').split('\n');
   const debutCanon = proofLines.findIndex((l) => l.startsWith(SECTION_CANON));
   const apres = proofLines.findIndex((l, k) => k > debutCanon && l.startsWith('### '));
   const finCanon = apres === -1 ? proofLines.length : apres;
   const JUGES = [...new Set([...CANON.values()].flat())].sort();
   const OBJETS = [...CANON.keys()];
-  for (const f of fs.readdirSync(path.join(ROOT, 'templates/agents')).filter((n) => n.endsWith('.md')).sort()) {
+  for (const f of FICHIERS_REGLES()) {
     rule(f).split('\n').forEach((line, i) => {
       // La définition canonique n'a pas à se comparer à elle-même.
       if (f === 'proof-rule.md' && i >= debutCanon && i < finCanon) return;
@@ -350,6 +416,60 @@ test('R2 — ni un agent ni une règle injectée ne réserve un PROUVÉ que le g
     });
   }
   assert.deepEqual(fautes, [], `clauses qui contredisent le gate des commandes ou la Règle Preuve :\n${fautes.join('\n')}`);
+});
+
+// R3 — INVENTAIRE APPROUVÉ. R2 ci-dessus juge le CONTENU d'une ligne, donc il ne voit que ce
+// que ses motifs savent lire : quatre tours de revue ont montré qu'une reformulation finit
+// toujours par passer (« donne le feu vert » au lieu de « prononce », l'attribution coupée sur
+// deux lignes, le juge nommé puis disqualifié). Ce test-ci ne lit pas le sens : il déclenche sur
+// le SEUL nom d'un agent — un ensemble vraiment fermé, celui des 7 fichiers de `subagents/` — et
+// exige que la ligne figure telle quelle dans l'inventaire. Écrire quoi que ce soit de neuf sur
+// un agent oblige donc à relire cette liste, quelle que soit la tournure employée. Sa sensibilité
+// ne dépend d'aucun vocabulaire ; en revanche il ne dit RIEN d'une ligne qui tranche sans nommer
+// personne (« seul un relecteur en contexte frais conclut ») — c'est R2 qui couvre ce cas.
+const LIGNES_APPROUVEES = [
+  // Les 9 règles injectées, puis le bloc que les 7 agents portent à l'identique (C6 le vérifie).
+  // Recopiées telles quelles depuis les fichiers, après quatre tours de revue : ce sont les
+  // formulations approuvées, pas un résumé.
+  "- **Review code** `superpowers:requesting-code-review` puis le sous-agent **`code-reviewer`** · **Sécu** **`security-reviewer`** : ces sous-agents existent sur les 3 assistants, `/code-review` et `/security-review` seulement sur Claude Code.",
+  "- **Test live** « Règle de vérification » + `docs/RUN.md` : E2E délégué à `test-runner`, verdict par `verificateur` (+ `security-reviewer` si feature).",
+  "**« Fini »** = mergé sur **`main`** (CI verte, review OK, un PR à la fois) **ET** parcours refait en vrai avec le `PROUVÉ` du `verificateur` (+ `security-reviewer` si feature, « Règle Preuve »). Tests + CI verte : nécessaires, **pas** suffisants. Seul motif d'arrêt admis : un blocage externe au test live — et il se dit.",
+  "**Une tâche** : **toi**, si tu colles la commande **et** sa sortie. **Un jalon** : le **`verificateur`** seul, en contexte frais. **Une feature** : `verificateur` (fonctionnel) **+** `security-reviewer` (sécurité) — jamais d'auto-`PROUVÉ` sur ce qu'on a écrit.",
+  "0. **Modèle** — **`claude-sonnet-5`**, **sauf `security-reviewer` : `claude-opus-5`**. Seule **règle** qui en fixe un (Claude Code : champ `model` · Cursor : sélecteur · Codex : le brief).",
+  "1. **Sa tâche**, une seule, précise. 2. **Ses skills** — un sous-agent design charge les skills design (« Règle design »), chacun les siens, **à chaque fois**. 3. **Les fichiers à lire**, chemins exacts. 4. **Ses règles** : il ne voit ni `AGENTS.md` ni `CLAUDE.md`. 5. **L'artefact à rendre** : un fichier précis ou un **résumé court**, jamais 10 000 tokens. 6. **Le journal** : les bridés en écriture (3 critiques, `test-runner`, `code-reviewer`) **rendent** leur ligne, **c'est toi qui l'écris** dans `docs/agents/JOURNAL.md` ; `verificateur` et `security-reviewer` écrivent la leur.",
+  "**3. FONCTIONNEMENT (end-to-end)** — le parcours doit être **refait en vrai**, **délégué au sous-agent `test-runner` en contexte frais**. Donne-lui la feature, le **flux**, les **critères** (`UJ-*` du PRD, les `AC` de `/new-feature`), l'écran de départ, l'outil : **Playwright MCP** en web, **Maestro MCP** en mobile. Il porte ses exigences de preuve et ses cas limites, et rend un **rapport court** (AC ✅/❌ + capture + 1er point cassé).",
+  "**6. Verdict final** — lance le sous-agent **`verificateur`** (contexte frais) ; une **feature** exige aussi le `PROUVÉ` du **`security-reviewer`** (« Règle Preuve »). Le `verificateur` **seul** reporte le verdict dans `docs/agents/state.yaml` et `docs/agents/JOURNAL.md`.",
+  "- Tu conclus par un **statut**, jamais un avis : `PROUVÉ` / `NON PROUVÉ` / `BLOQUÉ` — sur **ta** mission seulement, et jamais d'auto-`PROUVÉ` sur du code que tu as écrit ; prononcer un **jalon** `PROUVÉ` reste au `verificateur`, en contexte frais. Les critiques rendent des `MANQUE : … — PREUVE : …`, ou « complet ».",
+  // L'identité des 7 : ajouter un agent est un acte délibéré, pas un effet de bord.
+  ...CREW.map((a) => `name: ${a}`),
+];
+
+test('R3 — toute ligne qui nomme un agent du crew est dans l\'inventaire approuvé', () => {
+  const approuvees = new Set(LIGNES_APPROUVEES);
+  const vues = new Set();
+  const inconnues = [];
+  for (const f of FICHIERS_REGLES()) {
+    rule(f).split('\n').forEach((line, i) => {
+      const t = line.trim();
+      if (!t || !CREW.some((a) => t.includes(a))) return;
+      if (approuvees.has(t)) { vues.add(t); return; }
+      inconnues.push(`templates/agents/${f}:${i + 1} — « ${t.slice(0, 120)}${t.length > 120 ? '…' : ''} »`);
+    });
+  }
+  assert.deepEqual(inconnues, [], [
+    'Lignes nommant un agent du crew, absentes de LIGNES_APPROUVEES :',
+    ...inconnues,
+    '',
+    'Ce n\'est pas un test de style : ces lignes disent QUI fait quoi, et une seule d\'entre elles',
+    'qui diverge suffit à faire mentir le kit (c\'est arrivé quatre fois sur ce lot). Avant de',
+    'recopier ta ligne dans l\'inventaire, relis « ### Qui prononce PROUVÉ » de proof-rule.md et',
+    'vérifie que ta ligne dit la même chose — puis que le gate de templates/commands/ la confirme.',
+  ].join('\n'));
+
+  // L'inventaire se vérifie lui-même : une entrée périmée ne protège plus rien, et sa présence
+  // laisserait croire que la ligne existe encore.
+  const perimees = LIGNES_APPROUVEES.filter((l) => !vues.has(l));
+  assert.deepEqual(perimees, [], `entrées périmées de LIGNES_APPROUVEES (plus aucune ligne ne leur correspond) :\n${perimees.join('\n')}`);
 });
 
 test('C7 — tout `docs/agents/…` cité par le crew est un fichier que le kit crée vraiment', () => {
