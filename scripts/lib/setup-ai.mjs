@@ -1,7 +1,7 @@
 // Rend docs/A-FAIRE.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
 // Les skills design sont déjà installés par le wizard.
 import { buildSkillAddArgs } from './external.mjs';
-import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE } from './matrix.mjs';
+import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE, VERIF_TOOLS_NOTE } from './matrix.mjs';
 import { cursorDeeplink } from './deeplink.mjs';
 
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
@@ -71,6 +71,10 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
     L.push(`- [ ] ${PIXELRAG_NOTE}`);
     L.push('');
   }
+  // HORS de la condition ci-dessus : mobile a autant besoin des scanners que le web.
+  L.push('### Outils de preuve (toutes les stacks)');
+  L.push(`- [ ] ${VERIF_TOOLS_NOTE}`);
+  L.push('');
   L.push('## 6. Scripts package.json (à ajouter si absents après le scaffold)');
   for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);
   L.push('');
