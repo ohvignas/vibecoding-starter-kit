@@ -42,6 +42,15 @@ test('verificateur câblé en gate + state.yaml lu', () => {
   assert.match(read('templates/agents/verify-rule.md'), /state\.yaml/);
 });
 
+test('aucune référence morte ni chemin d\'agents figé sur un seul assistant', () => {
+  assert.doesNotMatch(read('scripts/lib/matrix.mjs'), /pixelbrowse/);
+  for (const f of ['templates/commands/help.md', 'templates/commands/new-project.md']) {
+    assert.doesNotMatch(read(f), /`\.claude\/agents\/`/, `${f} : chemin figé claude-code`);
+  }
+  // la chaîne exigée par validateMemoryTemplates reste présente
+  assert.match(read('templates/agents/memory-rules.md'), /consolidate-memory/);
+});
+
 test('proof-rule : statuts, hiérarchie, interdits, max 3 tentatives', () => {
   const t = read('templates/agents/proof-rule.md');
   for (const s of ['PROUVÉ', 'NON PROUVÉ', 'BLOQUÉ', 'sortie brute', 'ROUGE avant', 'requête réseau', 'contexte frais', 'skip', '3 tentatives']) {

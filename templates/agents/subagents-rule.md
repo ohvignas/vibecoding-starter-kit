@@ -19,7 +19,7 @@ Il ne voit pas le chat → donne-lui **tout** dans son prompt :
 4. **L'artefact à rendre** — un **fichier** (ex. `maquette/parts/<ecran>.html`) ou un **résumé court** — jamais 10 000 tokens de blabla.
 
 ### Panel de critiques (quand plusieurs agents relisent le même travail)
-L'équipe du kit vit dans `.claude/agents/` — tu peux l'appeler **n'importe quand** (`verificateur` · `critique-produit` · `critique-donnees` · `critique-ux` · `test-runner` · `code-reviewer` · `security-reviewer`). Améliore un agent **là** et tous les projets en profitent.
+L'équipe du kit vit dans le dossier d'agents de ton assistant : `.cursor/agents/ (Cursor) · .claude/agents/ (Claude Code) · docs/agents/crew/ (Codex)` — tu peux l'appeler **n'importe quand** (`verificateur` · `critique-produit` · `critique-donnees` · `critique-ux` · `test-runner` · `code-reviewer` · `security-reviewer`). Améliore un agent **là** et tous les projets en profitent.
 - **Diversité par la lentille, pas par le tempérament** : ce qui fait trouver des trous différents, c'est un **périmètre différent** (produit / données / UX). Un ton « sévère » n'ajoute rien et provoque des sur-corrections.
 - **Preuve obligatoire** : chaque finding cite **où** il se vérifie (écran, élément, ligne du PRD). Sans preuve → jeté. Une vérification concrète tue un faux positif mieux que n'importe quel ton adversarial.
 - **2 passes maximum** : au-delà, une revue multi-agents fabrique surtout des **faux positifs** (le rappel monte, la précision s'effondre). Doute restant → tranche avec l'utilisateur.

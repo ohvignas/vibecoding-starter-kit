@@ -60,7 +60,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 💳 | **Catalogue de domaines** | paiement (Stripe/Polar…), email, storage, analytics, erreurs, push, cartes… **choisis d'après le PRD** (`docs/DOMAINS.md`) — pas tout d'un coup |
 | 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
 | 🌙 | **Dream hook** | GitHub Action qui analyse les commits et **propose** features/bugs/idées (propose-only) |
-| 🛡️ | **Revue + sécu + test** | Subagents `code-reviewer` · `security-reviewer` · `test-runner`, scan de secrets, CI, hook pre-commit |
+| 🛡️ | **Revue + sécu + test** | Les **7 agents du crew** — `verificateur` (le juge : PROUVÉ / NON PROUVÉ / BLOQUÉ) · `code-reviewer` · `security-reviewer` · `test-runner` · `critique-produit` · `critique-donnees` · `critique-ux` — livrés aux **3 assistants**, plus scan de secrets, CI, hook pre-commit |
 | 🧪 | **Test complet (design + fonctionnel)** | après **chaque** implémentation : test auto + **navigateur & screenshot** (le rendu) **et** le **parcours E2E** de la feature refait en vrai (Playwright web · **Maestro** mobile · Chrome DevTools desktop), exécuté par un **sous-agent `test-runner` isolé** → économe en tokens |
 | 📏 | **Règles permanentes** | injectées dans `AGENTS.md` : **sous-agents** (quand/comment déléguer) · **vérification** · **secrets & coûts** · **CSS-maquette** (pas de slice, vrai CSS, couleur primaire) · design + **accessibilité** |
 | 🤖 | **Multi-assistant** | Cursor (règles `.mdc` typées + commandes + hooks sécu + Bugbot), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
@@ -243,9 +243,12 @@ mon-app/
 ├── AGENTS.md · CLAUDE.md          # règles + boucle + @import mémoire (toujours les deux)
 ├── .claude/
 │   ├── commands/                  # /new-project /build /new-feature /edit-design /doctor
-│   ├── settings.json              # hooks PostToolUse → checks framework (warn-only)
+│   ├── settings.json              # hooks PostToolUse (checks) + SessionStart (mémoire) + PreToolUse (garde-shell)
+│   ├── hooks/                     # inject-memory + guard-shell (format Claude Code)
 │   ├── skills/stack-*             # règles de la stack
-│   └── agents/                    # code-reviewer + security-reviewer + test-runner
+│   └── agents/                    # les 7 agents du crew : verificateur, code-reviewer, security-reviewer,
+│                                  #   test-runner, critique-produit, critique-donnees, critique-ux
+│                                  #   (Cursor : .cursor/agents/ · Codex : docs/agents/crew/)
 ├── docs/
 │   ├── A-FAIRE.md                # plugins/skills/MCP à installer (joué par l'IA)
 │   ├── DOMAINS.md                 # catalogue des capacités métier de la stack

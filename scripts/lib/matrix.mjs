@@ -221,4 +221,4 @@ export const VISUAL_CHECK_STACKS = ['saas', 'desktop', 'vitrine'];
 // Outils lancés par l'agent sécurité et le vérificateur. Gratuits, sans compte.
 export const VERIF_TOOLS_NOTE = 'Outils de vérification (l\'agent sécurité les lance) : `brew install semgrep gitleaks osv-scanner` (ou `pipx install semgrep`). Sans eux, l\'agent ne peut pas produire de preuve et répondra NON PROUVÉ. Les autres (`npx oxlint`, `npx knip`) s\'exécutent sans installation.';
 
-export const PIXELRAG_NOTE = 'PixelRAG (vérif visuelle maquette↔page — OBLIGATOIRE UI web) : `pip install pixelrag` (Python 3.10+) + Chrome. À chaque page/élément et au contrôle complet, l\'agent rend la page générée ET l\'écran de `maquette/` avec `pixelshot`, puis compare la similarité visuelle → corrige si écart. Claude Code : skill `pixelbrowse`.';
+export const PIXELRAG_NOTE = 'PixelRAG (vérif visuelle maquette↔page — OBLIGATOIRE UI web) : `pip install pixelrag` (Python 3.10+) + Chrome. À chaque page/élément et au contrôle complet, l\'agent rend la page générée ET l\'écran de `maquette/` avec `pixelshot`, puis compare la similarité visuelle → corrige si écart.';

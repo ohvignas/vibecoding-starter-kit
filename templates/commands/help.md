@@ -21,7 +21,7 @@ L'utilisateur veut savoir **quelles commandes existent et à quoi elles servent*
 - **/deploy** — Met ton app **en ligne** (checklist + étapes selon ta stack).
 
 ## L'équipe d'agents (appelable quand tu veux)
-Des assistants spécialisés, dans `.claude/agents/`. Dis simplement « lance **<nom>** sur … » :
+Des assistants spécialisés, dans le dossier d'agents de ton assistant : `.cursor/agents/ (Cursor) · .claude/agents/ (Claude Code) · docs/agents/crew/ (Codex)`. Dis simplement « lance **<nom>** sur … » :
 - **critique-produit** (Vera) — « qu'est-ce qu'on a oublié ? » features, écrans, parcours.
 - **critique-donnees** (Marc) — « d'où vient cette donnée ? » modèle, câblage réel, zéro mock.
 - **critique-ux** (Lina) — « et quand ça se passe mal ? » états vide/erreur, responsive, accessibilité.
