@@ -1,5 +1,7 @@
 # Crew d'agents + boucle de preuve (anti « c'est fait » bidon) — Implementation Plan
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive de ce qui a été fait le 2026-07-27, gardée pour la trace. Ses 45 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : deux de ses instructions ont été corrigées depuis (Lot C, commits `d8c08fe` et `e5bf4da`) et les rejouer réintroduirait les contradictions supprimées — la graine `JOURNAL.md` ordonnant d'écrire à des agents bridés en écriture (`:145`, `:462`), et la clause réservant `PROUVÉ` au seul `verificateur`, qui contredisait le gate de `/build`. L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rendre impossible le « c'est fait » non prouvé. (1) Une **boucle de preuve** avec statuts `PROUVÉ / NON PROUVÉ / BLOQUÉ`, hiérarchie de preuve et détections de faux succès. (2) Un **crew d'agents** dont chacun embarque ses règles + ses skills + ses MCP + son modèle. (3) Un **journal de mission partagé** pour que les agents sachent ce que les autres ont fait. (4) Une **gate sécurité par feature** avec tests négatifs. (5) PixelRAG repositionné : **lecture** (audit) obligatoire, **jugement** non bloquant.

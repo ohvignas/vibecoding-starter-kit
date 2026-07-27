@@ -20,7 +20,7 @@ const allRules = () => RULES.map((f) => [f, rule(f)]);
 const rendered = (opts = {}) => renderAgentsFile({ source: ROOT, stack: 'saas', assistant: 'claude-code', commandsDir: '.claude/commands', ...opts });
 const words = (s) => s.split(/\s+/).filter(Boolean).length;
 
-test('B1 — qui prononce PROUVÉ : une tâche = l\'agent, un jalon/feature = le verificateur seul', () => {
+test('B1 — qui prononce PROUVÉ : une tâche = l\'agent, un jalon = le verificateur seul', () => {
   const proof = rule('proof-rule.md');
   assert.match(proof, /Qui prononce PROUVÉ/, 'proof-rule : la règle doit être écrite là');
   assert.match(proof, /jalon|feature/i);
