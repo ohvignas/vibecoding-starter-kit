@@ -117,9 +117,65 @@ test('C6 — les 7 portent le MÊME bloc de règles, aux valeurs de la Règle Pr
   assert.match(proof, /même check ou le même bug/, 'proof-rule reste la définition');
   assert.match(b, /BLOQUÉ/);
   assert.doesNotMatch(b, /[Rr]epars? au dernier état vert|[Rr]eviens au dernier état vert/, 'jamais de retour arrière automatique');
-  // B1 : sur un jalon ou une feature, seul le verificateur prononce PROUVÉ. Les 7 le portent.
+  // B1 : chacun conclut sur SA mission, jamais d'auto-PROUVÉ sur ce qu'on a écrit, et le
+  // `PROUVÉ` d'un jalon reste au verificateur. Les 7 portent la même phrase (cf. R2).
   assert.match(b, /verificateur/, 'qui prononce PROUVÉ est rappelé dans le bloc');
   for (const s of ['PROUVÉ', 'NON PROUVÉ', 'BLOQUÉ', 'MANQUE']) assert.match(b, new RegExp(s), `statut ${s}`);
+});
+
+// R1 — la contradiction levée par C1 dans les fichiers d'agents ne doit pas revenir par la
+// GRAINE que ces mêmes agents ont l'ordre de lire. Le lien est réel, pas cosmétique :
+// `environment.mjs` pose `templates/journal/JOURNAL.md` en `docs/agents/JOURNAL.md`, et cinq
+// agents ont `Write` retiré ET l'ordre de lire exactement ce fichier — ce qu'il ordonne, ils
+// le reçoivent.
+test('R1 — la graine du journal n\'ordonne pas d\'écrire aux agents bridés qui la lisent', () => {
+  const env = read('scripts/lib/environment.mjs');
+  assert.match(env, /docs\/agents\/JOURNAL\.md'\s*,\s*'templates\/journal\/JOURNAL\.md/, 'la graine posée est bien celle-ci');
+  const lecteurs = CREW.filter((a) => /^disallowedTools:.*\bWrite\b/m.test(agent(a)) && /Lis `docs\/agents\/JOURNAL\.md`/.test(agent(a)));
+  assert.deepEqual(lecteurs, BRIDES, 'les cinq bridés reçoivent l\'ordre de lire exactement ce fichier');
+
+  const seed = read('templates/journal/JOURNAL.md');
+  const fautes = seed.split(/(?<=[.;])\s+|\n/)
+    .filter((p) => /chaque agent|tout agent|tous les agents/i.test(p) && ORDRE_D_ECRIRE.test(p))
+    .map((p) => p.trim());
+  assert.deepEqual(fautes, [], `graine : ordre d'écriture adressé à TOUS, que ${BRIDES.join(', ')} ne peuvent pas exécuter`);
+  // Et elle dit qui écrit vraiment : sans propriétaire, la ligne des bridés n'est écrite par personne.
+  assert.match(seed, /orchestrateur/i, 'graine : l\'orchestrateur écrit la ligne des bridés');
+  for (const a of ECRIVAINS) assert.match(seed, new RegExp(a), `graine : ${a} écrit la sienne`);
+});
+
+// R2 — cohérence gate ↔ agent. `templates/commands/*.md` EXIGE le `PROUVÉ` de certains agents
+// (`build.md` : `verificateur` ET `security-reviewer`). Le fichier de ces agents ne peut donc pas
+// porter une clause qui réserve le `PROUVÉ` à quelqu'un d'autre sur l'objet même de leur mission.
+test('R2 — aucun agent dont une commande exige le PROUVÉ ne porte de clause le lui interdisant', () => {
+  const exigences = new Map();
+  for (const f of fs.readdirSync(path.join(ROOT, 'templates/commands')).filter((n) => n.endsWith('.md'))) {
+    read(`templates/commands/${f}`).split('\n').forEach((line, i) => {
+      if (!/PROUVÉ/.test(line)) return;
+      for (const a of CREW) if (line.includes(a) && !exigences.has(a)) exigences.set(a, `templates/commands/${f}:${i + 1}`);
+    });
+  }
+  for (const a of ['verificateur', 'security-reviewer']) {
+    assert.ok(exigences.has(a), `${a} : une commande doit exiger son PROUVÉ (sinon ce test ne prouve rien)`);
+  }
+
+  // Une clause qui RÉSERVE le PROUVÉ (« seul », « que par », « réservé », « reste au »).
+  const RESERVE = /\bseul(e|s)?\b|\bque par\b|\bréserv|\breste (?:au|à)\b/i;
+  const fautes = [];
+  for (const [a, ou] of exigences) {
+    const t = agent(a);
+    // L'objet de sa mission, tel qu'il est écrit chez lui : frontmatter + 1er paragraphe.
+    const entete = `${(t.match(/^description:.*$/m) || [''])[0]}\n${t.split(/^---$/m)[2].trim().split('\n\n')[0]}`;
+    const objets = ['jalon', 'feature'].filter((o) => new RegExp(o, 'i').test(entete));
+    assert.ok(objets.length, `${a} : objet de mission (jalon/feature) introuvable dans son en-tête`);
+    for (const p of t.split(/(?<=[.;])\s+|\n/)) {
+      if (!/PROUVÉ/.test(p) || !RESERVE.test(p)) continue;
+      const autres = CREW.filter((x) => x !== a && p.includes(x));
+      const porte = objets.filter((o) => new RegExp(o, 'i').test(p));
+      if (autres.length && porte.length) fautes.push(`${a} (PROUVÉ exigé en ${ou}) réserve son « ${porte.join('/')} » à ${autres.join(', ')} : « ${p.trim().slice(0, 130)} »`);
+    }
+  }
+  assert.deepEqual(fautes, [], `clauses d'agent qui contredisent le gate des commandes :\n${fautes.join('\n')}`);
 });
 
 test('C7 — tout `docs/agents/…` cité par le crew est un fichier que le kit crée vraiment', () => {
