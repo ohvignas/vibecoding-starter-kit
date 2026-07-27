@@ -12,4 +12,4 @@ Tu n'as **pas fini** tant que tu ne l'as pas **vu marcher** — le **design** ET
 
 **5. Cassé ?** → `superpowers:systematic-debugging`, avant tout fix. On **ne passe pas** à la suite sur un écran cassé ou une feature qui ne marche pas.
 
-**6. Verdict final** — lance le sous-agent **`verificateur`** (contexte frais) : sur un jalon ou une feature, c'est **lui** qui prononce `PROUVÉ` (« Règle Preuve »), **lui seul** qui le reporte dans `docs/agents/state.yaml` et `docs/agents/JOURNAL.md`.
+**6. Verdict final** — lance le sous-agent **`verificateur`** (contexte frais) ; une **feature** demande **en plus** le `PROUVÉ` du **`security-reviewer`** (« Règle Preuve »). Le `verificateur` **seul** reporte le verdict dans `docs/agents/state.yaml` et `docs/agents/JOURNAL.md`.

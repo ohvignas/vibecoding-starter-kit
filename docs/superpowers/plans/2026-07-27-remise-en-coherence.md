@@ -66,9 +66,9 @@ puis un **verdict** `PROUVÉ` / `NON PROUVÉ` / `BLOQUÉ`, plus les **régressio
 
 | Sujet | Décision |
 |---|---|
-| **Qui prononce `PROUVÉ`** | L'agent pour **une tâche** (commande + sortie collée). Le `verificateur` **seul** pour un **jalon ou une feature**. |
+| **Qui prononce `PROUVÉ`** | L'agent pour **une tâche** (commande + sortie collée). Pour un **jalon** : le `verificateur` **seul**, en contexte frais. Pour une **feature** : `verificateur` (fonctionnel) **+** `security-reviewer` (sécurité) — c'est ce qu'exige le gate de `/build`. Canonique dans `proof-rule` ; `verify-rule` **applique** sans redéfinir. |
 | **Modèle** | `claude-sonnet-5` par défaut · `claude-opus-5` pour `security-reviewer` **uniquement**. Écrit **une seule fois**, dans `subagents-rule`. |
-| **Tentatives** | **3 puis `BLOQUÉ`**. Le retour au dernier état vert est une **option proposée**, jamais automatique. Canonique dans `proof-rule` ; ailleurs, un renvoi d'une ligne. |
+| **Tentatives** | **3 puis `BLOQUÉ`**. Le retour au dernier état vert n'est jamais déclenché tout seul : `proof-rule` l'écrit « une **option que tu proposes, que l'utilisateur tranche** », et clôt par « **Ne boucle jamais** ». Canonique dans `proof-rule` ; ailleurs, un renvoi d'une ligne. |
 | **`/build --all`** | Désactivé tant que le mode apprentissage est actif. `/build` doit le **dire**. |
 | **Branche de merge** | **`main`**. Le scaffold ne crée que `main` ; n'inventer aucun `dev`. |
 | **`selectDomains`** | **Le brancher** (lot F). E n'y touche pas. |

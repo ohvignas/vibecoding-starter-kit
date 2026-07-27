@@ -21,8 +21,15 @@ const ECRIVAINS = ['verificateur', 'security-reviewer'];
 const BRIDES = ['test-runner', 'code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux'];
 const CRITIQUES = ['critique-produit', 'critique-donnees', 'critique-ux'];
 
-// L'ordre d'écrire, dans toutes ses formulations historiques.
-const ORDRE_D_ECRIRE = /Écris une ligne|ajoutes-y une ligne|écris-y|ajoute une ligne/i;
+// L'ordre d'écrire le journal. Une liste blanche des 4 tournures du jour ne protège de rien :
+// « Chaque sous-agent consigne son passage ici en finissant » réintroduit la contradiction sans
+// en employer une seule. On reconnaît donc un VERBE d'inscription suivi de son OBJET.
+const VERBE_ECRIRE = 'écris|écrit|écrivent|écrivez|ajoute|ajoutes|ajouter|ajoutent|consigne|consignes|consigner|consignent|note|notes|noter|notent|inscris|inscrit|inscrire|inscrivent|renseigne|renseignes|complète|complètes|journalise|journalises|reporte|reportes';
+const OBJET_LIGNE = '(?:une|ta|sa|ma|leur|cette|la) ligne|(?:ton|son|leur) passage|ici';
+const ORDRE_D_ECRIRE = new RegExp(
+  `\\b(?:${VERBE_ECRIRE})-y\\b|\\b(?:${VERBE_ECRIRE})\\b[^.\\n]{0,15}?\\b(?:${OBJET_LIGNE})\\b`, 'i');
+// Un sujet qui englobe tout le crew — donc les cinq bridés, qui ne peuvent pas exécuter l'ordre.
+const SUJET_UNIVERSEL = /\b(?:chaque|tout|toute|tous|toutes|chacun|n'importe quel)\b[^.\n]{0,25}?\b(?:sous-)?agents?\b|\bles (?:sous-)?agents\b/i;
 
 test('C1 — aucun agent bridé en écriture ne reçoit l\'ordre d\'écrire le journal', () => {
   for (const a of BRIDES) {
@@ -135,19 +142,57 @@ test('R1 — la graine du journal n\'ordonne pas d\'écrire aux agents bridés q
   assert.deepEqual(lecteurs, BRIDES, 'les cinq bridés reçoivent l\'ordre de lire exactement ce fichier');
 
   const seed = read('templates/journal/JOURNAL.md');
-  const fautes = seed.split(/(?<=[.;])\s+|\n/)
-    .filter((p) => /chaque agent|tout agent|tous les agents/i.test(p) && ORDRE_D_ECRIRE.test(p))
-    .map((p) => p.trim());
-  assert.deepEqual(fautes, [], `graine : ordre d'écriture adressé à TOUS, que ${BRIDES.join(', ')} ne peuvent pas exécuter`);
-  // Et elle dit qui écrit vraiment : sans propriétaire, la ligne des bridés n'est écrite par personne.
-  assert.match(seed, /orchestrateur/i, 'graine : l\'orchestrateur écrit la ligne des bridés');
-  for (const a of ECRIVAINS) assert.match(seed, new RegExp(a), `graine : ${a} écrit la sienne`);
+  // Tout ordre d'écrire doit être ATTRIBUÉ à quelqu'un qui a le droit d'écrire. Un sujet
+  // universel (« chaque agent », « chaque sous-agent »…) atteint mécaniquement les cinq bridés.
+  const PROPRIETAIRES = ['orchestrateur', ...ECRIVAINS];
+  const fautes = seed.split(/(?<=[.;])\s+|\n/).map((p) => p.trim()).filter(Boolean)
+    .filter((p) => ORDRE_D_ECRIRE.test(p)
+      && (SUJET_UNIVERSEL.test(p) || !PROPRIETAIRES.some((w) => new RegExp(w, 'i').test(p))));
+  assert.deepEqual(fautes, [], `graine : ordre d'écriture sans propriétaire habilité — ${BRIDES.join(', ')} ne peuvent pas l'exécuter`);
+
+  // Et elle dit qui écrit vraiment, DANS LE BON SENS : la seule présence des trois mots
+  // laisserait passer l'inverse (« les bridés écrivent, les deux autres rendent leur ligne »).
+  const clauses = seed.split(/\s*;\s*|\n/).map((c) => c.trim()).filter(Boolean);
+  const cEcrivains = clauses.find((c) => ECRIVAINS.every((a) => c.includes(a)));
+  assert.ok(cEcrivains, `graine : ${ECRIVAINS.join(' et ')} doivent être nommés ensemble`);
+  assert.match(cEcrivains, /écri(?:s|t|vent|re)\b/i, 'graine : … et c\'est pour dire qu\'ils ÉCRIVENT la leur');
+  assert.deepEqual(BRIDES.filter((a) => cEcrivains.includes(a)), [], 'graine : aucun bridé dans la clause « ils écrivent »');
+  const cBrides = clauses.find((c) => /brid|autres sous-agents/i.test(c));
+  assert.ok(cBrides, 'graine : le sort des cinq bridés doit être écrit');
+  assert.match(cBrides, /rend(?:ent|s|re)?\b|rapport/i, 'graine : les bridés RENDENT leur ligne, ils ne l\'écrivent pas');
+  assert.match(cBrides, /orchestrateur\*{0,2}\s+qui\s+l['’]/i, 'graine : c\'est l\'ORCHESTRATEUR qui l\'ajoute (sujet du verbe, pas un mot posé là)');
 });
 
-// R2 — cohérence gate ↔ agent. `templates/commands/*.md` EXIGE le `PROUVÉ` de certains agents
-// (`build.md` : `verificateur` ET `security-reviewer`). Le fichier de ces agents ne peut donc pas
-// porter une clause qui réserve le `PROUVÉ` à quelqu'un d'autre sur l'objet même de leur mission.
-test('R2 — aucun agent dont une commande exige le PROUVÉ ne porte de clause le lui interdisant', () => {
+// Une clause qui RÉSERVE le PROUVÉ. Une liste blanche de 4 tournures ne tenait pas : la clause
+// survivante de `verify-rule.md` disait « c'est **lui** qui prononce », qui n'y figurait pas.
+// On prend donc aussi l'attribution par pronom, l'exclusivité et l'appartenance.
+const RESERVE = /\bseul(e|s)?\b|\bque par\b|\bréserv|\breste \*{0,2}(?:au|à)\b|\bc'est \*{0,2}(?:lui|elle|à lui|à elle)\b|\buniquement\b|\bexclusi|\bnul autre\b|\bpersonne d'autre\b|\brien que\b|\brevient \*{0,2}(?:au|à)\b|\bappartient \*{0,2}(?:au|à)\b|\bà lui (?:de|seul)\b/i;
+
+// La répartition du `PROUVÉ` est écrite UNE fois, dans `proof-rule` (« Règle Preuve ») ; tout le
+// reste l'applique. On la LIT ici au lieu de la re-coder : un test qui la recopie ne détecte plus
+// la divergence, il en crée une troisième.
+const SECTION_CANON = '### Qui prononce PROUVÉ';
+const canonique = () => {
+  const t = rule('proof-rule.md');
+  const i = t.indexOf(SECTION_CANON);
+  assert.notEqual(i, -1, `proof-rule : section « ${SECTION_CANON} » introuvable`);
+  const section = t.slice(i).split(/\n### /)[0];
+  const map = new Map();
+  for (const objet of ['jalon', 'feature']) {
+    const m = new RegExp(`\\*\\*Une?\\s+${objet}\\*\\*(.*?)(?=\\*\\*Une?\\s|$)`, 'is').exec(section);
+    assert.ok(m, `proof-rule : la clause « ${objet} » manque à la section canonique`);
+    map.set(objet, CREW.filter((a) => m[1].includes(a)).sort());
+    assert.ok(map.get(objet).length, `proof-rule : « ${objet} » ne nomme aucun agent`);
+  }
+  return map;
+};
+
+// R2 — cohérence gate ↔ agent ↔ RÈGLE INJECTÉE. `templates/commands/*.md` EXIGE le `PROUVÉ` de
+// certains agents (`build.md` : `verificateur` ET `security-reviewer`). Ni le fichier de ces
+// agents, ni les règles standing, ne peuvent réserver ce `PROUVÉ` à quelqu'un d'autre.
+// La 1re version n'inspectait que `subagents/` — et la clause survivante était dans
+// `templates/agents/verify-rule.md`, c'est-à-dire dans l'AGENTS.md relu à chaque message.
+test('R2 — ni un agent ni une règle injectée ne réserve un PROUVÉ que le gate exige d\'un autre', () => {
   const exigences = new Map();
   for (const f of fs.readdirSync(path.join(ROOT, 'templates/commands')).filter((n) => n.endsWith('.md'))) {
     read(`templates/commands/${f}`).split('\n').forEach((line, i) => {
@@ -158,10 +203,15 @@ test('R2 — aucun agent dont une commande exige le PROUVÉ ne porte de clause l
   for (const a of ['verificateur', 'security-reviewer']) {
     assert.ok(exigences.has(a), `${a} : une commande doit exiger son PROUVÉ (sinon ce test ne prouve rien)`);
   }
+  // La règle canonique doit couvrir ce que le gate exige, sinon elle re-crée l'écart d'en haut.
+  const CANON = canonique();
+  const nommesParLaRegle = new Set([...CANON.values()].flat());
+  for (const [a, ou] of exigences) {
+    assert.ok(nommesParLaRegle.has(a), `${a} : son PROUVÉ est exigé en ${ou}, la Règle Preuve ne le nomme pas`);
+  }
 
-  // Une clause qui RÉSERVE le PROUVÉ (« seul », « que par », « réservé », « reste au »).
-  const RESERVE = /\bseul(e|s)?\b|\bque par\b|\bréserv|\breste (?:au|à)\b/i;
   const fautes = [];
+  // 1. Les 7 agents : chacun est recopié seul, il ne voit ni AGENTS.md ni les autres.
   for (const [a, ou] of exigences) {
     const t = agent(a);
     // L'objet de sa mission, tel qu'il est écrit chez lui : frontmatter + 1er paragraphe.
@@ -175,7 +225,30 @@ test('R2 — aucun agent dont une commande exige le PROUVÉ ne porte de clause l
       if (autres.length && porte.length) fautes.push(`${a} (PROUVÉ exigé en ${ou}) réserve son « ${porte.join('/')} » à ${autres.join(', ')} : « ${p.trim().slice(0, 130)} »`);
     }
   }
-  assert.deepEqual(fautes, [], `clauses d'agent qui contredisent le gate des commandes :\n${fautes.join('\n')}`);
+
+  // 2. Les règles injectées dans AGENTS.md. Une ligne qui réserve le `PROUVÉ` d'un objet doit
+  // nommer EXACTEMENT les agents que la Règle Preuve désigne pour cet objet — sinon deux
+  // passages du même AGENTS.md se contredisent, à quelques dizaines de lignes d'écart.
+  const proofLines = rule('proof-rule.md').split('\n');
+  const debutCanon = proofLines.findIndex((l) => l.startsWith(SECTION_CANON));
+  const apres = proofLines.findIndex((l, k) => k > debutCanon && l.startsWith('### '));
+  const finCanon = apres === -1 ? proofLines.length : apres;
+  for (const f of fs.readdirSync(path.join(ROOT, 'templates/agents')).filter((n) => n.endsWith('.md')).sort()) {
+    rule(f).split('\n').forEach((line, i) => {
+      // La définition canonique n'a pas à se comparer à elle-même.
+      if (f === 'proof-rule.md' && i >= debutCanon && i < finCanon) return;
+      if (!/PROUVÉ/.test(line) || !RESERVE.test(line)) return;
+      const nommes = CREW.filter((a) => line.includes(a)).sort();
+      if (!nommes.length) return;
+      for (const [objet, attendus] of CANON) {
+        if (!new RegExp(objet, 'i').test(line)) continue;
+        if (nommes.join('+') !== attendus.join('+')) {
+          fautes.push(`templates/agents/${f}:${i + 1} — « ${objet} » réservé à ${nommes.join(', ')}, la Règle Preuve dit ${attendus.join(', ')} : « ${line.trim().slice(0, 130)} »`);
+        }
+      }
+    });
+  }
+  assert.deepEqual(fautes, [], `clauses qui contredisent le gate des commandes ou la Règle Preuve :\n${fautes.join('\n')}`);
 });
 
 test('C7 — tout `docs/agents/…` cité par le crew est un fichier que le kit crée vraiment', () => {
