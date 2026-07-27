@@ -169,11 +169,13 @@ git commit -m "feat(parité): toCursorAgent — frontmatter Cursor robuste (CRLF
 ## Task 2 : Les agents arrivent chez les 3 assistants
 
 **Files:**
-- Modify: `scripts/setup.mjs`
+- Modify: `scripts/setup.mjs`, `scripts/lib/environment.mjs`
 - Test: `scripts/lib/agents-copy.test.mjs` (créer)
 
 **Interfaces:**
-- Produces: `cursor` → `.cursor/agents/*.md` (transformés) · `claude-code` → `.claude/agents/*.md` (bruts) · `codex` → `docs/agents/crew/*.md` (bruts).
+- Produces: `cursor` → `.cursor/agents/*.md` (transformés) · `claude-code` → `.claude/agents/*.md` (bruts) · `codex` → `docs/agents/crew/*.md` (bruts). **Codex n'a aucun dossier `.claude/`.**
+
+> ⚠️ La restriction de `.claude/settings.json` est **dans cette task** (pas en Task 9) : sans elle, l'assertion « Codex n'a pas de `.claude/` » échoue ici et laisserait la suite rouge jusqu'à la Task 9. Preuve : `scripts/lib/environment.mjs:57` écrit `.claude/settings.json` dans la branche `else` (donc aussi pour Codex).
 
 - [ ] **Step 1 : Test (échoue)**
 
@@ -200,6 +202,14 @@ Dans `scripts/setup.mjs`, remplace le bloc :
 ```
 
 par une copie dépendante de l'assistant : dossier cible `.cursor/agents` / `.claude/agents` / `docs/agents/crew` ; pour Cursor, écrire `toCursorAgent(contenu)` fichier par fichier (ne jamais écraser sauf `args.force`) ; pour les deux autres, `copyDirIfAbsent`. Libellé du rapport : `« agents du crew (7) »`. Importe `toCursorAgent`.
+
+**Puis, dans le même commit** — `scripts/lib/environment.mjs` ligne ~57 :
+
+```js
+    else { write('.claude/settings.json', claudeSettings(read('.claude/settings.json'), manifest.checks.onEdit)); done.push('.claude/settings.json (checks)'); }
+```
+
+devient une branche à trois cas : `cursor` → `.cursor/hooks.json` (inchangé) · `claude-code` → `.claude/settings.json` (inchangé) · `codex` → **rien** (Codex n'a pas de hook d'édition ; la note utilisateur est ajoutée en Task 9 Step 4).
 
 - [ ] **Step 4 : Lancer → passe**
 
@@ -497,7 +507,7 @@ Corrige aussi le titre du test existant `kitOwnedFiles(saas, cursor) : … PAS d
 - [ ] **Step 3 : Étendre `kitOwnedFiles`**
 
 - `cursor` : 7 agents (`transform: 'cursor-agent'`) + les `.mdc` de `templates/cursor/rules/<stack>/` mappés **à plat** vers `.cursor/rules/<fichier>.mdc` + les 3 hooks vers `.cursor/hooks/`.
-- `claude-code` : les 7 agents (déjà) + `templates/…/SKILL.md` **uniquement si un fichier** (ne jamais viser un dossier → `refresh.mjs` ferait `EISDIR`).
+- `claude-code` : les 7 agents (déjà) + le skill de stack — **chemin source vérifié** : `.claude/skills/stack-<stack>/SKILL.md` **à la racine du kit** (il n'y a aucun `SKILL.md` sous `templates/` — `find templates -name SKILL.md` est vide) → `to: '.claude/skills/stack-<stack>/SKILL.md'`. Viser le **fichier**, jamais le dossier (`refresh.mjs` ferait `EISDIR`). L'assertion `kit-owned.test.mjs:20` (« la source existe ») valide ce chemin.
 - `codex` : 7 agents vers `docs/agents/crew/`.
 
 - [ ] **Step 4 : `refresh.mjs` — appliquer le transform + rester idempotent**
@@ -521,7 +531,7 @@ $N scripts/setup.mjs --project "$T" --refresh | grep -c "déjà à jour"   # ide
 
 ## Task 9 : Codex servi correctement + hooks Claude Code
 
-**Files:** `scripts/lib/setup-ai.mjs`, `scripts/lib/environment.mjs`, `scripts/lib/hooks.mjs`, `templates/commands/doctor.md` · Test: `scripts/lib/codex.test.mjs` (créer)
+**Files:** `scripts/lib/setup-ai.mjs`, `scripts/lib/environment.mjs`, `scripts/lib/hooks.mjs`, `scripts/setup.mjs`, `templates/claude/hooks/{guard-shell,inject-memory}.mjs` (créer), `templates/commands/doctor.md` · Test: `scripts/lib/codex.test.mjs` (créer)
 
 - [ ] **Step 1 : Test (échoue) — assertions qui prouvent**
 
@@ -554,9 +564,18 @@ Remplace le ternaire `connect` par une table : `cursor` → « ouvre **Settings 
 
 Restreins l'écriture de `.claude/settings.json` à `assistant === 'claude-code'`. Pour Codex, ajoute **une seule fois** (garde `includes(...)`, comme le correctif « Backend en local » couvert par `setup-idempotent.test.mjs`) une ligne dans `docs/RUN.md` : « Codex n'a pas de hook d'édition : lance `npm run typecheck` après tes modifications. »
 
-- [ ] **Step 5 : `hooks.mjs` — SessionStart + PreToolUse pour Claude Code**
+- [ ] **Step 5 : hooks Claude Code — scripts au FORMAT CLAUDE (pas Cursor)**
 
-Étends `claudeSettings` : `SessionStart` → commande qui injecte `docs/memory/index.md` + le prochain jalon (même intention que `templates/cursor/hooks/inject-memory.mjs`) ; `PreToolUse` matcher `Bash` → garde-fou équivalent à `guard-shell.mjs`. Réutilise les scripts existants (`node .cursor/hooks/…` n'existe pas côté Claude : copie-les dans `.claude/hooks/` ou pointe vers `templates/cursor/hooks/` copiés à cet endroit — **vérifie ce que le scaffold copie réellement avant de choisir**). Garde l'ajout **idempotent** (même motif `already` que `PostToolUse`).
+⚠️ Les hooks Cursor existants sont **inutilisables tels quels** : `templates/cursor/hooks/guard-shell.mjs:24` lit `JSON.parse(stdin).command` et répond `{"permission":"deny"}` — c'est le protocole **Cursor `beforeShellExecution`**. Claude Code passe la commande dans `tool_input.command` et bloque par **code de sortie 2** (message sur `stderr`). Il faut donc **deux nouveaux fichiers**, pas une réutilisation.
+
+1. Crée `templates/claude/hooks/guard-shell.mjs` : lit le JSON sur stdin, prend `tool_input.command`, **réutilise la fonction `isDangerous`** de `templates/cursor/hooks/guard-shell.mjs` (copie-la, les deux fichiers restent indépendants), et si la commande est dangereuse → écrit l'explication sur `stderr` puis `process.exit(2)` ; sinon `process.exit(0)`.
+2. Crée `templates/claude/hooks/inject-memory.mjs` : imprime sur `stdout` le contenu de `docs/memory/index.md` + le prochain jalon non coché de `docs/ROADMAP.md` (même intention que la version Cursor, sortie texte simple).
+3. `scripts/setup.mjs` : copie ces deux fichiers vers `.claude/hooks/` **quand `assistant === 'claude-code'`** (les hooks Cursor ne sont copiés que pour Cursor, `setup.mjs:160-166` — même motif).
+4. `scripts/lib/hooks.mjs` : dans `claudeSettings`, ajoute `SessionStart` → `node .claude/hooks/inject-memory.mjs` et `PreToolUse` matcher `Bash` → `node .claude/hooks/guard-shell.mjs`, **idempotents** (même motif `already` que `PostToolUse`).
+
+Le test du Step 1 doit vérifier **les deux** : la présence des clés dans `claudeSettings` **et** l'existence des fichiers `templates/claude/hooks/*.mjs` (sinon le hook pointerait dans le vide).
+
+> `scripts/setup.mjs` est donc ajouté aux **Files** de cette task.
 
 - [ ] **Step 6 : `doctor.md`**
 
