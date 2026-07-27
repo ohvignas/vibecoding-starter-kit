@@ -1,5 +1,7 @@
 # `/init-vibecoding` — commande d'onboarding tout-en-un — Implementation Plan
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Le texte de `/help` qu'il recopie (`:389`) désigne `/init-vibecoding` comme « la 1re commande à taper » : le Lot D de `2026-07-27-remise-en-coherence.md` a tranché **une seule** réponse à « je commence par quoi ? », et c'est **`/help`**. L'état courant fait foi : `templates/commands/help.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Une commande `/init-vibecoding` (dans le plugin Cursor + scaffoldée) : l'agent **détecte** l'état du projet, puis **scaffolde via npx** (nouveau projet) **ou met à jour via `--refresh`** (projet existant), en posant les questions en langage simple et en déroulant l'onboarding — le terminal devient invisible pour le débutant.

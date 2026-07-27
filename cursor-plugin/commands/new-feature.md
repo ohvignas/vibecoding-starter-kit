@@ -30,27 +30,29 @@ Plan TDD, tâches bite-sized, **dérivées des critères d'acceptation** (chaque
 ### 3. Exécution (`superpowers:subagent-driven-development` + TDD)
 Tâche par tâche, test rouge → vert (cadre de délégation : **« Règle sous-agents »** dans `AGENTS.md`). Un `[À CLARIFIER]` bloquant → repasse par la gate.
 
-### 4. Review code (`superpowers:requesting-code-review` + `/code-review`)
-Bugs, conventions, sécurité du diff. Peut lancer le subagent `code-reviewer` sur le diff.
+### 4. Review code (`superpowers:requesting-code-review`)
+Bugs, conventions, sécurité du diff. Lance le sous-agent `code-reviewer` sur le diff : il existe sur les 3 assistants, la commande `/code-review` seulement sur Claude Code.
 
 ### 5. Test live — vérifie CHAQUE critère d'acceptation en vrai
 Lance l'app et **valide chaque `AC-n`** de la spec : navigateur pour le web, fenêtre pour desktop, smoke pour mobile. Screenshot(s) à l'appui (voir **« Règle de vérification »** dans `AGENTS.md`). Un AC non satisfait → retour étape 3 (`superpowers:systematic-debugging`).
 
-### 6. Sécu (`/security-review`)
-Revue sécurité des changements de la branche. Peut lancer le subagent `security-reviewer`.
+### 6. Sécu
+Revue sécurité des changements de la branche. Lance le sous-agent `security-reviewer` : il existe sur les 3 assistants, la commande `/security-review` seulement sur Claude Code.
 
 ### 6bis. Verdict (obligatoire avant commit)
 Lance **`verificateur`** en contexte frais : il ne voit que le diff + les `AC`. **PROUVÉ** requis pour continuer. **NON PROUVÉ** → retour à l'étape 3. **BLOQUÉ** → dis ce qui bloque, ne commit pas.
 
-### 7. Commit (`commit-commands:commit`, Conventional Commits)
+### 7. Commit
+`git add -A` puis `git commit` en **Conventional Commits** (`feat:`, `fix:`, `docs:`… + un corps qui dit le *pourquoi*). Aucun plugin de commit n'est installé par le kit : c'est `git`, directement.
 
-### 8. PR (`commit-commands:commit-push-pr`)
-Description = quoi + pourquoi + comment tester (les AC).
+### 8. PR
+`git push -u origin <branche>` puis `gh pr create --fill --base main`. Description = quoi + pourquoi + comment tester (les AC).
 
 ### 9. CI — surveille jusqu'au bout
 `gh pr checks <n>` puis `gh run watch <id> --exit-status`. Rouge → diagnostiquer (`superpowers:systematic-debugging`), pas de merge.
 
-### 10. Merge sur `dev` (`superpowers:finishing-a-development-branch`, squash)
+### 10. Merge sur **`main`** (`superpowers:finishing-a-development-branch`, squash)
+Le scaffold ne crée que `main` : n'invente aucune branche d'intégration intermédiaire.
 
 ## Fini quand
-Mergé sur `dev` (CI verte + review OK, un PR à la fois) **ET** **chaque critère d'acceptation testé en live** par l'agent. Tests unitaires + CI verte = nécessaires mais **pas** suffisants. Si un blocage externe empêche d'aller au bout → **dire exactement ce qui manque**.
+Mergé sur **`main`** (CI verte + review OK, un PR à la fois) **ET** **chaque critère d'acceptation testé en live** par l'agent. Tests unitaires + CI verte = nécessaires mais **pas** suffisants. Si un blocage externe empêche d'aller au bout → **dire exactement ce qui manque**.

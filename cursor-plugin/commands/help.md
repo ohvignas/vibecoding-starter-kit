@@ -1,9 +1,12 @@
 # /help — Les commandes dispo, expliquées simplement (runbook IA)
 
-L'utilisateur veut savoir **quelles commandes existent et à quoi elles servent**. Ne modifie RIEN. Affiche la liste ci-dessous en français simple, groupée. **Adapte à sa situation** : regarde si `docs/ROADMAP.md` existe — s'il n'existe pas, pousse `/new-project` ; s'il existe, pousse `/build`.
+L'utilisateur veut savoir **quelles commandes existent et à quoi elles servent**. Ne modifie RIEN. Affiche la liste ci-dessous en français simple, groupée.
+
+**Une seule réponse à « je commence par quoi ? » : `/help`** — il y est déjà, et cette page le mène partout ailleurs. Ensuite, **adapte à ce que tu vois** : pas de `.vibecoding.json` → `/init-vibecoding` ; pas de `docs/ROADMAP.md` → `/new-project` ; roadmap présente → `/build`.
 
 ## Pour démarrer / avancer
-- **/init-vibecoding** — **Le tout-en-un pour démarrer** : l'IA installe l'environnement pour toi (ou met à jour ton projet) et te guide pas à pas. C'est la 1re commande à taper.
+- **/help** — cette page : les 10 commandes et par où continuer. C'est **la seule à retenir**.
+- **/init-vibecoding** — **Le tout-en-un pour démarrer** : l'IA installe l'environnement pour toi (ou met à jour ton projet) et te guide pas à pas. Rien n'est encore installé → c'est par là.
 - **/new-project** — Lance un **nouveau produit de zéro** : l'IA t'aide à cadrer l'idée (PRD), l'architecture, la maquette, puis la feuille de route. C'est ton point de départ.
 - **/build** — Construit ton app **jalon par jalon** en suivant la roadmap, avec un résultat **visible à chaque étape**.
 - **/new-feature** — Ajoute **une** fonctionnalité à un projet qui existe déjà, proprement (plan → tests → review → PR).
@@ -30,9 +33,14 @@ Des assistants spécialisés, dans le dossier d'agents de ton assistant : `.curs
 - **test-runner** — teste une feature en vrai dans le navigateur/simulateur et rend un verdict.
 - **code-reviewer** · **security-reviewer** — relisent le code et la sécurité d'un changement.
 
-## Aide-mémoire (dis-le à l'utilisateur)
-- Tu démarres → **/new-project**
+## Aide-mémoire (dis-le à l'utilisateur — les 10, dans l'ordre où on s'en sert)
+- Tu ne sais plus quoi taper → **/help** (tu y es)
+- Rien n'est encore installé → **/init-vibecoding**
+- Tu démarres un produit → **/new-project**
 - Tu as déjà une roadmap → **/build**
+- Une fonctionnalité à ajouter → **/new-feature**
+- Changer le look → **/edit-design**
 - Tu es perdu → **/next**
 - Ça casse → **/sos**
-- Tu veux vérifier ton install → **/doctor**
+- Vérifier ton install → **/doctor**
+- Mettre en ligne → **/deploy**

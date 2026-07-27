@@ -5,7 +5,7 @@ Argument : `$ARGUMENTS` = ce qu'il faut changer dans l'UI.
 
 **AVANT de toucher au moindre fichier d'interface**, charge le contexte design (sinon tu codes hors-charte) :
 
-1. Charge les **4 skills design** : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `brand-guidelines`. Besoin d'une section entière ? Pioche un **bloc pré-fait** : `npx shadcn add @shadcnblocks/<bloc>` (gratuit sans clé ; `SHADCNBLOCKS_API_KEY` pour le pro), puis adapte-le à `docs/design.md`.
+1. Charge les **4 skills design** : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `brand-guidelines`. Besoin d'une section entière ? Pioche un **bloc pré-fait** : `npx shadcn add @shadcnblocks/<bloc>` (gratuit sans clé ; `SHADCNBLOCKS_API_KEY` pour le pro), puis adapte-le à `docs/design.md`. Le registry `@shadcnblocks` doit être déclaré dans `components.json` — le scaffold l'y met (`/new-project` Phase 7) ; s'il manque, ajoute-le avant d'appeler la commande.
 2. Lis **`docs/design.md`** (design system du projet : couleurs, typo, espacements, états, composants).
    - **Pas de `docs/design.md` ?** Ne code pas à l'aveugle : génère-en un **express** avec les 4 skills design (pattern connu + couleurs/typo/espacements de base) — ou, en shadcn/Tailwind, fais régler le thème sur **[tweakcn.com](https://tweakcn.com)** (gratuit, sans compte) et intègre son export CSS. Fais **valider**, écris-le dans `docs/design.md`, puis continue. (Version complète : `/new-project` Phase 5.)
    - **Refaire le thème entier** (stack web) : nouveau preset sur [ui.shadcn.com/create](https://ui.shadcn.com/create) → ré-applique les variables CSS du preset dans `globals.css` (ne touche pas aux fichiers de composants).
@@ -14,6 +14,7 @@ Argument : `$ARGUMENTS` = ce qu'il faut changer dans l'UI.
 Puis seulement :
 
 4. Édite l'UI demandée en **respectant le design system + la marque** (composants shadcn existants, tokens, espacements).
-5. **Re-screenshot** et compare : le rendu respecte-t-il `docs/design.md` ? Sinon, corrige avant de conclure. Sur stack web, vérifie la **cohérence PixelRAG** entre le rendu et `maquette/` avant de conclure.
+5. **Re-screenshot** et compare : le rendu respecte-t-il `docs/design.md` ? Un écart réel se corrige avant de conclure.
+6. Sur stack web, compare aussi le rendu à l'écran de `maquette/` — à l'œil sur les deux captures, ou avec **PixelRAG** s'il est installé. Cette comparaison d'images **alerte, elle ne tranche pas** (voir **« Règle de vérification »** dans `AGENTS.md`) : elle signale, c'est toi qui juges si l'écart est un vrai défaut ou du bruit de rendu.
 
 Rappel : la règle design permanente est déjà dans l'`AGENTS.md` du projet (issue de `templates/agents/design-rule.md`) — elle s'applique aussi hors de cette commande.

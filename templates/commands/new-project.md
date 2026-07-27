@@ -6,7 +6,7 @@ Va **phase par phase**, en français. **Chaque artefact attend la validation de 
 Argument : `$ARGUMENTS` = description libre de l'idée.
 > Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), **demande la description à l'utilisateur** avant de commencer.
 
-> **Attribution** : la structure des templates PRD & architecture ci-dessous est **adaptée de BMAD-METHOD** (MIT © 2025 BMad Code, LLC). Le format `DESIGN.md` suit le spec **google-labs-code/design.md** (Apache-2.0, Google Labs). Adaptée/traduite ; « BMAD » est une marque de BMad Code, LLC (non affiliée).
+> **Attribution** : la structure des templates PRD & architecture (`docs/templates/PRD.md`, `docs/templates/architecture.md`) est **adaptée de BMAD-METHOD** (MIT © 2025 BMad Code, LLC) — l'attribution est répétée en tête de chacun. Le format `DESIGN.md` suit le spec **google-labs-code/design.md** (Apache-2.0, Google Labs). Adaptée/traduite ; « BMAD » est une marque de BMad Code, LLC (non affiliée).
 
 ## Ce qu'on va faire ensemble — explique le parcours (à dire à l'utilisateur, EN PREMIER)
 Avant toute question, dis-lui en **langage simple** ce qu'on va faire et ce qu'il obtiendra :
@@ -39,27 +39,9 @@ Le vocabulaire technique (personas, JTBD, exigences…) va dans le **document** 
 
 ## Phase 2 — PRD complète → `docs/PRD.md` (gate)
 
-Rédige une **PRD** en suivant ce template (colonne 100 %, chaque section = un titre + le contenu réel). Ordre à respecter :
+**Ouvre `docs/templates/PRD.md`** et suis-le section par section (vision, utilisateur cible et parcours `UJ-*`, glossaire, fonctionnalités en `FR-*`, non-objectifs, périmètre MVP, métriques, questions ouvertes, index des hypothèses) — il porte aussi les clusters par type de produit et la checklist qualité. Écris le résultat dans **`docs/PRD.md`** ; le template reste intact.
 
-1. **Vision** — quoi, pour qui, pourquoi ça compte. Assez clair pour tenir tout seul.
-2. **Utilisateur cible**
-   - *Jobs To Be Done* — le besoin émotionnel/social/fonctionnel/contextuel (même « c'est pour moi » est valide).
-   - *Non-utilisateurs (v1)* — qui ce n'est **pas** (quand la frontière n'est pas évidente).
-   - *Parcours utilisateurs clés* — récits avec persona nommé, numérotés **UJ-1 … UJ-N** (contexte, état d'entrée, chemin 3-5 étapes, climax, résolution).
-3. **Glossaire** — les termes du produit, définis **exactement**. Interdit d'introduire un synonyme ailleurs.
-4. **Fonctionnalités** — une sous-section par feature (4.1, 4.2…) :
-   - *Description* comportementale (réalise UJ-X), avec tags `[HYPOTHÈSE]` inline.
-   - *Exigences fonctionnelles* en blocs `#### FR-1 : {nom}` → prose « [Acteur] peut [capacité] sous [conditions]. Réalise UJ-X. » + **Conséquences (testables)** en puces + *Hors-scope* optionnel.
-   - *NFR spécifiques* + *Notes* `[NOTE POUR PM]` optionnels.
-5. **Non-objectifs (explicites)** — ce que le produit **n'est pas** / ne fera **pas** en v1. Coupe le « tant qu'on y est, ajoutons… » à tous les niveaux.
-6. **Périmètre MVP** — *Dans le scope* (puces nettes) / *Hors scope MVP* (chaque item + raison ; marque ce qui est reporté en v2/v3).
-7. **Métriques de succès** — *Primaires* / *Secondaires* / *Contre-métriques (à NE PAS optimiser)*. Format `**SM-1** : métrique — définition, cible. Valide FR-X.`
-8. **Questions ouvertes** — numérotées. Deviennent des tickets/recherches, pas des trous silencieux.
-9. **Index des hypothèses** — chaque `[HYPOTHÈSE]` du document, remonté ici pour **confirmation explicite** une par une.
-
-**Clusters à ajouter selon le type de produit** (n'inclus que le pertinent) : *grand public* → Esthétique & ton, Architecture de l'information, Monétisation, Plateforme ; *entreprise* → Parties prenantes & approbations, Risques & mitigations, ROI, SLA/RTO/RPO, Intégrations, Rollout, Gouvernance des données ; *régulé* → Conformité (RGPD, HIPAA, PCI-DSS, WCAG 2.1 AA…) ; *produit dev* → Contrats d'API, Versioning/dépréciation, Budgets de perf.
-
-**Checklist qualité (avant validation)** : prêt-à-décider · substance (pas de remplissage) · cohérence stratégique · « fini » clair · honnêteté du scope · utilisable par les phases suivantes · forme adaptée à l'enjeu. → **validation utilisateur**.
+Ne saute aucune section : ce que le PRD ne dit pas, la roadmap ne le construira pas. → **validation utilisateur**.
 
 ---
 
@@ -70,17 +52,9 @@ La stack a été **choisie par le wizard** : lis-la dans `AGENTS.md` (et les rè
 
 ## Phase 4 — Tech spec / architecture → `docs/superpowers/specs/<date>-<projet>-architecture.md` (gate)
 
-Écris une **spine d'architecture** : on ne fixe QUE les **invariants** (les décisions durables qu'un futur builder ne peut **pas** déduire du code). Le reste (arbre complet, détails) appartient au code une fois écrit. Sections :
+**Ouvre `docs/templates/architecture.md`** et suis-le : on ne fixe QUE les décisions durables qu'un futur builder ne peut **pas** déduire du code (paradigme, `AD-*` + diagramme de dépendances, conventions de cohérence, stack, graine structurelle, map capacité → architecture, différé). Le template porte aussi sa checklist.
 
-1. **Paradigme de design** — nomme le pattern (un pattern connu charge tout un modèle gratuitement) + mappe ses couches aux dossiers/namespaces.
-2. **Invariants & règles** — le cœur durable. Un bloc par décision `### AD-1 — {décision}` avec **Lie** (ce qui est concerné), **Empêche** (la divergence évitée), **Règle** (applicable). Ajoute un **diagramme de dépendances** (Mermaid, jamais vide).
-3. **Conventions de cohérence** — là où des builders indépendants dériveraient : nommage (entités/fichiers/interfaces/events), formats (ids/dates/forme d'erreur/enveloppes), état & transverse (mutations/erreurs/logging/config/auth).
-4. **Stack** — nom + version uniquement (graine ; le code en devient propriétaire ensuite).
-5. **Graine structurelle** — les formes qu'il vaut la peine de fixer au démarrage : vue système, **déploiement & environnements + topologie infra externe** (ne PAS laisser silencieux), **ERD** cœur (entités + relations, pas les colonnes), arbre source minimal.
-6. **Map capacité → architecture** — chaque capacité du PRD : *vit dans* / *gouvernée par*.
-7. **Différé** — décisions repoussées, chacune avec la raison qu'elle peut attendre.
-
-**Checklist** : chaque AD est-il vraiment un invariant non-évident ? déploiement explicite ? sécurité/conformité traitée (AD ou différé, pas silence) ? → **validation utilisateur**.
+Écris le résultat dans `docs/superpowers/specs/<date>-<projet>-architecture.md`. → **validation utilisateur**.
 
 ---
 
@@ -122,8 +96,9 @@ Puis **affine par un vrai aller-retour, une question à la fois** (mode coaching
    - **charge les skills design** → voir **`AGENTS.md` → section « Règle design »** (la liste de référence : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `brand-guidelines`) ;
    - lit **`docs/design.md`** (preset + tokens) — **même source pour tous = maquette cohérente** ;
    - produit **sa page** calquée shadcn/ui (composants type shadcn, tokens du preset, Tailwind CDN) → écrit `maquette/parts/<ecran>.html` ;
-   - pour aller vite : pioche des **blocs pré-faits** `npx shadcn add @shadcnblocks/<bloc>` (gratuits sans clé), puis adapte-les au preset ;
-   - **auto-vérifie** : ouvre sa `part` dans le navigateur + screenshot, corrige si c'est cassé + **cohérence PixelRAG** vs l'écran maquette (voir « Règle de vérification »), **avant** de la rendre.
+   - pour aller vite : **repère** les blocs shadcnblocks qui collent (`hero`, `pricing`, `features`…) et recopie leur structure en HTML/Tailwind CDN. On ne les **installe pas** ici : le registry n'est câblé qu'en Phase 7, sur un projet scaffoldé — la maquette, elle, n'est qu'un dossier de pages ;
+   - **auto-vérifie avant de rendre sa part** : ouvre-la dans le navigateur + screenshot, corrige si c'est cassé ;
+   - puis compare à l'écran maquette de référence, à l'œil ou avec **PixelRAG** s'il est installé : cette comparaison d'images **alerte, elle ne tranche pas** (voir « Règle de vérification »).
 3. **Assemble** les parts en **UN SEUL fichier `maquette/index.html`** — chaque écran = une **section pleine largeur, titrée, empilée**. Fais une **passe de cohérence** (mêmes boutons/espacements/typo partout), puis un seul fichier à ouvrir pour tout voir.
 - **Stitch connecté** : à la place, un `generate_screen_from_text` par écran (skill `stitch::generate-design`) en passant le design → importe dans `maquette/`.
 - **Mobile** : sous-agents calqués **NativeWind / patterns RN** (pas shadcn).
@@ -157,10 +132,10 @@ Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX 
 
    **Un seul fichier d'install** : `docs/A-FAIRE.md` = gestes de base (posés par le wizard) **+** la section « Pour ton projet » que tu viens d'ajouter. Ne crée **aucun** autre doc d'install.
 2. **Audit complet de complétude — AVANT d'écrire la roadmap.** But : ne **rien** oublier, pour que la roadmap couvre **tout** le produit designé (**toutes les features**, pas un sous-ensemble — on ne coupe pas).
-   - **Analyse EXHAUSTIVE de la maquette** (`maquette/`) avec **PixelRAG** (`pixelshot` sur chaque écran) + lecture des fichiers : liste **chaque écran** ET **chaque élément** (bouton, champ, liste, filtre, onglet, modale, menu) et les **états** (vide/chargement/erreur/succès). PixelRAG te fait **voir** tout ce que le design contient — l'IA rate ce qu'elle ne regarde pas.
+   - **Analyse EXHAUSTIVE de la maquette** (`maquette/`) : **lis** chaque fichier ET **regarde** chaque écran (screenshot ; **PixelRAG** rend le coup d'œil plus fiable s'il est installé, il ne remplace pas la lecture). Liste **chaque écran** ET **chaque élément** (bouton, champ, liste, filtre, onglet, modale, menu) et les **états** (vide/chargement/erreur/succès) — l'IA rate ce qu'elle ne regarde pas.
    - **Pour chaque page**, détermine **tout ce dont elle a besoin pour FONCTIONNER** : vraies **données** (quel modèle, d'où), **features** déclenchées, **connexions backend** (auth, API, domaines), **permissions**, **états**.
    - **Croise** avec le PRD (chaque feature, chaque `UJ-*`) et les domaines. Appuie-toi sur les **docs/skills** de la stack — **rien d'inventé**.
-   - Produis un **inventaire de complétude** (écrans × éléments × données × features × états × domaines) : c'est la **base** de la roadmap.
+   - Remplis l'**inventaire de complétude** dans **`docs/agents/inventaire.md`** (le tableau y est déjà : une ligne par élément — écran × élément × donnée réelle × feature du PRD × états × jalon). C'est la **base** de la roadmap, et le contrat de couverture que les critiques reliront.
 3. **Roadmap exhaustive** : remplis `docs/ROADMAP.md` (squelette déjà présent) en **pensant à tout** — **Fondations d'abord**, puis balaie les dimensions : Modèle de données, Auth, **réaliser chaque écran/flux de la maquette**, **chaque feature du PRD**, **domaines sélectionnés**, États (chargement/vide/erreur), Tests, passe sécu, Déploiement, Docs.
 
    Chaque jalon précise **les données** : quelles **vraies** données l'écran montre/écrit, d'où elles viennent (modèle de données, API, auth), et leur **câblage réel** — **zéro mock, zéro fausse donnée**. Si le modèle de données manque, il passe **avant** l'écran qui l'utilise.
@@ -169,7 +144,7 @@ Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX 
    - **`critique-produit`** (Vera) — features/écrans/parcours oubliés ;
    - **`critique-donnees`** (Marc) — données réelles, modèle, câblage, zéro mock, permissions ;
    - **`critique-ux`** (Lina) — états vide/chargement/erreur, impasses, responsive, accessibilité.
-   Donne à chacun : maquette + PRD + inventaire + roadmap. Chaque `MANQUE` doit citer sa **preuve** (l'écran/élément de la maquette ou la ligne du PRD) — **sans preuve, jette-le**. Puis **dédoublonne** les rapports (les lentilles se recoupent) et intègre dans la roadmap.
+   Donne à chacun les quatre mêmes chemins : `maquette/`, `docs/PRD.md`, l'inventaire `docs/agents/inventaire.md` et `docs/ROADMAP.md`. Chaque `MANQUE` doit citer sa **preuve** (l'écran/élément de la maquette ou la ligne du PRD) — **sans preuve, jette-le**. Puis **dédoublonne** les rapports (les lentilles se recoupent) et intègre dans la roadmap.
 
    **Deux passes MAXIMUM** (la 2ᵉ ne relit que ce qui vient d'être ajouté). Ne boucle pas au-delà : au-delà de 2 tours, une revue multi-agents produit surtout des **faux positifs** et des sur-corrections — on gagne du bruit, pas de la qualité. S'il reste un doute après la 2ᵉ passe, **tranche avec l'utilisateur**, pas avec un 3ᵉ tour.
 

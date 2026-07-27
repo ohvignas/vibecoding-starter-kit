@@ -1,4 +1,8 @@
-# État courant du projet — lu/écrit par les agents. Complété au fil du build.
+# État courant du projet. Tout le monde le LIT ; un seul l'ÉCRIT.
+# Seul écrivain : le sous-agent `verificateur`, en fin de mission. L'orchestrateur et les autres
+# agents le lisent puis rendent leur constat — deux écrivains, et l'état ne veut plus rien dire.
+# Les valeurs sont celles de l'énumération ci-dessous, en minuscules : `blocked`, jamais `BLOQUÉ`
+# (PROUVÉ / NON PROUVÉ / BLOQUÉ sont des VERDICTS de la « Règle Preuve », pas des valeurs d'ici).
 status: draft            # draft | in-progress | in-review | done | blocked
 current_milestone: null  # ex. 03-authentification
 current_task: null

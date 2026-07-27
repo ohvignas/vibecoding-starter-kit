@@ -23,6 +23,11 @@ export function kitOwnedFiles(stack, assistant) {
   if (!dir) throw new Error(`Assistant inconnu : ${assistant}`);
   const pairs = COMMANDS.map((c) => ({ from: `templates/commands/${c}.md`, to: `${dir}/${c}.md` }));
 
+  // Templates que /new-project ouvre (PRD, architecture) : 100 % kit, l'utilisateur écrit dans
+  // docs/PRD.md et la spec, jamais ici → régénérables sans risque par `--refresh`.
+  pairs.push({ from: 'templates/prd/PRD.md', to: 'docs/templates/PRD.md' });
+  pairs.push({ from: 'templates/specs/architecture.md', to: 'docs/templates/architecture.md' });
+
   // Les 7 agents du crew, dans le dossier natif de l'assistant. Cursor ne comprend pas le
   // frontmatter Claude Code → transform 'cursor-agent' (appliqué par refresh.mjs).
   for (const a of CREW) {

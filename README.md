@@ -66,7 +66,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🎨 | **Design-first → maquette** | on fixe d'abord le **design system** (`design.md`, thème composé en visuel sur [shadcn/ui create](https://ui.shadcn.com/create)) **puis** la maquette (**un sous-agent par écran**, en shadcn/ui) ; **Stitch** ou tes exports marchent aussi. La **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné** |
 | 🎓 | **Mode apprentissage** | l'IA **explique** ce qu'elle construit et te pose **une question de compréhension** à chaque jalon — tu comprends, tu ne subis pas |
 | 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code |
-| 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` (revenir au dernier point vert) ; **règle des 3 essais** anti-boucle infernale ; tags git par jalon |
+| 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` (revenir au dernier point vert) ; **Règle Preuve : 3 tentatives** puis `BLOQUÉ`, anti-boucle infernale ; tags git par jalon |
 | 🚫 | **Anti-flemme** | l'IA **finit le travail** : zéro placeholder / `// TODO` / stub, zéro report « plus tard » ; « fini » = **vérifié** (test vert + résultat à l'écran). Règle non négociable dans `AGENTS.md` + `.cursor/rules/` |
 | 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
 | 🔄 | **Mise à jour pro** | `node scripts/update.mjs` ajoute les fichiers neufs ; `--refresh` **régénère aussi** les règles (`AGENTS.md`, entre marqueurs) + runbooks + subagents — ta zone perso, `src/` et `docs/` **jamais touchés** (`--dry-run` pour prévisualiser) |
@@ -199,13 +199,13 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 | Commande | Rôle |
 |---|---|
 | **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **design system** (`design.md`, thème shadcn) **d'abord**, **puis maquette** (un **sous-agent par écran** en shadcn/ui, ou **Stitch**/la tienne) + **domaines** + **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) |
-| **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » ou « enchaîne tout » |
-| **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `dev` |
+| **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » à chaque jalon (`--all` reste désactivé en mode apprentissage) |
+| **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `main` |
 | **`/edit-design`** | Charge les **4 skills design** + `design.md` **avant** de toucher l'UI (+ blocs pré-faits `@shadcnblocks` au besoin) |
 | **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
 | **`/next`** | « Je fais quoi maintenant ? » — l'IA lit l'état du projet et te donne ta **prochaine action** |
 | **`/sos`** | Quelque chose casse : diagnostic **rassurant** + 3 sorties (réparer / mettre de côté / revenir au dernier point vert) |
-| **`/deploy`** | Mettre l'app **en ligne** selon la stack (Convex + Vercel/Netlify · Expo EAS · electron-builder) — secrets prod jamais commités |
+| **`/deploy`** | Mettre l'app **en ligne** selon la stack (Convex + Vercel/Netlify · Expo EAS · Electron Forge `npm run make` · Astro statique) — gate CI verte + revue sécu, secrets prod jamais commités |
 
 Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
 

@@ -1,5 +1,7 @@
 # Finalisation (reste de l'audit) Implementation Plan
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses prescriptions ont été invalidées : la commande `/debug` (`:21`-`:23`) a été supprimée au Lot A de `2026-07-27-remise-en-coherence.md` ; la « règle des 3 essais » (`:23`) s'appelle la **Règle Preuve** et compte **3 tentatives** ; le déploiement desktop (`:27`) passe par **Electron Forge** (`npm run make`) — ce que le scaffold du kit installe (`stacks/desktop/AGENTS.md:24`) — pas par `electron-builder`. L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [ ]`).
 
 **Goal:** Couvrir les axes restants de l'audit (P1 : debug, déploiement, mise à jour du kit, anti-pourrissement ; P2 : coûts, dossier formateur, question caveman).

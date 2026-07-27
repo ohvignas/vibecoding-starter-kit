@@ -468,17 +468,28 @@ const LIGNES_APPROUVEES = [
   "- Tu conclus par un **statut**, jamais un avis : `PROUVÉ` / `NON PROUVÉ` / `BLOQUÉ` — sur **ta** mission seulement, et jamais d'auto-`PROUVÉ` sur du code que tu as écrit ; prononcer un **jalon** `PROUVÉ` reste au `verificateur`, en contexte frais. Les critiques rendent des `MANQUE : … — PREUVE : …`, ou « complet ».",
   "Tu es le **vérificateur**. Tu ne vois **que** le diff et les critères d'acceptation — pas le raisonnement qui les a produits. C'est ce détachement qui te rend utile : tu ne peux pas hériter du biais « c'est bon ».",
   // Les commandes : elles pilotent le gate, une attribution fautive y vaut autant qu'ailleurs.
-  "5. **Gate avant de cocher** : lance le sous-agent **`verificateur`** (contexte frais, diff du jalon + critères), puis **`security-reviewer`** sur les features touchées. Tant que l'un des deux ne répond pas **PROUVÉ**, le jalon n'est **pas** coché : corrige, ou passe-le en `BLOQUÉ` dans `docs/agents/state.yaml`.",
-  "14. **Agents du crew (7)** présents dans le dossier de ton assistant : `.cursor/agents/` (Cursor) · `.claude/agents/` (Claude Code) · `docs/agents/crew/` (Codex). Attendus : `verificateur`, `test-runner`, `code-reviewer`, `security-reviewer`, `critique-produit`, `critique-donnees`, `critique-ux`. Manquants → `npx create-vibecoding-kit --refresh`.",
-  "15. **MCP de test branché** : `playwright` (saas, vitrine) · `maestro` (mobile) · `chrome-devtools` (desktop). Sans lui, le sous-agent `test-runner` ne peut rien prouver et répondra `BLOQUÉ`.",
+  // `/build` étape 5 : l'E2E est DÉLÉGUÉ (verify-rule §3) — `test-runner` rend un rapport, il ne
+  // prononce aucun verdict ; et « ton propre test ne prouve rien » = l'interdit d'auto-`PROUVÉ`.
+  "5. **Rejoue le parcours en vrai, mais pas dans ce fil** : délègue l'end-to-end au sous-agent **`test-runner`** (contexte frais, MCP Playwright en web · Maestro en mobile · chrome-devtools en desktop) avec le flux, les critères du jalon et l'écran de départ. Toi, tu as écrit le code : ton propre test ne prouve rien.",
+  // `/build` étape 6 : le gate d'un jalon porteur de features = `verificateur` + `security-reviewer`,
+  // exactement la décision de proof-rule ; et l'orchestrateur n'écrit PAS `state.yaml` (verify-rule).
+  "6. **Gate avant de cocher** : lance le sous-agent **`verificateur`** (contexte frais, diff du jalon + critères), puis **`security-reviewer`** sur les features touchées. Tant que l'un des deux ne répond pas **PROUVÉ**, le jalon n'est **pas** coché : corrige, ou arrête-toi et dis ce qui bloque. Tu ne touches pas à l'état du projet : le `verificateur` est le **seul écrivain de `docs/agents/state.yaml`** (il y consigne `status`, `repair_attempts`, `blocked_reason`).",
+  // `/deploy` : la sécurité de ce qui part en prod est le périmètre du `security-reviewer` — c'est
+  // le volet « sécurité » du couple exigé par proof-rule pour une feature, pas un verdict de jalon.
+  "2. **Sécurité** : lance le sous-agent **`security-reviewer`** sur ce qui part en production. Son **`PROUVÉ`** est requis ; `NON PROUVÉ` ou `BLOQUÉ` → on ne déploie pas, on corrige.",
+  "15. **Agents du crew (7)** présents dans le dossier de ton assistant : `.cursor/agents/` (Cursor) · `.claude/agents/` (Claude Code) · `docs/agents/crew/` (Codex). Attendus : `verificateur`, `test-runner`, `code-reviewer`, `security-reviewer`, `critique-produit`, `critique-donnees`, `critique-ux`. Manquants → `npx create-vibecoding-kit --refresh`.",
+  "16. **MCP de test branché** : `playwright` (saas, vitrine) · `maestro` (mobile) · `chrome-devtools` (desktop). Sans lui, le sous-agent `test-runner` ne peut rien prouver et répondra `BLOQUÉ`.",
   "- **critique-produit** (Vera) — « qu'est-ce qu'on a oublié ? » features, écrans, parcours.",
   "- **critique-donnees** (Marc) — « d'où vient cette donnée ? » modèle, câblage réel, zéro mock.",
   "- **critique-ux** (Lina) — « et quand ça se passe mal ? » états vide/erreur, responsive, accessibilité.",
   "- **verificateur** — le juge : il ne voit que le diff et les critères, et tranche **PROUVÉ / NON PROUVÉ / BLOQUÉ**. À lancer avant de dire qu'une étape est finie.",
   "- **test-runner** — teste une feature en vrai dans le navigateur/simulateur et rend un verdict.",
   "- **code-reviewer** · **security-reviewer** — relisent le code et la sécurité d'un changement.",
-  "Bugs, conventions, sécurité du diff. Peut lancer le subagent `code-reviewer` sur le diff.",
-  "Revue sécurité des changements de la branche. Peut lancer le subagent `security-reviewer`.",
+  // Ces deux-là relisent, elles ne tranchent pas : le `PROUVÉ` de /new-feature reste à l'étape 6bis
+  // (ligne suivante). Elles disent en plus la vérité que loop-section dit déjà — la commande
+  // `//code-review` n'existe que sur Claude Code, le sous-agent existe partout.
+  "Bugs, conventions, sécurité du diff. Lance le sous-agent `code-reviewer` sur le diff : il existe sur les 3 assistants, la commande `/code-review` seulement sur Claude Code.",
+  "Revue sécurité des changements de la branche. Lance le sous-agent `security-reviewer` : il existe sur les 3 assistants, la commande `/security-review` seulement sur Claude Code.",
   "Lance **`verificateur`** en contexte frais : il ne voit que le diff + les `AC`. **PROUVÉ** requis pour continuer. **NON PROUVÉ** → retour à l'étape 3. **BLOQUÉ** → dis ce qui bloque, ne commit pas.",
   "- **`critique-produit`** (Vera) — features/écrans/parcours oubliés ;",
   "- **`critique-donnees`** (Marc) — données réelles, modèle, câblage, zéro mock, permissions ;",
@@ -487,6 +498,8 @@ const LIGNES_APPROUVEES = [
   // Les graines que les sous-agents reçoivent par leur chemin.
   "La ligne de fin de mission : `verificateur` et `security-reviewer` écrivent la leur ; les autres sous-agents, bridés en écriture, la **rendent** dans leur rapport et c'est l'**orchestrateur** qui l'ajoute ici.",
   "Le **contrat de couverture** du projet : tout ce que la maquette et le PRD promettent, ligne par ligne. Produit par `/new-project` **avant** la roadmap (c'en est la base), relu par les trois critiques (`critique-produit`, `critique-donnees`, `critique-ux`). Ce qui n'est pas ici ne sera pas construit.",
+  // `state.yaml` : un fichier lu par tous, écrit par un seul. Même attribution que verify-rule.md.
+  "# Seul écrivain : le sous-agent `verificateur`, en fin de mission. L'orchestrateur et les autres",
   // L'identité des 7 : ajouter un agent est un acte délibéré, pas un effet de bord.
   ...CREW.map((a) => `name: ${a}`),
 ];

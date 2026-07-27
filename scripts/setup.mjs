@@ -152,6 +152,15 @@ async function main() {
   try { trackDir('docs/memory/', copyDirIfAbsent(path.join(args.source, 'templates/memory'), path.join(projectDir, 'docs/memory'), opt)); }
   catch (e) { failed.push(`docs/memory (${e.message})`); }
 
+  // Templates que /new-project OUVRE au lieu de les recopier dans son propre texte (Lot D9) :
+  // le runbook les cite par ces chemins-là, ils doivent donc exister dans le projet généré.
+  try {
+    trackDir('docs/templates/ (PRD + architecture)', [
+      copyIfAbsent(path.join(args.source, 'templates/prd/PRD.md'), path.join(projectDir, 'docs/templates/PRD.md'), opt),
+      copyIfAbsent(path.join(args.source, 'templates/specs/architecture.md'), path.join(projectDir, 'docs/templates/architecture.md'), opt),
+    ]);
+  } catch (e) { failed.push(`docs/templates (${e.message})`); }
+
   if (args.assistant === 'cursor') {
     try {
       trackDir('.cursor/hooks.json + .cursorignore (mémoire auto)', [

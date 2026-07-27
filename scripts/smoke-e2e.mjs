@@ -36,6 +36,9 @@ for (const f of [
   // Mémoire partagée du crew : les agents la reçoivent PAR SON CHEMIN — si le fichier n'est pas
   // là, ils lisent le vide et l'inventaire de complétude n'a plus d'existence (Lot C).
   'docs/agents/JOURNAL.md', 'docs/agents/state.yaml', 'docs/agents/inventaire.md',
+  // Templates que /new-project OUVRE au lieu de les recopier (Lot D9) : il les cite par ces
+  // chemins-là — absents, la Phase 2 et la Phase 4 renvoient dans le vide.
+  'docs/templates/PRD.md', 'docs/templates/architecture.md',
 ]) check(`fichier ${f}`, fs.existsSync(path.join(project, f)));
 
 check('dépôt git initialisé (.git présent)', fs.existsSync(path.join(project, '.git')));
