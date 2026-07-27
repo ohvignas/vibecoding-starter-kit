@@ -26,6 +26,15 @@ test('frontmatter : skills en liste, AUCUN mcpServers (aucun MCP n\'est présent
   }
 });
 
+test('règles portées par chaque agent (il ne voit pas AGENTS.md)', () => {
+  for (const a of AGENTS) {
+    const t = read(`templates/agents/subagents/${a}.md`);
+    assert.match(t, /3 tentatives/, `${a} : règle d'arrêt`);
+    assert.match(t, /ne (modifies?|touches?)[^.]*tests?/i, `${a} : tests intouchables`);
+    assert.match(t, /Règles que tu portes/, `${a} : bloc de règles présent`);
+  }
+});
+
 test('proof-rule : statuts, hiérarchie, interdits, max 3 tentatives', () => {
   const t = read('templates/agents/proof-rule.md');
   for (const s of ['PROUVÉ', 'NON PROUVÉ', 'BLOQUÉ', 'sortie brute', 'ROUGE avant', 'requête réseau', 'contexte frais', 'skip', '3 tentatives']) {

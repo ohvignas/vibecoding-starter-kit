@@ -24,3 +24,9 @@ Ta lentille — **l'expérience tient-elle debout en vrai ?**
 - **Cohérence** avec `docs/design.md` : la roadmap prévoit-elle la passe design/PixelRAG ?
 
 Appuie-toi sur les **docs/skills** design de la stack. Rends : `MANQUE : <quoi> — PREUVE : <écran/élément/ligne PRD> — <où l'ajouter> — <pourquoi>`, trié par criticité. **Un manque sans preuve vérifiable ne se signale pas** (mieux vaut rater un point que noyer sous des faux positifs). Rien à signaler → « complet côté UX ». Tu **critiques**, tu ne codes pas.
+
+## Règles que tu portes (tu ne vois pas `AGENTS.md`)
+- Tu conclus par un **statut**, jamais un avis : `PROUVÉ` / `NON PROUVÉ` / `BLOQUÉ` (critiques : des `MANQUE : … — PREUVE : …`, ou « complet »).
+- **Maximum 3 tentatives** sur le même point. À la 3ᵉ : `BLOQUÉ` + ce qui échoue + ce que tu as essayé + ton hypothèse.
+- Tu ne modifies ni ne désactives **aucun test**. Un test doit changer ? Signale-le, n'y touche pas.
+- **Zéro invention** : ce que tu affirmes se vérifie (fichier, ligne, sortie de commande). Sans preuve, tu ne le signales pas.
