@@ -21,15 +21,30 @@ const ECRIVAINS = ['verificateur', 'security-reviewer'];
 const BRIDES = ['test-runner', 'code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux'];
 const CRITIQUES = ['critique-produit', 'critique-donnees', 'critique-ux'];
 
-// L'ordre d'écrire le journal. Une liste blanche des 4 tournures du jour ne protège de rien :
-// « Chaque sous-agent consigne son passage ici en finissant » réintroduit la contradiction sans
-// en employer une seule. On reconnaît donc un VERBE d'inscription suivi de son OBJET.
+// `\b` est ASCII : entre une espace et « é » il n'y a AUCUNE frontière de mot, donc
+// `/\bécris\b/` ne matche jamais « écris » (alors que `/\becris\b/` matche « ecris »). Les
+// quatre alternatives en « é » de VERBE_ECRIRE (`écris`, `écrit`, `écrivent`, `écrivez`) et
+// leurs formes en `-y` étaient donc du code mort. Tout motif de ce fichier qui peut rencontrer
+// une lettre accentuée passe par cette borne-ci, qui s'appuie sur `\p{L}` et impose `u`.
+const B = (s) => `(?<!\\p{L})(?:${s})(?!\\p{L})`;
+
+// L'ordre d'écrire le journal. Filet SECONDAIRE, et assumé comme tel : énumérer les verbes est
+// une course perdue (« consigne », « appose », « paraphe », « en ajoutant »…). Le filet
+// principal est la liste blanche des phrases à sujet universel (R1), qui ne regarde aucun verbe.
 const VERBE_ECRIRE = 'écris|écrit|écrivent|écrivez|ajoute|ajoutes|ajouter|ajoutent|consigne|consignes|consigner|consignent|note|notes|noter|notent|inscris|inscrit|inscrire|inscrivent|renseigne|renseignes|complète|complètes|journalise|journalises|reporte|reportes';
 const OBJET_LIGNE = '(?:une|ta|sa|ma|leur|cette|la) ligne|(?:ton|son|leur) passage|ici';
 const ORDRE_D_ECRIRE = new RegExp(
-  `\\b(?:${VERBE_ECRIRE})-y\\b|\\b(?:${VERBE_ECRIRE})\\b[^.\\n]{0,15}?\\b(?:${OBJET_LIGNE})\\b`, 'i');
-// Un sujet qui englobe tout le crew — donc les cinq bridés, qui ne peuvent pas exécuter l'ordre.
-const SUJET_UNIVERSEL = /\b(?:chaque|tout|toute|tous|toutes|chacun|n'importe quel)\b[^.\n]{0,25}?\b(?:sous-)?agents?\b|\bles (?:sous-)?agents\b/i;
+  `${B(`(?:${VERBE_ECRIRE})-y`)}|${B(VERBE_ECRIRE)}[^.\\n]{0,15}?${B(OBJET_LIGNE)}`, 'iu');
+
+// Le SUJET universel, lui, est un ensemble FERMÉ : le français n'a qu'une poignée de
+// quantificateurs universels, et aucun néologisme n'en crée. C'est le sujet — jamais le verbe —
+// qui fait qu'une consigne atteint les cinq bridés, incapables de l'exécuter. D'où R1 : on
+// n'énumère plus les fautes, on énumère les phrases à sujet universel AUTORISÉES.
+const ACTEUR = '(?:sous-)?agents?|membres?|relecteurs?|critiques?|crew|équipe';
+const DETERMINANT_UNIVERSEL = 'chaque|tout|toute|tous|toutes|aucun|aucune|nul|nulle|n\'importe quel|n\'importe quelle';
+const PRONOM_UNIVERSEL = 'chacun|chacune|quiconque|personne|on|tous|toutes';
+const SUJET_UNIVERSEL = new RegExp(
+  `${B(DETERMINANT_UNIVERSEL)}[^.\\n]{0,25}?${B(ACTEUR)}|${B('les')}\\s+${B('(?:sous-)?agents')}|${B(PRONOM_UNIVERSEL)}`, 'iu');
 
 test('C1 — aucun agent bridé en écriture ne reçoit l\'ordre d\'écrire le journal', () => {
   for (const a of BRIDES) {
@@ -142,13 +157,38 @@ test('R1 — la graine du journal n\'ordonne pas d\'écrire aux agents bridés q
   assert.deepEqual(lecteurs, BRIDES, 'les cinq bridés reçoivent l\'ordre de lire exactement ce fichier');
 
   const seed = read('templates/journal/JOURNAL.md');
-  // Tout ordre d'écrire doit être ATTRIBUÉ à quelqu'un qui a le droit d'écrire. Un sujet
-  // universel (« chaque agent », « chaque sous-agent »…) atteint mécaniquement les cinq bridés.
+  const phrases = seed.split(/(?<=[.;])\s+|\n/).map((p) => p.trim()).filter(Boolean);
+
+  // LISTE BLANCHE. Une phrase à sujet universel s'adresse mécaniquement aux cinq bridés :
+  // elle n'est admise que si elle est LITTÉRALEMENT l'une de celles-ci — aujourd'hui la
+  // lecture, et la nature append-only du fichier. Aucune autre ne passe, quel que soit son
+  // verbe : « termine sa mission en ajoutant sa ligne », « appose sa trace », « paraphe sa
+  // mention » tombent sans qu'aucun de ces mots n'ait été prévu. Élargir cette liste est un
+  // acte délibéré, relu — pas un effet de bord d'une reformulation.
+  const PHRASES_UNIVERSELLES_AUTORISEES = [
+    'Chaque agent **lit ce fichier avant** de commencer — c\'est la mémoire partagée du crew.',
+    'On n\'efface jamais, on ajoute.',
+  ];
+  // La liste blanche se vérifie elle-même : périmée, elle ne protège plus ; et on n'y glisse
+  // pas un ordre d'écriture pour le faire passer.
+  for (const p of PHRASES_UNIVERSELLES_AUTORISEES) {
+    assert.ok(phrases.includes(p), `liste blanche périmée : « ${p} » ne figure plus dans la graine`);
+    assert.ok(SUJET_UNIVERSEL.test(p), `liste blanche : « ${p} » n'a pas de sujet universel, elle n'a rien à y faire`);
+    assert.doesNotMatch(p, ORDRE_D_ECRIRE, `liste blanche : « ${p} » porte un ordre d'écriture — elle n'est pas là pour ça`);
+  }
+
+  // Tout ordre d'écrire doit par ailleurs être ATTRIBUÉ à quelqu'un qui a le droit d'écrire.
   const PROPRIETAIRES = ['orchestrateur', ...ECRIVAINS];
-  const fautes = seed.split(/(?<=[.;])\s+|\n/).map((p) => p.trim()).filter(Boolean)
-    .filter((p) => ORDRE_D_ECRIRE.test(p)
-      && (SUJET_UNIVERSEL.test(p) || !PROPRIETAIRES.some((w) => new RegExp(w, 'i').test(p))));
-  assert.deepEqual(fautes, [], `graine : ordre d'écriture sans propriétaire habilité — ${BRIDES.join(', ')} ne peuvent pas l'exécuter`);
+  const fautes = [];
+  for (const p of phrases) {
+    if (SUJET_UNIVERSEL.test(p) && !PHRASES_UNIVERSELLES_AUTORISEES.includes(p)) {
+      fautes.push(`sujet universel hors liste blanche (${BRIDES.join(', ')} ne peuvent pas l'exécuter) : « ${p} »`);
+    }
+    if (ORDRE_D_ECRIRE.test(p) && !PROPRIETAIRES.some((w) => new RegExp(w, 'i').test(p))) {
+      fautes.push(`ordre d'écriture sans propriétaire habilité : « ${p} »`);
+    }
+  }
+  assert.deepEqual(fautes, [], `graine : consignes que les bridés ne peuvent pas exécuter :\n${fautes.join('\n')}`);
 
   // Et elle dit qui écrit vraiment, DANS LE BON SENS : la seule présence des trois mots
   // laisserait passer l'inverse (« les bridés écrivent, les deux autres rendent leur ligne »).
@@ -163,15 +203,36 @@ test('R1 — la graine du journal n\'ordonne pas d\'écrire aux agents bridés q
   assert.match(cBrides, /orchestrateur\*{0,2}\s+qui\s+l['’]/i, 'graine : c\'est l\'ORCHESTRATEUR qui l\'ajoute (sujet du verbe, pas un mot posé là)');
 });
 
-// Une clause qui RÉSERVE le PROUVÉ. Une liste blanche de 4 tournures ne tenait pas : la clause
-// survivante de `verify-rule.md` disait « c'est **lui** qui prononce », qui n'y figurait pas.
-// On prend donc aussi l'attribution par pronom, l'exclusivité et l'appartenance.
-const RESERVE = /\bseul(e|s)?\b|\bque par\b|\bréserv|\breste \*{0,2}(?:au|à)\b|\bc'est \*{0,2}(?:lui|elle|à lui|à elle)\b|\buniquement\b|\bexclusi|\bnul autre\b|\bpersonne d'autre\b|\brien que\b|\brevient \*{0,2}(?:au|à)\b|\bappartient \*{0,2}(?:au|à)\b|\bà lui (?:de|seul)\b/i;
+// Une clause qui RÉSERVE le PROUVÉ. Filet SECONDAIRE lui aussi (les tournures d'exclusivité
+// ne s'énumèrent pas plus que les verbes) : le filet principal est structurel, plus bas.
+// Toutes les bornes sont en Unicode. Avec `\b`, quatre des treize alternatives d'origine
+// étaient mortes : la branche « à » de `reste`/`revient`/`appartient` (`(?:au|à)\b` ne matche
+// jamais « à », qui n'est pas un caractère de mot ASCII) et `\bà lui (?:de|seul)\b` en entier.
+const RESERVE = new RegExp([
+  B('seul|seule|seuls|seules'),
+  B('que par'),
+  '(?<!\\p{L})réserv',
+  `${B('reste|revient|appartient')}\\s+\\*{0,2}${B('au|aux|à')}`,
+  `${B('c\'est')}\\s+\\*{0,2}(?:${B('lui|elle|au|aux|à')}|à\\s+\\*{0,2}${B('lui|elle')})`,
+  B('uniquement'),
+  '(?<!\\p{L})exclusi',
+  `${B('nul|nulle|aucun|aucune')}\\s+${B('autre|autres')}`,
+  `${B('personne|pas|rien')}\\s+d['’]${B('autre|autres')}`,
+  B('rien que'),
+  `${B('à')}\\s+${B('lui')}\\s+${B('de|seul')}`,
+].join('|'), 'iu');
 
 // La répartition du `PROUVÉ` est écrite UNE fois, dans `proof-rule` (« Règle Preuve ») ; tout le
 // reste l'applique. On la LIT ici au lieu de la re-coder : un test qui la recopie ne détecte plus
 // la divergence, il en crée une troisième.
 const SECTION_CANON = '### Qui prononce PROUVÉ';
+// Le vocabulaire du verdict. `PROUVÉ` est le mot du canon ; « verdict » en est le synonyme
+// courant dans les règles — l'ignorer laissait passer « verdict par `verificateur` », qui donne
+// à lui seul un gate incomplet (une feature en exige deux).
+const VERDICT = new RegExp(B('PROUVÉ|verdict|verdicts'), 'iu');
+// Une ligne se lit en clauses : `;`, `:`, et le point suivi d'une espace — jamais celui d'un
+// numéro (« **6. Verdict final** »).
+const clauses = (line) => line.split(/\s*[;:]\s*|(?<![0-9])\.\s+/).map((c) => c.trim()).filter(Boolean);
 const canonique = () => {
   const t = rule('proof-rule.md');
   const i = t.indexOf(SECTION_CANON);
@@ -226,25 +287,65 @@ test('R2 — ni un agent ni une règle injectée ne réserve un PROUVÉ que le g
     }
   }
 
-  // 2. Les règles injectées dans AGENTS.md. Une ligne qui réserve le `PROUVÉ` d'un objet doit
-  // nommer EXACTEMENT les agents que la Règle Preuve désigne pour cet objet — sinon deux
-  // passages du même AGENTS.md se contredisent, à quelques dizaines de lignes d'écart.
+  // 2. Les règles injectées dans AGENTS.md, relues à CHAQUE message. Le filtre littéral
+  // « la ligne contient jalon ou feature » était l'échappatoire : retirer les deux mots
+  // suffisait à passer. On le remplace par QUATRE conditions de structure — aucune ne dépend
+  // d'une tournure, donc aucune reformulation ne les contourne :
+  //   (i)   la ligne dit de QUOI elle parle. Une attribution non qualifiée vaut pour tout,
+  //         donc aussi pour une feature : le lecteur en tire un gate incomplet.
+  //   (ii)  elle nomme TOUS les agents que la Règle Preuve désigne pour ces objets.
+  //   (iii) elle nomme au moins un juge de la Règle Preuve.
+  //   (iv)  elle les nomme DANS une clause qui parle du verdict : un agent relégué à
+  //         « rend un avis » dans la clause voisine n'est pas présenté comme juge.
+  // Suit l'ancien contrôle d'exclusivité, conservé intact (rien de ce qu'il attrapait n'est
+  // rendu) — devenu un filet d'appoint derrière les quatre.
   const proofLines = rule('proof-rule.md').split('\n');
   const debutCanon = proofLines.findIndex((l) => l.startsWith(SECTION_CANON));
   const apres = proofLines.findIndex((l, k) => k > debutCanon && l.startsWith('### '));
   const finCanon = apres === -1 ? proofLines.length : apres;
+  const JUGES = [...new Set([...CANON.values()].flat())].sort();
+  const OBJETS = [...CANON.keys()];
   for (const f of fs.readdirSync(path.join(ROOT, 'templates/agents')).filter((n) => n.endsWith('.md')).sort()) {
     rule(f).split('\n').forEach((line, i) => {
       // La définition canonique n'a pas à se comparer à elle-même.
       if (f === 'proof-rule.md' && i >= debutCanon && i < finCanon) return;
-      if (!/PROUVÉ/.test(line) || !RESERVE.test(line)) return;
-      const nommes = CREW.filter((a) => line.includes(a)).sort();
-      if (!nommes.length) return;
-      for (const [objet, attendus] of CANON) {
-        if (!new RegExp(objet, 'i').test(line)) continue;
-        if (nommes.join('+') !== attendus.join('+')) {
-          fautes.push(`templates/agents/${f}:${i + 1} — « ${objet} » réservé à ${nommes.join(', ')}, la Règle Preuve dit ${attendus.join(', ')} : « ${line.trim().slice(0, 130)} »`);
+      if (!VERDICT.test(line) || !CREW.some((a) => line.includes(a))) return;
+      const ou = `templates/agents/${f}:${i + 1}`;
+      const extrait = line.trim().slice(0, 130);
+
+      // Ancien contrôle : une ligne qui RÉSERVE le `PROUVÉ` d'un objet doit nommer EXACTEMENT
+      // les agents que la Règle Preuve désigne pour cet objet.
+      if (/PROUVÉ/.test(line) && RESERVE.test(line)) {
+        const tous = CREW.filter((a) => line.includes(a)).sort();
+        if (tous.length) {
+          for (const [objet, attendus] of CANON) {
+            if (!new RegExp(objet, 'i').test(line)) continue;
+            if (tous.join('+') !== attendus.join('+')) {
+              fautes.push(`${ou} — « ${objet} » réservé à ${tous.join(', ')}, la Règle Preuve dit ${attendus.join(', ')} : « ${extrait} »`);
+            }
+          }
         }
+      }
+
+      const nommes = JUGES.filter((a) => line.includes(a));
+      if (!nommes.length) {
+        fautes.push(`${ou} — (iii) attribue le verdict sans nommer aucun juge de la Règle Preuve (${JUGES.join(', ')}) : « ${extrait} »`);
+        return;
+      }
+      const objets = OBJETS.filter((o) => new RegExp(o, 'i').test(line));
+      if (!objets.length) {
+        fautes.push(`${ou} — (i) attribue le verdict sans dire de QUOI (${OBJETS.join(' / ')}) : la consigne vaut alors partout, donc aussi sur une feature, où le gate en exige deux : « ${extrait} »`);
+        return;
+      }
+      const attendus = [...new Set(objets.flatMap((o) => CANON.get(o)))].sort();
+      const manquants = attendus.filter((a) => !nommes.includes(a));
+      if (manquants.length) {
+        fautes.push(`${ou} — (ii) « ${objets.join('/')} » : la Règle Preuve exige ${attendus.join(' + ')}, la ligne ne nomme pas ${manquants.join(', ')} : « ${extrait} »`);
+      }
+      const detaches = attendus.filter((a) => nommes.includes(a)
+        && !clauses(line).some((c) => VERDICT.test(c) && c.includes(a)));
+      if (detaches.length) {
+        fautes.push(`${ou} — (iv) ${detaches.join(', ')} : nommé hors de toute clause qui parle du verdict, donc pas présenté comme juge : « ${extrait} »`);
       }
     });
   }

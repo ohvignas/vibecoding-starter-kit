@@ -1,5 +1,7 @@
 # Améliorations supplémentaires (A→F) — Implementation Plan
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses 36 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : il termine par un merge « sur `dev` » (`:316`), branche que le scaffold ne crée pas — le kit ne connaît que `main` (`scripts/lib/standing-rules.test.mjs` B8). L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 6 ajouts à l'installeur : (A) subagents review+sécu, (B) `.gitignore` par stack, (C) consolidation mémoire planifiée, (D) commande `/doctor`, (E) hook pre-commit, (F) feature d'exemple par stack.

@@ -15,5 +15,5 @@ Un **sous-agent** = une copie de l'IA sur **une tâche isolée**, en **contexte 
 Il vit dans le dossier d'agents de ton assistant (`.cursor/agents/` · `.claude/agents/` · `docs/agents/crew/` pour Codex) ; `/help` les liste. Améliore un agent **là**, tous les projets en profitent. Plusieurs critiques : **lentille différente** (produit / données / UX), pas un ton plus sévère · **preuve obligatoire**, un finding sans preuve est jeté · **2 passes maximum** · **dédoublonne** · critique **détaché** de l'auteur.
 
 ### Règles d'or
-- **Ceux qui ÉCRIVENT du code ne travaillent jamais en parallèle** sur la même feature : deux décisions contradictoires donnent un résultat inassemblable. Fan-out = **lecture** seulement ; pour construire, **un implémenteur à la fois**.
+- **Ceux qui ÉCRIVENT du code ne travaillent jamais en parallèle** sur la même feature : deux décisions contradictoires donnent un résultat inassemblable.
 - **Parallèle seulement si indépendant** : fichiers séparés, **même source pour tous** (`docs/design.md`, preset) ; c'est toi qui assembles et vérifies la cohérence.

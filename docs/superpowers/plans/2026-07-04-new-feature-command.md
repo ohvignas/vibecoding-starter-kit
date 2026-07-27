@@ -1,5 +1,7 @@
 # `/new-feature` — Implementation Plan (SP-B)
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses 11 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : il prescrit le plugin **`commit-commands`** (`:156`, `:157`), jamais installé par le kit et interdit dans les règles (`scripts/lib/standing-rules.test.mjs` B7 et B13), et un merge « sur `dev` » (`:159`, `:162`), branche que le scaffold ne crée pas (B8). L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Livrer le runbook `/new-feature` (boucle de livraison : préflight GitHub + worktree → brainstorm → plan → sub-agents → review → test live → sécu → commit → PR → CI → merge dev) + l'extension du validateur.

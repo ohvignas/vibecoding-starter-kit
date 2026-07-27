@@ -1,5 +1,7 @@
 # Améliorations Cursor + kit — Implementation Plan
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses 33 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : il termine par un merge « sur `dev` » (`:338`), branche que le scaffold ne crée pas — le kit ne connaît que `main` (`scripts/lib/standing-rules.test.mjs` B8). L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 4 améliorations à l'installeur : (1) livrer les commandes en **Cursor Skills** + fix `$ARGUMENTS`, (2) **Cursor hooks** (mémoire auto) + `.cursorignore`, (3) sécurité (`.env.example` + gitleaks), (4) CI par stack + `ONBOARDING.md`.

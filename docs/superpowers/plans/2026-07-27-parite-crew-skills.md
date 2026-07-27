@@ -1,5 +1,7 @@
 # Parité assistants + crew réellement opérationnel + skills officiels — Implementation Plan (v2)
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses 68 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : il fait réécrire la fin de `verify-rule.md` avec « C'est **lui** qui prononce `PROUVÉ`, pas toi » (`:480`) — clause qui réserve au seul `verificateur` un `PROUVÉ` que `templates/commands/build.md:10` exige **aussi** du `security-reviewer` sur une feature. La rejouer recontredit la Règle Preuve (`templates/agents/proof-rule.md:12`) ; c'est exactement la régression F1, corrigée le 2026-07-27. L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Corriger les 22 manques prouvés par trois audits en contexte frais, et brancher les meilleurs skills officiels sur chaque agent. **v2** : intègre les 12 corrections issues de deux critiques du plan v1 (6 bloquants + 6 importants) — parseur robuste, chemins réels vérifiés, Codex servi, MCP jamais déclaré hors stack, suite jamais rouge, CI qui prouve la parité.

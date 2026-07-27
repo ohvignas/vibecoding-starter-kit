@@ -1,5 +1,7 @@
 # Plan 5 — Auto-install des skills design + prompt de démarrage — Implementation Plan
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses 25 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : il installe shadcnblocks comme le skill payant `masonjames/Shadcnblocks-Skill` (`:170`), remplacé depuis par le registry natif `npx shadcn add @shadcnblocks/<bloc>` (`2026-07-23-shadcnblocks-cli-registry.md`, et `templates/agents/design-rule.md`). L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Le wizard **auto-installe les 4 skills design gratuits** (`npx skills add -a <assistant>`, échec gracieux), réduit la liste « à faire dans l'assistant » à superpowers, et **imprime un prompt de démarrage** à coller.

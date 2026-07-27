@@ -1,5 +1,7 @@
 # `/edit-design` — Implementation Plan (SP-C)
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses 11 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : il prescrit les **5 skills design** dont `shadcnblocks` (`:7`, `:16`, `:146`), alors que le kit n'en charge plus que **4** (`scripts/lib/matrix.mjs:7`) et traite shadcnblocks comme une technique CLI (`npx shadcn add @shadcnblocks/<bloc>`) depuis `2026-07-23-shadcnblocks-cli-registry.md`. L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Livrer le runbook `/edit-design` (charge les 5 skills design + `design.md` AVANT toute édition UI, puis édite) + l'extension du validateur.

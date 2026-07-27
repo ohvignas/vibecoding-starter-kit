@@ -1,5 +1,7 @@
 # PixelRAG (cohérence maquette↔page, obligatoire UI web) + sous-agents sur Sonnet 5 — Implementation Plan
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses 22 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : il rend **PixelRAG obligatoire** dans la Règle de vérification (`:29`, `:160`), alors que la comparaison d'images y est depuis un **signal indicatif, non bloquant** (`templates/agents/verify-rule.md:11`, gardé par `standing-rules.test.mjs` B2 et `crew.test.mjs` C5). L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** (1) Forcer une **vérification de cohérence visuelle maquette↔page via PixelRAG** à chaque page/élément UI créé ou modifié **et** au contrôle complet, sur les stacks web (saas/desktop/vitrine). (2) Faire tourner **tous les sous-agents dispatchés sur `claude-sonnet-5`**, les sous-agents design chargeant en plus les skills design.

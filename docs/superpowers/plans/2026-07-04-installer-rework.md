@@ -1,5 +1,7 @@
 # Rework installeur (SP-F) — Implementation Plan
 
+> ⛔️ **PLAN EXÉCUTÉ ET PÉRIMÉ — NE PAS REJOUER.** Archive gardée pour la trace. Ses 18 cases `- [ ]` n'ont jamais été cochées et **ne doivent pas l'être** : il prescrit les **5 skills design** (`:7`) — le kit n'en charge plus que **4** (`scripts/lib/matrix.mjs:7`) — et un merge « sur `dev` » (`:253`), branche que le scaffold ne crée pas (le kit ne connaît que `main`, cf. `scripts/lib/standing-rules.test.mjs` B8). L'état courant fait foi : `templates/` et `docs/superpowers/plans/2026-07-27-remise-en-coherence.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** Retirer BMAD de l'installeur et câbler la génération, par assistant, des 3 commandes (`/new-project`, `/new-feature`, `/edit-design`) + mémoire (`docs/memory/`) + dream (`.github/workflows/dream.yml` + `docs/DREAM.md`) + un `AGENTS.md` composé (boucle superpowers + règle design + règles mémoire + `@import` index), et signaler l'install des 5 skills design.
