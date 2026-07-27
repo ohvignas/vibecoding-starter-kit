@@ -19,11 +19,20 @@ test('kitOwnedFiles(saas, claude-code) : commandes + subagents, sources existant
   for (const f of files) assert.ok(fs.existsSync(path.join(ROOT, f.from)), `source existe : ${f.from}`);
 });
 
-test('kitOwnedFiles(saas, cursor) : commandes + règles globales, PAS de subagents', () => {
+test('kitOwnedFiles(saas, cursor) : commandes + règles globales, aucun chemin .claude/', () => {
   const files = kitOwnedFiles('saas', 'cursor');
   assert.ok(files.some((f) => f.to === '.cursor/commands/build.md'));
   assert.ok(files.some((f) => f.to === '.cursor/rules/10-css-maquette.mdc'));
-  assert.equal(files.some((f) => f.to.startsWith('.claude/')), false);
+  assert.equal(files.some((f) => f.to.startsWith('.claude/')), false, 'aucun chemin .claude/ côté cursor');
+});
+
+test('kitOwnedFiles : agents des 3 assistants + règles typées À PLAT + hooks Cursor', () => {
+  const c = kitOwnedFiles('saas', 'cursor');
+  assert.ok(c.some((f) => f.to === '.cursor/agents/verificateur.md' && f.transform === 'cursor-agent'));
+  assert.ok(c.some((f) => f.to === '.cursor/rules/convex.mdc'), 'règles typées copiées à plat');
+  assert.equal(c.some((f) => f.to.includes('.cursor/rules/saas/')), false, 'jamais de sous-dossier de stack');
+  assert.ok(c.some((f) => f.to === '.cursor/hooks/inject-memory.mjs'));
+  assert.ok(kitOwnedFiles('saas', 'codex').some((f) => f.to === 'docs/agents/crew/verificateur.md'));
 });
 
 test('kitOwnedFiles ne contient AUCUN chemin utilisateur (src/docs/.env)', () => {

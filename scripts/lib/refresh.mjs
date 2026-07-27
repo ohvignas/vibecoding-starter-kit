@@ -6,6 +6,7 @@ import path from 'node:path';
 import { renderAgentsFile } from './agents-file.mjs';
 import { mergeManagedSection, MARK_START_PREFIX } from './managed-section.mjs';
 import { kitOwnedFiles } from './kit-owned.mjs';
+import { toCursorAgent } from './agent-frontmatter.mjs';
 import { resolveAssets } from './matrix.mjs';
 
 export function readVibecodingManifest(projectDir) {
@@ -30,10 +31,16 @@ export function refreshProject({ source, projectDir, manifest, dryRun = false })
     const merged = mergeManagedSection(existing, fresh);
     if (merged !== existing) { if (!dryRun) fs.writeFileSync(dest, merged); changed.push(name); }
   }
-  for (const { from, to } of kitOwnedFiles(stack, assistant)) {
+  for (const { from, to, transform } of kitOwnedFiles(stack, assistant)) {
     const src = path.join(source, from), dst = path.join(projectDir, to);
     if (!fs.existsSync(src)) { skipped.push(`${to} (source absente)`); continue; }
-    const next = fs.readFileSync(src, 'utf8');
+    let next;
+    // Le transform est appliqué AVANT la comparaison : sinon un agent Cursor serait réécrit
+    // à chaque passage (le fichier sur disque ne peut jamais égaler la source brute).
+    try {
+      next = fs.readFileSync(src, 'utf8');
+      if (transform === 'cursor-agent') next = toCursorAgent(next);
+    } catch (e) { skipped.push(`${to} (illisible : ${e.message})`); continue; }
     const prev = fs.existsSync(dst) ? fs.readFileSync(dst, 'utf8') : null;
     if (prev !== next) { if (!dryRun) { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(dst, next); } changed.push(to); }
   }
