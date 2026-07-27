@@ -23,6 +23,21 @@
 | **G** | **Parcours utilisateur** | Dépend de C+D (ce que l'utilisateur doit faire dépend de ce qui existe) |
 | **H** | **Docs & README** | **En dernier** : documente l'état final, sinon il faudrait le refaire |
 
+### 🔴 Règle de propriété n°1 — les tests suivent le code
+
+**Tout lot possède les tests, validateurs et fixtures de ce qu'il modifie**, où qu'ils se trouvent. Un lot qui casse une assertion **doit** la mettre à jour dans le même commit : « ce fichier ne m'appartient pas » n'est **jamais** une raison de livrer rouge.
+
+Concrètement, chaque lot doit mettre à jour :
+
+| Lot | Tests / validateurs à corriger (relevés, non exhaustifs — vérifier avant de commencer) |
+|---|---|
+| **A** | `validate-extras.test.mjs` · `validate-commands.mjs` (`validateExtras`, `validateDreamTemplate`, `OUTPUTS`) · `smoke-e2e.mjs` (exige `docs/ONBOARDING.md`) · `cursor-commands.test.mjs` + `cursor-plugin.test.mjs` + `kit-owned.mjs`/`kit-owned.test.mjs` (bouclent sur `debug`) · `validate-dream.test.mjs` · `license.test.mjs` + `license-flow.test.mjs` · `wizard.test.mjs` · `pixelrag.test.mjs` (exige `pip install pixelrag`) · `matrix.test.mjs` · `templates.mjs` (§Docs du projet, mention `DREAM.md`) |
+| **B** | `agents-templates.test.mjs` (exige `claude-sonnet-5` dans `subagents-rule`, `PixelRAG` dans `reality-rule`) · `proof.test.mjs` (exige `3 tentatives`, `ROUGE avant`, `sortie brute`, `skip`, `requête réseau`) · `completion-rule.test.mjs` (`anti-flemme`, `placeholder`) |
+| **C** | `proof.test.mjs` (exige `/3 tentatives/` dans **les 7** agents) · `critics.test.mjs` (exige `/JOURNAL\.md/` dans `code-reviewer` + les 3 critiques) |
+| **D** | `validate-commands.mjs` : `steps` de `new-feature` contient `'commit-push-pr'` (D1 le supprime) **et** les 10 marqueurs `DEPTH` de `new-project` (D8 déplace des sections) · `new-feature-runbook.test.mjs` · `new-project-runbook.test.mjs` |
+| **E** | `refresh.test.mjs` · `setup-rerun.test.mjs` (E4 change le contenu de `.vibecoding.json`) |
+| **F** | `matrix-manifest.test.mjs` · `domains*.test.mjs` |
+
 ### Propriété des fichiers (aucun chevauchement entre lots)
 
 | Lot | Fichiers possédés |
@@ -32,9 +47,9 @@
 | C | `templates/agents/subagents/*.md` (7 agents), `templates/journal/` |
 | D | `templates/commands/*.md` (sauf `debug.md`, supprimé en A) |
 | E | `scripts/*.mjs`, `scripts/lib/*.mjs` (sauf `matrix.mjs`), `templates/hooks/`, `.gitattributes` |
-| F | `stacks/`, `templates/cursor/rules/`, `templates/ci/`, `templates/env/`, `templates/examples/`, `.claude/skills/`, `scripts/lib/matrix.mjs` (§stacks), `scripts/lib/domains.mjs`, `.github/workflows/rot-check.yml` |
+| F | `.github/workflows/` (CI du dépôt), `stacks/`, `templates/cursor/rules/`, `templates/ci/`, `templates/env/`, `templates/examples/`, `.claude/skills/`, `scripts/lib/matrix.mjs` (§stacks), `scripts/lib/domains.mjs`, `.github/workflows/rot-check.yml` |
 | G | `scripts/lib/setup-ai.mjs`, `scripts/lib/environment.mjs` (§rendu), `scripts/setup.mjs` (§COLLE-MOI) |
-| H | `README.md`, `guides/`, `.github/assets/hero.svg`, `PUBLISH.md`, `playbook/` |
+| H | `README.md`, `guides/`, `.github/assets/hero.svg`, `PUBLISH.md`, `playbook/`, **`formateur/`** |
 
 ### Gate entre chaque lot — DEUX étapes, les deux obligatoires
 
@@ -70,6 +85,23 @@ puis un **verdict de lot** : `PROUVÉ` / `NON PROUVÉ` / `BLOQUÉ`, et une liste
 - Le lot suivant ne démarre **que** sur un `PROUVÉ`.
 
 **Aucun `git push`, aucun `npm publish`** pendant tout le plan.
+
+### 🔴 Décisions déjà tranchées (aucun agent ne re-décide)
+
+Un plan qui dit « trancher » sans donner le critère produit deux agents qui tranchent différemment. Voici les arbitrages, définitifs :
+
+| Sujet | Décision | Raison |
+|---|---|---|
+| **Qui prononce `PROUVÉ`** | L'agent peut le dire pour **une tâche** (commande + sortie collée). Seul le `verificateur` le prononce pour **un jalon ou une feature**. | Sinon le dispositif anti-« c'est fait » s'annule lui-même. |
+| **Modèle** | `claude-sonnet-5` par défaut · `claude-opus-5` pour `security-reviewer` **uniquement** (seul rôle à enjeu élevé aujourd'hui). Écrit **une seule fois**, dans `subagents-rule`. | Aucun agent ne s'appelle « architecture » : la règle actuelle décrit un rôle inexistant. |
+| **3 tentatives** | **3 tentatives puis `BLOQUÉ`**. Le retour au dernier état vert est une **option proposée à l'utilisateur**, jamais automatique. Formulation canonique dans `proof-rule` ; les autres fichiers y **renvoient en une ligne**. | Off-by-one entre deux règles + deux sorties contradictoires. |
+| **`/build --all`** | **Désactivé tant que le mode apprentissage est actif** (déjà écrit dans `templates.mjs`). `/build` doit le **dire** au lieu de proposer le drapeau sans condition. | La contradiction vient du runbook, pas de la règle. |
+| **`D2` branche de merge** | Merger sur **`main`** (le scaffold ne crée que `main`). Ne pas inventer de `dev`. | Une seule issue, pas « ou ». |
+| **`E9`/`F8` `selectDomains`** | **Le brancher** (F8), ne pas le supprimer. E ne touche pas `selectDomains` ni `DOMAIN_TRIGGERS`. | Éviter que E rende F8 impossible. |
+| **`F4`/`F5` paquets morts** | **Remplacer** quand un successeur existe (`react-email`, `convex-auth`) ; **retirer** quand il n'y en a pas (`electronegativity`). Étiquettes d'autorité : dire la vérité (« skills communautaires », pas « officiels »). | « retirer ou remplacer » laissait le choix ouvert. |
+| **`A6` karpathy** | `alwaysApply: true` vient du **dépôt tiers** copié verbatim (`pickFromClone`). Donc : **appliquer une transformation** à la copie pour forcer `alwaysApply: false`, sans supprimer le clone (un test exige sa présence). | L'item était inapplicable tel qu'écrit. |
+| **`A4` `/sos`** | A **supprime** `/debug` et signale ; **D** réécrit `/sos` (propriétaire de `templates/commands/`). | Respecte la propriété des fichiers. |
+| **Recherche web** | **Indisponible** dans les agents (l'outil est désactivé). Pour vérifier une version, un paquet ou un dépôt : `npm view <pkg> version deprecated` et `curl -s https://api.github.com/repos/<o>/<r>`. **Aucune affirmation sans l'une de ces deux sorties.** | Sinon le lot F inventera. |
 
 ### Contraintes globales (tous les lots)
 
@@ -214,10 +246,20 @@ puis un **verdict de lot** : `PROUVÉ` / `NON PROUVÉ` / `BLOQUÉ`, et une liste
 
 ## Contrôle final (après les 8 lots)
 
-- [ ] **Z1 — Audit de vérification en contexte frais.** Un agent qui n'a participé à aucun lot reçoit : la liste des ~84 trouvailles d'origine + le diff complet. Il rend, par trouvaille : **CORRIGÉ** (avec la preuve) / **NON CORRIGÉ** / **HORS PÉRIMÈTRE ASSUMÉ**. Pas d'avis, un statut.
-- [ ] **Z2 — Les 12 combinaisons rescaffoldées** : exit 0, agents présents dans le bon dossier, aucune référence morte.
-- [ ] **Z3 — Suite + smoke + plugin** verts.
-- [ ] **Z4 — Rapport final à l'utilisateur** : ce qui est corrigé, ce qui ne l'est pas et pourquoi. Aucune publication sans son accord.
+> ⚠️ **La suite de tests ne couvre pas la prose.** ~60 des 84 items sont du Markdown : une règle supprimée par erreur, une commande devenue incohérente ou une référence orpheline **ne feront jamais rouge**. Le contrôle final ne peut donc pas se limiter à `node --test` — c'est le rôle de Z1 et Z2 ci-dessous.
+
+- [ ] **Z1 — Audit de vérification en contexte frais.** Un agent qui n'a participé à aucun lot reçoit : la liste des ~84 trouvailles d'origine, **le journal des revues** (`docs/superpowers/audits/2026-07-27-revues-lots.md`) et le diff complet. Il rend, par trouvaille : **CORRIGÉ** (avec la preuve) / **NON CORRIGÉ** / **HORS PÉRIMÈTRE ASSUMÉ**. Pas d'avis, un statut.
+- [ ] **Z1bis — « Qu'est-ce que le plan a cassé ? »** Le même agent répond aussi à cette question, que Z1 seul ne pose pas : chercher les **références orphelines** créées par les suppressions et réécritures. Outil concret, pas une lecture :
+  ```bash
+  # toute mention d'un fichier/commande supprimé doit être vide
+  for mot in ONBOARDING.md dream DREAM.md /debug license VIBE- pixelrag commit-commands; do
+    echo "── $mot"; grep -rn "$mot" templates/ scripts/ stacks/ guides/ playbook/ formateur/ README.md .github/ 2>/dev/null | grep -v node_modules | head
+  done
+  ```
+  Les fichiers **hors périmètre des lots** doivent être inspectés explicitement : `formateur/plan-de-cours.md`, `.github/workflows/*.yml`, `playbook/`.
+- [ ] **Z2 — Les 12 combinaisons rescaffoldées** : exit 0, agents présents dans le bon dossier, **et** un balayage des références mortes dans le projet **généré** (même boucle `grep` que Z1bis, appliquée au scaffold : aucune commande citée qui n'existe pas, aucun fichier promis absent).
+- [ ] **Z3 — Suite + smoke + plugin + paquet** verts (`npm pack --dry-run --json` : skills de stack présents, aucun worktree, < 300 fichiers).
+- [ ] **Z4 — Rapport final à l'utilisateur** : ce qui est corrigé, ce qui ne l'est pas et pourquoi. **Aucune publication sans son accord.**
 
 ---
 
