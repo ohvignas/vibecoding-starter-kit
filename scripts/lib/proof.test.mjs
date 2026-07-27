@@ -35,6 +35,13 @@ test('règles portées par chaque agent (il ne voit pas AGENTS.md)', () => {
   }
 });
 
+test('verificateur câblé en gate + state.yaml lu', () => {
+  for (const f of ['templates/commands/build.md', 'templates/commands/new-feature.md', 'templates/agents/verify-rule.md']) {
+    assert.match(read(f), /verificateur/, `${f}`);
+  }
+  assert.match(read('templates/agents/verify-rule.md'), /state\.yaml/);
+});
+
 test('proof-rule : statuts, hiérarchie, interdits, max 3 tentatives', () => {
   const t = read('templates/agents/proof-rule.md');
   for (const s of ['PROUVÉ', 'NON PROUVÉ', 'BLOQUÉ', 'sortie brute', 'ROUGE avant', 'requête réseau', 'contexte frais', 'skip', '3 tentatives']) {

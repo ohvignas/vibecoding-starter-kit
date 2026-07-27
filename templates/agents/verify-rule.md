@@ -20,3 +20,5 @@ Tu n'as **pas fini** tant que tu ne l'as pas **vu marcher** — le **design** ET
 **5. Cassé ?** → `superpowers:systematic-debugging`. On **ne passe pas** à la suite sur un écran cassé **ou** une feature qui ne marche pas.
 
 Ne dis **jamais** « c'est fait » sans **test vert + screenshot + le parcours de la feature refait en vrai**.
+
+**6. Verdict final** — quand tu penses avoir fini, lance le sous-agent **`verificateur`** (contexte frais). C'est **lui** qui prononce `PROUVÉ`, pas toi. Reporte son verdict dans `docs/agents/state.yaml` (`status`, `repair_attempts`, `blocked_reason`) et une ligne dans `docs/agents/JOURNAL.md`.
