@@ -26,6 +26,6 @@ Ouvre le fichier correspondant : `playbook/stack-saas.md` · `playbook/stack-mob
 
 ## Étape 6 — Démarrer le projet
 - **Première fois** : lance **`/new-project`** (fondation : PRD + tech spec + design + roadmap).
-- **Chaque feature** : **`/new-feature <description>`** (boucle → merge sur `dev`).
+- **Chaque feature** : **`/new-feature <description>`** (boucle → merge sur `main`).
 - **Éditer l'UI** : **`/edit-design`** (charge les skills design + `docs/design.md`).
 La boucle d'itération et les règles sont dans l'`AGENTS.md` généré.

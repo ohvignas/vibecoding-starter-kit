@@ -1,24 +1,15 @@
 ## Règle de vérification (après CHAQUE implémentation)
 
-Tu n'as **pas fini** tant que tu ne l'as pas **vu marcher** — le **design** ET le **fonctionnement**. Après **chaque** morceau implémenté (pas seulement à la fin) :
+Tu n'as **pas fini** tant que tu ne l'as pas **vu marcher** — le **design** ET le **fonctionnement**. Après **chaque** morceau, pas seulement à la fin :
 
-**1. Test auto** — lance les tests qui couvrent le changement, rouge → vert (`superpowers:test-driven-development` + `superpowers:verification-before-completion` : « fini » = prouvé par une commande).
+**1. Test auto** — les tests qui couvrent le changement, rouge → vert (`superpowers:test-driven-development` + `superpowers:verification-before-completion`).
 
-**2. Teste le RENDU dans le navigateur** — lance l'app (`docs/RUN.md`), ouvre l'écran concerné (web · fenêtre desktop · simulateur mobile). **Cursor et Claude Code ont un navigateur intégré** ; sinon, pilote-en un via le **Playwright MCP** — un vrai navigateur, jamais deviner le rendu. **Screenshot desktop ET mobile** (redimensionne) : ta preuve, ça attrape ce que les tests ratent (style, layout, texte coupé). Compare à l'écran de `maquette/`.
+**2. RENDU** — lance l'app (`docs/RUN.md`), ouvre l'écran (web · fenêtre desktop · simulateur mobile). **Cursor et Claude Code** ont un navigateur intégré ; **Codex n'en a pas** → pilote-en un vrai via le **Playwright MCP**. **Screenshot desktop ET mobile** : ça attrape ce que les tests ratent (layout, texte coupé, couleur primaire absente). Compare à `maquette/`, ne devine jamais le rendu.
 
-**3. Teste le FONCTIONNEMENT de la feature (end-to-end)** — pas juste regarder : **le parcours doit être refait en vrai**. **Délègue-le à un sous-agent `test-runner` en contexte frais** — le pilotage pas-à-pas du navigateur/simulateur est **token-lourd**, l'isoler hors du contexte principal coûte **beaucoup moins cher**. Donne-lui : la feature, le **flux**, les **critères** (`UJ-*` du PRD / chaque `AC` de `/new-feature` : auth, CRUD, paiement…), l'écran de départ, et l'outil :
-   - **Web** : **Playwright MCP** (`@playwright/mcp`) — pilote le navigateur + tests E2E rejouables en CI.
-   - **Mobile** : **Maestro MCP** (`maestro mcp`) — pilote le simulateur iOS / émulateur Android + flows Maestro.
-   Il rend un **rapport court** (chaque AC ✅/❌ + capture + 1er point cassé), pas 10k tokens de contexte.
-   - **Trous que le `test-runner` vérifie** : états **vide / chargement / erreur** · **erreurs API** (4xx/5xx) · bouton **désactivé** pendant l'envoi · **message d'erreur réel** affiché · valeurs **limites** (champ vide, texte très long, caractères spéciaux, espaces).
+**3. FONCTIONNEMENT (end-to-end)** — le parcours doit être **refait en vrai**, **délégué au sous-agent `test-runner` en contexte frais**. Donne-lui la feature, le **flux**, les **critères** (`UJ-*` du PRD, les `AC` de `/new-feature`), l'écran de départ, l'outil : **Playwright MCP** en web, **Maestro MCP** en mobile. Il porte ses exigences de preuve et ses cas limites, et rend un **rapport court** (AC ✅/❌ + capture + 1er point cassé).
 
-**4. Cohérence avec la maquette — le gate est déterministe.** L'IA dérive du design : il faut un contrôle, mais un contrôle qui **décide juste**.
-   - **Ce qui bloque** : `expect(page).toMatchAriaSnapshot()` (structure, rôles, noms accessibles — stable, insensible aux pixels/polices/OS) **+** chaque élément interactif produit un signal (URL, DOM, **requête réseau**) **+** l'état survit à un **rechargement**.
-   - **Signal indicatif, non bloquant** : compare visuellement le rendu à l'écran de `maquette/` (capture, ou **PixelRAG** si installé). Un score de similarité ne décide pas — un rendu identique à lui-même ne score pas 1,0 — mais un écart franc **mérite un coup d'œil**. Traite-le comme une alerte, pas comme un verdict.
-   - Écart réel constaté → corrige **avant** de continuer.
+**4. Le gate est déterministe.** **Bloquant** : `expect(page).toMatchAriaSnapshot()` **+** chaque élément interactif produit un signal (URL, DOM, **requête réseau**) **+** l'état survit à un **rechargement**. **Non bloquant** : la comparaison d'images avec `maquette/` (capture, ou **PixelRAG** si installé) alerte, elle ne tranche pas. Écart réel → corrige **avant** de continuer.
 
-**5. Cassé ?** → `superpowers:systematic-debugging`. On **ne passe pas** à la suite sur un écran cassé **ou** une feature qui ne marche pas.
+**5. Cassé ?** → `superpowers:systematic-debugging`, avant tout fix. On **ne passe pas** à la suite sur un écran cassé ou une feature qui ne marche pas.
 
-Ne dis **jamais** « c'est fait » sans **test vert + screenshot + le parcours de la feature refait en vrai**.
-
-**6. Verdict final** — quand tu penses avoir fini, lance le sous-agent **`verificateur`** (contexte frais). C'est **lui** qui prononce `PROUVÉ`, pas toi. Reporte son verdict dans `docs/agents/state.yaml` (`status`, `repair_attempts`, `blocked_reason`) et une ligne dans `docs/agents/JOURNAL.md`.
+**6. Verdict final** — lance le sous-agent **`verificateur`** (contexte frais) : sur un jalon ou une feature, c'est **lui** qui prononce `PROUVÉ` (« Règle Preuve »). Reporte-le dans `docs/agents/state.yaml` (`status`, `repair_attempts`, `blocked_reason`) et dans `docs/agents/JOURNAL.md`.

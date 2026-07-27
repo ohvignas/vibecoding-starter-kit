@@ -7,11 +7,13 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-test('loop-section : boucle superpowers, def-of-done dev, pas de BMAD', () => {
+test('loop-section : boucle superpowers, def-of-done sur main, pas de BMAD', () => {
   const t = read('templates/agents/loop-section.md');
-  for (const s of ['brainstorming', 'writing-plans', 'subagent-driven-development', 'test live', 'merge', 'dev']) {
+  for (const s of ['brainstorming', 'writing-plans', 'subagent-driven-development', 'Test live', 'Merge']) {
     assert.match(t, new RegExp(s));
   }
+  // Le scaffold ne crée que `main` : la définition de « fini » doit y renvoyer, jamais à `dev`.
+  assert.match(t, /mergé sur \*\*`main`\*\*/);
   assert.doesNotMatch(t, /BMAD/i);
 });
 test('design-rule : 4 skills design + design.md + blocs @shadcnblocks via CLI', () => {
@@ -30,9 +32,12 @@ test('subagents-rule : quand déléguer + contrat + parallèle + modèle sonnet 
 
 test('verify-rule : rendu + fonctionnement E2E + Playwright/Maestro + test-runner + trous QA', () => {
   const t = read('templates/agents/verify-rule.md');
-  for (const s of ['navigateur', 'screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'Maestro', 'test-runner', 'contexte frais', 'erreurs API', 'FONCTIONNEMENT', 'PixelRAG', 'toMatchAriaSnapshot', 'non bloquant']) {
+  for (const s of ['navigateur', 'Screenshot', 'maquette', 'systematic-debugging', 'verification-before-completion', 'end-to-end', 'Playwright', 'Maestro', 'test-runner', 'contexte frais', 'FONCTIONNEMENT', 'PixelRAG', 'toMatchAriaSnapshot', 'Non bloquant']) {
     assert.match(t, new RegExp(s));
   }
+  // Les trous QA ne sont plus recopiés ici : ils vivent dans l'agent qui les exécute.
+  assert.match(t, /cas limites/i, 'verify-rule renvoie aux cas limites du test-runner');
+  assert.match(read('templates/agents/subagents/test-runner.md'), /erreur API/, 'le test-runner les porte');
 });
 
 test('subagent test-runner : contexte frais, Playwright/Maestro, verdict court, ne code pas', () => {
@@ -44,9 +49,12 @@ test('subagent test-runner : contexte frais, Playwright/Maestro, verdict court, 
 
 test('secrets-cost-rule : .env + jamais commit + coûts/modèle', () => {
   const t = read('templates/agents/secrets-cost-rule.md');
-  for (const s of ['\\.env', 'pre-commit', 'destructive', 'Modèle adapté', 'fan-out']) {
+  for (const s of ['\\.env', 'pre-commit', 'destructive', 'Choix du modèle', 'fan-out']) {
     assert.match(t, new RegExp(s));
   }
+  // Le modèle se choisit à UN seul endroit : ici, on renvoie.
+  assert.match(t, /Règle sous-agents/);
+  assert.doesNotMatch(t, /claude-(sonnet|opus)-\d/);
 });
 
 test('css-maquette-rule : pas de slice lignes + accolades + vrai CSS + couleur primaire', () => {
@@ -58,9 +66,13 @@ test('css-maquette-rule : pas de slice lignes + accolades + vrai CSS + couleur p
 
 test('reality-rule : zéro mock + boutons câblés + maquette à l\'identique', () => {
   const t = read('templates/agents/reality-rule.md');
-  for (const s of ['mock', 'vrai backend', 'MARCHE', 'PixelRAG', 'Prends le temps']) {
+  for (const s of ['mock', 'vrai backend', 'MARCHE', 'maquette à l\'identique', 'Prends le temps']) {
     assert.match(t, new RegExp(s));
   }
+  // La fidélité à la maquette reste exigée, mais la comparaison d'images ne décide pas :
+  // l'outil (PixelRAG) et son statut non bloquant sont décrits une seule fois, dans verify-rule.
+  assert.match(t, /jamais bloquant/);
+  assert.doesNotMatch(t, /PixelRAG/);
 });
 
 test('ROADMAP + Phase 6 : données/câblage réel par jalon (zéro mock)', () => {
