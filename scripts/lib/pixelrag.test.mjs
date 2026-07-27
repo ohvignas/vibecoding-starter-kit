@@ -13,11 +13,13 @@ test('A-FAIRE documente les outils de vérification sur TOUTES les stacks', () =
   }
 });
 
-test('PixelRAG rendu dans A-FAIRE pour les stacks web, PAS mobile', () => {
+test('comparaison visuelle rendue dans A-FAIRE pour les stacks web, PAS mobile', () => {
   assert.deepEqual(VISUAL_CHECK_STACKS, ['saas', 'desktop', 'vitrine']);
   for (const s of VISUAL_CHECK_STACKS) {
-    assert.match(call(s), /PixelRAG/, `${s} doit avoir PixelRAG`);
-    assert.match(call(s), /pip install pixelrag/);
+    assert.match(call(s), /PixelRAG/, `${s} : la comparaison visuelle est citée`);
+    // Cité, jamais installé : plus aucun prérequis Python (A6).
+    assert.doesNotMatch(call(s), /pip install/, `${s} : PixelRAG n'est plus un prérequis`);
+    assert.match(call(s), /aucun prérequis/, `${s} : la section le dit explicitement`);
   }
-  assert.doesNotMatch(call('mobile'), /PixelRAG/, 'mobile = RN, pas de PixelRAG');
+  assert.doesNotMatch(call('mobile'), /PixelRAG/, 'mobile = RN, pas de rendu Chrome');
 });

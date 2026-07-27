@@ -1,5 +1,5 @@
 {
   "name": "vibecoding",
-  "description": "Commandes vibecoding (/new-project, /build, /sos, /debug…) + règle de base, pour Cursor.",
+  "description": "Commandes vibecoding (/new-project, /build, /sos, /deploy…) + règle de base, pour Cursor.",
   "version": "0.2.0"
 }

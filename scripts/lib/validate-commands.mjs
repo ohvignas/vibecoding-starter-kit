@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const PHASES = ['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
-const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/superpowers/specs', 'docs/memory', 'docs/DREAM.md'];
+const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/superpowers/specs', 'docs/memory'];
 const AGENTS_TEMPLATES = ['templates/agents/loop-section.md', 'templates/agents/design-rule.md', 'templates/agents/subagents-rule.md', 'templates/agents/verify-rule.md', 'templates/agents/reality-rule.md', 'templates/agents/proof-rule.md', 'templates/agents/secrets-cost-rule.md', 'templates/agents/css-maquette-rule.md'];
 // Marqueurs de profondeur : prouvent que les templates PRD/archi/design sont bien intégrés (pas un runbook « one-liner »).
 const DEPTH = ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses', 'Invariants', 'Graine structurelle', 'EXPERIENCE.md', 'maquette', 'index.html', 'ui.shadcn.com/create', '@shadcnblocks'];
@@ -56,25 +56,11 @@ export function validateMemoryTemplates(root) {
   return errors;
 }
 
-export function validateDreamTemplate(root) {
-  const errors = [];
-  const wf = path.join(root, 'templates/dream/dream.yml');
-  if (!fs.existsSync(wf)) errors.push('dream : manquant templates/dream/dream.yml');
-  else {
-    const txt = fs.readFileSync(wf, 'utf8');
-    if (!txt.includes('schedule') || !txt.includes('cron')) errors.push('dream : pas de déclencheur schedule/cron');
-    if (!txt.includes('Edit(docs/DREAM.md)')) errors.push('dream : allowedTools doit se limiter à Edit(docs/DREAM.md)');
-    if (txt.includes('pull-requests: write') || txt.includes('issues: write')) errors.push('dream : NON propose-only (pull-requests/issues write interdit)');
-  }
-  if (!fs.existsSync(path.join(root, 'templates/dream/DREAM.md'))) errors.push('dream : manquant templates/dream/DREAM.md (seed)');
-  return errors;
-}
-
 export function validateExtras(root) {
   const errors = [];
   const files = [
     'templates/cursor/hooks.json', 'templates/cursor/hooks/inject-memory.mjs', 'templates/cursor/hooks/log-edit.mjs', 'templates/cursor/cursorignore',
-    'templates/security/secrets.yml', 'templates/ONBOARDING.md',
+    'templates/security/secrets.yml',
     'templates/env/saas.env.example', 'templates/env/mobile.env.example', 'templates/env/desktop.env.example', 'templates/env/vitrine.env.example',
     'templates/ci/saas.yml', 'templates/ci/mobile.yml', 'templates/ci/desktop.yml', 'templates/ci/vitrine.yml',
     'templates/agents/subagents/code-reviewer.md', 'templates/agents/subagents/security-reviewer.md', 'templates/agents/subagents/test-runner.md',
@@ -82,7 +68,6 @@ export function validateExtras(root) {
     'templates/agents/subagents/critique-produit.md', 'templates/agents/subagents/critique-donnees.md', 'templates/agents/subagents/critique-ux.md',
     'templates/gitignore/saas.gitignore', 'templates/gitignore/mobile.gitignore', 'templates/gitignore/desktop.gitignore', 'templates/gitignore/vitrine.gitignore',
     'templates/journal/JOURNAL.md', 'templates/journal/state.yaml',
-    'templates/memory-consolidate/consolidate.yml',
     'templates/commands/doctor.md',
     'templates/hooks/pre-commit',
     'templates/examples/saas.md', 'templates/examples/mobile.md', 'templates/examples/desktop.md', 'templates/examples/vitrine.md',

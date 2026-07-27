@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Cursor afterFileEdit hook : journalise les fichiers édités (aide la consolidation mémoire + le dream).
+// Cursor afterFileEdit hook : journalise les fichiers édités (aide la consolidation mémoire).
 import fs from 'node:fs';
 let file = '';
 try { file = JSON.parse(fs.readFileSync(0, 'utf8')).file_path || ''; } catch {}

@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 // Assemble un plugin Cursor (cursor-plugin/) à partir des templates du kit — source de vérité unique.
-// Publiable via cursor.com/marketplace ou une Team Marketplace : donne les 9 commandes + la règle de base
+// Publiable via cursor.com/marketplace ou une Team Marketplace : donne les 10 commandes + la règle de base
 // dans Cursor sans cloner ni scaffolder. Le scaffold complet d'un projet reste `npm create vibecoding-kit`.
 // Structure Cursor : .cursor-plugin/plugin.json + commands/*.md + rules/*.mdc (auto-découverts).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const COMMANDS = ['init-vibecoding', 'help', 'new-project', 'build', 'new-feature', 'edit-design', 'doctor', 'next', 'sos', 'debug', 'deploy'];
+const COMMANDS = ['init-vibecoding', 'help', 'new-project', 'build', 'new-feature', 'edit-design', 'doctor', 'next', 'sos', 'deploy'];
 
 export function pluginManifest() {
   return {
     name: 'vibecoding',
-    description: "Commandes vibecoding (/new-project, /build, /sos, /debug…) + règle de base, pour Cursor.",
+    description: "Commandes vibecoding (/new-project, /build, /sos, /deploy…) + règle de base, pour Cursor.",
     version: '0.2.0',
   };
 }

@@ -70,9 +70,10 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push(`- [ ] Crée ta **clé API Stitch** : ${STITCH.keyUrl} → ${STITCH.keySteps} → copie-la (garde-la **secrète**, ne la commite jamais).`);
   L.push(`- [ ] Connecte le **MCP Stitch au niveau utilisateur** (hors dépôt → la clé n'est jamais commitée) : ${STITCH.mcp[assistant]}`);
   L.push('');
+  // Pas une case à cocher : rien à installer ici. La vérif visuelle se fait à l'œil, sur screenshot.
   if (VISUAL_CHECK_STACKS.includes(stack)) {
-    L.push('### Vérif visuelle — PixelRAG (obligatoire UI web)');
-    L.push(`- [ ] ${PIXELRAG_NOTE}`);
+    L.push('### Vérif visuelle — comparer ta page à la maquette (aucun prérequis)');
+    L.push(`- ${PIXELRAG_NOTE}`);
     L.push('');
   }
   // HORS de la condition ci-dessus : mobile a autant besoin des scanners que le web.

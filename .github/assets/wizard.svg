@@ -41,7 +41,7 @@
     <text x="28" y="270"><tspan class="g">✔</tspan> <tspan class="w">AGENTS.md · CLAUDE.md · maquette/</tspan></text>
     <text x="28" y="300"><tspan class="g">✔</tspan> <tspan class="w">.cursor/</tspan> <tspan class="d">commands · rules typées · hooks sécu · BUGBOT</tspan></text>
     <text x="28" y="330"><tspan class="g">✔</tspan> <tspan class="w">docs/</tspan> <tspan class="d">PRD · ROADMAP · memory · DOMAINS · RUN</tspan></text>
-    <text x="28" y="360"><tspan class="g">✔</tspan> <tspan class="w">CI · scan secrets · subagents review · dream hook</tspan></text>
+    <text x="28" y="360"><tspan class="g">✔</tspan> <tspan class="w">CI · scan secrets · agents du crew (7)</tspan></text>
     <text x="28" y="390"><tspan class="g">✔</tspan> <tspan class="w">skills installés</tspan> <tspan class="d">(design + stack)</tspan></text>
 
     <!-- next -->

@@ -36,13 +36,6 @@ test('buildArgsFromAnswers : rejette une entrée invalide', () => {
   assert.throws(() => buildArgsFromAnswers({ stack: 'saas', assistant: 'claude-code', project: 'nom invalide!' }), /project/);
 });
 
-test('buildArgsFromAnswers : porte le code d\'accès (wizard, sinon base, sinon null)', () => {
-  const a = { stack: 'saas', assistant: 'cursor', project: 'app', license: 'VIBE-7K4Q-9F2P-XR31' };
-  assert.equal(buildArgsFromAnswers(a, {}).license, 'VIBE-7K4Q-9F2P-XR31');
-  assert.equal(buildArgsFromAnswers({ stack: 'saas', assistant: 'cursor', project: 'app' }, { license: 'X' }).license, 'X');
-  assert.equal(buildArgsFromAnswers({ stack: 'saas', assistant: 'cursor', project: 'app' }, {}).license, null);
-});
-
 test('caveman opt-in : buildArgsFromAnswers ne l\'active que via le flag --caveman', () => {
   const off = buildArgsFromAnswers({ stack: 'saas', assistant: 'cursor', project: 'x' }, {});
   assert.equal(off.caveman, false);
@@ -57,21 +50,21 @@ test('renderBackendNote : saas+local seulement', () => {
 });
 
 test('runWizard : saas → demande le backend, produit les bons args', async () => {
-  const ask = scripted(['1', '2', 'mon-app', '2', 'o', 'VIBE-7K4Q-9F2P-XR31']); // saas, claude-code, nom, backend local, apprentissage oui, code d'accès (plus de question caveman)
+  const ask = scripted(['1', '2', 'mon-app', '2', 'o']); // saas, claude-code, nom, backend local, apprentissage oui (ni caveman ni code d'accès)
   const a = await runWizard(ask, false, NULL_OUT);
-  assert.deepEqual(a, { stack: 'saas', assistant: 'claude-code', project: 'mon-app', backend: 'local', learning: true, license: 'VIBE-7K4Q-9F2P-XR31' });
+  assert.deepEqual(a, { stack: 'saas', assistant: 'claude-code', project: 'mon-app', backend: 'local', learning: true });
 });
 
 test('runWizard : redemande sur choix invalide (mobile → pas de backend)', async () => {
-  const ask = scripted(['9', '2', '1', 'app', 'n', '']); // stack 9 invalide→2 mobile ; assistant 1 cursor ; nom ; apprentissage non ; code vide (passer)
+  const ask = scripted(['9', '2', '1', 'app', 'n']); // stack 9 invalide→2 mobile ; assistant 1 cursor ; nom ; apprentissage non
   const a = await runWizard(ask, false, NULL_OUT);
-  assert.deepEqual(a, { stack: 'mobile', assistant: 'cursor', project: 'app', backend: 'cloud', learning: false, license: '' });
+  assert.deepEqual(a, { stack: 'mobile', assistant: 'cursor', project: 'app', backend: 'cloud', learning: false });
 });
 
 test('runWizard : vitrine (choix 4) → pas de question backend', async () => {
-  const ask = scripted(['4', '1', 'site', 'n', '']); // vitrine, cursor, nom, apprentissage non, code vide
+  const ask = scripted(['4', '1', 'site', 'n']); // vitrine, cursor, nom, apprentissage non
   const a = await runWizard(ask, false, NULL_OUT);
-  assert.deepEqual(a, { stack: 'vitrine', assistant: 'cursor', project: 'site', backend: 'cloud', learning: false, license: '' });
+  assert.deepEqual(a, { stack: 'vitrine', assistant: 'cursor', project: 'site', backend: 'cloud', learning: false });
 });
 
 test('wireSigint : Ctrl+C → message + exit 130', () => {

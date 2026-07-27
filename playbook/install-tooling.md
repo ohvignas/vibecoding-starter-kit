@@ -3,7 +3,7 @@
 - **superpowers** (PILOTE, dans l'assistant) : Cursor `/add-plugin superpowers` · Claude Code `/plugin install superpowers@claude-plugins-official` · Codex `/plugins`.
 - **skills design (5)** : frontend-design, ui-ux-pro-max, web-design-guidelines, shadcnblocks, brand-guidelines (à installer dans l'assistant).
 - **Commandes générées** : `/new-project`, `/new-feature`, `/edit-design` (dans `.cursor/commands` / `.claude/commands` / `docs/commands`).
-- **Mémoire** : `docs/memory/` (index via `@import`). **Dream** : `.github/workflows/dream.yml` (propose-only).
+- **Mémoire** : `docs/memory/` (index via `@import`), consolidée **à la demande** dans le fil — aucune tâche planifiée.
 - **karpathy** : copié depuis `multica-ai/andrej-karpathy-skills` (fichiers, pas le marketplace).
 - **awesome-cursorrules** : Cursor uniquement (sous-ensemble ciblé) ; sauté ailleurs.
 - **caveman** (optionnel, coûts) : installé par `setup.mjs` **seulement** avec le drapeau `--caveman` (défaut : non). Compresse la sortie de l'IA. ⚠️ Coupe les explications utiles à l'apprentissage — voir `guides/03-securite-et-couts.md`.

@@ -1,0 +1,138 @@
+// scripts/lib/degraissage.test.mjs
+// Lot A — dégraissage. Un test par suppression : ce qui part doit partir PARTOUT
+// (fichier, code qui le copie, validateur qui l'exige, doc qui le cite).
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import * as validators from './validate-commands.mjs';
+import { validateExtras, validateMemoryTemplates } from './validate-commands.mjs';
+import { parseArgs } from './args.mjs';
+import { runWizard, buildArgsFromAnswers } from './wizard.mjs';
+import { kitOwnedFiles } from './kit-owned.mjs';
+import { buildCursorPlugin } from '../build-cursor-plugin.mjs';
+import { renderSetupAi } from './setup-ai.mjs';
+import { resolveAssets, resolveStackManifest } from './matrix.mjs';
+import { pickFromClone } from './external.mjs';
+import { renderProjectAgentsMd } from './templates.mjs';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const NULL_OUT = { write() {} };
+const scripted = (answers) => { let i = 0; return async () => answers[i++]; };
+const tmp = (p) => fs.mkdtempSync(path.join(os.tmpdir(), p));
+
+test('A1 — le dream hook a disparu (template, validateur, rendu AGENTS.md)', () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, 'templates/dream')), 'templates/dream/ doit être supprimé');
+  assert.equal(validators.validateDreamTemplate, undefined, 'validateDreamTemplate ne doit plus exister');
+  assert.doesNotMatch(renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor' }), /DREAM\.md/);
+});
+
+test('A2 — l\'Action memory-consolidate a disparu, la consolidation reste une instruction', () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, 'templates/memory-consolidate')), 'templates/memory-consolidate/ doit être supprimé');
+  assert.deepEqual(validateMemoryTemplates(ROOT), []);
+  const rules = fs.readFileSync(path.join(ROOT, 'templates/agents/memory-rules.md'), 'utf8');
+  // La chaîne littérale reste exigée par validateMemoryTemplates — mais plus comme un cron.
+  assert.match(rules, /consolidate-memory/);
+  assert.doesNotMatch(rules, /hebdomadaire|Action planifiée|cron/i);
+});
+
+test('A3 — le code d\'accès a disparu (module, drapeau, question du wizard)', async () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, 'scripts/lib/license.mjs')), 'scripts/lib/license.mjs doit être supprimé');
+  assert.equal('license' in parseArgs(['--project', 'x']), false, 'parseArgs ne doit plus porter license');
+  assert.throws(() => parseArgs(['--project', 'x', '--license', 'VIBE-0000']), /Argument inconnu/);
+  assert.equal('license' in buildArgsFromAnswers({ stack: 'saas', assistant: 'cursor', project: 'x' }, {}), false);
+  // Le wizard pose 5 questions max (stack, assistant, nom, backend, apprentissage) — plus de 6e.
+  const a = await runWizard(scripted(['1', '2', 'mon-app', '2', 'o']), false, NULL_OUT);
+  assert.deepEqual(a, { stack: 'saas', assistant: 'claude-code', project: 'mon-app', backend: 'local', learning: true });
+});
+
+test('A4 — templates/ONBOARDING.md a disparu (fichier + validateur extras)', () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, 'templates/ONBOARDING.md')), 'templates/ONBOARDING.md doit être supprimé');
+  assert.deepEqual(validateExtras(ROOT), []);
+});
+
+test('A5 — /debug a disparu (template, scaffold, refresh, plugin Cursor, aide)', () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, 'templates/commands/debug.md')), 'templates/commands/debug.md doit être supprimé');
+  const owned = kitOwnedFiles('saas', 'cursor').map((p) => p.to);
+  assert.ok(!owned.some((t) => t.endsWith('/debug.md')), '--refresh ne doit plus régénérer debug.md');
+  assert.equal(owned.filter((t) => t.startsWith('.cursor/commands/')).length, 10, '10 commandes attendues');
+
+  const out = tmp('vs-degraissage-plugin-');
+  buildCursorPlugin(ROOT, out);
+  assert.ok(!fs.existsSync(path.join(out, 'commands', 'debug.md')), 'le plugin Cursor ne doit plus embarquer debug.md');
+  assert.equal(fs.readdirSync(path.join(out, 'commands')).length, 10);
+  fs.rmSync(out, { recursive: true, force: true });
+
+  assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'templates/commands/help.md'), 'utf8'), /\/debug\b/);
+});
+
+test('A6 — PixelRAG n\'est plus un prérequis : cité, jamais installé', () => {
+  const render = (stack) => renderSetupAi({ stack, assistant: 'cursor', manifest: resolveStackManifest(stack, 'cursor'), superpowersCmd: 'x', shadcnNote: 'y', skillsInstalled: true });
+  for (const s of ['saas', 'mobile', 'desktop', 'vitrine']) {
+    assert.doesNotMatch(render(s), /pip install/, `${s} : aucune install Python en prérequis`);
+  }
+  const md = render('saas');
+  assert.match(md, /PixelRAG/, 'PixelRAG reste cité comme comparaison visuelle');
+  // Cité ≠ à faire : aucune case à cocher ne porte PixelRAG.
+  for (const line of md.split('\n')) {
+    if (/PixelRAG/.test(line)) assert.doesNotMatch(line, /^\s*-\s*\[ \]/, `case à cocher interdite : ${line}`);
+  }
+});
+
+test('A7 — la règle karpathy clonée est chargée à la demande, jamais en permanence', () => {
+  const pick = resolveAssets('saas', 'cursor').clones[0].picks[0];
+  assert.equal(pick.transform, 'mdc-on-demand', 'la copie Cursor doit être transformée');
+
+  const clone = tmp('vs-degraissage-clone-'), proj = tmp('vs-degraissage-proj-');
+  fs.mkdirSync(path.join(clone, '.cursor/rules'), { recursive: true });
+  fs.writeFileSync(path.join(clone, pick.src), '---\ndescription: Karpathy\nglobs:\nalwaysApply: true\n---\n\n# Guidelines\n');
+  const res = pickFromClone(clone, [pick], proj);
+  assert.equal(res[0].status, 'copied');
+  const copied = fs.readFileSync(path.join(proj, pick.to), 'utf8');
+  assert.match(copied, /^alwaysApply: false$/m);
+  assert.doesNotMatch(copied, /alwaysApply: true/);
+  assert.match(copied, /# Guidelines/, 'le contenu de la règle est préservé');
+  fs.rmSync(clone, { recursive: true, force: true });
+  fs.rmSync(proj, { recursive: true, force: true });
+});
+
+test('A8 — .gitignore couvre les dossiers de travail des agents', () => {
+  const gi = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+  assert.match(gi, /^\.superpowers\/$/m);
+  assert.match(gi, /^\.claude\/worktrees\/$/m);
+});
+
+test('A9 — zéro orphelin : plus aucune référence aux éléments supprimés', () => {
+  const files = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+    .split('\0')
+    .filter(Boolean)
+    // ai-context/ = dumps de docs tierces ; docs/superpowers/ = plans et audits (mémoire du projet).
+    .filter((f) => !f.startsWith('ai-context/') && !f.startsWith('docs/superpowers/') && f !== 'scripts/lib/degraissage.test.mjs');
+
+  const MOTIFS = [
+    /ONBOARDING/,
+    /DREAM\.md/,
+    /templates\/dream/,
+    /dream hook/i,
+    /memory-consolidate/,
+    /\/debug\b/,
+    /VIBE-/,
+    /pip install pixelrag/,
+    /license\.mjs/,
+  ];
+  const restes = [];
+  for (const f of files) {
+    const abs = path.join(ROOT, f);
+    let txt;
+    try { txt = fs.readFileSync(abs, 'utf8'); } catch { continue; }
+    if (txt.includes('\0')) continue; // binaire
+    txt.split('\n').forEach((line, i) => {
+      for (const m of MOTIFS) if (m.test(line)) restes.push(`${f}:${i + 1}: ${line.trim().slice(0, 120)}`);
+    });
+  }
+  assert.deepEqual(restes, [], `références orphelines :\n${restes.join('\n')}`);
+});

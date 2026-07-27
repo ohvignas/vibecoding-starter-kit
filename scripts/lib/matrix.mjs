@@ -26,8 +26,10 @@ export function resolveAssets(stack, assistant) {
 
   clones.push({
     repo: KARPATHY_REPO,
+    // Le dépôt tiers livre la règle en `alwaysApply: true` : on la copie en Agent-Requested
+    // (transform 'mdc-on-demand'), sinon elle sature le contexte à chaque tour.
     picks: isCursor
-      ? [{ src: '.cursor/rules/karpathy-guidelines.mdc', to: '.cursor/rules/karpathy.mdc' }]
+      ? [{ src: '.cursor/rules/karpathy-guidelines.mdc', to: '.cursor/rules/karpathy.mdc', transform: 'mdc-on-demand' }]
       : [{ src: 'CLAUDE.md', to: 'AGENTS-karpathy.md' }],
   });
   inAssistant.push({ name: 'superpowers', command: SUPERPOWERS[assistant] });
@@ -214,11 +216,13 @@ export const AGENT_SKILL_SPECS = [
 
 export const SHADCN_NOTE = 'Blocs pré-faits **shadcnblocks** via le CLI shadcn natif : `npx shadcn add @shadcnblocks/<bloc>` (ex. `@shadcnblocks/hero125`). Le registry `@shadcnblocks` est ajouté à `components.json` au scaffold (voir /new-project Phase 7). Blocs **gratuits sans clé** ; pour les blocs **pro**, mets `SHADCNBLOCKS_API_KEY` dans `.env`.';
 
-// Stacks à UI web (rendu HTML/Chrome) → vérif de cohérence visuelle maquette↔page par PixelRAG.
+// Stacks à UI web (rendu HTML/Chrome) → comparaison visuelle maquette↔page possible.
 // Mobile exclu (React Native, pas de rendu Chrome).
 export const VISUAL_CHECK_STACKS = ['saas', 'desktop', 'vitrine'];
 
 // Outils lancés par l'agent sécurité et le vérificateur. Gratuits, sans compte.
 export const VERIF_TOOLS_NOTE = 'Outils de vérification (l\'agent sécurité les lance) : `brew install semgrep gitleaks osv-scanner` (ou `pipx install semgrep`). Sans eux, l\'agent ne peut pas produire de preuve et répondra NON PROUVÉ. Les autres (`npx oxlint`, `npx knip`) s\'exécutent sans installation.';
 
-export const PIXELRAG_NOTE = 'PixelRAG (vérif visuelle maquette↔page — OBLIGATOIRE UI web) : `pip install pixelrag` (Python 3.10+) + Chrome. À chaque page/élément et au contrôle complet, l\'agent rend la page générée ET l\'écran de `maquette/` avec `pixelshot`, puis compare la similarité visuelle → corrige si écart.';
+// Signal INDICATIF, jamais un prérequis : l'œil (et le screenshot) tranchent. Un outil de
+// comparaison automatique — PixelRAG par exemple — n'est qu'un confort, à installer si tu veux.
+export const PIXELRAG_NOTE = 'Rien à installer. Compare simplement le screenshot de ta page à l\'écran correspondant de `maquette/` : c\'est ce qui fait foi. Si tu veux un chiffre en plus, un comparateur d\'images (PixelRAG et consorts) donne un **signal indicatif** — il ne bloque jamais, et un écart mesuré ne vaut pas un verdict.';

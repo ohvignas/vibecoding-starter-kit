@@ -8,7 +8,7 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
 4. **Secrets non commités** : `git ls-files | grep -E '(^|/)\.env$'` doit être VIDE. Sinon → alerte : retire le fichier du suivi (`git rm --cached <fichier>`) et vérifie `.gitignore`.
 5. **.gitignore** ignore bien `.env`.
 6. **Commandes** installées : `/new-project`, `/new-feature`, `/edit-design`.
-7. **Workflows** : `.github/workflows/{ci,secrets,dream,memory-consolidate}.yml` présents.
+7. **Workflows** : `.github/workflows/{ci,secrets}.yml` présents.
 8. **Node ≥ 20.12** et **git** disponibles.
 9. **Environnement IA de la stack** :
    - `.mcp.json` (ou `.cursor/mcp.json`) contient les serveurs MCP de la stack (SaaS : convex, better-auth, shadcn ; mobile : convex, expo ; desktop : chrome-devtools ; vitrine : astro-docs, shadcn).

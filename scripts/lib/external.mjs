@@ -2,7 +2,8 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { copyIfAbsent } from './fsops.mjs';
+import { copyIfAbsent, ensureDir } from './fsops.mjs';
+import { forceAlwaysApplyFalse } from './templates.mjs';
 
 // Windows : `npx` est un script .cmd — depuis Node 20.12 (correctif CVE-2024-27980), execFileSync
 // exige le nom exact `npx.cmd` ET `shell: true` pour le lancer (sinon ENOENT/EINVAL).
@@ -27,7 +28,16 @@ export function pickFromClone(cloneDir, picks, projectDir) {
   for (const p of picks) {
     const src = path.join(cloneDir, p.src);
     if (!fs.existsSync(src)) { out.push({ to: p.to, status: 'missing-src' }); continue; }
-    out.push(copyIfAbsent(src, path.join(projectDir, p.to)));
+    const dest = path.join(projectDir, p.to);
+    // On ne laisse JAMAIS une règle tierce s'imposer à chaque tour : on transforme la copie.
+    if (p.transform === 'mdc-on-demand') {
+      if (fs.existsSync(dest)) { out.push({ dest, status: 'skipped-exists' }); continue; }
+      ensureDir(path.dirname(dest));
+      fs.writeFileSync(dest, forceAlwaysApplyFalse(fs.readFileSync(src, 'utf8')));
+      out.push({ dest, status: 'copied' });
+      continue;
+    }
+    out.push(copyIfAbsent(src, dest));
   }
   return out;
 }

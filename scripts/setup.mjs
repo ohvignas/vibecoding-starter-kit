@@ -19,7 +19,6 @@ import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
 import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
 import { supportsColor, ok } from './lib/ui.mjs';
-import { checkLicense } from './lib/license.mjs';
 
 // Racine du kit = dossier parent de scripts/ — fiable quel que soit le cwd de lancement
 // (fini les 22 ENOENT silencieux quand on lance le script depuis un autre dossier).
@@ -79,13 +78,6 @@ async function main() {
   args.source = args.source ?? kitRoot;
   args.project = expandHome(args.project, os.homedir());
   const baseDir = projectBaseDir(kitRoot, process.cwd());
-
-  // Code d'accès (entonnoir email) — mode DOUX : on informe, on ne bloque JAMAIS.
-  if (args.license && String(args.license).trim()) {
-    console.log(checkLicense(args.license)
-      ? ok('Licence validée — merci !', on)
-      : "Code d'accès non reconnu — on continue quand même (mode doux).");
-  }
 
   const { assets, projectDir } = buildRunPlan(args, baseDir);
   if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }
@@ -150,7 +142,7 @@ async function main() {
     finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 
-  for (const cmd of ['init-vibecoding', 'help', 'new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'debug', 'deploy']) {
+  for (const cmd of ['init-vibecoding', 'help', 'new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'deploy']) {
     try {
       const src = path.join(args.source, `templates/commands/${cmd}.md`);
       // Slash-commands typables pour tous : Cursor → .cursor/commands/, Claude → .claude/commands/, Codex → docs/commands/.
@@ -159,12 +151,6 @@ async function main() {
   }
   try { trackDir('docs/memory/', copyDirIfAbsent(path.join(args.source, 'templates/memory'), path.join(projectDir, 'docs/memory'), opt)); }
   catch (e) { failed.push(`docs/memory (${e.message})`); }
-  try {
-    trackDir('dream (.github/workflows + docs/DREAM.md)', [
-      copyIfAbsent(path.join(args.source, 'templates/dream/dream.yml'), path.join(projectDir, '.github/workflows/dream.yml'), opt),
-      copyIfAbsent(path.join(args.source, 'templates/dream/DREAM.md'), path.join(projectDir, 'docs/DREAM.md'), opt),
-    ]);
-  } catch (e) { failed.push(`dream (${e.message})`); }
 
   if (args.assistant === 'cursor') {
     try {
@@ -201,11 +187,9 @@ async function main() {
   try { track('scan secrets (gitleaks)', copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt)); }
   catch (e) { failed.push(`secrets (${e.message})`); }
 
-  // CI par stack + onboarding (tous assistants).
+  // CI par stack (tous assistants). La checklist d'install, c'est docs/A-FAIRE.md — un seul fichier.
   try { track('.github/workflows/ci.yml', copyIfAbsent(path.join(args.source, `templates/ci/${args.stack}.yml`), path.join(projectDir, '.github/workflows/ci.yml'), opt)); }
   catch (e) { failed.push(`ci (${e.message})`); }
-  try { track('docs/ONBOARDING.md', copyIfAbsent(path.join(args.source, 'templates/ONBOARDING.md'), path.join(projectDir, 'docs/ONBOARDING.md'), opt)); }
-  catch (e) { failed.push(`onboarding (${e.message})`); }
 
   try { track('docs/ROADMAP.md (squelette)', copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt)); }
   catch (e) { failed.push(`roadmap (${e.message})`); }
@@ -245,8 +229,6 @@ async function main() {
   } catch (e) { failed.push(`agents (${e.message})`); }
   try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
   catch (e) { failed.push(`.gitignore (${e.message})`); }
-  try { track('consolidation mémoire (hebdo)', copyIfAbsent(path.join(args.source, 'templates/memory-consolidate/consolidate.yml'), path.join(projectDir, '.github/workflows/memory-consolidate.yml'), opt)); }
-  catch (e) { failed.push(`memory-consolidate (${e.message})`); }
   try {
     const hook = path.join(projectDir, '.githooks/pre-commit');
     track('.githooks/pre-commit', copyIfAbsent(path.join(args.source, 'templates/hooks/pre-commit'), hook, opt));

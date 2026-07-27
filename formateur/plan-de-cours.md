@@ -25,7 +25,7 @@ Progression pensée pour des élèves **qui n'ont jamais codé**. Chaque leçon 
 
 ## Module 4 — Quand ça casse (1 h)
 - **Objectif** : ne plus paniquer.
-- **Fais** : provoquer un bug, utiliser `/debug` puis `/sos` ; revenir à un tag `jalon-*` ; noter le piège dans `docs/memory/`.
+- **Fais** : provoquer un bug, demander à l'IA de le traquer méthodiquement (Règle Preuve : 3 tentatives max), puis `/sos` ; revenir à un tag `jalon-*` ; noter le piège dans `docs/memory/`.
 - **Réussite** : l'élève répare seul un bug simple et sait revenir à un état vert.
 
 ## Module 5 — Livrer (1 h)

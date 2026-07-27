@@ -38,7 +38,7 @@ Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation *
 - [Les commandes](#-les-commandes)
 - [Les 4 stacks](#-les-4-stacks)
 - [Ce qui est généré](#-ce-qui-est-généré)
-- [Mémoire & dream hook](#-mémoire--dream-hook)
+- [Mémoire du projet](#-mémoire-du-projet)
 - [Structure du dépôt](#-structure-du-dépôt)
 - [Contribuer](#-contribuer)
 - [Licence](#-licence)
@@ -55,11 +55,10 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 | | Fonctionnalité | Ce que ça fait |
 |---|---|---|
-| 🚀 | **10 commandes** | `/help`, `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor`, `/next`, `/sos`, `/debug`, `/deploy` — tout le cycle de vie |
+| 🚀 | **10 commandes** | `/init-vibecoding`, `/help`, `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor`, `/next`, `/sos`, `/deploy` — tout le cycle de vie |
 | 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework (`.mcp.json` mergé, checks warn-only, `docs/A-FAIRE.md` joué par l'IA) |
 | 💳 | **Catalogue de domaines** | paiement (Stripe/Polar…), email, storage, analytics, erreurs, push, cartes… **choisis d'après le PRD** (`docs/DOMAINS.md`) — pas tout d'un coup |
 | 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
-| 🌙 | **Dream hook** | GitHub Action qui analyse les commits et **propose** features/bugs/idées (propose-only) |
 | 🛡️ | **Revue + sécu + test** | Les **7 agents du crew** — `verificateur` (le juge : PROUVÉ / NON PROUVÉ / BLOQUÉ) · `code-reviewer` · `security-reviewer` · `test-runner` · `critique-produit` · `critique-donnees` · `critique-ux` — livrés aux **3 assistants**, plus scan de secrets, CI, hook pre-commit |
 | 🧪 | **Test complet (design + fonctionnel)** | après **chaque** implémentation : test auto + **navigateur & screenshot** (le rendu) **et** le **parcours E2E** de la feature refait en vrai (Playwright web · **Maestro** mobile · Chrome DevTools desktop), exécuté par un **sous-agent `test-runner` isolé** → économe en tokens |
 | 📏 | **Règles permanentes** | injectées dans `AGENTS.md` : **sous-agents** (quand/comment déléguer) · **vérification** · **secrets & coûts** · **CSS-maquette** (pas de slice, vrai CSS, couleur primaire) · design + **accessibilité** |
@@ -164,7 +163,7 @@ Si tu n'as **pas** de maquette à fournir : crée une clé API sur [stitch.withg
 | `/new-project` | PRD + tech spec + **maquette** + roadmap dérivée |
 | `/build` | construit **jalon par jalon**, comparé à la maquette (visuel à chaque étape) |
 | `/doctor` | vérifie que plugins / MCP / skills sont bien branchés |
-| `/next` · `/sos` · `/debug` · `/deploy` | quoi faire ensuite · débloquer · corriger un bug · mettre en ligne |
+| `/next` · `/sos` · `/deploy` | quoi faire ensuite · débloquer · mettre en ligne |
 
 Bloqué ? Lance **`/doctor`** : il te dit précisément ce qui manque.
 
@@ -181,7 +180,7 @@ flowchart TD
     D --> E1["Cursor : .cursor/commands + rules .mdc + hooks + BUGBOT"]
     D --> E2["Claude Code : CLAUDE.md + .claude/skills"]
     D --> E3["Codex : AGENTS.md + docs/commands"]
-    E1 --> F["Skills (design + stack) + hooks + mémoire + dream + CI + subagents posés auto"]
+    E1 --> F["Skills (design + stack) + hooks + mémoire + CI + subagents posés auto"]
     E2 --> F
     E3 --> F
     F --> G0["Gestes manuels : installe superpowers (/add-plugin) + autorise /mcp"]
@@ -206,7 +205,6 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 | **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
 | **`/next`** | « Je fais quoi maintenant ? » — l'IA lit l'état du projet et te donne ta **prochaine action** |
 | **`/sos`** | Quelque chose casse : diagnostic **rassurant** + 3 sorties (réparer / mettre de côté / revenir au dernier point vert) |
-| **`/debug`** | Débogage **méthodique** (reproduire → isoler → hypothèse → fix minimal → vérifier), avec la règle des 3 essais |
 | **`/deploy`** | Mettre l'app **en ligne** selon la stack (Convex + Vercel/Netlify · Expo EAS · electron-builder) — secrets prod jamais commités |
 
 Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
@@ -255,8 +253,8 @@ mon-app/
 │   ├── ROADMAP.md                 # jalons (✅ ce que tu vois) — piloté par /build
 │   ├── RUN.md                     # comment lancer l'app + ce que tu dois voir
 │   ├── memory/                    # index + gotchas/conventions/decisions/archive
-│   └── DREAM.md · examples/ · ONBOARDING.md
-├── .github/workflows/             # ci · secrets (gitleaks) · dream · memory-consolidate
+│   └── examples/                  # une feature d'exemple, prête à copier
+├── .github/workflows/             # ci · secrets (gitleaks)
 ├── .githooks/                     # pre-commit (secrets+lint) · pre-push (sécu) · checks.mjs
 ├── ai-context/                    # llms.txt officiels
 ├── .env.example · .gitignore · .mcp.json   # MCP mergé par stack
@@ -266,13 +264,13 @@ _(Cursor à la place : `.cursor/commands/` (mêmes slash-commands) · `.cursor/r
 
 </details>
 
-## 🧠 Mémoire & dream hook
+## 🧠 Mémoire du projet
 
-- **Mémoire** — un « cerveau du projet » dans `docs/memory/` : dès que l'IA découvre un piège, elle l'écrit ; au démarrage, un **hook Cursor** le réinjecte. Une Action hebdo **consolide** (dédoublonne, archive).
-- **Dream hook** — une GitHub Action (toutes les 4 h) analyse les derniers commits et **propose** features / bugs / améliorations dans `docs/DREAM.md`.
+- **Mémoire** — un « cerveau du projet » dans `docs/memory/` : dès que l'IA découvre un piège, elle l'écrit ; au démarrage, un **hook** le réinjecte.
+- **Consolidation** — quand l'index grossit, tu demandes à l'IA de **consolider** (dédoublonner, archiver). Ça se passe **dans le fil**, tu vois le diff.
 
 > [!IMPORTANT]
-> Le dream hook est **propose-only** : il n'écrit que dans `docs/DREAM.md`, ne commit/merge **jamais** de code. C'est toi qui tries.
+> Aucune tâche planifiée, aucune clé API en arrière-plan : rien ne tourne sans que tu l'aies lancé.
 
 ## 🗂️ Structure du dépôt
 
@@ -282,7 +280,7 @@ vibecoding-starter-kit/
 ├── stacks/            # saas · mobile · desktop · vitrine (README + AGENTS.md + prompts)
 ├── ai-context/        # llms.txt + règles officielles (via scripts/download-ai-context.sh)
 ├── playbook/          # le runbook que l'IA suit pour installer
-├── templates/         # commandes, agents, mémoire, dream, CI, env, exemples
+├── templates/         # commandes, agents, mémoire, CI, env, exemples
 ├── scripts/           # setup.mjs (moteur) + lib/ (testé, node --test)
 └── docs/superpowers/  # specs & plans (design du système)
 ```

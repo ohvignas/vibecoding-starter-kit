@@ -31,3 +31,7 @@ npm-debug.log*
 .agents/
 skills-lock.json
 *.tgz
+
+# Espaces de travail des agents (jetables, jamais versionnés)
+.superpowers/
+.claude/worktrees/

@@ -5,7 +5,7 @@ const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
 
 export function parseArgs(argv) {
   // source: null = « non fourni » → setup.mjs y mettra la racine du kit (dérivée de import.meta.url).
-  const args = { stack: null, assistant: null, project: null, mockup: null, source: null, dryRun: false, force: false, caveman: false, yes: false, learning: true, license: null, refresh: false };
+  const args = { stack: null, assistant: null, project: null, mockup: null, source: null, dryRun: false, force: false, caveman: false, yes: false, learning: true, refresh: false };
   // Une option à valeur ne doit JAMAIS avaler le drapeau suivant : `--project --no-skills` donnait
   // un projet nommé « --no-skills » ET perdait silencieusement --no-skills.
   const valueOf = (flag, i) => {
@@ -20,7 +20,6 @@ export function parseArgs(argv) {
       case '--assistant': args.assistant = valueOf(a, i); i++; break;
       case '--project': args.project = valueOf(a, i); i++; break;
       case '--mockup': args.mockup = valueOf(a, i); i++; break;
-      case '--license': args.license = valueOf(a, i); i++; break;
       case '--source': args.source = valueOf(a, i); i++; break;
       case '--dry-run': args.dryRun = true; break;
       case '--refresh': args.refresh = true; break;
