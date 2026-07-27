@@ -197,29 +197,55 @@ test('D8 — /help se liste, liste les 10 commandes, et ne donne qu\'une répons
 // pour la commande qu'il prescrit, alors que git répond `fatal: 'origin' does not appear to be
 // a git repository` — le premier message vient d'un `git push` NU. Citation exacte, mais d'une
 // autre commande. Un débutant qui lit un message qu'on ne lui a pas annoncé se croit hors-piste.
-test('D7bis — le message d\'erreur que /build annonce est bien celui que git produit', () => {
-  const t = cmd('build');
-  const cite = t.match(/`(fatal: [^`]+)`/);
-  if (!cite) return; // aucune erreur citée → rien à vérifier
-  // La commande de push prescrite par la page, telle quelle.
-  const push = (t.match(/`(git push[^`]*)`/) || [])[1];
-  assert.ok(push, 'la page cite une erreur de push mais aucune commande de push');
-
+//
+// PORTÉE, telle qu'elle est (une revue a montré que la 1re version promettait plus qu'elle ne
+// tenait, et repassait au vert si la citation perdait ses backticks) : TOUS les runbooks, TOUTES
+// les citations `fatal: …` — avec ou sans backticks — et l'égalité EXACTE de la ligne, pas un
+// préfixe (sinon `fatal: '` suffirait). L'environnement git est isolé (`GIT_CONFIG_GLOBAL`,
+// `GIT_CONFIG_SYSTEM`) : une config personnelle (`commit.gpgsign`, `core.hooksPath`) ne peut ni
+// verdir ni rougir le test.
+// LIMITE ASSUMÉE : on ne rejoue que les commandes `git push …` que la page cite elle-même, dans
+// le cas « pas de remote » (celui du projet qui sort du scaffold). Une page qui citerait un
+// `fatal:` produit par une autre commande, ou dans un autre état du dépôt, n'est pas vérifiable
+// ici — elle est signalée comme telle plutôt que passée sous silence.
+test('D7bis — tout message d\'erreur cité par un runbook est bien celui que git produit', () => {
+  const CITATION = /`?(fatal: [^`\n]+?)`?(?=\s*(?:[—.,)]|$))/g;
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-push-'));
-  const git = (args, opts = {}) => spawnSync('git', args, { cwd: tmpDir, encoding: 'utf8', ...opts });
+  // Environnement neutre : ni config globale, ni config système, ni hooks de la machine.
+  const env = { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
+  const git = (args) => spawnSync('git', args, { cwd: tmpDir, encoding: 'utf8', env });
   git(['init', '-q', '-b', 'main']);
   git(['config', 'user.email', 'test@example.com']);
   git(['config', 'user.name', 'test']);
   fs.writeFileSync(path.join(tmpDir, 'a.txt'), 'x');
   git(['add', '-A']);
-  git(['commit', '-qm', 'init']);
-  // Le projet qui sort du scaffold : aucun remote, exactement le cas que la page décrit.
-  const r = git(push.split(/\s+/).slice(1));
-  const reel = `${r.stderr}${r.stdout}`.split('\n').find((l) => l.startsWith('fatal:')) || '';
-  fs.rmSync(tmpDir, { recursive: true, force: true });
+  const c = git(['commit', '-qm', 'init']);
+  assert.equal(c.status, 0, `le dépôt de contrôle n'a pas pu être préparé : ${c.stderr}`);
 
-  assert.ok(reel.startsWith(cite[1]),
-    `build.md annonce « ${cite[1] } » ;\n\`${push}\` sans remote répond « ${reel} ».\n`
+  const fautes = [];
+  for (const c of COMMANDES) {
+    const t = cmd(c);
+    const citees = [...t.matchAll(CITATION)].map((m) => m[1].trim());
+    if (!citees.length) continue;
+    const pushs = [...t.matchAll(/`(git push[^`\n]*)`/g)].map((m) => m[1]);
+    if (!pushs.length) {
+      fautes.push(`${c}.md cite ${citees.length} erreur(s) git mais aucune commande \`git push …\` : invérifiable`);
+      continue;
+    }
+    // Ce que ces commandes produisent VRAIMENT, sans remote — le cas décrit par les pages.
+    const produites = new Set();
+    for (const p of pushs) {
+      const r = git(p.split(/\s+/).slice(1));
+      `${r.stderr}${r.stdout}`.split('\n').forEach((l) => { if (l.trim().startsWith('fatal:')) produites.add(l.trim()); });
+    }
+    for (const cite of citees) {
+      if (!produites.has(cite)) {
+        fautes.push(`${c}.md annonce « ${cite} »\n    or ${pushs.map((p) => `\`${p}\``).join(' / ')} sans remote répond${produites.size ? ' :\n      ' + [...produites].join('\n      ') : ' sans aucune ligne fatal:'}`);
+      }
+    }
+  }
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  assert.deepEqual(fautes, [], `messages d'erreur annoncés mais jamais produits :\n${fautes.join('\n')}\n\n`
     + 'Cite le message de LA commande que la page prescrit, ou change la commande.');
 });
 
