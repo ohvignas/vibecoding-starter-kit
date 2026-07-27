@@ -2,6 +2,10 @@
 // Retourne des paires { from (relatif au kit), to (relatif au projet) }. JAMAIS de chemin utilisateur.
 const COMMANDS = ['init-vibecoding', 'help', 'new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'debug', 'deploy'];
 const CMD_DIR = { cursor: '.cursor/commands', 'claude-code': '.claude/commands', codex: 'docs/commands' };
+// Dossier d'agents NATIF de chaque assistant. Codex n'en a pas → docs/agents/crew/ (source unique
+// partagée par le scaffold (setup.mjs) et la mise à jour (kitOwnedFiles) : jamais deux vérités).
+export const AGENTS_DIR = { cursor: '.cursor/agents', 'claude-code': '.claude/agents', codex: 'docs/agents/crew' };
+export const CREW = ['code-reviewer', 'security-reviewer', 'test-runner', 'verificateur', 'critique-produit', 'critique-donnees', 'critique-ux'];
 
 export function kitOwnedFiles(stack, assistant) {
   const dir = CMD_DIR[assistant];

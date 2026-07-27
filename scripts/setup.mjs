@@ -6,8 +6,10 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './lib/args.mjs';
 import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
+import { AGENTS_DIR } from './lib/kit-owned.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
+import { toCursorAgent } from './lib/agent-frontmatter.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, installCaveman, installSkills } from './lib/external.mjs';
@@ -206,8 +208,26 @@ async function main() {
     }
   } catch (e) { failed.push(`backend note (${e.message})`); }
 
-  try { trackDir('.claude/agents/ (code-reviewer + security-reviewer)', copyDirIfAbsent(path.join(args.source, 'templates/agents/subagents'), path.join(projectDir, '.claude/agents'), opt)); }
-  catch (e) { failed.push(`agents (${e.message})`); }
+  // Parité : chaque assistant reçoit les 7 agents dans SON dossier natif.
+  // Cursor ne comprend que name/description/model/readonly → frontmatter transformé (toCursorAgent).
+  // Codex n'a pas de dossier d'agents → docs/agents/crew/ (la Règle sous-agents y renvoie).
+  try {
+    const agentsSrc = path.join(args.source, 'templates/agents/subagents');
+    const agentsDir = AGENTS_DIR[args.assistant];
+    if (args.assistant === 'cursor') {
+      const results = [];
+      ensureDir(path.join(projectDir, agentsDir));
+      for (const f of fs.readdirSync(agentsSrc).filter((n) => n.endsWith('.md'))) {
+        const dest = path.join(projectDir, agentsDir, f);
+        if (fs.existsSync(dest) && !args.force) { results.push({ status: 'kept' }); continue; }
+        fs.writeFileSync(dest, toCursorAgent(fs.readFileSync(path.join(agentsSrc, f), 'utf8')));
+        results.push({ status: 'copied' });
+      }
+      trackDir(`${agentsDir}/ (agents du crew (7))`, results);
+    } else {
+      trackDir(`${agentsDir}/ (agents du crew (7))`, copyDirIfAbsent(agentsSrc, path.join(projectDir, agentsDir), opt));
+    }
+  } catch (e) { failed.push(`agents (${e.message})`); }
   try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
   catch (e) { failed.push(`.gitignore (${e.message})`); }
   try { track('consolidation mémoire (hebdo)', copyIfAbsent(path.join(args.source, 'templates/memory-consolidate/consolidate.yml'), path.join(projectDir, '.github/workflows/memory-consolidate.yml'), opt)); }

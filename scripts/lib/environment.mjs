@@ -53,8 +53,10 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
 
   // 5. Câblage hooks assistant
   try {
+    // 3 branches : Codex n'a AUCUN hook d'édition → ne jamais lui écrire de `.claude/` fantôme
+    // (la note « lance npm run typecheck » lui est ajoutée dans docs/RUN.md, voir plus bas).
     if (isCursor) { write('.cursor/hooks.json', extendCursorHooks(read('.cursor/hooks.json'), manifest.checks.onEdit)); done.push('.cursor/hooks.json (checks)'); }
-    else { write('.claude/settings.json', claudeSettings(read('.claude/settings.json'), manifest.checks.onEdit)); done.push('.claude/settings.json (checks)'); }
+    else if (assistant === 'claude-code') { write('.claude/settings.json', claudeSettings(read('.claude/settings.json'), manifest.checks.onEdit)); done.push('.claude/settings.json (checks)'); }
   } catch (e) { failed.push(`hooks assistant (${e.message})`); }
 
   // 6. A-FAIRE.md
