@@ -1,7 +1,7 @@
 // Rend docs/A-FAIRE.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
 // Les skills design sont déjà installés par le wizard.
 import { buildSkillAddArgs } from './external.mjs';
-import { DESIGN_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE } from './matrix.mjs';
+import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE } from './matrix.mjs';
 import { cursorDeeplink } from './deeplink.mjs';
 
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
@@ -42,12 +42,22 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push('');
   L.push('## 5. Design');
   if (skillsInstalled) {
-    L.push('- ✅ déjà installés par le wizard : frontend-design, brand-guidelines, web-design-guidelines, ui-ux-pro-max');
+    L.push('- ✅ déjà installés par le wizard : frontend-design, brand-guidelines, webapp-testing, web-design-guidelines, ui-ux-pro-max');
   } else {
     L.push('- ⚠️ PAS installés (wizard lancé avec --no-skills) — lance ces commandes :');
     for (const s of DESIGN_SKILL_SPECS) L.push(`  - [ ] \`npx ${buildSkillAddArgs(s, assistant).join(' ')}\``);
   }
   L.push(`- [ ] ${shadcnNote.replace('<assistant>', assistant)}`);
+  L.push('');
+  L.push('### Skills du crew (agents de revue et de sécurité)');
+  if (skillsInstalled) {
+    L.push(`- ✅ déjà installés par le wizard : ${AGENT_SKILL_SPECS.flatMap((s) => s.skills).join(', ')}`);
+    L.push('- (si un install a échoué — réseau — relance à la main :)');
+    for (const s of AGENT_SKILL_SPECS) L.push(`  - \`npx ${buildSkillAddArgs(s, assistant).join(' ')}\``);
+  } else {
+    L.push('- ⚠️ PAS installés (wizard lancé avec --no-skills) — lance ces commandes :');
+    for (const s of AGENT_SKILL_SPECS) L.push(`  - [ ] \`npx ${buildSkillAddArgs(s, assistant).join(' ')}\``);
+  }
   L.push('');
   L.push('### Maquette IA — Stitch (si tu n\'as pas de design à fournir)');
   L.push(skillsInstalled

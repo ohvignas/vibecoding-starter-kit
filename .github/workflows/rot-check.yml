@@ -17,7 +17,8 @@ jobs:
             better-auth/skills get-convex/agent-skills expo/skills \
             google-labs-code/stitch-skills anthropics/skills \
             vercel-labs/agent-skills nextlevelbuilder/ui-ux-pro-max-skill \
-            multica-ai/andrej-karpathy-skills ; do
+            multica-ai/andrej-karpathy-skills \
+            getsentry/skills openai/skills ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "https://github.com/$r")
             echo "$r -> $code"
             [ "$code" -lt 400 ] || { echo "::error::dépôt de skills injoignable : $r ($code)"; exit 1; }

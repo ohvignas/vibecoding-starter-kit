@@ -10,6 +10,8 @@ Lis `docs/agents/JOURNAL.md` avant de commencer, ajoutes-y une ligne en finissan
 
 On te donne : la **maquette** (`maquette/`), le **PRD** (`docs/PRD.md`), l'**inventaire de complétude** et la **roadmap** (`docs/ROADMAP.md`).
 
+Aucun skill officiel ne couvre cette lentille : charge `superpowers:brainstorming` (fourni par le plugin superpowers) pour explorer ce que le produit suppose sans le dire.
+
 Ta lentille — **le produit designé est-il couvert en ENTIER ?**
 - Chaque **écran** de la maquette a-t-il un jalon ? (parcours PixelRAG si dispo pour ne rien rater visuellement)
 - Chaque **élément** visible (bouton, lien, filtre, onglet, modale, menu) a-t-il un jalon qui le rend **fonctionnel** ?

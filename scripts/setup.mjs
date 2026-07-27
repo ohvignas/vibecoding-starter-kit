@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './lib/args.mjs';
 import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { AGENTS_DIR } from './lib/kit-owned.mjs';
-import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
+import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
@@ -272,6 +272,13 @@ async function main() {
       done.push(...skl.done.map((d) => `skill design : ${d}`));
       failed.push(...skl.failed.map((f) => `skill design : ${f}`));
     } catch (e) { failed.push(`skills design (${e.message})`); }
+    // Skills du crew : un dépôt indisponible (réseau, renommage) ne doit PAS faire sortir un
+    // scaffold réussi en exit 1 → rangé en « Sauté » (non bloquant), comme les clones.
+    try {
+      const skl = installSkills(AGENT_SKILL_SPECS, args.assistant, undefined, projectDir);
+      done.push(...skl.done.map((d) => `skill crew : ${d}`));
+      cloneSkipped.push(...skl.failed.map((f) => ({ name: `skill crew : ${f}`, reason: 'non installé — optionnel, relance la commande de docs/A-FAIRE.md' })));
+    } catch (e) { cloneSkipped.push({ name: 'skills crew', reason: `non installés (${e.message}) — relance la commande de docs/A-FAIRE.md` }); }
     try {
       const stackSkills = resolveStackManifest(args.stack, args.assistant).skills;
       if (stackSkills.length) {

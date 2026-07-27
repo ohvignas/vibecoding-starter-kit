@@ -2,14 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DESIGN_SKILL_SPECS, SHADCN_NOTE, SUPERPOWERS, resolveAssets } from './matrix.mjs';
 
-test('DESIGN_SKILL_SPECS : 3 specs, repos vérifiés, 4 skills', () => {
+// webapp-testing vit dans le dépôt anthropics/skills : il voyage avec les 4 skills design
+// (un seul `skills add` au lieu de deux clones du même dépôt).
+test('DESIGN_SKILL_SPECS : 3 specs, repos vérifiés, 4 skills design + webapp-testing', () => {
   assert.equal(DESIGN_SKILL_SPECS.length, 3);
   const repos = DESIGN_SKILL_SPECS.map((s) => s.repo);
   assert.ok(repos.includes('github.com/anthropics/skills'));
   assert.ok(repos.includes('github.com/vercel-labs/agent-skills'));
   assert.ok(repos.includes('github.com/nextlevelbuilder/ui-ux-pro-max-skill'));
   const all = DESIGN_SKILL_SPECS.flatMap((s) => s.skills);
-  assert.deepEqual(all.sort(), ['brand-guidelines', 'frontend-design', 'ui-ux-pro-max', 'web-design-guidelines']);
+  assert.deepEqual(all.sort(), ['brand-guidelines', 'frontend-design', 'ui-ux-pro-max', 'web-design-guidelines', 'webapp-testing']);
 });
 
 test('SUPERPOWERS exporté + SHADCN_NOTE mentionne la clé payante', () => {

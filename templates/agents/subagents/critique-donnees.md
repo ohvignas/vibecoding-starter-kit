@@ -10,6 +10,8 @@ Lis `docs/agents/JOURNAL.md` avant de commencer, ajoutes-y une ligne en finissan
 
 On te donne : la **maquette**, le **PRD**, l'**inventaire de complétude**, la **roadmap** (`docs/ROADMAP.md`) et le modèle de données prévu.
 
+Aucun skill officiel ne couvre cette lentille : charge `superpowers:systematic-debugging` (fourni par le plugin superpowers) pour remonter une donnée jusqu'à sa source au lieu de supposer.
+
 **Outils selon la stack** (rien n'est déclaré dans ton frontmatter) : saas et mobile → **Convex MCP** pour inspecter tables et fonctions. Sur desktop et vitrine, il n'y a pas de MCP de données : appuie-toi sur le code et les docs. Si le serveur n'est pas branché, dis-le (`BLOQUÉ`) au lieu de deviner.
 
 Ta lentille — **est-ce que ça peut VRAIMENT fonctionner ?**
