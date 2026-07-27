@@ -418,28 +418,75 @@ test('R2 — ni un agent ni une règle injectée ne réserve un PROUVÉ que le g
   assert.deepEqual(fautes, [], `clauses qui contredisent le gate des commandes ou la Règle Preuve :\n${fautes.join('\n')}`);
 });
 
-// R3 — INVENTAIRE APPROUVÉ. R2 ci-dessus juge le CONTENU d'une ligne, donc il ne voit que ce
-// que ses motifs savent lire : quatre tours de revue ont montré qu'une reformulation finit
-// toujours par passer (« donne le feu vert » au lieu de « prononce », l'attribution coupée sur
-// deux lignes, le juge nommé puis disqualifié). Ce test-ci ne lit pas le sens : il déclenche sur
-// le SEUL nom d'un agent — un ensemble vraiment fermé, celui des 7 fichiers de `subagents/` — et
-// exige que la ligne figure telle quelle dans l'inventaire. Écrire quoi que ce soit de neuf sur
-// un agent oblige donc à relire cette liste, quelle que soit la tournure employée. Sa sensibilité
-// ne dépend d'aucun vocabulaire ; en revanche il ne dit RIEN d'une ligne qui tranche sans nommer
-// personne (« seul un relecteur en contexte frais conclut ») — c'est R2 qui couvre ce cas.
+// Le déclencheur de R3 : le nom d'un agent, quelle que soit sa GRAPHIE. L'ensemble des agents
+// est fermé (les 7 fichiers de `subagents/`), celui de leurs orthographes ne l'est pas : une
+// revue a fait passer une clause fautive en écrivant `vérificateur` accentué, une autre en
+// écrivant `Verificateur`. On compare donc sans casse, et on couvre les variantes qu'un
+// rédacteur français produit naturellement — l'accent, et le tiret rendu par une espace.
+const GRAPHIES = [...new Set(CREW.flatMap((a) => [a, a.replace(/-/g, ' '), ...(a === 'verificateur' ? ['vérificateur'] : [])]))];
+const nommeUnAgent = (t) => { const bas = t.toLowerCase(); return GRAPHIES.some((n) => bas.includes(n)); };
+
+// Les fichiers surveillés par R3. Pas seulement les règles injectées : une attribution fautive
+// atteint le même lecteur depuis une commande, une règle Cursor toujours active ou une graine
+// que les sous-agents reçoivent par son chemin — une revue a fait passer la clause depuis
+// `templates/commands/new-feature.md`, puis depuis `templates/journal/inventaire.md`, que les
+// trois critiques BRIDÉS reçoivent justement (C2).
+const FICHIERS_SURVEILLES = () => [
+  ...FICHIERS_REGLES().map((f) => `templates/agents/${f}`),
+  ...md('templates/commands').map((n) => `templates/commands/${n}`),
+  ...fs.readdirSync(path.join(ROOT, 'templates/cursor/rules')).filter((n) => n.endsWith('.mdc')).sort().map((n) => `templates/cursor/rules/${n}`),
+  'templates/journal/JOURNAL.md', 'templates/journal/state.yaml', 'templates/journal/inventaire.md',
+];
+
+// R3 — INVENTAIRE APPROUVÉ. R2 juge le CONTENU d'une ligne, donc il ne voit que ce que ses
+// motifs savent lire : quatre tours de revue ont montré qu'une reformulation finit toujours par
+// passer (« donne le feu vert » au lieu de « prononce », l'attribution coupée sur deux lignes,
+// le juge nommé puis disqualifié). Ce test-ci ne lit pas le sens : il déclenche sur le seul nom
+// d'un agent et exige que la ligne figure telle quelle dans l'inventaire. Écrire du neuf sur un
+// agent oblige donc à relire cette liste, quelle que soit la tournure.
+//
+// CE QU'IL NE GARANTIT PAS — deux trous mesurés, à connaître avant de s'y fier :
+//  1. Une ligne qui attribue l'autorité SANS nommer personne (« une feature n'exige qu'un
+//     `PROUVÉ` : celui du relecteur détaché ») ne déclenche ni R3 ni R2 — R2 exige lui aussi un
+//     nom d'agent. Aucun ensemble fermé de déclencheurs ne caractérise « cette phrase française
+//     attribue un verdict » : c'est le plafond de ce qu'un test peut garantir sur de la prose,
+//     pas un correctif oublié. La relecture humaine reste le seul filet sur ce cas.
+//  2. Modifier une ligne ET recopier la nouvelle version dans l'inventaire dans le même geste
+//     passe — comme re-baser un texte de référence. C'est le mode de défaillance assumé : le
+//     test force la relecture, il ne la remplace pas.
 const LIGNES_APPROUVEES = [
-  // Les 9 règles injectées, puis le bloc que les 7 agents portent à l'identique (C6 le vérifie).
-  // Recopiées telles quelles depuis les fichiers, après quatre tours de revue : ce sont les
-  // formulations approuvées, pas un résumé.
+  // Les règles injectées dans AGENTS.md/CLAUDE.md.
   "- **Review code** `superpowers:requesting-code-review` puis le sous-agent **`code-reviewer`** · **Sécu** **`security-reviewer`** : ces sous-agents existent sur les 3 assistants, `/code-review` et `/security-review` seulement sur Claude Code.",
   "- **Test live** « Règle de vérification » + `docs/RUN.md` : E2E délégué à `test-runner`, verdict par `verificateur` (+ `security-reviewer` si feature).",
   "**« Fini »** = mergé sur **`main`** (CI verte, review OK, un PR à la fois) **ET** parcours refait en vrai avec le `PROUVÉ` du `verificateur` (+ `security-reviewer` si feature, « Règle Preuve »). Tests + CI verte : nécessaires, **pas** suffisants. Seul motif d'arrêt admis : un blocage externe au test live — et il se dit.",
   "**Une tâche** : **toi**, si tu colles la commande **et** sa sortie. **Un jalon** : le **`verificateur`** seul, en contexte frais. **Une feature** : `verificateur` (fonctionnel) **+** `security-reviewer` (sécurité) — jamais d'auto-`PROUVÉ` sur ce qu'on a écrit.",
-  "0. **Modèle** — **`claude-sonnet-5`**, **sauf `security-reviewer` : `claude-opus-5`**. Seule **règle** qui en fixe un (Claude Code : champ `model` · Cursor : sélecteur · Codex : le brief).",
-  "1. **Sa tâche**, une seule, précise. 2. **Ses skills** — un sous-agent design charge les skills design (« Règle design »), chacun les siens, **à chaque fois**. 3. **Les fichiers à lire**, chemins exacts. 4. **Ses règles** : il ne voit ni `AGENTS.md` ni `CLAUDE.md`. 5. **L'artefact à rendre** : un fichier précis ou un **résumé court**, jamais 10 000 tokens. 6. **Le journal** : les bridés en écriture (3 critiques, `test-runner`, `code-reviewer`) **rendent** leur ligne, **c'est toi qui l'écris** dans `docs/agents/JOURNAL.md` ; `verificateur` et `security-reviewer` écrivent la leur.",
   "**3. FONCTIONNEMENT (end-to-end)** — le parcours doit être **refait en vrai**, **délégué au sous-agent `test-runner` en contexte frais**. Donne-lui la feature, le **flux**, les **critères** (`UJ-*` du PRD, les `AC` de `/new-feature`), l'écran de départ, l'outil : **Playwright MCP** en web, **Maestro MCP** en mobile. Il porte ses exigences de preuve et ses cas limites, et rend un **rapport court** (AC ✅/❌ + capture + 1er point cassé).",
   "**6. Verdict final** — lance le sous-agent **`verificateur`** (contexte frais) ; une **feature** exige aussi le `PROUVÉ` du **`security-reviewer`** (« Règle Preuve »). Le `verificateur` **seul** reporte le verdict dans `docs/agents/state.yaml` et `docs/agents/JOURNAL.md`.",
+  // Le bloc que les 7 agents portent à l'identique (C6 vérifie qu'il l'est), et leurs rôles.
+  "0. **Modèle** — **`claude-sonnet-5`**, **sauf `security-reviewer` : `claude-opus-5`**. Seule **règle** qui en fixe un (Claude Code : champ `model` · Cursor : sélecteur · Codex : le brief).",
+  "1. **Sa tâche**, une seule, précise. 2. **Ses skills** — un sous-agent design charge les skills design (« Règle design »), chacun les siens, **à chaque fois**. 3. **Les fichiers à lire**, chemins exacts. 4. **Ses règles** : il ne voit ni `AGENTS.md` ni `CLAUDE.md`. 5. **L'artefact à rendre** : un fichier précis ou un **résumé court**, jamais 10 000 tokens. 6. **Le journal** : les bridés en écriture (3 critiques, `test-runner`, `code-reviewer`) **rendent** leur ligne, **c'est toi qui l'écris** dans `docs/agents/JOURNAL.md` ; `verificateur` et `security-reviewer` écrivent la leur.",
   "- Tu conclus par un **statut**, jamais un avis : `PROUVÉ` / `NON PROUVÉ` / `BLOQUÉ` — sur **ta** mission seulement, et jamais d'auto-`PROUVÉ` sur du code que tu as écrit ; prononcer un **jalon** `PROUVÉ` reste au `verificateur`, en contexte frais. Les critiques rendent des `MANQUE : … — PREUVE : …`, ou « complet ».",
+  "Tu es le **vérificateur**. Tu ne vois **que** le diff et les critères d'acceptation — pas le raisonnement qui les a produits. C'est ce détachement qui te rend utile : tu ne peux pas hériter du biais « c'est bon ».",
+  // Les commandes : elles pilotent le gate, une attribution fautive y vaut autant qu'ailleurs.
+  "5. **Gate avant de cocher** : lance le sous-agent **`verificateur`** (contexte frais, diff du jalon + critères), puis **`security-reviewer`** sur les features touchées. Tant que l'un des deux ne répond pas **PROUVÉ**, le jalon n'est **pas** coché : corrige, ou passe-le en `BLOQUÉ` dans `docs/agents/state.yaml`.",
+  "14. **Agents du crew (7)** présents dans le dossier de ton assistant : `.cursor/agents/` (Cursor) · `.claude/agents/` (Claude Code) · `docs/agents/crew/` (Codex). Attendus : `verificateur`, `test-runner`, `code-reviewer`, `security-reviewer`, `critique-produit`, `critique-donnees`, `critique-ux`. Manquants → `npx create-vibecoding-kit --refresh`.",
+  "15. **MCP de test branché** : `playwright` (saas, vitrine) · `maestro` (mobile) · `chrome-devtools` (desktop). Sans lui, le sous-agent `test-runner` ne peut rien prouver et répondra `BLOQUÉ`.",
+  "- **critique-produit** (Vera) — « qu'est-ce qu'on a oublié ? » features, écrans, parcours.",
+  "- **critique-donnees** (Marc) — « d'où vient cette donnée ? » modèle, câblage réel, zéro mock.",
+  "- **critique-ux** (Lina) — « et quand ça se passe mal ? » états vide/erreur, responsive, accessibilité.",
+  "- **verificateur** — le juge : il ne voit que le diff et les critères, et tranche **PROUVÉ / NON PROUVÉ / BLOQUÉ**. À lancer avant de dire qu'une étape est finie.",
+  "- **test-runner** — teste une feature en vrai dans le navigateur/simulateur et rend un verdict.",
+  "- **code-reviewer** · **security-reviewer** — relisent le code et la sécurité d'un changement.",
+  "Bugs, conventions, sécurité du diff. Peut lancer le subagent `code-reviewer` sur le diff.",
+  "Revue sécurité des changements de la branche. Peut lancer le subagent `security-reviewer`.",
+  "Lance **`verificateur`** en contexte frais : il ne voit que le diff + les `AC`. **PROUVÉ** requis pour continuer. **NON PROUVÉ** → retour à l'étape 3. **BLOQUÉ** → dis ce qui bloque, ne commit pas.",
+  "- **`critique-produit`** (Vera) — features/écrans/parcours oubliés ;",
+  "- **`critique-donnees`** (Marc) — données réelles, modèle, câblage, zéro mock, permissions ;",
+  "- **`critique-ux`** (Lina) — états vide/chargement/erreur, impasses, responsive, accessibilité.",
+  "> Ces agents vivent dans le dossier d'agents de ton assistant : `.cursor/agents/ (Cursor) · .claude/agents/ (Claude Code) · docs/agents/crew/ (Codex)` — tu peux les **appeler n'importe quand** (« lance `critique-ux` sur cet écran »), pas seulement ici.",
+  // Les graines que les sous-agents reçoivent par leur chemin.
+  "La ligne de fin de mission : `verificateur` et `security-reviewer` écrivent la leur ; les autres sous-agents, bridés en écriture, la **rendent** dans leur rapport et c'est l'**orchestrateur** qui l'ajoute ici.",
+  "Le **contrat de couverture** du projet : tout ce que la maquette et le PRD promettent, ligne par ligne. Produit par `/new-project` **avant** la roadmap (c'en est la base), relu par les trois critiques (`critique-produit`, `critique-donnees`, `critique-ux`). Ce qui n'est pas ici ne sera pas construit.",
   // L'identité des 7 : ajouter un agent est un acte délibéré, pas un effet de bord.
   ...CREW.map((a) => `name: ${a}`),
 ];
@@ -448,12 +495,12 @@ test('R3 — toute ligne qui nomme un agent du crew est dans l\'inventaire appro
   const approuvees = new Set(LIGNES_APPROUVEES);
   const vues = new Set();
   const inconnues = [];
-  for (const f of FICHIERS_REGLES()) {
-    rule(f).split('\n').forEach((line, i) => {
+  for (const f of FICHIERS_SURVEILLES()) {
+    read(f).split('\n').forEach((line, i) => {
       const t = line.trim();
-      if (!t || !CREW.some((a) => t.includes(a))) return;
+      if (!t || !nommeUnAgent(t)) return;
       if (approuvees.has(t)) { vues.add(t); return; }
-      inconnues.push(`templates/agents/${f}:${i + 1} — « ${t.slice(0, 120)}${t.length > 120 ? '…' : ''} »`);
+      inconnues.push(`${f}:${i + 1} — « ${t.slice(0, 120)}${t.length > 120 ? '…' : ''} »`);
     });
   }
   assert.deepEqual(inconnues, [], [
