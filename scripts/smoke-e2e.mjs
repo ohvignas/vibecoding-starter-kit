@@ -31,6 +31,7 @@ for (const f of [
   'AGENTS.md', 'CLAUDE.md', '.gitignore', '.env.example',
   '.githooks/pre-commit', '.githooks/pre-push',
   '.cursor/rules/00-project.mdc', '.cursor/commands/new-project.md',
+  '.cursor/agents/verificateur.md',
   'docs/A-FAIRE.md', 'docs/ONBOARDING.md', 'docs/ROADMAP.md',
 ]) check(`fichier ${f}`, fs.existsSync(path.join(project, f)));
 
@@ -48,6 +49,14 @@ execFileSync(process.execPath, [setup, '--stack', 'vitrine', '--assistant', 'cur
 
 check('vitrine : fichier docs/A-FAIRE.md', fs.existsSync(path.join(projectVitrine, 'docs', 'A-FAIRE.md')));
 check('vitrine : fichier .cursor/rules/stack-vitrine.mdc', fs.existsSync(path.join(projectVitrine, '.cursor', 'rules', 'stack-vitrine.mdc')));
+
+// 1ter. Parité Codex : les agents arrivent dans docs/agents/crew/ et AUCUN .claude/ n'est écrit
+// (Codex n'a ni dossier d'agents ni hook d'édition — un .claude/ fantôme induirait l'élève en erreur).
+const projectCodex = path.join(base, 'demo-codex');
+execFileSync(process.execPath, [setup, '--stack', 'saas', '--assistant', 'codex', '--project', projectCodex, '--no-skills', '--yes'], { stdio: 'inherit', env: gitEnv });
+
+check('codex : docs/agents/crew/verificateur.md présent', fs.existsSync(path.join(projectCodex, 'docs', 'agents', 'crew', 'verificateur.md')));
+check('codex : aucun dossier .claude/', !fs.existsSync(path.join(projectCodex, '.claude')));
 
 // 2. Cas d'échec attendu : stack inconnue → code de sortie ≠ 0 (hors-ligne friendly)
 let code = 0;
