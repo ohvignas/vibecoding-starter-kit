@@ -7,7 +7,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { STACKS } from './matrix.mjs';
@@ -180,11 +182,45 @@ test('D8 — /help se liste, liste les 10 commandes, et ne donne qu\'une répons
   const REPONSE_UNIQUE = '**Une seule réponse à « je commence par quoi ? » : `/help`**';
   assert.ok(t.includes(REPONSE_UNIQUE), `/help doit porter la phrase canonique, mot pour mot : ${REPONSE_UNIQUE}`);
   const DESIGNE_UNE_ENTREE = /(?:1re|1ère|1ere|premi(?:er|ère))s?\s+(?:commande|chose)|commande\s+à\s+taper|(?:commenc|démarr|début)\w*\s+par\s+[`/]|à\s+taper\s+(?:en\s+premier|d['’]abord)|par\s+où\s+(?:commencer|démarrer)/i;
+  // On RETIRE la phrase canonique de sa ligne au lieu d'exempter la ligne entière : sinon une
+  // entrée concurrente écrite juste après elle, sur la même ligne, échappait au contrôle — cas
+  // que la version d'avant attrapait et que l'exemption en bloc avait perdu.
   const concurrentes = t.split('\n')
-    .map((l, i) => [i + 1, l.trim()])
-    .filter(([, l]) => l && !l.includes(REPONSE_UNIQUE) && DESIGNE_UNE_ENTREE.test(l))
+    .map((l, i) => [i + 1, l.replace(REPONSE_UNIQUE, '').trim()])
+    .filter(([, l]) => l && DESIGNE_UNE_ENTREE.test(l))
     .map(([n, l]) => `help.md:${n} — ${l.slice(0, 100)}`);
   assert.deepEqual(concurrentes, [], `deux réponses concurrentes à « par quoi je commence ? » :\n${concurrentes.join('\n')}`);
+});
+
+// D7bis — les messages d'erreur cités dans les runbooks sont EXÉCUTÉS, jamais crus sur parole.
+// Ce test naît d'une faute réelle : `/build` annonçait `fatal: No configured push destination`
+// pour la commande qu'il prescrit, alors que git répond `fatal: 'origin' does not appear to be
+// a git repository` — le premier message vient d'un `git push` NU. Citation exacte, mais d'une
+// autre commande. Un débutant qui lit un message qu'on ne lui a pas annoncé se croit hors-piste.
+test('D7bis — le message d\'erreur que /build annonce est bien celui que git produit', () => {
+  const t = cmd('build');
+  const cite = t.match(/`(fatal: [^`]+)`/);
+  if (!cite) return; // aucune erreur citée → rien à vérifier
+  // La commande de push prescrite par la page, telle quelle.
+  const push = (t.match(/`(git push[^`]*)`/) || [])[1];
+  assert.ok(push, 'la page cite une erreur de push mais aucune commande de push');
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-push-'));
+  const git = (args, opts = {}) => spawnSync('git', args, { cwd: tmpDir, encoding: 'utf8', ...opts });
+  git(['init', '-q', '-b', 'main']);
+  git(['config', 'user.email', 'test@example.com']);
+  git(['config', 'user.name', 'test']);
+  fs.writeFileSync(path.join(tmpDir, 'a.txt'), 'x');
+  git(['add', '-A']);
+  git(['commit', '-qm', 'init']);
+  // Le projet qui sort du scaffold : aucun remote, exactement le cas que la page décrit.
+  const r = git(push.split(/\s+/).slice(1));
+  const reel = `${r.stderr}${r.stdout}`.split('\n').find((l) => l.startsWith('fatal:')) || '';
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+
+  assert.ok(reel.startsWith(cite[1]),
+    `build.md annonce « ${cite[1] } » ;\n\`${push}\` sans remote répond « ${reel} ».\n`
+    + 'Cite le message de LA commande que la page prescrit, ou change la commande.');
 });
 
 // La comparaison d'images ALERTE, elle ne tranche pas. La 1re version ne portait qu'une liste
