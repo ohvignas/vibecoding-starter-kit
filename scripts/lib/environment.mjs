@@ -69,13 +69,21 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
     }
   } catch (e) { failed.push(`hooks assistant (${e.message})`); }
 
-  // 6. A-FAIRE.md
-  try { write('docs/A-FAIRE.md', renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE, skillsInstalled })); done.push('docs/A-FAIRE.md'); }
-  catch (e) { failed.push(`A-FAIRE (${e.message})`); }
+  // 6. A-FAIRE.md — JAMAIS écrasé s'il existe : l'utilisateur y coche ses cases, et `/new-project`
+  // y ajoute une section « Pour ton projet ». Un `update` réécrivait tout et effaçait les deux.
+  // La version fraîche part en `.new` pour qu'il puisse comparer.
+  try {
+    const rendered = renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE, skillsInstalled });
+    if (read('docs/A-FAIRE.md') === null) { write('docs/A-FAIRE.md', rendered); done.push('docs/A-FAIRE.md'); }
+    else { write('docs/A-FAIRE.md.new', rendered); done.push('docs/A-FAIRE.md.new (ton A-FAIRE.md est conservé)'); }
+  } catch (e) { failed.push(`A-FAIRE (${e.message})`); }
 
-  // 6b. DOMAINS.md (catalogue métier de la stack)
-  try { write('docs/DOMAINS.md', renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS })); done.push('docs/DOMAINS.md'); }
-  catch (e) { failed.push(`DOMAINS (${e.message})`); }
+  // 6b. DOMAINS.md (catalogue métier de la stack) — même protection : `/new-project` l'enrichit.
+  try {
+    const rendered = renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS });
+    if (read('docs/DOMAINS.md') === null) { write('docs/DOMAINS.md', rendered); done.push('docs/DOMAINS.md'); }
+    else { write('docs/DOMAINS.md.new', rendered); done.push('docs/DOMAINS.md.new (ton DOMAINS.md est conservé)'); }
+  } catch (e) { failed.push(`DOMAINS (${e.message})`); }
 
   // 6c. Journal de mission partagé (append-only) — jamais écrasé : c'est la mémoire du crew.
   try {

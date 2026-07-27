@@ -31,7 +31,10 @@ test('validateArgs signale stack/assistant/projet invalides', () => {
   assert.deepEqual(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','ok'])), []);
   assert.deepEqual(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','/tmp/vibe-demo'])), []);
   assert.deepEqual(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','C:\\Users\\eleve\\app'])), []); // chemin absolu Windows
-  assert.equal(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','a b'])).length, 1);
+  // Un espace est LÉGITIME dans un chemin (« C:\Users\Jean Dupont\app ») : accepté depuis le Lot 0.
+  assert.deepEqual(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','a b'])), []);
+  // Ce qui reste refusé : les métacaractères de shell.
+  assert.equal(validateArgs(parseArgs(['--stack','saas','--assistant','cursor','--project','a;rm'])).length, 1);
 });
 
 test('parseArgs : --license capturé, défaut null', () => {
@@ -89,4 +92,32 @@ test('parseArgs : nom de projet positionnel (npm create vibecoding-kit mon-app)'
 
 test('validateArgs : vitrine est une stack valide', () => {
   assert.deepEqual(validateArgs(parseArgs(['--stack','vitrine','--assistant','cursor','--project','x'])), []);
+});
+
+// --- Lot 0 : bugs prouvés par l'audit du 27/07/2026 ---
+
+test('un drapeau ne peut pas être avalé comme valeur (--project --no-skills)', () => {
+  assert.throws(() => parseArgs(['--project', '--no-skills']), /attend une valeur/);
+  assert.throws(() => parseArgs(['--stack', '--yes']), /attend une valeur/);
+  assert.throws(() => parseArgs(['--assistant']), /attend une valeur/);
+});
+
+test('« . » et « ./ » désignent le dossier courant, jamais le HOME', () => {
+  const cwd = '/tmp/mon-projet';
+  assert.equal(resolveProjectDir('.', '/ailleurs', cwd), path.resolve(cwd));
+  assert.equal(resolveProjectDir('./', '/ailleurs', cwd), path.resolve(cwd));
+});
+
+test('chemins avec espace ou accent acceptés (Jean Dupont, projet-café)', () => {
+  for (const p of ['mon projet', 'projet-café', '/Users/Jean Dupont/app', 'C:\\Users\\Jean Dupont\\app']) {
+    const errs = validateArgs({ stack: 'saas', assistant: 'cursor', project: p });
+    assert.deepEqual(errs, [], `« ${p} » doit être accepté`);
+  }
+});
+
+test('les caractères dangereux pour un shell restent refusés', () => {
+  for (const p of ['app; rm -rf /', 'app$(whoami)', 'app`id`', 'app|cat', 'app\nrm']) {
+    const errs = validateArgs({ stack: 'saas', assistant: 'cursor', project: p });
+    assert.ok(errs.some((e) => /project/.test(e)), `« ${p} » doit être refusé`);
+  }
 });

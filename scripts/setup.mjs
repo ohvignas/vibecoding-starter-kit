@@ -106,6 +106,12 @@ async function main() {
   // Jamais écraser un fichier existant : la nouvelle version part en .new, signalée dans le rapport.
   for (const name of ['AGENTS.md', 'CLAUDE.md']) {
     const dest = path.join(projectDir, name);
+    if (fs.existsSync(dest) && args.force) {
+      // --force écrase, mais JAMAIS sans filet : l'ancien fichier (et les règles perso qu'il
+      // contient) est sauvegardé à côté avant d'être remplacé.
+      fs.writeFileSync(`${dest}.bak`, fs.readFileSync(dest, 'utf8'));
+      kept.push(`💾 ${name} sauvegardé avant écrasement (${name}.bak)`);
+    }
     if (fs.existsSync(dest) && !args.force) {
       fs.writeFileSync(`${dest}.new`, agents);
       kept.push(`⚠️ ${name} existant conservé (nouvelle version : ${name}.new)`);

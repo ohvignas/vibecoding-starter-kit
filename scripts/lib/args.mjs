@@ -6,20 +6,27 @@ const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
 export function parseArgs(argv) {
   // source: null = « non fourni » → setup.mjs y mettra la racine du kit (dérivée de import.meta.url).
   const args = { stack: null, assistant: null, project: null, mockup: null, source: null, dryRun: false, force: false, caveman: false, yes: false, learning: true, license: null, refresh: false };
+  // Une option à valeur ne doit JAMAIS avaler le drapeau suivant : `--project --no-skills` donnait
+  // un projet nommé « --no-skills » ET perdait silencieusement --no-skills.
+  const valueOf = (flag, i) => {
+    const v = argv[i + 1];
+    if (v === undefined || v.startsWith('-')) throw new Error(`${flag} attend une valeur`);
+    return v;
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
-      case '--stack': args.stack = argv[++i]; break;
-      case '--assistant': args.assistant = argv[++i]; break;
-      case '--project': args.project = argv[++i]; break;
-      case '--mockup': args.mockup = argv[++i]; break;
-      case '--license': args.license = argv[++i]; break;
-      case '--source': args.source = argv[++i]; break;
+      case '--stack': args.stack = valueOf(a, i); i++; break;
+      case '--assistant': args.assistant = valueOf(a, i); i++; break;
+      case '--project': args.project = valueOf(a, i); i++; break;
+      case '--mockup': args.mockup = valueOf(a, i); i++; break;
+      case '--license': args.license = valueOf(a, i); i++; break;
+      case '--source': args.source = valueOf(a, i); i++; break;
       case '--dry-run': args.dryRun = true; break;
       case '--refresh': args.refresh = true; break;
       case '--force': args.force = true; break;
       case '--caveman': args.caveman = true; break;
-      case '--backend': args.backend = argv[++i]; break;
+      case '--backend': args.backend = valueOf(a, i); i++; break;
       case '--no-skills': args.noSkills = true; break;
       case '--no-learning': args.learning = false; break;
       case '--yes': args.yes = true; break;
@@ -36,8 +43,12 @@ export function validateArgs(args) {
   const errors = [];
   if (!STACKS.includes(args.stack)) errors.push(`--stack doit valoir ${STACKS.join('|')}`);
   if (!ASSISTANTS.includes(args.assistant)) errors.push(`--assistant doit valoir ${ASSISTANTS.join('|')}`);
-  // `:` et `\` autorisés pour les chemins absolus Windows (ex. C:\Users\eleve\app). Espace toujours refusé.
-  if (!args.project || !/^[\w.:/~\\-]+$/.test(args.project)) errors.push('--project : nom invalide');
+  // Espaces et accents ACCEPTÉS (« C:\Users\Jean Dupont\app », « projet-café ») : les refuser bloquait
+  // le cas Windows le plus banal et un public francophone. On interdit seulement ce qui est dangereux
+  // pour un shell ou un chemin (métacaractères, retours à la ligne, caractères de contrôle).
+  if (!args.project || !args.project.trim() || /[;&|`$(){}<>*?!\n\r\t\0]/.test(args.project)) {
+    errors.push('--project : nom invalide');
+  }
   if (args.backend !== undefined && !['cloud', 'local'].includes(args.backend)) errors.push('--backend doit valoir cloud|local');
   return errors;
 }
@@ -56,9 +67,14 @@ export function expandHome(p, home) {
 // Un nom nu (sans séparateur) atterrit EN DEHORS du clone du kit : ../<nom> par rapport à la
 // racine du kit. Un chemin explicite (relatif avec séparateur, ou absolu) est respecté tel quel.
 // Dossier de base où créer le projet, calculé par l'appelant (voir projectBaseDir).
-export function resolveProjectDir(project, baseDir) {
+export function resolveProjectDir(project, baseDir, cwd = process.cwd()) {
   if (path.isAbsolute(project)) return path.resolve(project);
-  if (project.includes('/') || project.includes('\\')) return path.resolve(project);
+  // « . » et « ./ » = le dossier COURANT. Sans ce cas, `path.resolve(baseDir, '.')` renvoyait
+  // le dossier parent du kit — donc le HOME quand le kit tourne depuis npx : le scaffold
+  // (et son `git init` + `git add -A`) atterrissait dans le dossier personnel de l'utilisateur.
+  const normalized = project.replace(/[\\/]+$/, '');
+  if (normalized === '.' || normalized === '') return path.resolve(cwd);
+  if (project.includes('/') || project.includes('\\')) return path.resolve(cwd, project);
   return path.resolve(baseDir, project);
 }
 
