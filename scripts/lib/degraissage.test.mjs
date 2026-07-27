@@ -106,12 +106,13 @@ test('A8 — .gitignore couvre les dossiers de travail des agents', () => {
   assert.match(gi, /^\.claude\/worktrees\/$/m);
 });
 
+// @garde-orphelins — ce fichier PORTE les motifs traqués : ils n'y sont pas des références.
 test('A9 — zéro orphelin : plus aucune référence aux éléments supprimés', () => {
   const files = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
     .split('\0')
     .filter(Boolean)
     // ai-context/ = dumps de docs tierces ; docs/superpowers/ = plans et audits (mémoire du projet).
-    .filter((f) => !f.startsWith('ai-context/') && !f.startsWith('docs/superpowers/') && f !== 'scripts/lib/degraissage.test.mjs');
+    .filter((f) => !f.startsWith('ai-context/') && !f.startsWith('docs/superpowers/'));
 
   const MOTIFS = [
     /ONBOARDING/,
@@ -130,6 +131,11 @@ test('A9 — zéro orphelin : plus aucune référence aux éléments supprimés'
     let txt;
     try { txt = fs.readFileSync(abs, 'utf8'); } catch { continue; }
     if (txt.includes('\0')) continue; // binaire
+    // Un fichier qui TRAQUE ces chaînes en contient forcément : ses motifs ne sont pas des
+    // références orphelines. Il le déclare lui-même par le marqueur ci-dessous, au lieu d'être
+    // ajouté ici à la main — sinon chaque nouveau garde casse celui-ci le jour où il est
+    // commité (et pas avant : `git ls-files` ne voit pas un fichier encore non suivi).
+    if (txt.includes('@garde-orphelins')) continue;
     txt.split('\n').forEach((line, i) => {
       for (const m of MOTIFS) if (m.test(line)) restes.push(`${f}:${i + 1}: ${line.trim().slice(0, 120)}`);
     });

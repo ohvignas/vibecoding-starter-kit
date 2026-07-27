@@ -178,6 +178,10 @@ test('D10 — aucune commande ne renvoie à quelque chose qui n\'existe pas', ()
     [/3 essais/, 'la règle canonique s\'appelle « Règle Preuve » et compte des tentatives'],
     [/`dev`/, 'le scaffold ne crée que `main`'],
     [/STITCH_API_KEY/, 'variable d\'environnement inexistante'],
+    // @garde-orphelins — les deux motifs qui suivent sont aussi traqués par A9
+    // (`degraissage.test.mjs`) dans tout le dépôt : ce marqueur dit qu'ici ce sont des
+    // détecteurs, pas des références. Sans lui, A9 échoue au moment du commit — et pas avant,
+    // puisqu'il lit `git ls-files` et ne voit pas un fichier encore non suivi.
     [/\/debug\b/, 'commande supprimée au Lot A'],
     [/docs\/ONBOARDING\.md/, 'fichier supprimé au Lot A'],
   ];
