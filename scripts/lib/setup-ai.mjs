@@ -27,9 +27,13 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   } else L.push('- [ ] (aucun)');
   L.push('');
   L.push('## 3. MCP à autoriser');
-  const connect = assistant === 'cursor'
-    ? 'ouvre **Settings → MCP** dans Cursor et active-le'
-    : 'lance `/mcp` pour connecter';
+  // 3 branches : Codex n'a pas de `/mcp` — il faut lui dire quoi recopier, et où.
+  const CONNECT = {
+    cursor: 'ouvre **Settings → MCP** dans Cursor et active-le',
+    'claude-code': 'lance `/mcp` pour connecter',
+    codex: '**recopie la définition** du serveur depuis `.mcp.json` dans ta configuration MCP Codex',
+  };
+  const connect = CONNECT[assistant] ?? CONNECT['claude-code'];
   for (const [name, cfg] of Object.entries(manifest.mcp)) {
     L.push(`- [ ] ${name} : ${connect}${cfg.needsAuth ? ' (login requis)' : ''}`);
     if (cfg.prereq) L.push(`  - ⚠️ prérequis : ${cfg.prereq}`);

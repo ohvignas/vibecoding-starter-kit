@@ -13,15 +13,22 @@ export function extendCursorHooks(existingJson, onEditIds) {
   return JSON.stringify(base, null, 2) + '\n';
 }
 
+// Ajoute une entrée de hook si sa commande n'est pas déjà câblée (idempotent : un re-run du
+// scaffold ne duplique jamais le hook).
+function addHook(base, event, matcher, command) {
+  base.hooks[event] = base.hooks[event] || [];
+  const already = base.hooks[event].some((e) => (e.hooks || []).some((h) => h.command === command));
+  if (!already) base.hooks[event].push({ ...(matcher ? { matcher } : {}), hooks: [{ type: 'command', command }] });
+}
+
 export function claudeSettings(existingJson, onEditIds) {
   const base = existingJson ? JSON.parse(existingJson) : {};
   base.hooks = base.hooks || {};
-  base.hooks.PostToolUse = base.hooks.PostToolUse || [];
-  const cmd = RUN(onEditIds);
-  const already = base.hooks.PostToolUse.some((e) => (e.hooks || []).some((h) => h.command === cmd));
-  if (!already) {
-    base.hooks.PostToolUse.push({ matcher: 'Edit|Write', hooks: [{ type: 'command', command: cmd }] });
-  }
+  addHook(base, 'PostToolUse', 'Edit|Write', RUN(onEditIds));
+  // Mémoire du projet + prochain jalon injectés au démarrage de session.
+  addHook(base, 'SessionStart', null, 'node .claude/hooks/inject-memory.mjs');
+  // Garde-fou avant toute commande shell (rm -rf /, curl | sh, lecture de .env…).
+  addHook(base, 'PreToolUse', 'Bash', 'node .claude/hooks/guard-shell.mjs');
   return JSON.stringify(base, null, 2) + '\n';
 }
 

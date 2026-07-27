@@ -180,6 +180,15 @@ async function main() {
     } catch (e) { failed.push(`cursor extras (${e.message})`); }
   }
 
+  // Hooks Claude Code (format Claude : stdin `tool_input`, blocage par exit 2) — copiés seulement
+  // pour Claude Code, comme les hooks Cursor ne le sont que pour Cursor. Les deux jeux sont
+  // incompatibles : même intention, protocoles différents.
+  if (args.assistant === 'claude-code') {
+    try {
+      trackDir('.claude/hooks/ (mémoire au démarrage + garde-shell)', copyDirIfAbsent(path.join(args.source, 'templates/claude/hooks'), path.join(projectDir, '.claude/hooks'), opt));
+    } catch (e) { failed.push(`claude hooks (${e.message})`); }
+  }
+
   // Sécurité (tous assistants) : .env.example par stack + scan de secrets gitleaks.
   try { track('.env.example', copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt)); }
   catch (e) { failed.push(`.env.example (${e.message})`); }
