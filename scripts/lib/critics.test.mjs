@@ -21,11 +21,14 @@ test('panel de critiques : personas distincts, format MANQUE, ne codent pas', ()
   assert.match(bodies[1], /mock/i); assert.match(bodies[2], /chargement/i);
 });
 
-test('crew : chaque agent déclare son modèle et lit le journal', () => {
+// Ces 4 agents sont bridés en écriture (`disallowedTools`) : ils LISENT le journal, ils ne
+// l'écrivent pas. Leur ligne part dans leur rapport, l'orchestrateur l'ajoute (Lot C, C1).
+test('crew : chaque agent déclare son modèle et LIT le journal (sans jamais l\'écrire)', () => {
   for (const a of ['code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux']) {
     const t = read(`templates/agents/subagents/${a}.md`);
     assert.match(t, /model: claude-(opus|sonnet)-5/, `${a} : modèle déclaré`);
-    assert.match(t, /JOURNAL\.md/, `${a} : lit/écrit le journal`);
+    assert.match(t, /Lis `docs\/agents\/JOURNAL\.md`/, `${a} : lit la mémoire partagée du crew`);
+    assert.doesNotMatch(t, /ajoutes-y une ligne|Écris une ligne/i, `${a} : ne peut pas écrire → on ne le lui ordonne pas`);
   }
 });
 

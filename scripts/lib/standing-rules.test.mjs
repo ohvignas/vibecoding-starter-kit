@@ -128,7 +128,10 @@ test('B10 — dédoublonnage : une occurrence canonique par consigne', () => {
   assert.deepEqual(count(/systematic-debugging/), ['verify-rule.md']);
   assert.deepEqual(count(/PixelRAG/), ['verify-rule.md']);
   assert.deepEqual(count(/Playwright|Maestro/), ['verify-rule.md']);
-  assert.deepEqual(count(/JOURNAL\.md/), ['proof-rule.md', 'verify-rule.md']);
+  // Le journal : `proof-rule` dit ce qu'on y colle, `verify-rule` quand — et, depuis le Lot C,
+  // `subagents-rule` dit QUI l'écrit quand le sous-agent délégué est bridé en écriture. Trois
+  // consignes distinctes sur le même fichier, pas trois définitions du même point.
+  assert.deepEqual(count(/JOURNAL\.md/), ['proof-rule.md', 'subagents-rule.md', 'verify-rule.md']);
   assert.deepEqual(count(/3 (essais|tentatives)/), ['proof-rule.md', 'secrets-cost-rule.md']);
   assert.deepEqual(count(/[Ss]creenshot|capture navigateur/i), ['verify-rule.md']);
 });

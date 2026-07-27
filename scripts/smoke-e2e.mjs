@@ -33,6 +33,9 @@ for (const f of [
   '.cursor/rules/00-project.mdc', '.cursor/commands/new-project.md',
   '.cursor/agents/verificateur.md',
   'docs/A-FAIRE.md', 'docs/ROADMAP.md',
+  // Mémoire partagée du crew : les agents la reçoivent PAR SON CHEMIN — si le fichier n'est pas
+  // là, ils lisent le vide et l'inventaire de complétude n'a plus d'existence (Lot C).
+  'docs/agents/JOURNAL.md', 'docs/agents/state.yaml', 'docs/agents/inventaire.md',
 ]) check(`fichier ${f}`, fs.existsSync(path.join(project, f)));
 
 check('dépôt git initialisé (.git présent)', fs.existsSync(path.join(project, '.git')));

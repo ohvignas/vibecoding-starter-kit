@@ -85,9 +85,10 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
     else { write('docs/DOMAINS.md.new', rendered); done.push('docs/DOMAINS.md.new (ton DOMAINS.md est conservé)'); }
   } catch (e) { failed.push(`DOMAINS (${e.message})`); }
 
-  // 6c. Journal de mission partagé (append-only) — jamais écrasé : c'est la mémoire du crew.
+  // 6c. Mémoire partagée du crew, dans `docs/agents/` — jamais écrasée : journal append-only, état
+  // courant, et l'inventaire de complétude que les 3 critiques reçoivent par son chemin (Lot C).
   try {
-    for (const [rel, seed] of [['docs/agents/JOURNAL.md', 'templates/journal/JOURNAL.md'], ['docs/agents/state.yaml', 'templates/journal/state.yaml']]) {
+    for (const [rel, seed] of [['docs/agents/JOURNAL.md', 'templates/journal/JOURNAL.md'], ['docs/agents/state.yaml', 'templates/journal/state.yaml'], ['docs/agents/inventaire.md', 'templates/journal/inventaire.md']]) {
       if (read(rel) !== null) continue;
       write(rel, fs.readFileSync(path.join(source, seed), 'utf8'));
       done.push(rel);
