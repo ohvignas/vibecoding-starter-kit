@@ -7,6 +7,25 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
+const AGENTS = ['verificateur', 'test-runner', 'security-reviewer', 'code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux'];
+
+test('droits : rédacteurs d\'artefacts écrivent, les autres sont bridés', () => {
+  for (const a of ['verificateur', 'security-reviewer']) {
+    assert.match(read(`templates/agents/subagents/${a}.md`), /^tools:.*\bWrite\b/m, `${a} écrit son artefact`);
+  }
+  for (const a of ['test-runner', 'code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux']) {
+    assert.match(read(`templates/agents/subagents/${a}.md`), /^disallowedTools:.*\bEdit\b/m, `${a} ne modifie pas le code`);
+  }
+});
+
+test('frontmatter : skills en liste, AUCUN mcpServers (aucun MCP n\'est présent sur les 4 stacks)', () => {
+  for (const a of AGENTS) {
+    const t = read(`templates/agents/subagents/${a}.md`);
+    assert.doesNotMatch(t, /^skills: \S/m, `${a} : skills doit être une liste`);
+    assert.doesNotMatch(t, /^mcpServers:/m, `${a} : pas de mcpServers en frontmatter (dépend de la stack)`);
+  }
+});
+
 test('proof-rule : statuts, hiérarchie, interdits, max 3 tentatives', () => {
   const t = read('templates/agents/proof-rule.md');
   for (const s of ['PROUVÉ', 'NON PROUVÉ', 'BLOQUÉ', 'sortie brute', 'ROUGE avant', 'requête réseau', 'contexte frais', 'skip', '3 tentatives']) {

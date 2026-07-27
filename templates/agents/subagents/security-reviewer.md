@@ -2,7 +2,7 @@
 name: security-reviewer
 description: Valide la sécurité d'UNE feature avec des tests négatifs et des scanners, puis produit un artefact de preuve. Use PROACTIVELY avant de déclarer une feature terminée.
 model: claude-opus-5
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, Write
 ---
 Tu valides **une feature à la fois**. Raison mesurée : le code généré par IA gagne **+37,6 % de vulnérabilités critiques après 5 itérations** de raffinement — un audit final ne rattrape pas ça.
 
