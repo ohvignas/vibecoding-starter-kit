@@ -57,3 +57,60 @@ duplication** → réorientée (définition + renvoi), rouge avant.
   `templates/cursor/rules/`).
 - Les 7 agents du crew redéfinissent les 3 tentatives : **inévitable** (ils ne voient pas `AGENTS.md`),
   valeurs identiques, aucune contradiction → cadré par **C6**.
+
+---
+
+## Lot C — crew opérationnel · `PROUVÉ` au 5ᵉ tour (`d8c08fe` → `6ceb301`)
+
+**Les 7 items C1→C7 sont tenus**, vérifiés par un agent frais **dans les 3 projets scaffoldés** (pas
+seulement dans `templates/`) : les 5 bridés ne reçoivent plus d'ordre d'écrire, l'inventaire de
+complétude a enfin un chemin (`docs/agents/inventaire.md`), le `verificateur` n'invalide plus le TDD,
+`state.yaml` est lu et reporté, PixelRAG est un signal indicatif, le bloc de règles est identique sur
+les 7. Sur Cursor, C1 s'exprime autrement (`readonly: true` + « Interdit : Write, Edit ») — le fond tient
+malgré la transformation. Gate mécanique vert : 272 tests, plugin sans diff, smoke E2E, paquet 4/4,
+2189 mots sur les 3 assistants (plafond 2200).
+
+### Ce que les 4 revues ont trouvé, et qu'aucun test ne voyait
+1. **La graine annulait le correctif** (`JOURNAL.md:3`) : les 7 fichiers d'agents étaient corrigés, mais
+   le fichier que tous lisent leur réordonnait d'écrire.
+2. **Le kit exigeait un `PROUVÉ` qu'il interdisait de prononcer** : la clause uniformisée par C6 réservait
+   le verdict au `verificateur`, alors que `build.md:10` exige aussi celui du `security-reviewer`.
+   Tranché : **jalon** = `verificateur` seul · **feature** = `verificateur` + `security-reviewer`.
+   L'invariant protégé est « jamais d'auto-`PROUVÉ` sur ce qu'on a écrit », pas « un seul agent conclut ».
+3. **La source amont** (`remise-en-coherence.md:69`, table « Décisions déjà tranchées ») portait encore
+   l'ancienne règle : les lots D→H l'auraient relue comme autorité.
+4. **Une bannière de péremption affirmait deux faussetés** (numéros décalés de 2, contradiction attribuée
+   au mauvais fichier) — écrite par l'orchestrateur, dans le texte même qui corrigeait cette erreur.
+
+### La leçon transférable : la nature du test
+Trois versions du garde-fou ont échoué en **énumérant les formulations interdites**. À chaque tour, la
+revue produisait une phrase de plus qui passait (« donne le feu vert », attribution coupée sur deux
+lignes, tournure impersonnelle « il est attendu de qui rend un rapport qu'il **grave** sa ligne »).
+Un test ne peut pas décider « cette phrase française dit-elle quelque chose d'interdit ». Il peut
+décider **« est-ce la ligne que j'ai approuvée ? »**. D'où :
+- **R1** compare la graine à un **texte de référence exact** (sensibilité totale par construction) ;
+- **R3** déclenche sur le **nom d'un agent** — sans casse, accents et tiret/espace couverts — dans
+  **31 fichiers** (9 règles + 7 agents + 10 commandes + règles Cursor + 3 graines) et exige la présence
+  dans un **inventaire approuvé** de 35 textes.
+
+Bug de fond découvert au passage : **`\b` est ASCII**. `/\bécris\b/` ne matche jamais « écris » —
+**8 alternatives** de deux motifs étaient du code mort, dont `\bà lui (?:de|seul)\b` en entier. Tout
+motif pouvant croiser un accent passe désormais par une borne `\p{L}` avec le drapeau `u`.
+
+### Limite assumée, écrite dans le test
+Une ligne qui attribue l'autorité **sans nommer personne** (« une feature n'exige qu'un `PROUVÉ` : celui
+du relecteur détaché ») échappe à R2 comme à R3 — mesuré, 272/0. De même, re-baser l'inventaire en même
+temps que la ligne passe. Aucun ensemble fermé de déclencheurs ne caractérise une attribution en
+français : **le test force la relecture, il ne la remplace pas.** C'est le plafond de ce qu'un test
+garantit sur de la prose, pas un correctif oublié.
+
+### Résiduels réassignés
+- `templates/commands/build.md:10` fait écrire « `BLOQUÉ` » dans `state.yaml`, alors que l'énumération
+  légale de la graine dit `blocked` → **Lot D**. Même ligne : l'orchestrateur y est second écrivain de
+  `state.yaml`, sans que `AGENTS.md` lui donne la clé ni ses valeurs.
+- `new-project.md:163` et `:172` citent l'« inventaire de complétude » **sans son chemin**, qui existe
+  désormais → **Lot D (D9)**.
+- **10 plans périmés** ont reçu une bannière « NE PAS REJOUER » : ils portaient l'en-tête « implement this
+  plan task-by-task », des cases décochées, et des instructions contredisant l'état courant
+  (`commit-commands` jamais installé, branche `dev`, 5 skills design au lieu de 4, PixelRAG bloquant).
+  **19 autres** n'ont été testés que sur ces 5 classes de contradiction — relecture intégrale non faite.
