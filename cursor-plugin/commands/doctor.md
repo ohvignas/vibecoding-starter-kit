@@ -19,11 +19,16 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
    - (desktop) le scan sécu `@doyensec/electronegativity` est câblé dans `.githooks/pre-push` (il tourne au `git push` et en CI).
 10. **Skills installés** : le dossier `.claude/skills/` (Claude Code/Codex) ou `.cursor/…` (Cursor) **du projet** contient bien les skills attendus (design + stack). Sinon → relance les commandes de `docs/A-FAIRE.md` section Skills.
 11. **MCP joignables** : pour chaque serveur HTTP de `.cursor/mcp.json`/`.mcp.json`, teste `curl -m 5 -o /dev/null -s -w '%{http_code}' <url>` — un code (même 401/405) prouve qu'il répond ; « timeout » = pas joignable.
-12. **Plugin superpowers** : demande à l'utilisateur de taper `/brainstorm` — si reconnu, c'est bon ; sinon, réinstaller (`/add-plugin superpowers`).
+12. **Plugin superpowers** : demande à l'utilisateur de taper `/` et de chercher `superpowers:brainstorming` — s'il apparaît dans le menu, c'est bon. Sinon, réinstaller selon l'assistant :
+    - Cursor : `/add-plugin superpowers`
+    - Claude Code : `/plugin install superpowers@claude-plugins-official`
+    - Codex : `/plugins` (chercher « Superpowers » puis installer)
 13. **Maquette Stitch (optionnel)** : si l'utilisateur veut Stitch, vérifie que le MCP `stitch` est configuré (user-scope) et que la clé `STITCH_API_KEY` est présente dans l'environnement.
+14. **Agents du crew (7)** présents dans le dossier de ton assistant : `.cursor/agents/` (Cursor) · `.claude/agents/` (Claude Code) · `docs/agents/crew/` (Codex). Attendus : `verificateur`, `test-runner`, `code-reviewer`, `security-reviewer`, `critique-produit`, `critique-donnees`, `critique-ux`. Manquants → `npx create-vibecoding-kit --refresh`.
+15. **MCP de test branché** : `playwright` (saas, vitrine) · `maestro` (mobile) · `chrome-devtools` (desktop). Sans lui, le sous-agent `test-runner` ne peut rien prouver et répondra `BLOQUÉ`.
 
 > `docs/A-FAIRE.md` est le **seul** fichier d'install : l'étape 9 couvre déjà toutes ses cases `[ ]` (gestes de base **+** section « Pour ton projet » ajoutée par `/new-project`).
 
-**Verdict final** : si TOUT est ✓ (1 à 13), écris clairement : « ✅ Ton environnement est prêt — tu peux lancer `/new-project` ». C'est le **critère officiel de fin d'installation**. Sinon, liste les ✗ et la commande exacte pour chacun.
+**Verdict final** : si TOUT est ✓ (1 à 15), écris clairement : « ✅ Ton environnement est prêt — tu peux lancer `/new-project` ». C'est le **critère officiel de fin d'installation**. Sinon, liste les ✗ et la commande exacte pour chacun.
 
 Termine par un résumé : ce qui va, ce qui manque, et les commandes exactes pour corriger.

@@ -39,6 +39,9 @@ Lance l'app et **valide chaque `AC-n`** de la spec : navigateur pour le web, fen
 ### 6. Sécu (`/security-review`)
 Revue sécurité des changements de la branche. Peut lancer le subagent `security-reviewer`.
 
+### 6bis. Verdict (obligatoire avant commit)
+Lance **`verificateur`** en contexte frais : il ne voit que le diff + les `AC`. **PROUVÉ** requis pour continuer. **NON PROUVÉ** → retour à l'étape 3. **BLOQUÉ** → dis ce qui bloque, ne commit pas.
+
 ### 7. Commit (`commit-commands:commit`, Conventional Commits)
 
 ### 8. PR (`commit-commands:commit-push-pr`)
