@@ -36,7 +36,9 @@
 | G | `scripts/lib/setup-ai.mjs`, `scripts/lib/environment.mjs` (§rendu), `scripts/setup.mjs` (§COLLE-MOI) |
 | H | `README.md`, `guides/`, `.github/assets/hero.svg`, `PUBLISH.md`, `playbook/` |
 
-### Gate entre chaque lot (obligatoire)
+### Gate entre chaque lot — DEUX étapes, les deux obligatoires
+
+**Étape 1 — mécanique** (l'agent du lot la lance lui-même) :
 
 ```bash
 N=/Users/antoinevigneau/.nvm/versions/node/v22.21.1/bin/node
@@ -44,7 +46,30 @@ $N --test                      # doit afficher : # fail 0
 $N scripts/smoke-e2e.mjs       # tous les checks verts
 $N scripts/build-cursor-plugin.mjs   # si le lot a touché templates/commands/
 ```
-Un lot qui laisse le rouge n'est pas terminé. **Aucun `git push`, aucun `npm publish`** pendant tout le plan.
+
+**Étape 2 — revue par un agent FRAIS** (obligatoire, c'est elle qui décide) :
+
+Des tests verts ne prouvent pas que le travail est **juste** : ils prouvent qu'il ne casse rien. L'agent qui a fait le lot ne peut pas juger son propre travail — c'est exactement la règle que le kit impose (« le grader n'est jamais celui qui a écrit le code, contexte frais »).
+
+Après chaque lot, dispatcher un **reviewer en contexte frais** qui reçoit **uniquement** :
+1. le **brief du lot** (la section correspondante de ce plan, avec ses items) ;
+2. le **diff complet** du lot (`git diff <base>..HEAD`) ;
+3. l'accès au dépôt en lecture.
+
+Il ne code pas, ne corrige pas. Il rend, **item par item** :
+
+```
+<item> : CORRIGÉ | NON CORRIGÉ | PARTIEL — PREUVE : <fichier:ligne ou commande + sortie>
+```
+puis un **verdict de lot** : `PROUVÉ` / `NON PROUVÉ` / `BLOQUÉ`, et une liste des **régressions** trouvées (quelque chose qui marchait avant et ne marche plus, ou une référence devenue orpheline à cause du lot).
+
+**Règles de la revue** :
+- Chaque constat exige une **preuve vérifiable** ; sans preuve, il n'est pas signalé (on évite le bruit).
+- Le reviewer vérifie aussi ce que le lot **aurait dû casser** : après une suppression (Lot A), toute référence restante au fichier supprimé est une régression.
+- `NON PROUVÉ` → l'orchestrateur dispatche un **agent de correction** avec la liste des items manquants, puis **re-revue**. **Maximum 2 tours** ; au 3ᵉ, le lot passe en `BLOQUÉ` et on demande l'arbitrage de l'utilisateur.
+- Le lot suivant ne démarre **que** sur un `PROUVÉ`.
+
+**Aucun `git push`, aucun `npm publish`** pendant tout le plan.
 
 ### Contraintes globales (tous les lots)
 
@@ -205,3 +230,7 @@ Un lot qui laisse le rouge n'est pas terminé. **Aucun `git push`, aucun `npm pu
 **Risque principal** : le Lot B (règles) modifie ce que les lots C, D, G citent. C'est pourquoi il passe **en deuxième**, juste après le dégraissage — et pourquoi l'ordre est **séquentiel, jamais parallèle** (règle du kit : pas de fan-out d'écrivains).
 
 **Ce que ce plan ne fait pas** : aucun test en session réelle (hors de portée de `node --test`) ; ne traite pas les mouvements stratégiques (banc d'essai, preuve mécanique, extraction du skill maquette→roadmap) — ce sont des **constructions**, pas des corrections, à décider après.
+
+**Coût de la revue** : 8 lots × (1 implémenteur + 1 reviewer, parfois + 1 correcteur + 1 re-revue) ≈ 16 à 24 agents. C'est le prix de la fiabilité : sans reviewer frais, chaque lot est noté par celui qui l'a fait — et l'expérience de ce dépôt montre que ça laisse passer des contradictions internes, des références mortes et des tests qui ne prouvent rien.
+
+**Traçabilité** : chaque verdict de revue est ajouté à `docs/superpowers/audits/2026-07-27-revues-lots.md` (une section par lot : items, statuts, preuves, régressions). C'est ce fichier que le contrôle final Z1 relit — il ne repart pas de zéro.
