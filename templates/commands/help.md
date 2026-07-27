@@ -16,7 +16,7 @@ L'utilisateur veut savoir **quelles commandes existent et à quoi elles servent*
 - **/sos** — Quelque chose est cassé et tu paniques → l'IA **revient au dernier état qui marchait**.
 - **/doctor** — Vérifie que ton environnement est bien branché (plugins, MCP, skills) et te dit **ce qui manque**.
 
-> Un bug précis à traquer ? Pas besoin de commande : dis-le simplement à l'IA. La **Règle Preuve** d'`AGENTS.md` lui impose déjà la méthode (reproduire → isoler → hypothèse → correctif minimal → vérifier) et la limite de 3 tentatives.
+> Un bug précis à traquer ? Pas besoin de commande : dis-le simplement à l'IA. La boucle du projet lui impose déjà `superpowers:systematic-debugging` **avant tout correctif** — c'est ce skill qui porte la méthode — et la **Règle Preuve** limite à **3 tentatives** avant de dire `BLOQUÉ`.
 
 ## Mettre en ligne
 - **/deploy** — Met ton app **en ligne** (checklist + étapes selon ta stack).
