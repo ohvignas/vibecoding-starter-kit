@@ -5,10 +5,10 @@ Un **sous-agent** = une copie de l'IA sur **une tâche isolée**, en **contexte 
 ### Quand en créer
 - **Code à construire** → `superpowers:subagent-driven-development` : 1 implémenteur **par tâche**, en séquence → 1 reviewer → fix (boucle de `/build` et `/new-feature`).
 - **Largeur en LECTURE** (recherche, audit, critique, vérification) → **fan-out parallèle**, un par morceau, puis tu synthétises.
-- **Tâche lourde et isolée** → 1 sous-agent ciblé. **Courte ou triviale** → aucun.
+- **Tâche lourde et isolée** → 1 sous-agent ciblé. **Courte, triviale, ou dépendante du fil** → aucun.
 
 ### Le contrat (il ne voit pas le chat → donne-lui tout)
-0. **Modèle** — **`claude-sonnet-5`** pour tous ; **unique exception : `security-reviewer`, sur `claude-opus-5`**. Nulle part ailleurs le kit ne fixe de modèle (Claude Code : champ `model` · Cursor : sélecteur · Codex : dans le brief).
+0. **Modèle** — **`claude-sonnet-5`** pour tous ; **unique exception : `security-reviewer`, sur `claude-opus-5`**. Aucune autre **règle** n'en fixe (Claude Code : champ `model` · Cursor : sélecteur · Codex : dans le brief).
 1. **Sa tâche**, une seule, précise. 2. **Ses skills** — un sous-agent design charge les skills design (« Règle design »), chacun les siens, **à chaque fois**. 3. **Les fichiers à lire**, chemins exacts. 4. **Ses règles** : il ne voit ni `AGENTS.md` ni `CLAUDE.md`. 5. **L'artefact à rendre** : un fichier précis ou un **résumé court**, jamais 10 000 tokens.
 
 ### Le crew du kit

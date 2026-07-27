@@ -166,3 +166,32 @@ test('B13 — aucune règle standing ne référence quelque chose d\'inexistant'
   }
   assert.deepEqual(restes, [], `références orphelines :\n${restes.join('\n')}`);
 });
+
+// Une « règle standing » n'est pas seulement `templates/agents/` : tout fichier `alwaysApply: true`
+// est relu à CHAQUE message par Cursor, au même titre qu'AGENTS.md. La revue du Lot B a trouvé
+// `00-project.mdc` en train de redéfinir — et contredire — la règle des 3 tentatives.
+test('B13 — aucune règle alwaysApply ne redéfinit ce qu\'AGENTS.md porte déjà', () => {
+  const permanents = fs.readdirSync(path.join(ROOT, 'templates/cursor/rules'))
+    .filter((f) => f.endsWith('.mdc'))
+    .map((f) => [`templates/cursor/rules/${f}`, fs.readFileSync(path.join(ROOT, 'templates/cursor/rules', f), 'utf8')])
+    .filter(([, t]) => /^alwaysApply:\s*true/m.test(t));
+  assert.ok(permanents.length > 0, 'au moins une règle Cursor permanente attendue');
+
+  // Une seconde définition, c'est une contradiction en puissance : on veut un RENVOI.
+  // Nommer le sujet est légitime (« zéro placeholder → « Boucle d'itération » ») ; ce qui ne l'est
+  // pas, c'est de le REDÉFINIR — donc : la ligne parle du sujet SANS pointer vers la règle qui le porte.
+  const SUJETS = [
+    [/3 (essais|corrections|tentatives)/i, 'les 3 tentatives', /Règle Preuve/],
+    [/zéro placeholder/i, "l'anti-flemme", /Boucle d'itération/],
+    [/action destructive/i, 'les actions destructives', /Règle secrets/],
+  ];
+  const fautes = [];
+  for (const [f, t] of permanents) {
+    for (const line of t.split('\n')) {
+      for (const [sujet, quoi, renvoi] of SUJETS) {
+        if (sujet.test(line) && !renvoi.test(line)) fautes.push(`${f} : redéfinit ${quoi} au lieu d'y renvoyer → « ${line.trim().slice(0, 80)} »`);
+      }
+    }
+  }
+  assert.deepEqual(fautes, [], `règles permanentes qui redéfinissent :\n${fautes.join('\n')}`);
+});

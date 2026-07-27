@@ -4,7 +4,7 @@ Tu n'as **pas fini** tant que tu ne l'as pas **vu marcher** — le **design** ET
 
 **1. Test auto** — les tests qui couvrent le changement, rouge → vert (`superpowers:test-driven-development` + `superpowers:verification-before-completion`).
 
-**2. RENDU** — lance l'app (`docs/RUN.md`), ouvre l'écran (web · fenêtre desktop · simulateur mobile). **Cursor et Claude Code** ont un navigateur intégré ; **Codex n'en a pas** → pilote-en un vrai via le **Playwright MCP**. **Screenshot desktop ET mobile** : ça attrape ce que les tests ratent (layout, texte coupé, couleur primaire absente). Compare à `maquette/`, ne devine jamais le rendu.
+**2. RENDU** — lance l'app (`docs/RUN.md`), ouvre l'écran (web · fenêtre desktop · simulateur mobile). **Cursor et Claude Code** ont un navigateur intégré ; **Codex n'en a pas** → pilote-en un vrai via le **Playwright MCP**. **Screenshot desktop ET mobile** (redimensionne la fenêtre) : ça attrape ce que les tests ratent (layout, texte coupé, couleur primaire absente). Compare à `maquette/`, ne devine jamais le rendu.
 
 **3. FONCTIONNEMENT (end-to-end)** — le parcours doit être **refait en vrai**, **délégué au sous-agent `test-runner` en contexte frais**. Donne-lui la feature, le **flux**, les **critères** (`UJ-*` du PRD, les `AC` de `/new-feature`), l'écran de départ, l'outil : **Playwright MCP** en web, **Maestro MCP** en mobile. Il porte ses exigences de preuve et ses cas limites, et rend un **rapport court** (AC ✅/❌ + capture + 1er point cassé).
 
