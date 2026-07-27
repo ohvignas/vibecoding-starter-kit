@@ -6,7 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { validateNewFeatureCommand } from './validate-commands.mjs';
 
-const STEPS = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'git commit', 'gh pr create', 'gh run watch', 'finishing-a-development-branch', 'main'];
+// Miroir de la liste `steps` de validateNewFeatureCommand. `main` nu y était un contrôle vide
+// (« Gates humains » suffisait à le satisfaire) : c'est `--base main`, la cible réelle du merge,
+// qui est exigée — d'où le cas « cible du merge changée » plus bas.
+const STEPS = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'git commit', 'gh pr create', 'gh run watch', 'finishing-a-development-branch', '--base main'];
 const DEPTH = ["Critères d'acceptation", 'En tant que', 'Périmètre'];
 
 function makeRoot({ omitStep = null, omitLoopRef = false, omitRunbook = false, omitDepth = null, ajoute = '' } = {}) {
@@ -49,4 +52,15 @@ test('branche `dev` réintroduite → erreur', () => {
 });
 test('étape `gh pr create` manquante → erreur (la PR ne s\'ouvre pas toute seule)', () => {
   assert.ok(validateNewFeatureCommand(makeRoot({ omitStep: 'gh pr create' })).some(e => /gh pr create/.test(e)));
+});
+// Le contrôle de la cible du merge doit MORDRE : un runbook qui ne nomme aucune branche, ou qui
+// vise une autre base, doit échouer. Avec l'ancien `main` nu, ce test passait au vert sans que le
+// runbook ne dise nulle part où atterrit la PR — le mot « humains » suffisait.
+test('cible du merge absente → erreur (un runbook sans branche cible ne doit pas passer)', () => {
+  const errs = validateNewFeatureCommand(makeRoot({ omitStep: '--base main' }));
+  assert.ok(errs.some(e => /--base main/.test(e)), `attendu une erreur, vu : ${JSON.stringify(errs)}`);
+});
+test('cible du merge changée (`--base master`) → erreur', () => {
+  const errs = validateNewFeatureCommand(makeRoot({ omitStep: '--base main', ajoute: 'gh pr create --fill --base master' }));
+  assert.ok(errs.some(e => /--base main/.test(e)), `attendu une erreur, vu : ${JSON.stringify(errs)}`);
 });

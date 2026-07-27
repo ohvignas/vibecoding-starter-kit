@@ -107,12 +107,26 @@ test('A8 — .gitignore couvre les dossiers de travail des agents', () => {
 });
 
 // @garde-orphelins — ce fichier PORTE les motifs traqués : ils n'y sont pas des références.
+
+// Les fichiers suivis que A9 inspecte. ai-context/ = dumps de docs tierces ; docs/superpowers/ =
+// plans et audits (mémoire du projet). Le marqueur n'exempte de rien dans ces deux dossiers,
+// puisqu'ils sont déjà hors périmètre : A10 les ignore pour la même raison.
+const suivis = () => execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  .split('\0')
+  .filter(Boolean)
+  .filter((f) => !f.startsWith('ai-context/') && !f.startsWith('docs/superpowers/'));
+
+// PORTÉE DU MARQUEUR — les tests de `scripts/lib/`, et eux seuls.
+// CONTREPARTIE, à dire puisqu'elle est réelle : un fichier qui porte `@garde-orphelins` se
+// soustrait ENTIÈREMENT à A9, motifs compris — ce n'est pas une exemption ligne à ligne. Sans
+// restriction de portée, n'importe quel fichier du dépôt (un template, un doc, un runbook livré à
+// l'utilisateur) pouvait donc s'exempter du contrôle « zéro orphelin » en portant ce mot. Le
+// marqueur n'a de raison d'être que là où un test TRAQUE ces chaînes et les contient forcément ;
+// A10 refuse qu'il apparaisse ailleurs.
+const ZONE_GARDE = /^scripts\/lib\/[\w.-]+\.test\.mjs$/;
+
 test('A9 — zéro orphelin : plus aucune référence aux éléments supprimés', () => {
-  const files = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
-    .split('\0')
-    .filter(Boolean)
-    // ai-context/ = dumps de docs tierces ; docs/superpowers/ = plans et audits (mémoire du projet).
-    .filter((f) => !f.startsWith('ai-context/') && !f.startsWith('docs/superpowers/'));
+  const files = suivis();
 
   const MOTIFS = [
     /ONBOARDING/,
@@ -135,10 +149,32 @@ test('A9 — zéro orphelin : plus aucune référence aux éléments supprimés'
     // références orphelines. Il le déclare lui-même par le marqueur ci-dessous, au lieu d'être
     // ajouté ici à la main — sinon chaque nouveau garde casse celui-ci le jour où il est
     // commité (et pas avant : `git ls-files` ne voit pas un fichier encore non suivi).
-    if (txt.includes('@garde-orphelins')) continue;
+    // Seuls les tests de `scripts/lib/` peuvent se déclarer garde (cf. ZONE_GARDE et A10) :
+    // ailleurs, le marqueur serait une porte de sortie ouverte à tout le dépôt.
+    if (ZONE_GARDE.test(f) && txt.includes('@garde-orphelins')) continue;
     txt.split('\n').forEach((line, i) => {
       for (const m of MOTIFS) if (m.test(line)) restes.push(`${f}:${i + 1}: ${line.trim().slice(0, 120)}`);
     });
   }
   assert.deepEqual(restes, [], `références orphelines :\n${restes.join('\n')}`);
+});
+
+test('A10 — le marqueur @garde-orphelins ne s\'utilise que dans les tests de scripts/lib/', () => {
+  const MARQUEUR = ['@garde', 'orphelins'].join('-'); // concaténé : ce test n'est pas un garde.
+  const hors = [];
+  for (const f of suivis()) {
+    if (ZONE_GARDE.test(f)) continue;
+    let txt;
+    try { txt = fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch { continue; }
+    if (txt.includes('\0')) continue; // binaire
+    if (txt.includes(MARQUEUR)) hors.push(f);
+  }
+  assert.deepEqual(hors, [], [
+    `Fichiers hors zone qui portent le marqueur « ${MARQUEUR} » :`,
+    ...hors,
+    '',
+    'Ce marqueur ne rend pas une ligne acceptable : il retire le fichier ENTIER du contrôle A9.',
+    'Il est réservé aux tests de scripts/lib/, qui traquent ces chaînes et les contiennent donc',
+    'forcément. Ailleurs, c\'est une exemption gratuite au contrôle « zéro orphelin ».',
+  ].join('\n'));
 });

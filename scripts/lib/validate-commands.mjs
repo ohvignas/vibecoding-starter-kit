@@ -52,10 +52,14 @@ export function validateNewFeatureCommand(root) {
   const rb = path.join(root, 'templates/commands/new-feature.md');
   if (!fs.existsSync(rb)) { errors.push('manquant : templates/commands/new-feature.md'); return errors; }
   const txt = fs.readFileSync(rb, 'utf8');
-  // `git commit` / `gh pr create` / `main` remplacent l'ancien duo (plugin de commit + branche
-  // `dev`) : ce plugin n'est jamais installé par le kit, et le scaffold ne crée que `main`.
-  // `dev` était de toute façon un contrôle vide — la chaîne apparaît dans « subagent-driven-development ».
-  const steps = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'git commit', 'gh pr create', 'gh run watch', 'finishing-a-development-branch', 'main'];
+  // `git commit` / `gh pr create` / `--base main` remplacent l'ancien duo (plugin de commit +
+  // branche `dev`) : ce plugin n'est jamais installé par le kit, et le scaffold ne crée que `main`.
+  // `dev` était un contrôle vide — la chaîne apparaît dans « subagent-driven-development ». Son
+  // remplaçant `main` l'était tout autant : « Gates humains » (new-feature.md:5) le satisfait, donc
+  // n'importe quel runbook le satisfaisait, y compris un qui ne nomme aucune branche. On exige
+  // désormais la chaîne OPÉRANTE, celle qui fixe vraiment la cible du merge et qui ne peut pas
+  // apparaître par accident dans une phrase française : `--base main` (l'argument de `gh pr create`).
+  const steps = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'git commit', 'gh pr create', 'gh run watch', 'finishing-a-development-branch', '--base main'];
   for (const s of steps) if (!txt.includes(s)) errors.push(`new-feature : étape non référencée « ${s} »`);
   if (!txt.includes('loop-section.md')) errors.push('new-feature : ne référence pas templates/agents/loop-section.md');
   // Interdits : le validateur ne se contente plus d'exiger le bon, il refuse le faux.

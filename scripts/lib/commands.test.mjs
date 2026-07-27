@@ -10,6 +10,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { STACKS } from './matrix.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const cmd = (c) => read(`templates/commands/${c}.md`);
@@ -93,19 +95,68 @@ test('D6 — /doctor vérifie les 10 commandes, la mémoire du crew, le MCP shad
   assert.match(t, /docs\/agents\/state\.yaml/, 'état courant non vérifié');
   assert.match(t, /docs\/agents\/inventaire\.md/, 'inventaire de complétude non vérifié');
   // Le MCP shadcn de desktop : oublié par l'item 9 alors que matrix.mjs le déclare.
-  const ligneMcp = t.split('\n').find((l) => /desktop\s*:/.test(l) && /chrome-devtools/.test(l));
-  assert.ok(ligneMcp && /shadcn/.test(ligneMcp), 'desktop : le MCP shadcn manque dans la liste par stack');
+  // La 1re version cherchait `shadcn` dans LA LIGNE — or cette ligne porte les 4 stacks, et le
+  // `shadcn` de saas la satisfaisait : en remettant « desktop : chrome-devtools » (sans shadcn),
+  // elle passait encore. On juge donc le SEGMENT de chaque stack, et la liste attendue est LUE
+  // dans matrix.mjs (source de vérité de ce que le kit écrit dans .mcp.json) au lieu d'être
+  // recopiée ici : ajouter un serveur à une stack sans l'annoncer à /doctor fait échouer ce test.
+  const ligneMcp = t.split('\n').find((l) => /serveurs MCP de la stack/.test(l));
+  assert.ok(ligneMcp, 'item 9 : la liste des MCP par stack a disparu');
+  const segments = new Map();
+  for (const seg of ligneMcp.split(/\s*;\s*/)) {
+    const m = seg.match(/(saas|mobile|desktop|vitrine)\s*:/);
+    if (m) segments.set(m[1], seg);
+  }
+  const manquants = [];
+  for (const [stack, def] of Object.entries(STACKS)) {
+    const seg = segments.get(stack);
+    if (!seg) { manquants.push(`${stack} : aucun segment « ${stack} : … » dans l'item 9`); continue; }
+    for (const serveur of Object.keys(def.mcp)) {
+      if (!seg.includes(serveur)) manquants.push(`${stack} : le MCP « ${serveur} » manque au segment (matrix.mjs le déclare)`);
+    }
+  }
+  assert.deepEqual(manquants, [], `MCP déclarés par matrix.mjs et absents de /doctor :\n${manquants.join('\n')}`);
   // Outils de preuve : /doctor les présentait comme obligatoires sans jamais les tester.
   for (const o of ['semgrep', 'gitleaks', 'osv-scanner']) assert.match(t, new RegExp(o), `outil de preuve non vérifié : ${o}`);
   // Variable inexistante : le MCP Stitch prend la clé en header, il n'y a pas de STITCH_API_KEY.
   assert.doesNotMatch(t, /STITCH_API_KEY/, 'variable d\'environnement inexistante');
 });
 
-test('D7 — /build : arguments transmis, E2E délégué, tags poussés, --all désactivé en apprentissage', () => {
+test('D7 — /build : arguments transmis, E2E délégué, tag annoté ET publié, --all désactivé en apprentissage', () => {
   const t = cmd('build');
   assert.match(t, /\$ARGUMENTS/, 'sans cette ligne, `--all` est perdu sur Cursor');
   assert.match(t, /test-runner/, 'le test E2E est délégué, pas joué dans le fil principal');
-  assert.match(t, /git push --follow-tags|git push --tags/, 'un tag local ne protège personne');
+
+  // Le point de restauration doit ARRIVER sur le remote. La 1re version de ce test acceptait
+  // `git push --follow-tags|git push --tags` — c'est elle qui a laissé passer la faute, parce que
+  // les deux formes ne poussent pas les mêmes tags : `--follow-tags` ne publie QUE les tags
+  // ANNOTÉS. Reproduit sur un dépôt jetable + un remote `--bare` : `git tag jalon-01` (léger) puis
+  // `git push --follow-tags` → 0 tag sur le remote ; `git tag -a` → « * [new tag] ».
+  // On ne cherche donc plus une chaîne : on lit les commandes de la page et on exige que le type
+  // de tag posé et la forme du push soient COMPATIBLES.
+  const cmds = [...t.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+  // La POSE d'un tag = `git tag` avec un argument. `git tag` nu (la phrase qui explique pourquoi
+  // un tag léger ne part pas) et `git tag -l` (lister, ce que fait /sos) n'en posent aucun.
+  const tags = cmds.filter((c) => /^git tag\s+\S/.test(c) && !/\s(?:-l|--list)\b/.test(c));
+  assert.equal(tags.length, 1, `une seule pose de tag attendue dans /build, vue(s) : ${tags.join(' | ') || 'aucune'}`);
+  const annote = /\s(?:-a|--annotate)\b/.test(tags[0]) && /\s(?:-m|--message)\b/.test(tags[0]);
+  const pushes = cmds.filter((c) => /^git push\b/.test(c));
+  const parSuivi = pushes.filter((c) => /--follow-tags\b/.test(c));
+  const parTous = pushes.filter((c) => /--tags\b/.test(c) && !/--follow-tags\b/.test(c));
+  assert.ok(parSuivi.length || parTous.length,
+    `un tag local ne protège personne : aucun push ne publie le tag (push vus : ${pushes.join(' | ') || 'aucun'})`);
+  if (parSuivi.length) {
+    assert.ok(annote, `« ${tags[0]} » pose un tag LÉGER et « ${parSuivi[0]} » ne pousse que les tags annotés : le tag resterait en local. Tag annoté (\`-a … -m …\`) ou push en \`--tags\`.`);
+  }
+
+  // Un projet qui sort du scaffold n'a AUCUN remote : `git push` y répond `fatal: No configured
+  // push destination` (reproduit) — et c'est au 1er jalon que le débutant tape la commande.
+  // /new-feature traite le cas en préflight (`gh auth status` + `git remote`) ; /build doit le
+  // traiter aussi, et dire quoi faire, pas seulement constater.
+  const ligneRemote = t.split('\n').find((l) => /git remote\b/.test(l));
+  assert.ok(ligneRemote, 'aucun contrôle du remote : au 1er jalon, `git push` échoue sur un `fatal:` que personne n\'explique');
+  assert.match(ligneRemote, /gh repo create/, 'le cas « pas de remote » doit dire quoi faire');
+
   const ligneAll = t.split('\n').find((l) => l.includes('--all') && /désactiv/i.test(l));
   assert.ok(ligneAll, '`--all` doit être annoncé désactivé tant que le mode apprentissage est actif');
 });
@@ -117,14 +168,42 @@ test('D8 — /help se liste, liste les 10 commandes, et ne donne qu\'une répons
   assert.ok(aide, 'section « Aide-mémoire » absente');
   for (const c of COMMANDES) assert.ok(aide.includes(`/${c}`), `aide-mémoire incomplet : /${c} absent`);
   // Une seule réponse : `/help` est l'entrée (aligné avec COLLE-MOI et la sortie console, lot G).
-  assert.doesNotMatch(t, /1re commande à taper/, 'deux réponses concurrentes à « par quoi je commence ? »');
+  // La 1re version testait le LIBELLÉ d'hier (`1re commande à taper`) : « c'est la première
+  // commande à taper » repassait au vert. On épingle donc la phrase canonique mot pour mot (elle
+  // est courte et possédée par le kit), et on refuse qu'une AUTRE ligne désigne une entrée
+  // concurrente, quelle qu'en soit la tournure.
+  // Limite connue : la désignation se reconnaît à une construction (« 1re/première commande »,
+  // « commande à taper », « commence par `/x` »…). Une périphrase qui n'en emploie aucune
+  // (« si tu ne dois en retenir qu'une, c'est `/init-vibecoding` ») passerait — c'est le plafond
+  // d'un test sur de la prose, pas un correctif oublié ; l'égalité ci-dessus force la relecture
+  // dès qu'on touche à la phrase canonique.
+  const REPONSE_UNIQUE = '**Une seule réponse à « je commence par quoi ? » : `/help`**';
+  assert.ok(t.includes(REPONSE_UNIQUE), `/help doit porter la phrase canonique, mot pour mot : ${REPONSE_UNIQUE}`);
+  const DESIGNE_UNE_ENTREE = /(?:1re|1ère|1ere|premi(?:er|ère))s?\s+(?:commande|chose)|commande\s+à\s+taper|(?:commenc|démarr|début)\w*\s+par\s+[`/]|à\s+taper\s+(?:en\s+premier|d['’]abord)|par\s+où\s+(?:commencer|démarrer)/i;
+  const concurrentes = t.split('\n')
+    .map((l, i) => [i + 1, l.trim()])
+    .filter(([, l]) => l && !l.includes(REPONSE_UNIQUE) && DESIGNE_UNE_ENTREE.test(l))
+    .map(([n, l]) => `help.md:${n} — ${l.slice(0, 100)}`);
+  assert.deepEqual(concurrentes, [], `deux réponses concurrentes à « par quoi je commence ? » :\n${concurrentes.join('\n')}`);
 });
 
+// La comparaison d'images ALERTE, elle ne tranche pas. La 1re version ne portait qu'une liste
+// noire de trois tournures (« avant de conclure », « avant de la rendre », « jusqu'à ce que ») :
+// « PixelRAG doit confirmer » passait. Une liste noire de formulations est une course perdue
+// (c'est la leçon du Lot C) — on lui ajoute donc une exigence POSITIVE, qui ne dépend d'aucune
+// formulation de la faute : toute ligne qui cite PixelRAG doit porter, en clair, ce qu'il n'est
+// pas. Limite assumée : les deux filets restent des motifs. Une ligne qualifiée PUIS démentie
+// plus loin dans le paragraphe (« … elle ne tranche pas. Coche quand l'écart est nul. ») les
+// satisfait — seule la relecture couvre ce cas.
+const PIXELRAG_BLOQUANT = /avant de conclure|avant de la rendre|jusqu'à ce que|doit (?:confirmer|valider|approuver|passer)|tant qu[e']|bloqu|gate|exige/i;
+const PIXELRAG_QUALIFIE = /alerte,? (?:elle|il) ne tranche pas|ne remplace pas|signal indicatif|non bloquant|jamais un gate/i;
 test('D9 — PixelRAG alerte, il ne décide pas (dans les commandes comme dans les règles)', () => {
   for (const c of COMMANDES) {
     cmd(c).split('\n').forEach((l, i) => {
       if (!/PixelRAG/i.test(l)) return;
-      assert.doesNotMatch(l, /avant de conclure|avant de la rendre|jusqu'à ce que/i, `templates/commands/${c}.md:${i + 1} : PixelRAG rendu bloquant`);
+      const ou = `templates/commands/${c}.md:${i + 1}`;
+      assert.doesNotMatch(l, PIXELRAG_BLOQUANT, `${ou} : PixelRAG rendu bloquant`);
+      assert.match(l, PIXELRAG_QUALIFIE, `${ou} : PixelRAG cité sans dire qu'il alerte et ne tranche pas — non qualifié, il se lit comme un juge`);
     });
   }
 });
@@ -205,12 +284,28 @@ test('résiduel 2 — state.yaml : un seul écrivain, et jamais un statut hors �
   assert.deepEqual(ENUM, ['draft', 'in-progress', 'in-review', 'done', 'blocked']);
 
   // (a) Personne ne demande d'y écrire une valeur qui n'est pas dans l'énumération.
+  // DEUX filets, parce que la 1re version n'en avait qu'un — la tournure « en `X` dans …
+  // state.yaml » — et qu'une seule tournure ne garde rien : « passe le `status` à `BLOQUÉ` dans
+  // state.yaml » lui échappait, alors que c'est exactement la faute d'origine. Le second ne
+  // dépend d'aucune tournure : sur une ligne qui parle de ce fichier ET nomme son champ `status`,
+  // un mot de VERDICT entre accents graves est une valeur illégale, quelle que soit la phrase.
+  // (Il ne se déclenche pas sur `verify-rule.md:15`, qui cite `PROUVÉ` et le fichier sans jamais
+  // parler du champ : cette ligne-là dit qui reporte, elle ne dicte aucune valeur.)
+  // LIMITE, à connaître : une ligne qui n'emploie NI la tournure du 1er filet NI le nom du champ
+  // (« note `BLOQUÉ` dans `docs/agents/state.yaml` ») échappe aux deux. Aucun ensemble fermé de
+  // motifs ne caractérise « cette phrase dicte une valeur » — la relecture reste le filet sur ce
+  // cas, comme pour R3 de `crew.test.mjs`.
+  const VERDICTS = ['PROUVÉ', 'NON PROUVÉ', 'BLOQUÉ'];
   const horsEnum = [];
   for (const f of PROSE()) {
     read(f).split('\n').forEach((l, i) => {
       if (!l.includes('state.yaml')) return;
       for (const m of l.matchAll(/en `([^`]+)` dans [^\n]*state\.yaml/g)) {
-        if (!ENUM.includes(m[1])) horsEnum.push(`${f}:${i + 1} — « ${m[1] }» hors énumération`);
+        if (!ENUM.includes(m[1])) horsEnum.push(`${f}:${i + 1} — « ${m[1]} » hors énumération`);
+      }
+      if (!/\bstatus\b/.test(l)) return;
+      for (const m of l.matchAll(/`([^`]+)`/g)) {
+        if (VERDICTS.includes(m[1].trim())) horsEnum.push(`${f}:${i + 1} — « ${m[1]} » est un VERDICT, pas une valeur du champ status`);
       }
     });
   }
