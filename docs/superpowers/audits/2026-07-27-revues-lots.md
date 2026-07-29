@@ -184,3 +184,67 @@ page prescrit plusieurs formes de push ; les fichiers hors `templates/commands/`
 - La citation d'erreur git du brief F1 était mesurée sur la mauvaise commande (ci-dessus).
 Le plan n'est pas une source de vérité supérieure au dépôt : un implémenteur qui vérifie son brief
 et écrit le chiffre mesuré a raison contre lui.
+
+---
+
+## Lot E — code · `PROUVÉ` (`2a9d56c` → `e862445`)
+
+**E1→E12 corrigés**, E7 partiel de son propre aveu — aveu que la revue a vérifié **exact** (deux
+points non simulables sans machine Windows : qu'un `spawnSync('npx.cmd', …, {shell:true})` aboutisse,
+et que git applique `eol=lf` au checkout). Gate : **333 tests**, plugin sans diff, smoke E2E, paquet
+5/5, 12 combinaisons scaffoldées à 2189 mots avec leurs 10 commandes.
+
+### Trois bugs à gravité réelle
+1. **Le kit affichait ✅ sur une protection inexistante** (E3). Dans un dépôt git **déjà existant**,
+   `core.hooksPath` n'était jamais posé : le scan de secrets ne tournait **jamais**, et le rapport
+   affichait `✅ .githooks/pre-commit`. Corrigé, avec deux cas limites traités — dossier appartenant
+   à un dépôt **parent** (on ne touche pas à sa config, on le dit), et `core.hooksPath` **déjà pris**
+   par `.husky` (non écrasé, raison + commande exacte).
+2. **`--refresh` pouvait vider `AGENTS.md`** (E2) : 15 017 → 1 393 octets, **exit 0**, les 9 règles
+   perdues sans un mot, parce que `agents-file.mjs` avalait l'erreur (`catch { return '' }`). Il
+   refuse maintenant d'écrire un rendu dégénéré et **nomme** le fichier manquant.
+3. **Garde d'entrée sans `realpathSync`** (E1) : `update.mjs` et `build-cursor-plugin.mjs` lancés via
+   symlink (`npm link`, `/tmp` sur macOS) sortaient en **0 sans rien faire**.
+
+### Cinq duplications qui avaient DÉJÀ divergé
+Constatées sur `270f1ec`, pas supposées : ordre des commandes dans `build-cursor-plugin` · `TARGET`
+(matrix) vs `CMD_DIR` (kit-owned), deux cartes identiques sous deux noms · **la regex de nom de
+projet** — `--project projet-café` accepté par le drapeau, **refusé par le wizard** : deux réponses
+à la même question selon la porte d'entrée · les skills design recopiés dans `validate-commands` ·
+la copie du crew (`readdirSync` au scaffold vs `CREW` au refresh).
+
+### La leçon : un garde doit mordre AU SITE du bug
+La revue a muté chaque correctif pour voir si un test rougissait. **Cinq fois la suite est restée
+verte** — le bug pouvait revenir sans alerte. Quatre refermés :
+- la regex était testée via `buildArgsFromAnswers`, jamais via **la boucle de question** de
+  `runWizard`, qui est l'endroit exact où elle avait divergé ;
+- l'unicité des skills design était satisfaite par un **commentaire** citant `DESIGN_SKILL_NAMES` ;
+- la consigne « `maquette/` » n'était assertée nulle part, alors qu'E10 a supprimé sa section
+  d'`AGENTS.md` **en s'appuyant dessus** ;
+- rien ne prouvait que `runChecks` **appelle** `resolveCheckCommand` — un `spawnSync` direct laissait
+  tout vert, et c'est le bug E7 lui-même.
+
+Un test peut prouver qu'une fonction **dit** juste sans jamais prouver qu'on s'en **serve**.
+
+### Un montage de test qui refuse de conclure
+Le garde `runChecks` a attrapé une erreur de l'orchestrateur : `tsconfig.json` attendu, `package.json`
+créé → aucun check lancé. L'assertion `assert.ok(appels.length > 0, 'le montage du test ne prouve
+rien')` l'a arrêté au lieu de passer au vert à vide. Même famille que le faux vert du banc D7bis et
+que le `update.mjs <dir>` positionnel : **un vert doit prouver qu'il a fait quelque chose**.
+
+### Dette et résiduels
+- **Garde manquant (assumé)** : muter `setup.mjs:144` en `if (true) done.push(cl.repo)` laisse la
+  suite verte — seule `summarizeClone` (fonction pure) est testée. Fermer ce trou demande une
+  intégration réseau.
+- **`docs/RUN.md` n'est ni pur kit ni pur utilisateur** : politique `.new` retenue pour ne rien
+  écraser. Si le parcours veut un rafraîchissement en place, c'est une décision produit → **Lot G**.
+- **Projets antérieurs en `--backend local`** : `.vibecoding.json` sans `backend` → au 1er refresh,
+  un `docs/RUN.md.new` sans la note « Backend en local » apparaît. Non destructif mais trompeur ;
+  migration possible (détecter la note et rétro-remplir) → **Lot G**.
+- `security: npx @doyensec/electronegativity` toujours câblé en pre-push desktop → **Lot F (F5)**.
+- `ai-context` copié en entier pour toutes les stacks (`matrix.mjs:32`) → **Lot F (F9)**.
+
+### Écart de brief relevé par l'implémenteur
+E9 demandait de supprimer `DESIGN_SKILLS`, E8 d'en faire la source unique des skills design : les
+deux items se contredisaient. Résolu en séparant la **chaîne morte** (supprimée) du **tableau
+source** (`DESIGN_SKILL_NAMES`, dont `validate-commands` dérive vraiment).
