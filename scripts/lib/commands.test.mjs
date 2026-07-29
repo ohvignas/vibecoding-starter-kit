@@ -209,15 +209,26 @@ test('D8 — /help se liste, liste les 10 commandes, et ne donne qu\'une répons
 // CE QU'IL VÉRIFIE : les 10 runbooks · toute citation `fatal: …` dont la LIGNE parle de push
 // (c'est la seule chose que ce garde sait rejouer) · confrontée à la sortie réelle des `git push`
 // que la page prescrit, dans le cas « pas de remote » — celui du projet qui sort du scaffold.
+// Entre backticks, l'égalité est exacte (au point final et aux gras près). SANS backticks, on ne
+// sait pas où la citation s'arrête et où la prose reprend : on exige alors que le texte COMMENCE
+// par un message réellement produit — sinon « git répond fatal: … — relie d'abord le projet »,
+// qui est juste, serait accusé (c'est la faute que la version d'avant commettait).
 // Environnement git isolé (`GIT_CONFIG_GLOBAL`/`GIT_CONFIG_SYSTEM`) : une config personnelle
 // (`commit.gpgsign`, `core.hooksPath`) ne peut ni verdir ni rougir le test.
-// CE QU'IL NE VÉRIFIE PAS, et ne prétend pas vérifier : un `fatal:` cité hors d'une ligne qui
-// parle de push — on ne peut pas décider à quelle commande il appartient, donc on ne l'accuse
-// pas ; les fichiers hors `templates/commands/` ; un `fatal:` produit dans un autre état du dépôt
-// qu'« aucun remote ».
+// CE QU'IL NE VÉRIFIE PAS, et ne prétend pas vérifier :
+//  · un `fatal:` cité hors d'une ligne qui parle de push — on ne peut pas décider à quelle
+//    commande il appartient, donc on ne l'accuse pas ;
+//  · les fichiers hors `templates/commands/` ; un autre état du dépôt qu'« aucun remote » ;
+//  · quand une page prescrit PLUSIEURS formes de push, la sortie attendue est leur UNION : un
+//    message juste pour l'une passe même s'il est faux pour l'autre. C'est précisément le cas de
+//    la faute fondatrice (`git push` nu vs `git push -u origin main --follow-tags`) — si une page
+//    venait à prescrire les deux, ce garde ne les distinguerait plus.
 test('D7bis — tout message d\'erreur cité par un runbook est bien celui que git produit', () => {
   // Entre backticks : tout ce qu'ils encadrent. Sinon : jusqu'à la fin de la ligne.
   const CITATION = /`(fatal: [^`\n]+)`|(fatal: [^`\n]+)/g;
+  // Une citation contenant elle-même un backtick (« `fatal: `origin` n'existe pas` ») n'est
+  // analysable par aucun des deux motifs : plutôt que de la rater en silence, on la signale.
+  const NON_ANALYSABLE = /`fatal: *`/;
   // git met un point final à certains messages et pas à d'autres ; le gras est du markdown.
   const nu = (s) => s.replace(/\*\*/g, '').trim().replace(/\.$/, '');
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-push-'));
@@ -241,7 +252,11 @@ test('D7bis — tout message d\'erreur cité par un runbook est bien celui que g
     const citees = [];
     t.split('\n').forEach((ligne, i) => {
       if (!/\bpush\b/i.test(ligne)) return;
-      for (const m of ligne.matchAll(CITATION)) citees.push({ txt: nu(m[1] ?? m[2]), n: i + 1 });
+      if (NON_ANALYSABLE.test(ligne)) {
+        fautes.push(`${c}.md:${i + 1} cite une erreur contenant un backtick — ce garde ne sait pas où elle s'arrête. Écris-la sans backtick interne.`);
+        return;
+      }
+      for (const m of ligne.matchAll(CITATION)) citees.push({ txt: nu(m[1] ?? m[2]), backtickee: m[1] !== undefined, n: i + 1 });
     });
     if (!citees.length) continue;
     if (!pushs.length) {
@@ -254,8 +269,11 @@ test('D7bis — tout message d\'erreur cité par un runbook est bien celui que g
       const r = git(p.split(/\s+/).slice(1));
       `${r.stderr}${r.stdout}`.split('\n').forEach((l) => { if (l.trim().startsWith('fatal:')) produites.add(nu(l)); });
     }
-    for (const { txt, n } of citees) {
-      if (!produites.has(txt)) {
+    for (const { txt, backtickee, n } of citees) {
+      // Backtickée : l'auteur a délimité lui-même, on exige l'égalité. Nue : on ne sait pas où
+      // la prose reprend, donc il suffit que le texte COMMENCE par un message réellement produit.
+      const ok = backtickee ? produites.has(txt) : [...produites].some((p) => txt.startsWith(p));
+      if (!ok) {
         fautes.push(`${c}.md:${n} annonce « ${txt} »\n    or ${pushs.map((p) => `\`${p}\``).join(' / ')} sans remote répond${produites.size ? ' :\n      ' + [...produites].join('\n      ') : ' sans aucune ligne fatal:'}`);
       }
     }
