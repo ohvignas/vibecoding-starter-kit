@@ -114,3 +114,73 @@ garantit sur de la prose, pas un correctif oublié.
   plan task-by-task », des cases décochées, et des instructions contredisant l'état courant
   (`commit-commands` jamais installé, branche `dev`, 5 skills design au lieu de 4, PixelRAG bloquant).
   **19 autres** n'ont été testés que sur ces 5 classes de contradiction — relecture intégrale non faite.
+
+---
+
+## Lot D — commandes · `PROUVÉ` (`2e81c01` → `6c7b52e`)
+
+**Les 10 items D1→D10 et les 3 résiduels sont tenus**, vérifiés par un agent frais sur les commandes
+**livrées** de trois projets scaffoldés (cursor/saas, claude-code/desktop, codex/vitrine) : 13/13
+contrôles verts chacun, avec un **témoin négatif** (l'état d'avant le lot, `972a130` : 12/13 en échec)
+prouvant que le contrôle sait dire non. Gate mécanique : 299 tests, plugin sans diff, smoke E2E,
+paquet 4/4, 2189 mots, 10 commandes livrées ×3.
+
+### Trois défauts qui atteignaient le débutant sans filtre
+1. **`/build` fabriquait un point de restauration qui ne partait jamais.** Tag **léger** + `git push
+   --follow-tags`, qui ne pousse **que les tags annotés** — reproduit : 0 tag sur le remote. La page
+   écrivait « un tag resté en local ne sauve rien si la machine lâche » et produisait exactement ça.
+   Corrigé en tag **annoté** + `git push -u origin main --follow-tags` (une seule commande publie
+   commit et tag), vérifié par exécution : le tag arrive et survit à un clone frais.
+2. **Aucun remote dans un projet scaffoldé**, et `/build` ne le vérifiait pas → `fatal:` au 1ᵉʳ jalon.
+   Contrôle `git remote` + deux sorties proposées (relier via `gh repo create`, ou rester local en
+   sachant ce qu'on perd).
+3. **`/deploy` prescrivait `electron-builder`** alors que le scaffold desktop du kit est **Electron
+   Forge** (`create-electron-app`, `npm run make`). Commande introuvable chez l'utilisateur.
+
+### Un message d'erreur cité sans être exécuté — et la faute est en amont
+`/build` annonçait `fatal: No configured push destination` : message **exact**, mais d'une **autre
+commande** (un `git push` nu). La citation venait du brief rédigé par l'orchestrateur, mesurée sur la
+mauvaise commande, et reprise de confiance par l'implémenteur. D'où **D7bis**, qui **exécute** la
+commande de push de la page dans un dépôt jetable sans remote et compare au message cité.
+
+### Ce que 5 tours sur un seul garde ont appris
+Quatre revues consécutives ont porté sur `D7bis`, jamais sur les décisions du lot :
+- **Un faux positif est pire qu'un trou.** Une version accusait une page citant `fatal: No configured
+  push destination.` *exactement comme git l'imprime*, point compris. Un garde qui rougit sur de la
+  documentation juste **apprend à mal citer git pour le faire taire**.
+- **Corriger une asymétrie en crée une autre.** En réparant « `startsWith` accepte un préfixe », la
+  citation s'est mise à être délimitée par la ponctuation suivante : trois cas attrapés la veille
+  perdus, et une troncature qui accusait à tort. Tout correctif de garde se teste **dans les deux
+  directions**.
+- **La règle juste est asymétrique** : entre backticks, l'auteur délimite lui-même → égalité exacte ;
+  sans backticks, on ignore où la prose reprend → il suffit que le texte *commence* par un message
+  réellement produit.
+- **Un banc qui ne vérifie pas ses propres mutations ment.** Le banc de l'orchestrateur a déclaré
+  « vert » deux cas jamais exécutés (backticks réinterprétés dans un `$(...)` shell) ; sans le
+  contrôle « la mutation s'est-elle appliquée ? », un garde qui marchait allait être « corrigé ».
+  Le banc échoue désormais bruyamment si le texte n'a pas changé.
+
+Limites déclarées dans l'en-tête du garde, mesurées : un `fatal:` hors d'une ligne parlant de push
+n'est pas jugé (on ne peut pas décider de quelle commande il vient) ; l'union des sorties quand une
+page prescrit plusieurs formes de push ; les fichiers hors `templates/commands/`.
+
+### Résiduels réassignés
+- `templates/commands/doctor.md:19` et **`templates/hooks/framework/checks.mjs:16`** :
+  `@doyensec/electronegativity` (abandonné 03/2023) n'est pas qu'une mention — c'est le **check
+  `security` câblé**, qui tourne au `git push` et en CI pour la stack desktop. Le retirer suppose de
+  décider **par quoi** le remplacer, sinon `prePush` pointe dans le vide → **Lot F (F5)**.
+- `README.md:72` promet que `docs/` n'est « jamais touché » : faux sur les 3 assistants — `--refresh`
+  régénère `docs/templates/` (2 fichiers), et 19 fichiers sur Codex (`docs/commands/`,
+  `docs/agents/crew/`) → **Lot H**.
+- `scripts/lib/report.mjs:11` (« Prochaine étape : lance /new-project ») contredit « l'entrée, c'est
+  `/help` » → **Lot G (G6)**.
+- `projectBaseDir` (`scripts/lib/args.mjs:83`) place le projet **à côté du clone du kit** quand
+  `kitRoot` n'est pas dans `node_modules` — depuis un clone git, ça tombe dans `$HOME`. Comportement
+  réel, à trancher au **Lot G** (parcours utilisateur).
+
+### Erreurs de l'orchestrateur relevées par les agents, et corrigées
+- Le brief D1 citait `validate-commands.mjs:37` ; la chaîne était en `:39`.
+- Le brief D9 annonçait « 197 lignes = 48 % du corpus » ; mesure réelle **43 %** (197/458).
+- La citation d'erreur git du brief F1 était mesurée sur la mauvaise commande (ci-dessus).
+Le plan n'est pas une source de vérité supérieure au dépôt : un implémenteur qui vérifie son brief
+et écrit le chiffre mesuré a raison contre lui.
