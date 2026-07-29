@@ -15,10 +15,9 @@ test('SaaS + Cursor : mdc stack, 1 seul clone (karpathy), commandsDir cursor, pa
   assert.ok(!p.inAssistant.some(s => /design/i.test(s.name)));
   assert.equal(p.bmad, undefined);
 });
-test('Desktop + Claude Code : pas de MCP, skill dir, commandsDir claude, rien de sauté', () => {
+test('Desktop + Claude Code : pas de MCP, skill dir, commandsDir claude', () => {
   const p = resolveAssets('desktop', 'claude-code');
   assert.ok(!p.copies.find(c => (c.to || '').includes('mcp.json')));
-  assert.deepEqual(p.skipped, []);
   assert.ok(p.copies.find(c => c.to === '.claude/skills/stack-desktop' && c.transform === 'dir'));
   assert.equal(p.commandsDir, '.claude/commands');
   assert.equal(p.clones.length, 1);

@@ -29,6 +29,23 @@ test('re-run : rapport 3 états + AGENTS.md.new + exit 0 quand tout va bien', ()
   assert.ok(fs.existsSync(path.join(dir, 'CLAUDE.md.new')), 'CLAUDE.md.new écrit');
 });
 
+// E4 (bout en bout) — le scaffold doit MÉMORISER le mode apprentissage, sinon `--refresh` le
+// remet : c'est le seul endroit où le choix survit au terminal.
+test('E4 — --no-learning est mémorisé dans .vibecoding.json et survit à --refresh', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-learning-'));
+  execFileSync(
+    process.execPath,
+    ['scripts/setup.mjs', '--source', '.', '--stack', 'saas', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--no-learning', '--yes'],
+    { encoding: 'utf8', env: GIT_ENV },
+  );
+  const mf = JSON.parse(fs.readFileSync(path.join(dir, '.vibecoding.json'), 'utf8'));
+  assert.equal(mf.learning, false, '.vibecoding.json doit mémoriser le choix');
+  assert.doesNotMatch(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8'), /Mode apprentissage/);
+  execFileSync(process.execPath, ['scripts/setup.mjs', '--refresh', '--project', dir], { encoding: 'utf8', env: GIT_ENV });
+  assert.doesNotMatch(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8'), /Mode apprentissage/, '--refresh a ressuscité le mode apprentissage');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('échecs de copies (source vide) → exit ≠ 0', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-fail-'));
   const sourceVide = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-vide-'));

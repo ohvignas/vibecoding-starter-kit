@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STACKS, resolveStackManifest, DESIGN_SKILLS, SHADCN_NOTE, STITCH } from './matrix.mjs';
+import { STACKS, resolveStackManifest, DESIGN_SKILL_NAMES, SHADCN_NOTE, STITCH } from './matrix.mjs';
 
 test('STACKS a les 4 stacks avec la bonne forme', () => {
   for (const s of ['saas', 'mobile', 'desktop', 'vitrine']) {
@@ -87,11 +87,14 @@ test('STITCH expose l\'URL + les commandes MCP user-scope par assistant', () => 
   assert.match(STITCH.mcp.cursor, /~\/\.cursor\/mcp\.json|globale/i);
 });
 
-test('DESIGN_SKILLS = 4 skills design (shadcnblocks n\'est PAS un skill : registry CLI)', () => {
-  assert.match(DESIGN_SKILLS, /frontend-design/);
-  assert.match(DESIGN_SKILLS, /brand-guidelines/);
-  assert.doesNotMatch(DESIGN_SKILLS, /shadcnblocks/);
-  assert.equal(DESIGN_SKILLS.split(',').length, 4);
+// `DESIGN_SKILLS` était une CHAÎNE que plus personne ne lisait (code mort, E9). Elle est
+// remplacée par `DESIGN_SKILL_NAMES`, un tableau dont `validate-commands.mjs` et les tests de
+// duplication dérivent vraiment.
+test('DESIGN_SKILL_NAMES = 4 skills design (shadcnblocks n\'est PAS un skill : registry CLI)', () => {
+  assert.ok(DESIGN_SKILL_NAMES.includes('frontend-design'));
+  assert.ok(DESIGN_SKILL_NAMES.includes('brand-guidelines'));
+  assert.equal(DESIGN_SKILL_NAMES.includes('shadcnblocks'), false);
+  assert.equal(DESIGN_SKILL_NAMES.length, 4);
 });
 
 test('SHADCN_NOTE : registry natif @shadcnblocks (gratuit sans clé, pro via env)', () => {

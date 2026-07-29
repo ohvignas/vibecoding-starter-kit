@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 // Cursor beforeShellExecution : bloque les commandes destructrices / d'exfiltration.
 // Fail-open : en cas d'erreur, on n'empêche rien (un bug du hook ne bloque pas ton terminal).
+//
+// ⚠️ La liste `DANGER` et `isDangerous` ci-dessous sont IDENTIQUES, à l'octet près, à celles de
+// `templates/claude/hooks/guard-shell.mjs` — seul l'enrobage d'entrée/sortie diffère, et chaque
+// assistant ne reçoit que son propre dossier (aucun module partagé n'est copiable). Un test
+// (`scripts/lib/duplications.test.mjs`) compare les deux blocs et échoue s'ils divergent :
+// modifie les deux, ou ne modifie ni l'un ni l'autre.
 import fs from 'node:fs';
 
 const DANGER = [

@@ -5,9 +5,13 @@
 // Structure Cursor : .cursor-plugin/plugin.json + commands/*.md + rules/*.mdc (auto-découverts).
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-
-const COMMANDS = ['init-vibecoding', 'help', 'new-project', 'build', 'new-feature', 'edit-design', 'doctor', 'next', 'sos', 'deploy'];
+import { fileURLToPath } from 'node:url';
+import { isCliEntry } from './lib/cli-entry.mjs';
+// Les 10 commandes viennent de la source unique (lib/commands-list.mjs) : ce fichier en portait
+// sa propre copie, dans un autre ordre. Ré-exportée pour que les tests puissent constater
+// l'identité au lieu de la supposer.
+import { COMMANDS } from './lib/commands-list.mjs';
+export { COMMANDS };
 
 export function pluginManifest() {
   return {
@@ -31,9 +35,13 @@ export function buildCursorPlugin(kitRoot, outDir) {
   return { done };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Garde d'entrée partagé (lib/cli-entry.mjs) : sans résolution du realpath, un lancement via
+// symlink sortait en 0 sans rien assembler — le plugin publié restait celui d'avant.
+if (isCliEntry(import.meta.url)) {
   const kitRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-  const outDir = path.join(kitRoot, 'cursor-plugin');
+  // `--out <dir>` : assembler ailleurs que dans le dépôt (tests hermétiques, essai avant publication).
+  const i = process.argv.indexOf('--out');
+  const outDir = i !== -1 && process.argv[i + 1] ? path.resolve(process.argv[i + 1]) : path.join(kitRoot, 'cursor-plugin');
   const { done } = buildCursorPlugin(kitRoot, outDir);
-  console.log('Plugin Cursor assemblé dans cursor-plugin/ :\n' + done.map((d) => '  ' + d).join('\n'));
+  console.log(`Plugin Cursor assemblé dans ${path.relative(kitRoot, outDir) || '.'}/ :\n` + done.map((d) => '  ' + d).join('\n'));
 }

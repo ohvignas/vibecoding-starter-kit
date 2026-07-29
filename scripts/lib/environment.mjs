@@ -53,20 +53,12 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
 
   // 5. Câblage hooks assistant
   try {
-    // 3 branches : Codex n'a AUCUN hook d'édition → ne jamais lui écrire de `.claude/` fantôme
-    // (la note « lance npm run typecheck » lui est ajoutée dans docs/RUN.md, voir plus bas).
+    // Codex n'a AUCUN hook d'édition → ne jamais lui écrire de `.claude/` fantôme. La note
+    // « lance npm run typecheck » qui le lui dit fait partie du rendu de docs/RUN.md (run-doc.mjs),
+    // avec la note « backend en local » : un seul endroit produit ce fichier, donc `--refresh`
+    // sait le reproduire.
     if (isCursor) { write('.cursor/hooks.json', extendCursorHooks(read('.cursor/hooks.json'), manifest.checks.onEdit)); done.push('.cursor/hooks.json (checks)'); }
     else if (assistant === 'claude-code') { write('.claude/settings.json', claudeSettings(read('.claude/settings.json'), manifest.checks.onEdit)); done.push('.claude/settings.json (checks)'); }
-    else {
-      // Codex : pas de hook d'édition → on le dit une seule fois dans docs/RUN.md (garde `includes`,
-      // même motif que la note « Backend en local » : un re-run ne duplique jamais la ligne).
-      const NOTE = "> Codex n'a pas de hook d'édition : lance `npm run typecheck` après tes modifications.";
-      const cur = read('docs/RUN.md');
-      if (cur !== null && !cur.includes("Codex n'a pas de hook d'édition")) {
-        write('docs/RUN.md', `${NOTE}\n\n${cur}`);
-        done.push('docs/RUN.md (note typecheck Codex)');
-      }
-    }
   } catch (e) { failed.push(`hooks assistant (${e.message})`); }
 
   // 6. A-FAIRE.md — JAMAIS écrasé s'il existe : l'utilisateur y coche ses cases, et `/new-project`

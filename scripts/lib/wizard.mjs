@@ -1,4 +1,4 @@
-import { validateArgs } from './args.mjs';
+import { validateArgs, isValidProjectName } from './args.mjs';
 import { heading, menu, ok, hint } from './ui.mjs';
 
 const STACKS = [
@@ -31,9 +31,9 @@ export function needsWizard(argv, isTTY) {
 export function buildArgsFromAnswers(a, base = {}) {
   const args = {
     stack: a.stack, assistant: a.assistant, project: a.project,
-    mockup: base.mockup ?? null, source: base.source ?? null, dryRun: Boolean(base.dryRun), force: Boolean(base.force),
+    source: base.source ?? null, dryRun: Boolean(base.dryRun), force: Boolean(base.force),
     caveman: Boolean(base.caveman), backend: a.backend || 'cloud',
-    noSkills: Boolean(base.noSkills), yes: Boolean(base.yes),
+    noSkills: Boolean(base.noSkills),
     learning: a.learning !== false,
   };
   const errs = validateArgs(args);
@@ -92,8 +92,10 @@ export async function runWizard(ask, on, out = process.stdout) {
   let project = '';
   for (;;) {
     project = (await ask('  Nom du projet (dossier — créé à côté du kit) : ')).trim();
-    if (/^[\w./~-]+$/.test(project)) { out.write(ok(project, on) + '\n\n'); break; }
-    out.write(hint('  Nom invalide (lettres, chiffres, . / _ - ~).', on) + '\n');
+    // Même règle que les drapeaux (isValidProjectName) : le wizard imposait sa propre regex, qui
+    // refusait les espaces et les accents que `--project` accepte — donc « projet-café ».
+    if (isValidProjectName(project)) { out.write(ok(project, on) + '\n\n'); break; }
+    out.write(hint('  Nom invalide : évite ; & | ` $ ( ) { } < > * ? ! et les retours à la ligne.', on) + '\n');
   }
 
   let backend = 'cloud';

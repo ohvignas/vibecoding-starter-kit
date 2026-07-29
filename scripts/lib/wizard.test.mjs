@@ -24,7 +24,7 @@ test('buildArgsFromAnswers : mappe + défauts + validation', () => {
 });
 
 test('buildArgsFromAnswers : conserve les drapeaux CLI déjà passés (base)', () => {
-  const base = { source: '../kit', noSkills: true, force: true, dryRun: false, yes: false, mockup: null };
+  const base = { source: '../kit', noSkills: true, force: true, dryRun: false };
   const a = buildArgsFromAnswers({ stack: 'mobile', assistant: 'cursor', project: 'app' }, base);
   assert.equal(a.source, '../kit');
   assert.equal(a.noSkills, true);

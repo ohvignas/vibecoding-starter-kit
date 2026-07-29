@@ -1,8 +1,9 @@
 // scripts/lib/templates.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toCursorMdc, renderProjectAgentsMd, toSkillMd } from './templates.mjs';
+import { toCursorMdc, renderProjectAgentsMd } from './templates.mjs';
 import { MARK_START, MARK_END } from './managed-section.mjs';
+import { COMMANDS } from './commands-list.mjs';
 
 test('toCursorMdc encadre le corps avec un frontmatter', () => {
   const out = toCursorMdc({ description: 'Règles X', body: 'CONTENU' });
@@ -17,13 +18,6 @@ test('toCursorMdc échappe les descriptions dangereuses', () => {
   assert.match(out, /description: "a b: c"/);      // newline -> space, quoted
   const fm = out.split('---')[1];                   // frontmatter block
   assert.equal(fm.match(/description:/g).length, 1); // description on a single line
-});
-
-test('toSkillMd produit un SKILL.md avec frontmatter name+description', () => {
-  const out = toSkillMd({ name: 'new-project', description: 'Fondation', body: 'CONTENU' });
-  assert.match(out, /^---\nname: new-project\n/);
-  assert.match(out, /description: "Fondation"/);
-  assert.match(out, /CONTENU/);
 });
 
 test('renderProjectAgentsMd compose la boucle + @import mémoire, sans BMAD', () => {
@@ -41,6 +35,15 @@ test('renderProjectAgentsMd compose la boucle + @import mémoire, sans BMAD', ()
   assert.match(out, /saas/);
   assert.match(out, /new-project/);
   assert.doesNotMatch(out, /BMAD/i);
+});
+
+// E10 — l'AGENTS.md n'annonçait que 4 commandes sur 10. Les six manquantes sont justement celles
+// qu'on cherche quand ça va mal (`/sos`, `/doctor`, `/next`) ou quand on veut publier (`/deploy`) :
+// l'IA relit ce fichier à chaque message, elle ne peut proposer que ce qui y est écrit.
+test('E10 — les 10 commandes sont annoncées, avec le dossier où les trouver', () => {
+  const out = renderProjectAgentsMd({ stack: 'saas', assistant: 'claude-code', commandsDir: '.claude/commands' });
+  for (const c of COMMANDS) assert.match(out, new RegExp(`\`/${c}\``), `/${c} : jamais annoncée`);
+  assert.match(out, /\.claude\/commands\//, 'et le chemin des runbooks');
 });
 
 test('mode apprentissage : section présente par défaut, absente si learning:false', () => {

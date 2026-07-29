@@ -1,18 +1,27 @@
-const TARGET = { cursor: '.cursor/commands', 'claude-code': '.claude/commands', codex: 'docs/commands' };
+// Dossier de commandes par assistant : source unique dans commands-list.mjs (il était recopié
+// ici sous le nom `TARGET` et dans kit-owned.mjs sous le nom `CMD_DIR`).
+import { COMMANDS_DIR } from './commands-list.mjs';
+
 export const SUPERPOWERS = {
   cursor: '/add-plugin superpowers',
   'claude-code': '/plugin install superpowers@claude-plugins-official',
   codex: '/plugins  (chercher « Superpowers » puis installer)',
 };
-export const DESIGN_SKILLS = 'frontend-design, ui-ux-pro-max, web-design-guidelines, brand-guidelines';
+// Les 4 skills design, SOURCE UNIQUE. La « Règle design » ordonne de les charger, les runbooks
+// les citent, `validate-commands.mjs` vérifie qu'ils y sont, et `DESIGN_SKILL_SPECS` (plus bas)
+// doit les installer : quatre endroits, une seule liste. shadcnblocks n'en fait pas partie —
+// c'est un registry du CLI shadcn, pas un skill (voir SHADCN_NOTE).
+export const DESIGN_SKILL_NAMES = ['frontend-design', 'ui-ux-pro-max', 'web-design-guidelines', 'brand-guidelines'];
 const KARPATHY_REPO = 'https://github.com/multica-ai/andrej-karpathy-skills';
 // awesome-cursorrules : SUPPRIMÉ. Le matching par tags déversait 64-201 règles .mdc hors-sujet
 // (Angular, Solidity…) avec `globs: **/*` — l'anti-pattern des docs Cursor. Les règles typées
 // du kit (templates/cursor/rules/) couvrent le besoin.
 
 export function resolveAssets(stack, assistant) {
-  if (!TARGET[assistant]) throw new Error(`Assistant inconnu : ${assistant} (attendu: ${Object.keys(TARGET).join('|')})`);
-  const copies = [], clones = [], inAssistant = [], skipped = [];
+  if (!COMMANDS_DIR[assistant]) throw new Error(`Assistant inconnu : ${assistant} (attendu: ${Object.keys(COMMANDS_DIR).join('|')})`);
+  // `skipped` a disparu : il était toujours vide (plus rien n'y était poussé depuis le retrait
+  // d'awesome-cursorrules) et le rapport le concaténait avec les vrais « sautés » du scaffold.
+  const copies = [], clones = [], inAssistant = [];
   const isCursor = assistant === 'cursor';
   const isClaude = assistant === 'claude-code';
 
@@ -34,7 +43,7 @@ export function resolveAssets(stack, assistant) {
   });
   inAssistant.push({ name: 'superpowers', command: SUPERPOWERS[assistant] });
 
-  return { copies, clones, inAssistant, skipped, commandsDir: TARGET[assistant] };
+  return { copies, clones, inAssistant, commandsDir: COMMANDS_DIR[assistant] };
 }
 
 // Stitch (Google Labs) — design/maquette par IA. Skills officiels auto-installés + MCP distant.

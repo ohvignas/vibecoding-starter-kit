@@ -2,15 +2,37 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { renderProjectAgentsMd } from './templates.mjs';
 
+// Les 9 règles standing injectées dans AGENTS.md/CLAUDE.md, et le paramètre du rendu qui les
+// porte. C'est le CONTRAT du fichier : s'il en manque une, ce qui sort n'est pas un AGENTS.md.
+const REGLES = {
+  loopSection: 'loop-section.md', proofRule: 'proof-rule.md', realityRule: 'reality-rule.md',
+  verifyRule: 'verify-rule.md', subagentsRule: 'subagents-rule.md', secretsRule: 'secrets-cost-rule.md',
+  designRule: 'design-rule.md', cssMaquetteRule: 'css-maquette-rule.md', memoryRules: 'memory-rules.md',
+};
+
 // Source unique du rendu AGENTS.md/CLAUDE.md — utilisée par setup ET update --refresh.
+//
+// Une règle illisible n'est JAMAIS remplacée par du vide : le rendu dégénéré (l'ossature sans
+// aucune règle) était écrit tel quel par `--refresh` par-dessus l'AGENTS.md complet du projet,
+// avec le message « Régénéré » — 15 022 → 1 398 octets, exit 0, les 9 règles perdues sans un mot.
+// On échoue à la place, en nommant ce qui manque : une source amputée est un bug d'installation,
+// pas un contenu.
 export function renderAgentsFile({ source, stack, assistant, commandsDir, learning = true }) {
-  const snip = (f) => { try { return fs.readFileSync(path.join(source, `templates/agents/${f}`), 'utf8'); } catch { return ''; } };
-  return renderProjectAgentsMd({
-    stack, assistant, commandsDir, learning,
-    loopSection: snip('loop-section.md'), designRule: snip('design-rule.md'),
-    subagentsRule: snip('subagents-rule.md'), verifyRule: snip('verify-rule.md'),
-    realityRule: snip('reality-rule.md'), proofRule: snip('proof-rule.md'),
-    secretsRule: snip('secrets-cost-rule.md'), cssMaquetteRule: snip('css-maquette-rule.md'),
-    memoryRules: snip('memory-rules.md'),
-  });
+  const snippets = {}, manquants = [];
+  for (const [cle, fichier] of Object.entries(REGLES)) {
+    const abs = path.join(source, 'templates/agents', fichier);
+    try {
+      const t = fs.readFileSync(abs, 'utf8');
+      if (!t.trim()) { manquants.push(`${fichier} (vide)`); continue; }
+      snippets[cle] = t;
+    } catch (e) { manquants.push(`${fichier} (${e.code || e.message})`); }
+  }
+  if (manquants.length) {
+    throw new Error([
+      `Règles standing introuvables dans ${path.join(source, 'templates/agents')} : ${manquants.join(', ')}.`,
+      "Le rendu serait un AGENTS.md sans ses règles — refusé pour ne pas écraser celui du projet.",
+      'Vérifie le chemin passé à `--source` (ou réinstalle le kit : `npm create vibecoding-kit@latest`).',
+    ].join('\n'));
+  }
+  return renderProjectAgentsMd({ stack, assistant, commandsDir, learning, ...snippets });
 }

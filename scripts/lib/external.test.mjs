@@ -4,9 +4,25 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pickFromClone, installCaveman, buildSkillAddArgs, installSkills, buildRunCommand } from './external.mjs';
+import { pickFromClone, summarizeClone, installCaveman, buildSkillAddArgs, installSkills, buildRunCommand } from './external.mjs';
 
 function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'vs-ext-')); }
+
+// E5 — `pickFromClone` renvoie le sort de CHAQUE fichier prélevé, et le scaffold jetait ce retour :
+// il affichait ✅ <dépôt> dès que `git clone` avait réussi. Un dépôt tiers qui renomme son fichier
+// (c'est arrivé : `karpathy-guidelines.mdc`) donnait donc « ✅ » sur un fichier jamais copié.
+test('E5 — clone dont AUCUN fichier n\'a été prélevé : ce n\'est pas un ✅', () => {
+  const s = summarizeClone('owner/repo', [{ to: 'a.mdc', status: 'missing-src' }, { to: 'b.md', status: 'missing-src' }]);
+  assert.equal(s.ok, false);
+  assert.match(s.reason, /a\.mdc/, 'le fichier attendu est nommé');
+  assert.match(s.reason, /owner\/repo|introuvable/i);
+});
+
+test('E5 — clone dont un fichier au moins est arrivé (ou était déjà là) : ✅', () => {
+  assert.equal(summarizeClone('owner/repo', [{ status: 'copied' }, { to: 'b', status: 'missing-src' }]).ok, true);
+  assert.equal(summarizeClone('owner/repo', [{ status: 'skipped-exists' }]).ok, true, 'déjà présent = rien à faire, pas un échec');
+  assert.equal(summarizeClone('owner/repo', []).ok, true, 'clone sans picks : le dépôt lui-même suffit');
+});
 
 test('pickFromClone signale une source manquante', () => {
   const clone = tmp(), proj = tmp();

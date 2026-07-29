@@ -1,0 +1,22 @@
+# Fins de ligne. Sans ces règles, un clone Windows checkoute les scripts en CRLF et les hooks
+# bash du kit échouent sur « bad interpreter: /usr/bin/env bash^M » — message illisible pour un
+# débutant, alors que rien n'est cassé de son côté.
+* text=auto
+
+*.mjs text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.mdc text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+
+# Les hooks git n'ont pas d'extension : ils sont désignés par leur chemin.
+.githooks/* text eol=lf
+templates/hooks/* text eol=lf
+
+# Binaires : jamais de conversion.
+*.png binary
+*.jpg binary
+*.ico binary

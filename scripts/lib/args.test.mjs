@@ -52,9 +52,13 @@ test('--no-skills : drapeau lu', () => {
   assert.equal(a.noSkills, true);
 });
 
-test('--yes : drapeau lu (mode non-interactif)', () => {
-  assert.equal(parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--yes']).yes, true);
-  assert.equal(parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x']).yes, false);
+// `--yes` est ACCEPTÉ (sinon parseArgs jetterait « Argument inconnu ») mais n'a plus de champ :
+// le mode non interactif se décide sur `argv` dans `needsWizard`, jamais sur `args.yes`.
+test('--yes : accepté sans erreur, et sans champ mort dans l\'objet', () => {
+  const a = parseArgs(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x', '--yes']);
+  assert.equal(a.stack, 'saas');
+  assert.equal('yes' in a, false);
+  assert.equal('mockup' in a, false);
 });
 
 test('expandHome : ~ et ~/… étendus, le reste intact', () => {

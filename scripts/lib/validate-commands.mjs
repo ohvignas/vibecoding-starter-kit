@@ -1,8 +1,9 @@
 // scripts/lib/validate-commands.mjs
 import fs from 'node:fs';
 import path from 'node:path';
+import { DESIGN_SKILL_NAMES } from './matrix.mjs';
 
-const PHASES = ['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
+const PHASES =['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
 const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/superpowers/specs', 'docs/memory'];
 const AGENTS_TEMPLATES = ['templates/agents/loop-section.md', 'templates/agents/design-rule.md', 'templates/agents/subagents-rule.md', 'templates/agents/verify-rule.md', 'templates/agents/reality-rule.md', 'templates/agents/proof-rule.md', 'templates/agents/secrets-cost-rule.md', 'templates/agents/css-maquette-rule.md'];
 // Marqueurs de profondeur : ils prouvent que le kit porte de VRAIS templates, pas un runbook
@@ -41,8 +42,9 @@ export function validateEditDesignCommand(root) {
   const rb = path.join(root, 'templates/commands/edit-design.md');
   if (!fs.existsSync(rb)) { errors.push('manquant : templates/commands/edit-design.md'); return errors; }
   const txt = fs.readFileSync(rb, 'utf8');
-  const skills = ['frontend-design', 'ui-ux-pro-max', 'web-design-guidelines', 'brand-guidelines'];
-  for (const s of skills) if (!txt.includes(s)) errors.push(`edit-design : skill non référencé « ${s} »`);
+  // La liste vient de matrix.mjs (DESIGN_SKILL_NAMES) : le validateur en portait une copie, donc
+  // il aurait continué à valider les 4 anciens noms après un changement de la source.
+  for (const s of DESIGN_SKILL_NAMES) if (!txt.includes(s)) errors.push(`edit-design : skill non référencé « ${s} »`);
   if (!txt.includes('design.md')) errors.push('edit-design : design.md non référencé');
   return errors;
 }

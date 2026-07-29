@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { renderAgentsFile } from './agents-file.mjs';
 import { mergeManagedSection, MARK_START_PREFIX } from './managed-section.mjs';
-import { kitOwnedFiles } from './kit-owned.mjs';
+import { kitOwnedFiles, kitOwnedGenerated } from './kit-owned.mjs';
 import { toCursorAgent } from './agent-frontmatter.mjs';
 import { resolveAssets } from './matrix.mjs';
 
@@ -22,7 +22,11 @@ export function refreshProject({ source, projectDir, manifest, dryRun = false })
   const { stack, assistant } = manifest;
   const { commandsDir } = resolveAssets(stack, assistant);
   const changed = [], skipped = [], migrated = [];
-  const fresh = renderAgentsFile({ source, stack, assistant, commandsDir });
+  // `learning` vient du MANIFESTE, pas du défaut : sans lui, un projet créé en `--no-learning`
+  // voyait la section « Mode apprentissage » revenir au premier `--refresh`. Absent (projet
+  // d'avant la mémorisation) = `true`, exactement le défaut du scaffold.
+  const learning = manifest.learning !== false;
+  const fresh = renderAgentsFile({ source, stack, assistant, commandsDir, learning });
   for (const name of ['AGENTS.md', 'CLAUDE.md']) {
     const dest = path.join(projectDir, name);
     if (!fs.existsSync(dest)) { skipped.push(`${name} (absent)`); continue; }
@@ -43,6 +47,32 @@ export function refreshProject({ source, projectDir, manifest, dryRun = false })
     } catch (e) { skipped.push(`${to} (illisible : ${e.message})`); continue; }
     const prev = fs.existsSync(dst) ? fs.readFileSync(dst, 'utf8') : null;
     if (prev !== next) { if (!dryRun) { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(dst, next); } changed.push(to); }
+  }
+
+  // Fichiers CALCULÉS par le scaffold (hooks git, config MCP, docs/RUN.md) : sans eux, un projet
+  // gardait à vie les hooks et les serveurs MCP de sa date de création.
+  for (const g of kitOwnedGenerated(stack, assistant, { backend: manifest.backend })) {
+    const dst = path.join(projectDir, g.to);
+    const prev = fs.existsSync(dst) ? fs.readFileSync(dst, 'utf8') : null;
+    // Un fichier jamais posé (projet d'une autre version, assistant sans ce fichier) n'est pas
+    // créé de nulle part par un refresh : c'est le rôle du scaffold.
+    if (prev === null) { skipped.push(`${g.to} (absent du projet)`); continue; }
+    let next;
+    try {
+      const tpl = g.from ? fs.readFileSync(path.join(source, g.from), 'utf8') : null;
+      next = g.render(prev, tpl);
+    } catch (e) { skipped.push(`${g.to} (non régénérable : ${e.message})`); continue; }
+    if (prev === next) continue;
+    // policy 'new' : le fichier peut porter des notes de l'utilisateur → on livre à côté.
+    const cible = g.policy === 'new' ? `${g.to}.new` : g.to;
+    const dstFinal = path.join(projectDir, cible);
+    if (g.policy === 'new' && fs.existsSync(dstFinal) && fs.readFileSync(dstFinal, 'utf8') === next) continue;
+    if (!dryRun) {
+      fs.mkdirSync(path.dirname(dstFinal), { recursive: true });
+      fs.writeFileSync(dstFinal, next);
+      if (g.mode) fs.chmodSync(dstFinal, g.mode);
+    }
+    changed.push(cible);
   }
   return { changed, skipped, migrated };
 }

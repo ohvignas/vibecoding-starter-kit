@@ -42,6 +42,20 @@ export function pickFromClone(cloneDir, picks, projectDir) {
   return out;
 }
 
+// Le rapport disait ✅ dès que `git clone` avait réussi — sans jamais regarder si les fichiers
+// qu'on venait y chercher existaient encore. Un dépôt tiers qui renomme un fichier laissait donc
+// une ligne verte sur un prélèvement vide. Ici on lit le retour de `pickFromClone` : rien de
+// prélevé (et il y avait quelque chose à prélever) = « Sauté », avec le nom du fichier attendu.
+export function summarizeClone(repo, results = []) {
+  if (!results.length) return { ok: true };
+  if (results.some((r) => r.status === 'copied' || r.status === 'skipped-exists')) return { ok: true };
+  const attendus = results.map((r) => r.to).filter(Boolean);
+  return {
+    ok: false,
+    reason: `cloné, mais rien à prélever : ${attendus.join(', ') || 'aucun fichier'} introuvable(s) dans ${repo} (le dépôt tiers a dû renommer ses fichiers) — optionnel, le reste du kit est en place`,
+  };
+}
+
 export function installCaveman(run = defaultRun) {
   run('bash', ['-lc', 'curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash']);
 }

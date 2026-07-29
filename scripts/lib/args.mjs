@@ -5,7 +5,10 @@ const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
 
 export function parseArgs(argv) {
   // source: null = « non fourni » → setup.mjs y mettra la racine du kit (dérivée de import.meta.url).
-  const args = { stack: null, assistant: null, project: null, mockup: null, source: null, dryRun: false, force: false, caveman: false, yes: false, learning: true, refresh: false };
+  // `--mockup` (jamais lu par personne) et `args.yes` (le mode non interactif se décide sur `argv`,
+  // dans needsWizard) ont été retirés : deux champs que le wizard recopiait consciencieusement
+  // d'un objet à l'autre, et que rien n'a jamais consommé.
+  const args = { stack: null, assistant: null, project: null, source: null, dryRun: false, force: false, caveman: false, learning: true, refresh: false };
   // Une option à valeur ne doit JAMAIS avaler le drapeau suivant : `--project --no-skills` donnait
   // un projet nommé « --no-skills » ET perdait silencieusement --no-skills.
   const valueOf = (flag, i) => {
@@ -19,7 +22,6 @@ export function parseArgs(argv) {
       case '--stack': args.stack = valueOf(a, i); i++; break;
       case '--assistant': args.assistant = valueOf(a, i); i++; break;
       case '--project': args.project = valueOf(a, i); i++; break;
-      case '--mockup': args.mockup = valueOf(a, i); i++; break;
       case '--source': args.source = valueOf(a, i); i++; break;
       case '--dry-run': args.dryRun = true; break;
       case '--refresh': args.refresh = true; break;
@@ -28,7 +30,8 @@ export function parseArgs(argv) {
       case '--backend': args.backend = valueOf(a, i); i++; break;
       case '--no-skills': args.noSkills = true; break;
       case '--no-learning': args.learning = false; break;
-      case '--yes': args.yes = true; break;
+      // Accepté, mais sans champ : c'est `needsWizard(argv, isTTY)` qui le lit, dans argv.
+      case '--yes': break;
       default:
         // Nom de projet positionnel (npm create vibecoding-kit mon-app). --project reste prioritaire.
         if (!a.startsWith('-') && args.project === null) { args.project = a; break; }
@@ -38,21 +41,24 @@ export function parseArgs(argv) {
   return args;
 }
 
+// SOURCE UNIQUE de « ce nom de projet est-il acceptable ? ». Le wizard portait sa propre règle
+// (`/^[\w./~-]+$/`) qui refusait justement ce que celle-ci accepte : le même nom passait en
+// drapeau et échouait à la question.
+// Espaces et accents ACCEPTÉS (« C:\Users\Jean Dupont\app », « projet-café ») : les refuser bloquait
+// le cas Windows le plus banal et un public francophone. On interdit seulement ce qui est dangereux
+// pour un shell ou un chemin (métacaractères, retours à la ligne, caractères de contrôle).
+export function isValidProjectName(project) {
+  return Boolean(project) && typeof project === 'string' && Boolean(project.trim()) && !/[;&|`$(){}<>*?!\n\r\t\0]/.test(project);
+}
+
 export function validateArgs(args) {
   const errors = [];
   if (!STACKS.includes(args.stack)) errors.push(`--stack doit valoir ${STACKS.join('|')}`);
   if (!ASSISTANTS.includes(args.assistant)) errors.push(`--assistant doit valoir ${ASSISTANTS.join('|')}`);
-  // Espaces et accents ACCEPTÉS (« C:\Users\Jean Dupont\app », « projet-café ») : les refuser bloquait
-  // le cas Windows le plus banal et un public francophone. On interdit seulement ce qui est dangereux
-  // pour un shell ou un chemin (métacaractères, retours à la ligne, caractères de contrôle).
-  if (!args.project || !args.project.trim() || /[;&|`$(){}<>*?!\n\r\t\0]/.test(args.project)) {
-    errors.push('--project : nom invalide');
-  }
+  if (!isValidProjectName(args.project)) errors.push('--project : nom invalide');
   if (args.backend !== undefined && !['cloud', 'local'].includes(args.backend)) errors.push('--backend doit valoir cloud|local');
   return errors;
 }
-
-export const KNOWN = { STACKS, ASSISTANTS };
 
 // Étend ~ vers le dossier personnel : le shell ne le fait pas quand la valeur vient du wizard
 // ou d'un drapeau quoté ("~/mon-app"). Sans ça, un dossier littéral « ~ » est créé dans le projet.

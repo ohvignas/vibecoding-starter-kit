@@ -24,13 +24,52 @@ test('initProjectGit : séquence complète quand pas de dépôt', () => {
   assert.deepEqual(res.failed, []);
 });
 
-test('initProjectGit : dépôt déjà présent → ne touche à rien', () => {
+// E3 — un dépôt déjà là (l'utilisateur a fait `git init` avant, ou scaffolde dans un dépôt
+// existant) : le kit copiait `.githooks/pre-commit` et l'affichait ✅ dans son rapport, mais ne
+// posait JAMAIS `core.hooksPath`. Git ne regarde pas `.githooks/` tout seul : le scan de secrets
+// ne tournait donc jamais, et rien ne le disait. Ou on le pose, ou on dit la vérité.
+const fakeGit = ({ toplevel = '/p', hooksPath = null, projectDir = '/p' } = {}) => {
   const calls = [];
-  const run = (cmd, args) => { calls.push([cmd, ...args]); }; // rev-parse réussit
-  const res = initProjectGit({ projectDir: '/p', run });
-  assert.equal(calls.length, 1);
+  const run = (cmd, args) => {
+    calls.push([cmd, ...args]);
+    if (args.includes('--show-toplevel')) return Buffer.from(`${toplevel}\n`);
+    if (args.includes('core.hooksPath') && args.includes('--get')) {
+      if (hooksPath === null) throw new Error('exit 1'); // git config --get : code 1 quand la clé est absente
+      return Buffer.from(`${hooksPath}\n`);
+    }
+    return Buffer.from('');
+  };
+  return { calls, res: initProjectGit({ projectDir, run }) };
+};
+
+test('E3 — dépôt existant sans core.hooksPath : le kit le pose (les hooks tournent vraiment)', () => {
+  const { calls, res } = fakeGit();
+  assert.ok(
+    calls.some((c) => c.join(' ') === 'git -C /p config core.hooksPath .githooks'),
+    `core.hooksPath jamais posé — appels : ${JSON.stringify(calls)}`,
+  );
+  assert.deepEqual(res.failed, []);
+  assert.equal(res.done.length, 1);
+  assert.match(res.done[0], /hooks/i);
+});
+
+test('E3 — core.hooksPath déjà réglé ailleurs : on n\'écrase pas, on le dit', () => {
+  const { calls, res } = fakeGit({ hooksPath: '.husky' });
+  assert.equal(calls.some((c) => c.includes('core.hooksPath') && c.includes('.githooks')), false, 'la config de l\'utilisateur est à lui');
+  assert.deepEqual(res.done, []);
+  assert.deepEqual(res.failed, [], 'ce n\'est pas un échec du scaffold → jamais exit 1');
+  assert.equal(res.skipped.length, 1);
+  assert.match(res.skipped[0].reason, /\.husky/);
+  assert.match(res.skipped[0].reason, /git -C \/p config core\.hooksPath \.githooks/, 'la commande exacte pour rattraper');
+});
+
+test('E3 — projet DANS un dépôt parent : on ne touche pas au dépôt du parent, on le dit', () => {
+  const { calls, res } = fakeGit({ projectDir: '/p/apps/mon-app', toplevel: '/p' });
+  assert.equal(calls.some((c) => c.includes('core.hooksPath') && c.includes('.githooks')), false);
   assert.deepEqual(res.done, []);
   assert.deepEqual(res.failed, []);
+  assert.equal(res.skipped.length, 1);
+  assert.match(res.skipped[0].reason, /\/p\b/, 'le dépôt parent est nommé');
 });
 
 test('initProjectGit : échec git → failed[] en français, pas de throw', () => {
@@ -58,4 +97,15 @@ test('initProjectGit : vrai git dans un tmpdir (intégration)', () => {
   assert.ok(fs.existsSync(path.join(dir, '.git')), '.git créé');
   assert.equal(execFileSync('git', ['-C', dir, 'config', 'core.hooksPath'], { encoding: 'utf8' }).trim(), '.githooks');
   assert.match(execFileSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8', env }), /environnement vibecoding initial/);
+});
+
+test('E3 — vrai git : dépôt créé À LA MAIN avant le scaffold → hooksPath posé (intégration)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-gitexist-'));
+  const run = (cmd, args) => execFileSync(cmd, args, { stdio: 'pipe' });
+  run('git', ['-C', dir, 'init', '-b', 'main']);
+  assert.throws(() => run('git', ['-C', dir, 'config', '--get', 'core.hooksPath']), 'postulat : hooksPath absent');
+  const res = initProjectGit({ projectDir: dir, run });
+  assert.deepEqual(res.failed, []);
+  assert.equal(execFileSync('git', ['-C', dir, 'config', '--get', 'core.hooksPath'], { encoding: 'utf8' }).trim(), '.githooks');
+  fs.rmSync(dir, { recursive: true, force: true });
 });

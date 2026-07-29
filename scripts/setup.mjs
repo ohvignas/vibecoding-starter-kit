@@ -3,21 +3,24 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { isCliEntry } from './lib/cli-entry.mjs';
 import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './lib/args.mjs';
 import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
-import { AGENTS_DIR } from './lib/kit-owned.mjs';
+import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
+import { COMMANDS } from './lib/commands-list.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
-import { cloneRepo, pickFromClone, installCaveman, installSkills } from './lib/external.mjs';
+import { cloneRepo, pickFromClone, summarizeClone, installCaveman, installSkills } from './lib/external.mjs';
 import { initProjectGit } from './lib/gitinit.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
-import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
+import { needsWizard, buildArgsFromAnswers, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
+import { renderRunDoc } from './lib/run-doc.mjs';
 import { supportsColor, ok } from './lib/ui.mjs';
 
 // Racine du kit = dossier parent de scripts/ — fiable quel que soit le cwd de lancement
@@ -136,13 +139,15 @@ async function main() {
     try {
       tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-clone-'));
       cloneRepo(cl.repo, tmp);
-      if (cl.picks) pickFromClone(tmp, cl.picks, projectDir);
-      done.push(cl.repo);
+      // Le clone réussi ne prouve rien : ce qui compte est ce qu'on en a PRÉLEVÉ (E5).
+      const s = summarizeClone(cl.repo, cl.picks ? pickFromClone(tmp, cl.picks, projectDir) : []);
+      if (s.ok) done.push(cl.repo);
+      else cloneSkipped.push({ name: cl.repo, reason: s.reason });
     } catch { cloneSkipped.push({ name: cl.repo, reason: 'non récupéré (réseau ?) — optionnel, relance plus tard' }); }
     finally { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 
-  for (const cmd of ['init-vibecoding', 'help', 'new-project', 'new-feature', 'edit-design', 'doctor', 'build', 'next', 'sos', 'deploy']) {
+  for (const cmd of COMMANDS) {
     try {
       const src = path.join(args.source, `templates/commands/${cmd}.md`);
       // Slash-commands typables pour tous : Cursor → .cursor/commands/, Claude → .claude/commands/, Codex → docs/commands/.
@@ -202,42 +207,47 @@ async function main() {
 
   try { track('docs/ROADMAP.md (squelette)', copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt)); }
   catch (e) { failed.push(`roadmap (${e.message})`); }
-  try { track('docs/RUN.md', copyIfAbsent(path.join(args.source, `templates/run/${args.stack}.md`), path.join(projectDir, 'docs/RUN.md'), opt)); }
-  catch (e) { failed.push(`run (${e.message})`); }
-
+  // docs/RUN.md est RENDU (modèle de la stack + notes backend/Codex) par une source unique —
+  // la même que `--refresh` réutilise, sinon le refresh ne saurait pas reproduire ce qu'on écrit ici.
   try {
-    const note = renderBackendNote(args.stack, args.backend);
     const runPath = path.join(projectDir, 'docs/RUN.md');
-    const cur = fs.existsSync(runPath) ? fs.readFileSync(runPath, 'utf8') : '';
-    // Idempotent : ne préfixe la note que si elle n'est pas déjà là (re-run sans --force).
-    if (note && !cur.includes('Backend en local')) {
-      fs.writeFileSync(runPath, note + '\n' + cur);
-      done.push('docs/RUN.md (note backend local)');
-    }
-  } catch (e) { failed.push(`backend note (${e.message})`); }
+    if (!fs.existsSync(runPath) || args.force) {
+      ensureDir(path.dirname(runPath));
+      fs.writeFileSync(runPath, renderRunDoc({
+        template: fs.readFileSync(path.join(args.source, `templates/run/${args.stack}.md`), 'utf8'),
+        stack: args.stack, assistant: args.assistant, backend: args.backend,
+      }));
+      done.push('docs/RUN.md');
+    } else kept.push('docs/RUN.md');
+  } catch (e) { failed.push(`run (${e.message})`); }
 
   // Parité : chaque assistant reçoit les 7 agents dans SON dossier natif.
   // Cursor ne comprend que name/description/model/readonly → frontmatter transformé (toCursorAgent).
   // Codex n'a pas de dossier d'agents → docs/agents/crew/ (la Règle sous-agents y renvoie).
   try {
+    // La liste vient de CREW (kit-owned.mjs), jamais du contenu du dossier : c'est la même que
+    // celle du `--refresh`. Un agent listé mais absent du dossier échoue ici, bruyamment — un
+    // agent présent mais non listé était copié au scaffold et jamais régénéré ensuite.
     const agentsSrc = path.join(args.source, 'templates/agents/subagents');
     const agentsDir = AGENTS_DIR[args.assistant];
-    if (args.assistant === 'cursor') {
-      const results = [];
-      ensureDir(path.join(projectDir, agentsDir));
-      for (const f of fs.readdirSync(agentsSrc).filter((n) => n.endsWith('.md'))) {
-        const dest = path.join(projectDir, agentsDir, f);
-        if (fs.existsSync(dest) && !args.force) { results.push({ status: 'kept' }); continue; }
-        fs.writeFileSync(dest, toCursorAgent(fs.readFileSync(path.join(agentsSrc, f), 'utf8')));
-        results.push({ status: 'copied' });
-      }
-      trackDir(`${agentsDir}/ (agents du crew (7))`, results);
-    } else {
-      trackDir(`${agentsDir}/ (agents du crew (7))`, copyDirIfAbsent(agentsSrc, path.join(projectDir, agentsDir), opt));
+    const results = [];
+    ensureDir(path.join(projectDir, agentsDir));
+    for (const a of CREW) {
+      const dest = path.join(projectDir, agentsDir, `${a}.md`);
+      if (fs.existsSync(dest) && !args.force) { results.push({ status: 'kept' }); continue; }
+      const brut = fs.readFileSync(path.join(agentsSrc, `${a}.md`), 'utf8');
+      // Cursor ne comprend que name/description/model/readonly → frontmatter transformé.
+      fs.writeFileSync(dest, args.assistant === 'cursor' ? toCursorAgent(brut) : brut);
+      results.push({ status: 'copied' });
     }
+    trackDir(`${agentsDir}/ (agents du crew (${CREW.length}))`, results);
   } catch (e) { failed.push(`agents (${e.message})`); }
   try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
   catch (e) { failed.push(`.gitignore (${e.message})`); }
+  // Fins de ligne : sur Windows, sans ça, les hooks bash du projet sont checkoutés en CRLF et
+  // échouent sur « bad interpreter: ^M » — le scan de secrets ne tourne plus, sans rien dire.
+  try { track('.gitattributes', copyIfAbsent(path.join(args.source, 'templates/gitattributes'), path.join(projectDir, '.gitattributes'), opt)); }
+  catch (e) { failed.push(`.gitattributes (${e.message})`); }
   try {
     const hook = path.join(projectDir, '.githooks/pre-commit');
     track('.githooks/pre-commit', copyIfAbsent(path.join(args.source, 'templates/hooks/pre-commit'), hook, opt));
@@ -254,10 +264,13 @@ async function main() {
   catch (e) { failed.push(`exemple (${e.message})`); }
 
   // Manifeste : mémorise stack+assistant (+ version du kit) pour que `scripts/update.mjs` puisse récupérer les nouveaux fichiers du kit.
+  // `learning` et `backend` y sont AUSSI : ce sont deux choix de l'utilisateur, et `--refresh`
+  // régénère à partir du seul manifeste. Non mémorisés, ils étaient silencieusement remis au
+  // défaut (mode apprentissage réactivé, note « backend en local » perdue).
   try {
     const mf = path.join(projectDir, '.vibecoding.json');
     let kitVersion; try { kitVersion = JSON.parse(fs.readFileSync(path.join(args.source, 'package.json'), 'utf8')).version; } catch { /* source sans package.json */ }
-    if (!fs.existsSync(mf) || args.force) { fs.writeFileSync(mf, JSON.stringify({ stack: args.stack, assistant: args.assistant, generatedBy: 'vibecoding-starter-kit', ...(kitVersion ? { kitVersion } : {}) }, null, 2) + '\n'); done.push('.vibecoding.json'); }
+    if (!fs.existsSync(mf) || args.force) { fs.writeFileSync(mf, JSON.stringify({ stack: args.stack, assistant: args.assistant, learning: args.learning !== false, ...(args.backend ? { backend: args.backend } : {}), generatedBy: 'vibecoding-starter-kit', ...(kitVersion ? { kitVersion } : {}) }, null, 2) + '\n'); done.push('.vibecoding.json'); }
     else kept.push('.vibecoding.json');
   } catch (e) { failed.push(`.vibecoding.json (${e.message})`); }
 
@@ -267,9 +280,12 @@ async function main() {
   }
 
   // Dépôt git réel : hooks pre-commit actifs immédiatement + premier point de retour arrière.
+  // Ce que le kit n'a pas pu activer (dépôt parent, core.hooksPath déjà pris) part en « Sauté »,
+  // avec la commande pour rattraper — jamais en ✅ silencieux.
   const g = initProjectGit({ projectDir });
   done.push(...g.done);
   failed.push(...g.failed);
+  cloneSkipped.push(...g.skipped);
 
   if (!args.noSkills) {
     console.log('\nInstallation des skills (npx skills add — peut prendre ~1-2 min)…');
@@ -295,7 +311,7 @@ async function main() {
     } catch (e) { failed.push(`skills stack (${e.message})`); }
   }
 
-  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: [...assets.skipped, ...cloneSkipped], failed }));
+  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: cloneSkipped, failed }));
   if (failed.length) process.exitCode = 1; // rapport honnête : l'échec est visible aussi dans le code de sortie
   console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
   const promptLines = [
@@ -313,9 +329,5 @@ async function main() {
   console.log(promptLines.join('\n'));
 }
 
-// Entrée CLI. `npm create` / `npx` lancent via un symlink `node_modules/.bin/…` :
-// process.argv[1] est alors le symlink, import.meta.url le realpath → jamais égaux.
-// Sans realpath, main() ne tourne pas sous npx → scaffold no-op silencieux (exit 0).
-let invokedHref = '';
-try { if (process.argv[1]) invokedHref = pathToFileURL(fs.realpathSync(process.argv[1])).href; } catch { /* argv[1] absent (REPL) */ }
-if (import.meta.url === invokedHref) main().catch((e) => { console.error(e?.message || e); process.exit(1); });
+// Entrée CLI (garde partagé : voir lib/cli-entry.mjs — `npm create`/`npx` passent par un symlink).
+if (isCliEntry(import.meta.url)) main().catch((e) => { console.error(e?.message || e); process.exit(1); });

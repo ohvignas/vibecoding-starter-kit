@@ -5,7 +5,8 @@
 // Usage : node <kit>/scripts/update.mjs [--project <dossier>]  (défaut : dossier courant)
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { isCliEntry } from './lib/cli-entry.mjs';
 import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 // Source unique : refreshProject + readVibecodingManifest vivent dans lib/refresh.mjs (partagé avec setup.mjs).
 // Re-export pour compat : update.test.mjs importe encore readVibecodingManifest depuis ce module.
@@ -17,7 +18,9 @@ export function buildUpdateArgs({ stack, assistant }, projectDir, kitRoot) {
   return [path.join(kitRoot, 'scripts', 'setup.mjs'), '--source', kitRoot, '--stack', stack, '--assistant', assistant, '--project', projectDir, '--no-skills', '--yes'];
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Garde d'entrée partagé (lib/cli-entry.mjs) : sans résolution du realpath, un lancement via
+// symlink (npm link, /tmp sur macOS) sortait en 0 sans rien mettre à jour.
+if (isCliEntry(import.meta.url)) {
   const kitRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const i = process.argv.indexOf('--project');
   const projectDir = path.resolve(i !== -1 ? process.argv[i + 1] : process.cwd());
@@ -27,7 +30,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const refresh = process.argv.includes('--refresh');
     const dryRun = process.argv.includes('--dry-run');
     if (refresh) {
-      const { changed, skipped, migrated } = refreshProject({ source: kitRoot, projectDir, manifest, dryRun });
+      const { changed, migrated } = refreshProject({ source: kitRoot, projectDir, manifest, dryRun });
       console.log(dryRun ? '\n[dry-run] Fichiers qui seraient régénérés :' : '\nFichiers régénérés (kit) :');
       for (const c of changed) console.log(`  ~ ${c}`);
       if (!changed.length) console.log('  (rien à changer — déjà à jour)');

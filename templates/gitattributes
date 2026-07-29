@@ -1,0 +1,27 @@
+# Fins de ligne — copié par le kit en `.gitattributes`.
+# Sur Windows, git checkoute par défaut en CRLF : les hooks bash du projet (`.githooks/pre-commit`,
+# `.githooks/pre-push`) échouent alors sur « bad interpreter: /usr/bin/env bash^M », et le scan de
+# secrets ne tourne plus. Ces règles gardent en LF tout ce qui doit l'être, sur toutes les machines.
+* text=auto
+
+*.mjs text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.mdc text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+
+# Les hooks git n'ont pas d'extension : ils sont désignés par leur chemin.
+.githooks/* text eol=lf
+
+# Binaires : jamais de conversion.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary

@@ -16,10 +16,6 @@ export function forceAlwaysApplyFalse(text) {
   return `---\n${fm}\n---\n${text.slice(m[0].length)}`;
 }
 
-export function toSkillMd({ name, description, body }) {
-  return `---\nname: ${name}\ndescription: ${JSON.stringify(String(description).replace(/\r?\n/g, ' '))}\n---\n\n${body}\n`;
-}
-
 // Ordre de lecture volontaire : la boucle, puis la Règle Preuve (elle pose le vocabulaire
 // PROUVÉ/BLOQUÉ que les suivantes emploient) et la Règle Réalité (les mocks), puis la
 // vérification, puis les règles transverses — les règles UI (design, CSS) viennent après.
@@ -59,10 +55,8 @@ Voir les règles de stack (\`.cursor/rules/\` ou \`.claude/skills/\`) et \`ai-co
 PRD : \`docs/PRD.md\` · Roadmap : \`docs/ROADMAP.md\` · Design : \`docs/design.md\` · Capacités : \`docs/DOMAINS.md\` · Architecture : \`docs/superpowers/specs/\`.
 
 ## Commandes
-\`/new-project\` (fondation) · \`/build\` (construire la roadmap, jalon par jalon) · \`/new-feature\` (livrer une feature) · \`/edit-design\` (UI). Runbooks dans \`${commandsDir}/\`.
-
-## Maquette
-La maquette de référence est dans \`maquette/\`.`;
+Runbooks dans \`${commandsDir}/\`, détaillés par \`/help\`.
+\`/init-vibecoding\` (installer), \`/help\` (aide-mémoire), \`/new-project\` (fondation), \`/build\` (construire la roadmap), \`/new-feature\` (livrer), \`/edit-design\` (UI), \`/next\` (la suite), \`/sos\` (ça casse), \`/doctor\` (diagnostic), \`/deploy\` (déployer).`;
   return `${wrapManaged(body)}
 
 ## Tes règles à toi (préservées lors des mises à jour)
