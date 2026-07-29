@@ -198,18 +198,28 @@ test('D8 — /help se liste, liste les 10 commandes, et ne donne qu\'une répons
 // a git repository` — le premier message vient d'un `git push` NU. Citation exacte, mais d'une
 // autre commande. Un débutant qui lit un message qu'on ne lui a pas annoncé se croit hors-piste.
 //
-// PORTÉE, telle qu'elle est (une revue a montré que la 1re version promettait plus qu'elle ne
-// tenait, et repassait au vert si la citation perdait ses backticks) : TOUS les runbooks, TOUTES
-// les citations `fatal: …` — avec ou sans backticks — et l'égalité EXACTE de la ligne, pas un
-// préfixe (sinon `fatal: '` suffirait). L'environnement git est isolé (`GIT_CONFIG_GLOBAL`,
-// `GIT_CONFIG_SYSTEM`) : une config personnelle (`commit.gpgsign`, `core.hooksPath`) ne peut ni
-// verdir ni rougir le test.
-// LIMITE ASSUMÉE : on ne rejoue que les commandes `git push …` que la page cite elle-même, dans
-// le cas « pas de remote » (celui du projet qui sort du scaffold). Une page qui citerait un
-// `fatal:` produit par une autre commande, ou dans un autre état du dépôt, n'est pas vérifiable
-// ici — elle est signalée comme telle plutôt que passée sous silence.
+// PORTÉE. Deux versions se sont trompées avant celle-ci, en sens inverse, et la 2ᵉ délimitait la
+// citation par LA PONCTUATION QUI LA SUIT : elle ratait `fatal: …` suivi de « : » ou d'un gras
+// markdown, ET tronquait au 1er point — au point d'accuser une page qui citait `fatal: No
+// configured push destination.` exactement comme git l'imprime, point compris. Un garde qui
+// rougit sur de la documentation juste apprend à mal citer git pour le faire taire : c'est pire
+// qu'un garde absent. La citation est donc délimitée par SES PROPRES BACKTICKS (sans ambiguïté),
+// ou par la fin de ligne si elle n'en a pas ; la comparaison est une égalité, au point final et
+// aux gras markdown près, que git met ou non selon le message.
+// CE QU'IL VÉRIFIE : les 10 runbooks · toute citation `fatal: …` dont la LIGNE parle de push
+// (c'est la seule chose que ce garde sait rejouer) · confrontée à la sortie réelle des `git push`
+// que la page prescrit, dans le cas « pas de remote » — celui du projet qui sort du scaffold.
+// Environnement git isolé (`GIT_CONFIG_GLOBAL`/`GIT_CONFIG_SYSTEM`) : une config personnelle
+// (`commit.gpgsign`, `core.hooksPath`) ne peut ni verdir ni rougir le test.
+// CE QU'IL NE VÉRIFIE PAS, et ne prétend pas vérifier : un `fatal:` cité hors d'une ligne qui
+// parle de push — on ne peut pas décider à quelle commande il appartient, donc on ne l'accuse
+// pas ; les fichiers hors `templates/commands/` ; un `fatal:` produit dans un autre état du dépôt
+// qu'« aucun remote ».
 test('D7bis — tout message d\'erreur cité par un runbook est bien celui que git produit', () => {
-  const CITATION = /`?(fatal: [^`\n]+?)`?(?=\s*(?:[—.,)]|$))/g;
+  // Entre backticks : tout ce qu'ils encadrent. Sinon : jusqu'à la fin de la ligne.
+  const CITATION = /`(fatal: [^`\n]+)`|(fatal: [^`\n]+)/g;
+  // git met un point final à certains messages et pas à d'autres ; le gras est du markdown.
+  const nu = (s) => s.replace(/\*\*/g, '').trim().replace(/\.$/, '');
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-push-'));
   // Environnement neutre : ni config globale, ni config système, ni hooks de la machine.
   const env = { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
@@ -225,22 +235,28 @@ test('D7bis — tout message d\'erreur cité par un runbook est bien celui que g
   const fautes = [];
   for (const c of COMMANDES) {
     const t = cmd(c);
-    const citees = [...t.matchAll(CITATION)].map((m) => m[1].trim());
-    if (!citees.length) continue;
     const pushs = [...t.matchAll(/`(git push[^`\n]*)`/g)].map((m) => m[1]);
+    // Une citation n'est jugée que si SA LIGNE parle de push : ailleurs, on ne peut pas savoir
+    // quelle commande produit ce message, et accuser au hasard ferait corriger de la doc juste.
+    const citees = [];
+    t.split('\n').forEach((ligne, i) => {
+      if (!/\bpush\b/i.test(ligne)) return;
+      for (const m of ligne.matchAll(CITATION)) citees.push({ txt: nu(m[1] ?? m[2]), n: i + 1 });
+    });
+    if (!citees.length) continue;
     if (!pushs.length) {
-      fautes.push(`${c}.md cite ${citees.length} erreur(s) git mais aucune commande \`git push …\` : invérifiable`);
+      fautes.push(`${c}.md:${citees[0].n} cite une erreur de push mais la page ne prescrit aucune commande \`git push …\` en backticks simples — impossible de la rejouer.`);
       continue;
     }
     // Ce que ces commandes produisent VRAIMENT, sans remote — le cas décrit par les pages.
     const produites = new Set();
     for (const p of pushs) {
       const r = git(p.split(/\s+/).slice(1));
-      `${r.stderr}${r.stdout}`.split('\n').forEach((l) => { if (l.trim().startsWith('fatal:')) produites.add(l.trim()); });
+      `${r.stderr}${r.stdout}`.split('\n').forEach((l) => { if (l.trim().startsWith('fatal:')) produites.add(nu(l)); });
     }
-    for (const cite of citees) {
-      if (!produites.has(cite)) {
-        fautes.push(`${c}.md annonce « ${cite} »\n    or ${pushs.map((p) => `\`${p}\``).join(' / ')} sans remote répond${produites.size ? ' :\n      ' + [...produites].join('\n      ') : ' sans aucune ligne fatal:'}`);
+    for (const { txt, n } of citees) {
+      if (!produites.has(txt)) {
+        fautes.push(`${c}.md:${n} annonce « ${txt} »\n    or ${pushs.map((p) => `\`${p}\``).join(' / ')} sans remote répond${produites.size ? ' :\n      ' + [...produites].join('\n      ') : ' sans aucune ligne fatal:'}`);
       }
     }
   }
