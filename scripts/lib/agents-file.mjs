@@ -14,7 +14,8 @@ const REGLES = {
 //
 // Une règle illisible n'est JAMAIS remplacée par du vide : le rendu dégénéré (l'ossature sans
 // aucune règle) était écrit tel quel par `--refresh` par-dessus l'AGENTS.md complet du projet,
-// avec le message « Régénéré » — 15 022 → 1 398 octets, exit 0, les 9 règles perdues sans un mot.
+// avec le message « Régénéré » — 15 017 → 1 393 octets (2 189 → 190 mots), exit 0, les 9 règles
+// perdues sans un mot. (Chiffres remesurés : une revue avait relevé 5 octets d'écart.)
 // On échoue à la place, en nommant ce qui manque : une source amputée est un bug d'installation,
 // pas un contenu.
 export function renderAgentsFile({ source, stack, assistant, commandsDir, learning = true }) {

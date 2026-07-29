@@ -12,7 +12,7 @@ import { COMMANDS, COMMANDS_DIR } from './commands-list.mjs';
 import { CREW, AGENTS_DIR, kitOwnedFiles } from './kit-owned.mjs';
 import { resolveAssets, DESIGN_SKILL_NAMES, DESIGN_SKILL_SPECS } from './matrix.mjs';
 import { isValidProjectName } from './args.mjs';
-import { buildArgsFromAnswers } from './wizard.mjs';
+import { buildArgsFromAnswers, runWizard } from './wizard.mjs';
 import { COMMANDS as PLUGIN_COMMANDS } from '../build-cursor-plugin.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -59,6 +59,21 @@ test('E8 — wizard et drapeaux jugent un nom de projet avec la MÊME règle', (
   assert.equal(isValidProjectName('app;rm -rf /'), false);
 });
 
+// Le test ci-dessus passe par `buildArgsFromAnswers` — or ce n'est PAS là que la règle avait
+// divergé : c'était dans la BOUCLE DE QUESTION de `runWizard`, qui redemandait le nom tant que sa
+// propre regex ne l'acceptait pas. Un garde qui ne visite pas le site du bug ne garde rien : on
+// pilote donc le wizard pour de vrai, avec la réponse qui déclenchait le refus.
+test('E8 — la QUESTION du wizard accepte le nom que les drapeaux acceptent', async () => {
+  const scripted = (rep) => { let i = 0; return async () => rep[i++]; };
+  const muet = { write() {} };
+  // stack=1(saas) · assistant=2 · nom · backend=2(local) · apprentissage=o
+  const a = await runWizard(scripted(['1', '2', 'projet-café', '2', 'o']), false, muet);
+  // Si la question réimposait `/^[\w./~-]+$/`, l'accent était refusé, la question reposée, et la
+  // réponse suivante (« 2 ») consommée comme nom : le projet ne s'appellerait pas « projet-café ».
+  assert.equal(a.project, 'projet-café', 'la question a refusé un nom que `--project` accepte');
+  assert.equal(a.backend, 'local', 'une question reposée décale toutes les réponses suivantes');
+});
+
 // ── 3. Les skills design ─────────────────────────────────────────────────────────────────────
 // Quatre listes : la constante de matrix, les specs d'installation, le validateur de commandes,
 // et la prose des règles/runbooks. La règle dit à l'IA de charger 4 skills ; si l'installeur n'en
@@ -76,8 +91,14 @@ test('E8 — la règle design et les runbooks nomment exactement ces 4 skills', 
     for (const s of DESIGN_SKILL_NAMES) assert.ok(t.includes(s), `${f} : ${s} manquant`);
     assert.doesNotMatch(t, /\*\*5 skills design\*\*/, `${f} : compte périmé (shadcnblocks n'est pas un skill)`);
   }
-  // Le validateur de commandes ne doit plus porter sa propre copie de la liste.
-  assert.match(read('scripts/lib/validate-commands.mjs'), /DESIGN_SKILL_NAMES/, 'validate-commands doit dériver de la source');
+  // Le validateur de commandes ne doit plus porter sa propre copie de la liste. L'assertion
+  // « le fichier cite DESIGN_SKILL_NAMES » était satisfaite par un simple COMMENTAIRE : on exige
+  // donc l'import réel, ET l'absence de tout tableau littéral qui rassemblerait ces 4 noms.
+  const vc = read('scripts/lib/validate-commands.mjs');
+  assert.match(vc, /import\s*\{[^}]*DESIGN_SKILL_NAMES[^}]*\}\s*from\s*'\.\/matrix\.mjs'/, 'validate-commands doit IMPORTER la source, pas la citer');
+  const sansCommentaires = vc.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const litteral = sansCommentaires.match(/\[[^\]]*\]/g)?.find((bloc) => DESIGN_SKILL_NAMES.every((s) => bloc.includes(s)));
+  assert.equal(litteral, undefined, `validate-commands reporte une copie littérale de la liste : ${litteral}`);
 });
 
 // ── 4. Le garde-fou shell ────────────────────────────────────────────────────────────────────

@@ -62,6 +62,10 @@ test('css-maquette-rule : pas de slice lignes + accolades + vrai CSS + couleur p
   for (const s of ['plages de lignes', 'Accolades', 'vrai CSS', 'shadcn', 'primaire']) {
     assert.match(t, new RegExp(s));
   }
+  // E10 a supprimé la section `## Maquette` de `templates.mjs` pour tenir le plafond de mots, en
+  // s'appuyant sur le fait que cette règle-ci porte déjà la consigne. Personne ne l'assertait :
+  // la retirer d'ici l'aurait fait disparaître du rendu sans qu'aucun test ne bronche.
+  assert.match(t, /`maquette\/`/, 'la seule occurrence restante de la consigne « maquette/ » dans AGENTS.md');
 });
 
 test('reality-rule : zéro mock + boutons câblés + maquette à l\'identique', () => {

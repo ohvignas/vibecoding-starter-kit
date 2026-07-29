@@ -8,10 +8,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildRunCommand } from './external.mjs';
-import { resolveCheckCommand } from '../../templates/hooks/framework/checks.mjs';
+import { resolveCheckCommand, runChecks } from '../../templates/hooks/framework/checks.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -37,5 +38,29 @@ test('E7 — installeur et hook copié disent la MÊME chose de npx sur Windows'
     const hook = resolveCheckCommand(['npx', 'x'], platform);
     assert.equal(hook.file, installeur.cmd, `${platform} : exécutable divergent`);
     assert.deepEqual(hook.options, installeur.options, `${platform} : options divergentes`);
+  }
+});
+
+// Les tests ci-dessus prouvent que `resolveCheckCommand` DIT juste ; aucun ne prouvait que
+// `runChecks` s'en SERVE. Un `spawnSync('npx', …)` direct les laissait tous verts, et c'est
+// exactement le bug E7 : sur Windows, npx sans `.cmd` ni `shell:true` ne démarre pas, et le hook
+// annonçait « problème détecté » alors que rien n'avait tourné. On observe donc ce que `runChecks`
+// passe réellement à `spawn`, en l'injectant.
+test('E7 — runChecks passe par resolveCheckCommand (ce qu\'il lance, pas ce qu\'il sait)', () => {
+  const projet = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-win-run-'));
+  // `typecheck` exige un tsconfig.json (`CHECKS.typecheck.needs`) : sans lui le check est « sauté »
+  // et le test ne lancerait rien — d'où l'assertion de montage plus bas, qui l'a justement attrapé.
+  fs.writeFileSync(path.join(projet, 'tsconfig.json'), '{}');
+
+  const appels = [];
+  const spawn = (file, args, options) => { appels.push({ file, args, options }); return { status: 0 }; };
+  runChecks(['typecheck'], { cwd: projet, spawn, log() {}, platform: 'win32' });
+  fs.rmSync(projet, { recursive: true, force: true });
+
+  assert.ok(appels.length > 0, 'aucun check lancé : le montage du test ne prouve rien');
+  for (const a of appels) {
+    if (a.args[0] !== 'npx' && !/npx/.test(a.file)) continue;
+    assert.equal(a.file, 'npx.cmd', 'sur win32, npx doit être lancé en npx.cmd');
+    assert.equal(a.options.shell, true, 'sans shell:true, npx ne démarre pas sur Windows');
   }
 });
