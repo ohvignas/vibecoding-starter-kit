@@ -18,7 +18,7 @@ Puis propose le mode de travail. Garde ce cap : à chaque phase, redis en une ph
 ## Mode de travail (demande au début)
 Propose 2 modes et laisse l'utilisateur choisir :
 - **Rapide** : tu proposes des brouillons d'un coup avec tes suppositions taguées `[HYPOTHÈSE: …]` ; l'utilisateur corrige. **Moins de questions** — bien si l'idée est déjà claire.
-- **Coaching** (par défaut) : tu avances **section par section** avec des questions. Plus guidé, mais **plus de questions** — dis-le pour qu'il choisisse en connaissance de cause.
+- **Pas à pas** (par défaut) : tu avances **section par section** avec des questions. Plus guidé, mais **plus de questions** — dis-le pour qu'il choisisse en connaissance de cause.
 
 Discipline transverse : tag `[HYPOTHÈSE: …]`, `[NON-OBJECTIF v1]`, `[À CLARIFIER]` inline dans les brouillons ; balaie-les à la fin dans les sections dédiées.
 
@@ -87,7 +87,7 @@ Charge les **4 skills design** (`frontend-design`, `ui-ux-pro-max`, `web-design-
 - **Stack web (saas / desktop / vitrine) — commence par récupérer les préférences visuelles :** demande à l'utilisateur d'**ouvrir le compositeur de thème shadcn** en partant de ce preset de départ → **[ui.shadcn.com/create?preset=b27GcrRo](https://ui.shadcn.com/create?preset=b27GcrRo)**, de régler **en visuel** couleurs / rayons / typo, puis de te **renvoyer son code de preset** (l'URL `?preset=<code>`). Ces préférences = **base de `docs/design.md`** (palette/typo/rayons) ; **note le preset pour la Phase 7** (le scaffold l'appliquera). Pour affiner encore : **[tweakcn.com](https://tweakcn.com)** (export variables CSS).
 - **Mobile** : jamais shadcn (c'est du DOM web) → NativeWind + patterns RN.
 
-Puis **affine par un vrai aller-retour, une question à la fois** (mode coaching) — ce que le preset ne dit pas : ambiance/personnalité de la marque, références qui plaisent, public visé, densité, clair/sombre. Appuie-toi sur les parcours **UJ-*** du PRD. Écris le tout dans **`docs/design.md`** (volets A/B ci-dessous). **→ fais VALIDER `docs/design.md` avant de dessiner.**
+Puis **affine par un vrai aller-retour, une question à la fois** (mode pas à pas) — ce que le preset ne dit pas : ambiance/personnalité de la marque, références qui plaisent, public visé, densité, clair/sombre. Appuie-toi sur les parcours **UJ-*** du PRD. Écris le tout dans **`docs/design.md`** (volets A/B ci-dessous). **→ fais VALIDER `docs/design.md` avant de dessiner.**
 
 **Étape 2 — la maquette ENSUITE : un sous-agent par page (en parallèle), en shadcn/ui.**
 `docs/design.md` validé → dessine, **une page = un sous-agent** :

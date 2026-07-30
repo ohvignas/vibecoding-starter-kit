@@ -72,20 +72,34 @@ git commit -m "message"  # sauvegarde une étape
 
 ---
 
-## 5. Récupérer ce dépôt
+## 5. Créer ton projet
 
-Pour avoir tout le contexte IA sur ta machine :
+**C'est tout ce dont tu as besoin.** Dans un dossier vide, lance :
 ```bash
-git clone <URL-de-ce-depot>
-cd best_practices_vibecoding
+npm create vibecoding-kit@latest
 ```
 
-Puis télécharge les fichiers de contexte IA officiels (règles + `llms.txt`) :
+Le wizard te pose 4 à 5 questions (quoi construire, quel assistant, le nom du projet, et — pour un SaaS — Convex en cloud ou en local ; plus le mode apprentissage) puis **pose tout** : règles, commandes, mémoire, hooks git, CI, agents. Rien à cloner, rien à copier à la main.
+
+> **Stack vitrine ?** Astro 7 exige **Node ≥ 22.12** (`node --version`). Le wizard, lui, tourne dès 20.12 — c'est le site qui refusera de démarrer, pas l'installeur.
+
+Ensuite : ouvre ton assistant IA dans le dossier créé et colle le prompt affiché par le wizard (il est aussi dans `COLLE-MOI-DANS-L-IA.md`). Le fichier `docs/A-FAIRE.md` liste les derniers gestes — les plugins et les MCP, que personne ne peut installer à ta place.
+
+<details>
+<summary>Tu préfères lire le kit avant de l'utiliser ? (optionnel)</summary>
+
+Le dépôt du kit contient les guides, les fiches de stack et les contextes IA. Clone-le pour les lire :
+```bash
+git clone https://github.com/ohvignas/vibecoding-starter-kit.git
+cd vibecoding-starter-kit
+```
+Puis, si tu veux rafraîchir les fichiers de contexte IA officiels (règles + `llms.txt`) :
 ```bash
 bash scripts/download-ai-context.sh
 ```
+Ce n'est **pas** nécessaire pour créer un projet : `npm create` fait tout.
 
-*(Le script est détaillé dans le README principal.)*
+</details>
 
 ---
 
@@ -98,4 +112,4 @@ bash scripts/download-ai-context.sh
 | Claude Code / IA Cursor | L'assistant | `claude` se lance |
 | Git | Sauvegardes | `git --version` |
 
-Une fois ces 4 outils prêts → choisis ta stack dans le dossier `stacks/`.
+Une fois ces 4 outils prêts → lance `npm create vibecoding-kit@latest` dans un dossier vide. Le wizard te demandera ta stack ; les 4 sont expliquées dans le dossier `stacks/`.

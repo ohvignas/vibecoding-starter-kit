@@ -38,7 +38,7 @@ Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation *
 - [Les commandes](#-les-commandes)
 - [Les 4 stacks](#-les-4-stacks)
 - [Ce qui est généré](#-ce-qui-est-généré)
-- [Mémoire du projet](#-mémoire-du-projet)
+- [Mémoire du projet & journal du crew](#-mémoire-du-projet--journal-du-crew)
 - [Structure du dépôt](#-structure-du-dépôt)
 - [Contribuer](#-contribuer)
 - [Licence](#-licence)
@@ -67,9 +67,10 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🎓 | **Mode apprentissage** | l'IA **explique** ce qu'elle construit et te pose **une question de compréhension** à chaque jalon — tu comprends, tu ne subis pas |
 | 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code |
 | 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` (revenir au dernier point vert) ; **Règle Preuve : 3 tentatives** puis `BLOQUÉ`, anti-boucle infernale ; tags git par jalon |
-| 🚫 | **Anti-flemme** | l'IA **finit le travail** : zéro placeholder / `// TODO` / stub, zéro report « plus tard » ; « fini » = **vérifié** (test vert + résultat à l'écran). Règle non négociable dans `AGENTS.md` + `.cursor/rules/` |
+| 🚫 | **Anti-flemme** | **Règle Réalité** : zéro mock, zéro `lorem`, zéro donnée en dur hors des fichiers de test — chaque écran lit et écrit dans le **vrai** backend, chaque bouton marche de bout en bout. Plus zéro placeholder / `// TODO` / stub, zéro report « plus tard ». Non négociable, dans `AGENTS.md` + `.cursor/rules/` |
+| 📓 | **Journal du crew** | trois fichiers partagés dans `docs/agents/` : **`JOURNAL.md`** (append-only — une ligne par mission, avec sa preuve), **`state.yaml`** (l'état courant : jalon, tâche, tentatives de réparation, motif de blocage — **un seul écrivain**, le juge), **`inventaire.md`** (le contrat de couverture : tout ce que la maquette et le PRD promettent, ligne par ligne). Chaque agent les lit **avant** de commencer |
 | 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
-| 🔄 | **Mise à jour pro** | `node scripts/update.mjs` ajoute les fichiers neufs ; `--refresh` **régénère aussi** les règles (`AGENTS.md`, entre marqueurs) + runbooks + subagents — ta zone perso, `src/` et `docs/` **jamais touchés** (`--dry-run` pour prévisualiser) |
+| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : **régénère** les règles (`AGENTS.md`, entre marqueurs) + runbooks + agents + glossaire — ta zone perso, `src/` et **ce que tu as écrit** dans `docs/` **jamais touchés** (`--dry-run` pour prévisualiser) |
 | 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt du site, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
@@ -80,7 +81,9 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 npm create vibecoding-kit@latest
 ```
 
-> **Prérequis : Node.js ≥ 20.12 + git.** Le wizard demande stack/assistant/nom (+ Convex cloud/local) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack). Il peut demander un **code d'accès** (reçu par email) : appuie sur **Entrée** pour passer, jamais bloquant.
+> **Prérequis : Node.js ≥ 20.12 + git.** Le wizard demande stack/assistant/nom (+ Convex cloud/local pour le SaaS, + **mode apprentissage**) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack). Aucun compte, aucune clé, aucun code : quatre à cinq questions et c'est fini.
+>
+> **Stack vitrine** : Astro 7 exige **Node ≥ 22.12** (il refuse de démarrer en dessous). Le wizard, lui, tourne dès 20.12.
 
 **2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
 
@@ -107,7 +110,9 @@ Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** expliq
 
 ## ✅ Après l'install — ce qu'il te reste à faire
 
-Le wizard a **déjà tout posé dans le projet**. Il reste 2 à 3 gestes **dans ton assistant IA** (impossible pour un scaffolder d'installer un plugin ou de connecter un compte à ta place). La liste exacte, **adaptée à ta stack et ton assistant**, est aussi dans **`docs/A-FAIRE.md`** (avec des cases à cocher).
+Le wizard a **déjà tout posé dans le projet**. Il reste trois familles de gestes **dans ton assistant IA** (impossible pour un scaffolder d'installer un plugin ou de connecter un compte à ta place) : la boucle superpowers, les plugins, les MCP.
+
+**Combien de cases exactement ? Ça dépend de ton couple stack × assistant** — de **0 à 2 plugins** (certains combos n'en ont aucun) et de **2 à 4 serveurs MCP**. Aucune promesse à l'aveugle ici : ta liste réelle, cochable, est dans **`docs/A-FAIRE.md`**, généré pour *ta* configuration.
 
 **Déjà fait automatiquement — n'y touche pas :** `AGENTS.md`/`CLAUDE.md`, les 10 commandes, les règles, la mémoire, git + hooks (scan de secrets), la CI, `.vibecoding.json`, les **skills** (design + stack) et les **fichiers** de config MCP.
 
@@ -198,6 +203,8 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 
 | Commande | Rôle |
 |---|---|
+| **`/help`** | **L'entrée — la seule à retenir.** Les 10 commandes expliquées en français simple, et « par où continuer » selon ce que l'IA voit dans ton projet |
+| **`/init-vibecoding`** | Le tout-en-un : l'IA **installe l'environnement pour toi** (ou met à jour un projet existant) et te déroule `docs/A-FAIRE.md` pas à pas. À lancer quand rien n'est encore posé |
 | **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **design system** (`design.md`, thème shadcn) **d'abord**, **puis maquette** (un **sous-agent par écran** en shadcn/ui, ou **Stitch**/la tienne) + **domaines** + **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) |
 | **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » à chaque jalon (`--all` reste désactivé en mode apprentissage) |
 | **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `main` |
@@ -210,12 +217,12 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
 
 > [!TIP]
-> **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt » avant de lancer `/new-project`. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md). **Récupérer les nouveautés du kit** dans un projet existant → `node <kit>/scripts/update.mjs` (ne touche jamais à ton travail).
+> **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt » avant de lancer `/new-project`. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
 
 > [!TIP]
-> **Récupérer les nouveautés du kit dans un vieux projet** :
-> - `node <kit>/scripts/update.mjs` — **ajoute** les fichiers neufs, n'écrase rien.
-> - `node <kit>/scripts/update.mjs --refresh` — **régénère aussi** les règles (`AGENTS.md`, entre les marqueurs) + runbooks + subagents. Ta zone « Tes règles à toi », ton `src/` et tes `docs/` (PRD, design, mémoire) ne sont **jamais** touchés. Ajoute `--dry-run` pour prévisualiser.
+> **Récupérer les nouveautés du kit dans un vieux projet** — depuis le dossier du projet, **rien à cloner** :
+> - `npx create-vibecoding-kit --refresh` — **régénère** ce qui est 100 % kit et que tu n'édites pas : les règles (`AGENTS.md`, entre les marqueurs), les 10 runbooks, les 7 agents du crew, `docs/glossaire.md` et `docs/templates/`. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — `docs/PRD.md`, `docs/design.md`, `docs/ROADMAP.md`, `docs/memory/`, `docs/A-FAIRE.md`, `docs/agents/`. Ajoute `--dry-run` pour prévisualiser.
+> - Si tu as le dépôt en local : `node <kit>/scripts/update.mjs` **ajoute** les fichiers neufs sans rien écraser, et `--refresh` fait la même régénération que ci-dessus.
 
 > [!TIP]
 > **Déjà un projet Cursor et tu veux juste les commandes ?** Installe le **plugin Cursor** `vibecoding` (`/add-plugin`, via une Team Marketplace ou la marketplace Cursor) — tu obtiens les 10 commandes + la règle de base sans rien scaffolder. Le plugin est dans [`cursor-plugin/`](cursor-plugin/) (voir [`PUBLISH.md`](PUBLISH.md)). Pour un **nouveau** projet complet, préfère `npm create vibecoding-kit`.
@@ -264,10 +271,18 @@ _(Cursor à la place : `.cursor/commands/` (mêmes slash-commands) · `.cursor/r
 
 </details>
 
-## 🧠 Mémoire du projet
+## 🧠 Mémoire du projet & journal du crew
 
 - **Mémoire** — un « cerveau du projet » dans `docs/memory/` : dès que l'IA découvre un piège, elle l'écrit ; au démarrage, un **hook** le réinjecte.
 - **Consolidation** — quand l'index grossit, tu demandes à l'IA de **consolider** (dédoublonner, archiver). Ça se passe **dans le fil**, tu vois le diff.
+- **Journal** — `docs/agents/JOURNAL.md` est **append-only** : une ligne par mission (`date · agent · mission · statut · preuve · décision`), jamais effacée. C'est la mémoire partagée des agents entre deux conversations.
+- **État** — `docs/agents/state.yaml` dit **où en est le projet** (`status`, jalon et tâche en cours, `repair_attempts`, `blocked_reason`, dernière preuve). Tout le monde le lit, **un seul agent l'écrit** — sinon l'état ne veut plus rien dire.
+- **Couverture** — `docs/agents/inventaire.md` liste **élément par élément** (un bouton, un champ, une modale) ce que la maquette et le PRD promettent, avec le jalon qui le rend fonctionnel. Ce qui n'y est pas ne sera pas construit.
+
+### Les deux règles qui gouvernent tout
+
+- **Règle Preuve** — on ne déclare pas, on **prouve**. Trois statuts et rien d'autre : `PROUVÉ` (commande écrite + **sortie brute collée** + code 0) · `NON PROUVÉ` · `BLOQUÉ`. « Ça marche » sans preuve est interdit. Un agent ne prononce jamais `PROUVÉ` sur du code qu'il a écrit lui-même, et **3 tentatives** sur le même bug suffisent : à la 3ᵉ, `BLOQUÉ`, le piège part dans `docs/memory/gotchas.md`. Fini la boucle infernale.
+- **Règle Réalité** — mieux vaut **lent et réel** que rapide et bidon : vraies données du vrai backend, chaque bouton câblé de bout en bout, la maquette reproduite à l'identique. Les mocks n'ont droit de cité que dans les fichiers de test.
 
 > [!IMPORTANT]
 > Aucune tâche planifiée, aucune clé API en arrière-plan : rien ne tourne sans que tu l'aies lancé.

@@ -86,4 +86,4 @@ Usage : `/caveman` pour activer, « normal mode » pour couper. Niveaux : `lite`
 
 Repo : https://github.com/JuliusBrussee/caveman
 
-> 💡 L'installeur du kit peut poser caveman pour toi (question optionnelle, **défaut : non**). Tu peux aussi l'installer plus tard avec la commande ci-dessus.
+> 💡 **Le wizard ne te pose plus la question** : caveman coupe justement les explications dont tu as besoin en apprenant, alors une question de plus au premier lancement le rendait plus visible qu'il ne le mérite. Il reste installable de deux façons : la commande ci-dessus, à tout moment ; ou le drapeau `--caveman` si tu relances l'installeur toi-même (`npm create vibecoding-kit@latest -- --caveman`).

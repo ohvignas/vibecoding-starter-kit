@@ -44,14 +44,16 @@
     <text x="290" y="254">📱  Mobile</text>
     <rect x="426" y="226" width="158" height="44" rx="22" fill="#ffffff" fill-opacity="0.16"/>
     <text x="450" y="254">🖥️  Desktop</text>
+    <rect x="598" y="226" width="158" height="44" rx="22" fill="#ffffff" fill-opacity="0.16"/>
+    <text x="622" y="254">🌐  Vitrine</text>
   </g>
 
   <!-- Séparateur + badges -->
-  <rect x="76" y="298" width="628" height="1.5" fill="#ffffff" fill-opacity="0.22"/>
+  <rect x="76" y="298" width="680" height="1.5" fill="#ffffff" fill-opacity="0.22"/>
   <g class="mono" font-size="15" fill="#ffffff" fill-opacity="0.86">
     <text x="76" y="326">Cursor · Claude Code · Codex</text>
     <text x="366" y="326" fill-opacity="0.55">|</text>
-    <text x="390" y="326">5 commandes</text>
+    <text x="390" y="326">10 commandes</text>
     <text x="520" y="326" fill-opacity="0.55">|</text>
     <text x="544" y="326">0 dépendance</text>
   </g>

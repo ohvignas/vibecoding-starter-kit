@@ -167,6 +167,15 @@ async function main() {
     ]);
   } catch (e) { failed.push(`docs/templates (${e.message})`); }
 
+  // Le glossaire, EMBARQUÉ (Lot H7). `guides/` part bien dans le paquet npm mais n'atterrissait
+  // dans aucun projet : l'utilisateur qui bloque sur « MCP » ou « jalon » n'avait nulle part où
+  // aller — le kit vit dans un cache npx qu'il ne trouvera jamais. Le renvoi depuis
+  // `docs/A-FAIRE.md` était l'autre option, et le Lot G l'interdit à raison (parcours.test.mjs
+  // G5) : renvoyer vers un fichier absent, c'est le renvoi mort qu'on vient de retirer. On crée
+  // donc le fichier, et `/help` (l'entrée) y mène.
+  try { track('docs/glossaire.md (le vocabulaire, hors ligne)', copyIfAbsent(path.join(args.source, 'guides/glossaire.md'), path.join(projectDir, 'docs/glossaire.md'), opt)); }
+  catch (e) { failed.push(`docs/glossaire.md (${e.message})`); }
+
   if (args.assistant === 'cursor') {
     try {
       trackDir('.cursor/hooks.json + .cursorignore (mémoire auto)', [

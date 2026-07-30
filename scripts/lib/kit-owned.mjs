@@ -37,6 +37,11 @@ export function kitOwnedFiles(stack, assistant) {
   pairs.push({ from: 'templates/prd/PRD.md', to: 'docs/templates/PRD.md' });
   pairs.push({ from: 'templates/specs/architecture.md', to: 'docs/templates/architecture.md' });
 
+  // Le glossaire embarqué (Lot H7) : 100 % kit lui aussi, et le seul fichier du projet qui vienne
+  // de `guides/` plutôt que de `templates/`. Sans cette ligne, un projet créé aujourd'hui garderait
+  // à jamais le vocabulaire d'aujourd'hui — un glossaire périmé est pire que pas de glossaire.
+  pairs.push({ from: 'guides/glossaire.md', to: 'docs/glossaire.md' });
+
   // Les 7 agents du crew, dans le dossier natif de l'assistant. Cursor ne comprend pas le
   // frontmatter Claude Code → transform 'cursor-agent' (appliqué par refresh.mjs).
   for (const a of CREW) {

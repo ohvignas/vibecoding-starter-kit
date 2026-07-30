@@ -24,6 +24,8 @@ L'utilisateur veut savoir **quelles commandes existent et à quoi elles servent*
 ## Mettre en ligne
 - **/deploy** — Met ton app **en ligne** (checklist + étapes selon ta stack).
 
+> Un mot qui bloque (MCP, jalon, maquette, `PROUVÉ`…) ? **`docs/glossaire.md`** explique tout le vocabulaire en français simple — le wizard le pose dans chaque projet qu'il génère. Ouvre-le et lis-lui l'entrée. Fichier absent (projet non scaffoldé par le kit) ? Explique le terme toi-même, simplement, sans jargon — et ne renvoie pas vers un fichier qui n'existe pas.
+
 ## L'équipe d'agents (appelable quand tu veux)
 Des assistants spécialisés, dans le dossier d'agents de ton assistant : `.cursor/agents/ (Cursor) · .claude/agents/ (Claude Code) · docs/agents/crew/ (Codex)`. Dis simplement « lance **<nom>** sur … » :
 - **critique-produit** (Vera) — « qu'est-ce qu'on a oublié ? » features, écrans, parcours.
