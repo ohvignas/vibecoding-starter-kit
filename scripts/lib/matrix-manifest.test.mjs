@@ -35,10 +35,13 @@ test('resolveStackManifest(mobile, cursor) : pas de plugin cursor, MCP expo avec
   assert.ok(m.checks.preCommit.includes('lint-expo'));
 });
 
-test('resolveStackManifest(desktop, claude-code) : MCP chrome-devtools, security en prePush', () => {
+test('resolveStackManifest(desktop, claude-code) : MCP chrome-devtools, audit en prePush', () => {
   const m = resolveStackManifest('desktop', 'claude-code');
   assert.ok('chrome-devtools' in m.mcp);
-  assert.ok(m.checks.prePush.includes('security'));
+  // Lot F : `security` appelait `@doyensec/electronegativity`, dont le paquet npm n'a pas bougé
+  // depuis le 09/03/2023. Le push garde un filet — `npm audit` — au lieu d'un scan fantôme.
+  assert.ok(m.checks.prePush.includes('audit'), 'le pre-push desktop ne doit pas être vide');
+  assert.ok(!m.checks.prePush.includes('security'));
 });
 
 test('vitrine : MCP astro-docs + shadcn ; skills seo + shadcn ; domaines SEO/GEO', () => {

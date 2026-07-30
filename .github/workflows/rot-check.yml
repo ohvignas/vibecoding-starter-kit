@@ -9,7 +9,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Dépôts de skills (GitHub) — doivent répondre 2xx/3xx
         run: |
           set -e
@@ -38,6 +38,33 @@ jobs:
             echo "$u -> $code"
             [ "$code" -lt 400 ] || { echo "::error::source de contexte injoignable : $u ($code)"; exit 1; }
           done
+      # Un paquet déprécié répond 200 sur npmjs.com : le contrôle HTTP ne l'a jamais vu passer.
+      # Le kit a recommandé pendant des mois un paquet dont TOUTES les versions étaient
+      # dépréciées (« Package no longer supported »). Le champ `deprecated` est le seul signal.
+      - name: Paquets npm recommandés — aucun ne doit être déprécié
+        run: |
+          set -e
+          fail=0
+          for p in astro react-email @convex-dev/resend @convex-dev/auth convex expo electron \
+                   better-auth @keystatic/core @playwright/mcp ; do
+            dep=$(npm view "$p" deprecated 2>/dev/null || true)
+            ver=$(npm view "$p" version 2>/dev/null || echo '?')
+            if [ -n "$dep" ]; then
+              echo "::error::paquet déprécié recommandé par le kit : $p@$ver — $dep"; fail=1
+            else
+              echo "$p@$ver -> ok"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+      # Le majeur épinglé (scripts/lib/matrix.mjs → PINS) doit rester celui qu'npm publie :
+      # sinon la doc de la stack décrit une version que plus personne n'installe.
+      - name: Majeur épinglé vs majeur publié
+        run: |
+          set -e
+          pin=$(node -e "import('./scripts/lib/matrix.mjs').then(m => console.log(m.PINS.vitrine.astro))")
+          cur=$(npm view astro version | cut -d. -f1)
+          echo "astro : épinglé $pin · publié $cur"
+          [ "$pin" = "$cur" ] || { echo "::error::Astro est passé au majeur $cur, le kit est épinglé sur $pin (voir PINS dans scripts/lib/matrix.mjs)"; exit 1; }
       - name: Endpoints MCP — vivants si < 500 (401/403/405 sur GET nu = OK)
         run: |
           set -e

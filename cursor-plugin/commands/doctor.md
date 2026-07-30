@@ -16,7 +16,7 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
    - Câblage checks : `.cursor/hooks.json` (Cursor) ou `.claude/settings.json` (Claude Code) référence `checks.mjs`.
    - Scripts `package.json` : `typecheck` (+ `lint` hors mobile) présents.
    - `docs/A-FAIRE.md` : s'il reste des cases `[ ]`, rappelle de les jouer.
-   - (desktop) le scan sécu `@doyensec/electronegativity` est câblé dans `.githooks/pre-push` (il tourne au `git push` et en CI).
+   - (desktop) `.githooks/pre-push` lance `npm audit` (il tourne au `git push`). La sécurité **Electron**, elle, ne se scanne pas : c'est la checklist officielle des 20 points, à repasser avant de distribuer.
 10. **Skills installés** : le dossier `.claude/skills/` (Claude Code/Codex) ou `.cursor/…` (Cursor) **du projet** contient bien les skills attendus (design + stack). Sinon → relance les commandes de `docs/A-FAIRE.md` section Skills.
 11. **MCP joignables** : pour chaque serveur HTTP de `.cursor/mcp.json`/`.mcp.json`, teste `curl -m 5 -o /dev/null -s -w '%{http_code}' <url>` — un code (même 401/405) prouve qu'il répond ; « timeout » = pas joignable.
 12. **Plugin superpowers** : demande à l'utilisateur de taper `/` et de chercher `superpowers:brainstorming` — s'il apparaît dans le menu, c'est bon. Sinon, réinstaller selon l'assistant :

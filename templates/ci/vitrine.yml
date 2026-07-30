@@ -1,14 +1,15 @@
-# CI — Site vitrine (Astro + shadcn/ui + Keystatic)
+# CI — Site vitrine (Astro 7 + shadcn/ui + Keystatic)
 name: CI
 on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          # Astro 7 refuse de démarrer en dessous (engines.node = ">=22.12.0").
+          node-version: '22.12'
       - run: npm ci
       - run: npm run lint --if-present
       - run: npm run typecheck --if-present

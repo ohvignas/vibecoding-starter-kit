@@ -1,4 +1,4 @@
-# Exemple de référence — section « Témoignages » (Astro + Keystatic + shadcn)
+# Exemple de référence — section « Témoignages » (Astro 7 + Keystatic + shadcn)
 
 > Patron à imiter avec `/new-feature`. Montre : collection CMS → content collection → page statique + îlot unique.
 
@@ -9,11 +9,26 @@ export default config({
   storage: { kind: 'local' },
   collections: {
     temoignages: collection({
-      label: 'Témoignages', slugField: 'auteur', path: 'src/content/temoignages/*',
+      label: 'Témoignages', slugField: 'auteur', path: 'src/data/temoignages/*',
       schema: { auteur: fields.slug({ name: { label: 'Auteur' } }), citation: fields.text({ label: 'Citation', multiline: true }) },
     }),
   },
 });
+```
+
+## Collection Astro — `src/content.config.ts` (OBLIGATOIRE)
+Depuis Astro 6, un dossier ne crée plus de collection : sans cette déclaration, `getCollection('temoignages')`
+ne renvoie rien et le build casse. Le `base` du `loader` vise le **même dossier** que le `path` Keystatic.
+```ts
+import { defineCollection, z } from 'astro:content';
+import { glob } from 'astro/loaders';
+
+const temoignages = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdoc}', base: './src/data/temoignages' }),
+  schema: z.object({ auteur: z.string(), citation: z.string() }),
+});
+
+export const collections = { temoignages };
 ```
 
 ## Page — `src/pages/index.astro` (statique, zéro JS)
@@ -38,4 +53,4 @@ export default function CarouselTemoignages({ items }: { items: { auteur: string
 ```
 Dans la page : `<CarouselTemoignages items={…} client:visible />`.
 
-Points clés : contenu éditable sans code (Keystatic), page statique par défaut, interactivité isolée dans UN îlot, composants shadcn jamais modifiés à la main.
+Points clés : contenu éditable sans code (Keystatic), **collection déclarée avec son `loader`**, page statique par défaut, interactivité isolée dans UN îlot, composants shadcn jamais modifiés à la main.

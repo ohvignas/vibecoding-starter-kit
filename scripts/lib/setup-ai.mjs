@@ -12,7 +12,9 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push('Le **seul** fichier « à installer ». Ouvre-le dans ton assistant, fais chaque case, coche au fur et à mesure. (`/new-project` y ajoutera une section « Pour ton projet ».)');
   L.push('');
   L.push('## 1. Plugins');
-  if (manifest.plugins.length) for (const p of manifest.plugins) L.push(`- [ ] ${p.cmd}   (${p.name})`);
+  // `note` : ce que le plugin est vraiment (dépôt communautaire, périmètre) — un débutant ne
+  // peut pas le deviner de la commande.
+  if (manifest.plugins.length) for (const p of manifest.plugins) L.push(`- [ ] ${p.cmd}   (${p.name})${p.note ? `\n  - ⚠️ ${p.note}` : ''}`);
   else L.push('- [ ] (aucun plugin dédié pour cet assistant)');
   L.push('');
   L.push('## 2. Skills portables (stack)');

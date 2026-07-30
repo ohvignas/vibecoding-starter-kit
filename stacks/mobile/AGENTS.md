@@ -29,10 +29,10 @@ Je débute. Explique simplement et avance **une étape à la fois**.
 - Quickstart officiel : https://docs.convex.dev/quickstart/react-native · MCP : `npx -y convex@latest mcp start`
 
 ## Authentification
-- Deux options : **Convex Auth** (le plus simple, repo `get-convex/expo-convex-auth`) ou **Better Auth + Convex** (guide : https://labs.convex.dev/better-auth/framework-guides/expo).
+- Deux options : **Convex Auth** (le plus simple, `get-convex/convex-auth` — **en bêta**, l'API peut bouger) ou **Better Auth + Convex** (guide : https://labs.convex.dev/better-auth/framework-guides/expo).
 - Sur mobile, stocke les sessions avec **`expo-secure-store`** (jamais en clair).
 
 ## Bonnes pratiques
 - Ne mets jamais de secret dans le code client.
-- Teste sur ton téléphone via **Expo Go** (scan du QR code) après chaque étape.
+- Teste sur ton téléphone via **Expo Go** (scan du QR code) après chaque étape. ⚠️ Expo Go ne sait pas tout faire : les **notifications push** exigent un **dev build**, sur **iOS comme sur Android** — comme les modules natifs (Stripe, cartes).
 - Commit Git après chaque étape qui fonctionne.

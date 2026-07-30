@@ -67,7 +67,7 @@ npm run make
 
 > ⚠️ Contrairement aux autres stacks, Electron **ne publie pas** de fichier `llms.txt` ni de serveur MCP officiel (vérifié : les URLs renvoient une erreur 404). **N'invente pas de lien `llms.txt` pour Electron** — il n'existe pas.
 
-**La bonne nouvelle : tu as mieux.** Cet environnement Claude Code contient déjà des **skills Electron officiels et complets**. Ce sont des modules d'expertise que Claude charge tout seul quand tu parles d'Electron. Tu peux aussi les invoquer explicitement :
+**La bonne nouvelle : tu as mieux.** Cet environnement Claude Code contient déjà des **skills Electron complets**. ⚠️ Ce sont des skills **communautaires** — dépôt tiers `ohvignas/claude-electron-skills`, écrit pour **Electron 42** alors qu'npm publie déjà la 43 : ce ne sont pas des skills du projet Electron, et sur un point de version, c'est la doc officielle qui tranche. Ce sont des modules d'expertise que Claude charge tout seul quand tu parles d'Electron. Tu peux aussi les invoquer explicitement :
 
 | Skill | Quand l'utiliser | Comment le déclencher |
 |---|---|---|
@@ -86,7 +86,7 @@ npm run make
 
 👉 **Réflexe :** quand tu construis ta partie desktop, commence tes demandes par *« utilise les skills electron »*. Claude ira chercher la bonne expertise tout seul.
 
-Un fichier `AGENTS.md` prêt à copier dans ton projet est fourni : `stacks/desktop/AGENTS.md`.
+Un fichier de règles prêt à copier dans ton projet est fourni : `stacks/desktop/AGENTS.md` (le scaffold le pose en `AGENTS-stack.md` à la racine).
 
 > 🔒 **Avant de distribuer ton app** : sécurité + coûts IA → [`guides/03-securite-et-couts.md`](../../guides/03-securite-et-couts.md) (+ le skill `electron:security-audit`).
 

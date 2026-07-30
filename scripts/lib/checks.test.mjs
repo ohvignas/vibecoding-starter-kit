@@ -28,9 +28,12 @@ test('typecheck sélectionné si tsconfig.json présent', () => {
 });
 
 test('le registre couvre les ids connus', () => {
-  for (const id of ['typecheck', 'lint', 'lint-expo', 'deps-check', 'doctor', 'security']) {
+  // `security` (npx @doyensec/electronegativity) a été retiré au Lot F : paquet npm figé au
+  // 09/03/2023. `audit` (npm audit) le remplace au pre-push desktop.
+  for (const id of ['typecheck', 'lint', 'lint-expo', 'deps-check', 'doctor', 'audit']) {
     assert.ok(CHECKS[id], `check ${id} défini`);
   }
+  assert.equal(CHECKS.security, undefined, 'le check qui appelait un paquet abandonné ne doit pas revenir');
 });
 
 // E7 — Windows. Tous les checks passent par `npx`, qui n'est pas un exécutable mais un script

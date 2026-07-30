@@ -13,12 +13,24 @@ export const SUPERPOWERS = {
 // c'est un registry du CLI shadcn, pas un skill (voir SHADCN_NOTE).
 export const DESIGN_SKILL_NAMES = ['frontend-design', 'ui-ux-pro-max', 'web-design-guidelines', 'brand-guidelines'];
 const KARPATHY_REPO = 'https://github.com/multica-ai/andrej-karpathy-skills';
+// Contexte IA par stack. `ai-context/` pèse 4,8 Mo, dont 4,7 en `llms-full` Convex + Expo :
+// une vitrine les recevait TOUS. On ne copie que les dossiers de la stack (+ le README, qui
+// explique quoi en faire — sans lui, le dossier arrive sans mode d'emploi).
+export const AI_CONTEXT = {
+  saas: ['better-auth', 'convex', 'tanstack-start'],
+  mobile: ['convex', 'react-native-expo'],
+  desktop: ['electron'],
+  vitrine: ['astro'],
+};
 // awesome-cursorrules : SUPPRIMÉ. Le matching par tags déversait 64-201 règles .mdc hors-sujet
 // (Angular, Solidity…) avec `globs: **/*` — l'anti-pattern des docs Cursor. Les règles typées
 // du kit (templates/cursor/rules/) couvrent le besoin.
 
 export function resolveAssets(stack, assistant) {
   if (!COMMANDS_DIR[assistant]) throw new Error(`Assistant inconnu : ${assistant} (attendu: ${Object.keys(COMMANDS_DIR).join('|')})`);
+  // Garde d'entrée : sans elle, une stack mal orthographiée partait avec ZÉRO contexte IA, en
+  // silence — le scaffold réussissait, le projet naissait aveugle.
+  if (!AI_CONTEXT[stack]) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(AI_CONTEXT).join('|')})`);
   // `skipped` a disparu : il était toujours vide (plus rien n'y était poussé depuis le retrait
   // d'awesome-cursorrules) et le rapport le concaténait avec les vrais « sautés » du scaffold.
   const copies = [], clones = [], inAssistant = [];
@@ -31,7 +43,8 @@ export function resolveAssets(stack, assistant) {
     copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `AGENTS-stack.md`, transform: 'raw' });
     if (isClaude) copies.push({ from: `.claude/skills/stack-${stack}`, to: `.claude/skills/stack-${stack}`, transform: 'dir' });
   }
-  copies.push({ from: `ai-context`, to: `ai-context`, transform: 'dir' });
+  copies.push({ from: 'ai-context/README.md', to: 'ai-context/README.md', transform: 'raw' });
+  for (const d of AI_CONTEXT[stack]) copies.push({ from: `ai-context/${d}`, to: `ai-context/${d}`, transform: 'dir' });
 
   clones.push({
     repo: KARPATHY_REPO,
@@ -62,6 +75,15 @@ export const STITCH = {
 };
 const STITCH_SKILL = { label: 'stitch (maquette : generate-design · extract-html · loop · design-md)', repo: 'google-labs-code/stitch-skills', skills: ['stitch::generate-design', 'stitch::extract-static-html', 'stitch-loop', 'design-md'] };
 
+// Versions ÉPINGLÉES, source unique. Sans épingle, la doc du kit redevient fausse au prochain
+// majeur sans que rien ne rougisse : `faits-stacks.test.mjs` compare cette table à ce que TOUS
+// les fichiers du kit annoncent. Vérifié le 30/07/2026 :
+//   npm view astro version engines → 7.1.6 · engines.node = '>=22.12.0'
+// Changer un chiffre ici oblige à mettre la doc en accord (le test le dit, fichier:ligne).
+export const PINS = {
+  vitrine: { astro: '7', node: '22.12' },
+};
+
 export const STACKS = {
   saas: {
     plugins: {
@@ -90,7 +112,10 @@ export const STACKS = {
     ],
     domains: {
       payment: { label: 'Paiement / abonnements', mcp: 'payment', secrets: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'], options: ['@better-auth/stripe (défaut, couplé auth)', '@convex-dev/stripe (Convex-natif)', 'Polar : @polar-sh/better-auth ou @convex-dev/polar (marchand de référence, gère la TVA)', `Autumn : @useautumn/convex (facturation à l'usage)`], when: `Secrets webhook → env Convex. TVA gérée pour toi → Polar. À l'usage/crédits → Autumn.` },
-      email: { label: 'Email transactionnel', mcp: 'email', secrets: ['RESEND_API_KEY'], options: ['@convex-dev/resend + @react-email/components'], when: `Composant officiel Convex×Resend. Brancher ici les mails Better Auth (reset, vérification, magic link).` },
+      // `@react-email/components` est DÉPRÉCIÉ sur npm (jusqu'à sa dernière version, 1.0.12) :
+      // les composants sont passés dans le paquet `react-email` lui-même (README de
+      // resend/react-email : `npm i react-email@latest`, `import { Button } from "react-email"`).
+      email: { label: 'Email transactionnel', mcp: 'email', secrets: ['RESEND_API_KEY'], options: ['@convex-dev/resend + react-email'], when: `Composant officiel Convex×Resend. Brancher ici les mails Better Auth (reset, vérification, magic link).` },
       storage: { label: 'Upload / stockage de fichiers', options: ['Convex File Storage (built-in, défaut)', `UploadThing (UI d'upload prête)`, '@convex-dev/r2 (Cloudflare R2)'], when: 'Built-in par défaut ; externe seulement si UI drag-drop ou gros volume/coût.' },
       analytics: { label: 'Analytics produit', mcp: 'analytics', secrets: ['VITE_POSTHOG_KEY'], options: ['posthog-js'] },
       'error-tracking': { label: `Suivi d'erreurs`, mcp: 'error-tracking', secrets: ['VITE_SENTRY_DSN'], options: ['@sentry/react'] },
@@ -130,7 +155,10 @@ export const STACKS = {
     ],
     domains: {
       payment: { label: 'Paiement', options: ['@stripe/stripe-react-native (biens physiques / services réels)', 'RevenueCat : react-native-purchases (+ react-native-purchases-ui) pour les achats intégrés (IAP)'], when: `Apple/Google IMPOSENT l'IAP (RevenueCat) pour le digital consommé dans l'app ; Stripe autorisé pour biens/services réels. Les deux → dev build requis (pas Expo Go).` },
-      push: { label: 'Notifications push', options: ['expo-notifications'], when: 'Push distant → dev build (Android SDK 53+) + projectId EAS.' },
+      // Doc Expo (push-notifications/what-you-need-to-know) : « You must use a development build
+      // to use push notifications since the capability is not built into Expo Go. » Aucune
+      // distinction de plateforme — iOS ET Android, pas seulement Android.
+      push: { label: 'Notifications push', options: ['expo-notifications'], when: 'Push distant → dev build OBLIGATOIRE sur iOS ET Android (Expo Go ne l\'embarque plus) + projectId EAS.' },
       camera: { label: 'Caméra / média', options: ['expo-camera', 'expo-image-picker'], when: 'Fonctionne dans Expo Go.' },
       maps: { label: 'Cartes / localisation', options: ['react-native-maps', 'expo-location'], when: 'Google Maps → clé API + dev build.' },
       analytics: { label: 'Analytics produit', mcp: 'analytics', options: ['posthog-react-native'] },
@@ -139,7 +167,9 @@ export const STACKS = {
   },
   desktop: {
     plugins: {
-      'claude-code': [{ name: 'electron', cmd: 'claude plugin marketplace add ohvignas/claude-electron-skills && claude plugin install electron@claude-electron-skills' }],
+      // Dépôt COMMUNAUTAIRE (ohvignas/claude-electron-skills), pas un dépôt Electron officiel :
+      // 1 ★, écrit pour Electron 42 quand npm publie 43.2.0. Utile, mais à relire.
+      'claude-code': [{ name: 'electron', cmd: 'claude plugin marketplace add ohvignas/claude-electron-skills && claude plugin install electron@claude-electron-skills', note: 'skills **communautaires** (dépôt tiers `ohvignas/claude-electron-skills`, écrit pour Electron 42) — pas un paquet officiel Electron : recoupe avec https://www.electronjs.org/docs/latest' }],
       cursor: [],
       codex: [],
     },
@@ -148,7 +178,11 @@ export const STACKS = {
       shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
     },
     skills: [STITCH_SKILL],
-    checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: ['security'] },
+    // `security` (npx @doyensec/electronegativity) a été RETIRÉ : son paquet npm n'a pas bougé
+    // depuis le 09/03/2023. Le push garde un filet réel — `npm audit` — et l'audit Electron
+    // proprement dit reste la checklist officielle des 20 points (voir `rules` ci-dessous),
+    // conduite par l'agent sécurité, pas par un binaire abandonné.
+    checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: ['audit'] },
     scripts: { typecheck: 'tsc --noEmit', lint: 'biome check .' },
     rules: [
       { label: 'Electron security checklist', url: 'https://www.electronjs.org/docs/latest/tutorial/security' },

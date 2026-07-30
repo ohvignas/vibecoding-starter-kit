@@ -12,13 +12,17 @@ bash scripts/download-ai-context.sh
 
 ## Ce qu'il y a dedans (après téléchargement)
 
-| Dossier | Fichiers | Source officielle |
-|---|---|---|
-| `convex/` | `llms.txt`, `llms-full.txt`, `convex_rules.txt`, `convex_rules.mdc` | convex.dev · convex.link |
-| `tanstack-start/` | `llms.txt`, `llms-tanstack-global.txt` | tanstack.com |
-| `better-auth/` | `llms.txt` | better-auth.com |
-| `react-native-expo/` | `expo-llms.txt`, `expo-llms-full.txt`, `react-native-llms.txt` | docs.expo.dev · reactnative.dev |
-| `electron/` | *(vide — Electron n'a pas de llms.txt ; utilise les skills `electron:*`)* | — |
+| Dossier | Stack(s) | Fichiers | Source officielle |
+|---|---|---|---|
+| `convex/` | saas · mobile | `llms.txt`, `llms-full.txt`, `convex_rules.txt`, `convex_rules.mdc` | convex.dev · convex.link |
+| `tanstack-start/` | saas | `llms.txt`, `llms-tanstack-global.txt` | tanstack.com |
+| `better-auth/` | saas | `llms.txt` | better-auth.com |
+| `react-native-expo/` | mobile | `expo-llms.txt`, `expo-llms-full.txt`, `react-native-llms.txt` | docs.expo.dev · reactnative.dev |
+| `electron/` | desktop | *(pas de llms.txt — Electron n'en publie pas ; voir le README du dossier)* | — |
+| `astro/` | vitrine | *(pas de llms.txt — Astro l'a retiré ; la source est le MCP `astro-docs`)* | — |
+
+> **Ton projet n'en reçoit qu'une partie.** Le scaffold copie uniquement les dossiers de TA stack
+> (une vitrine n'a rien à faire des 4,6 Mo de doc Convex + Expo). Le dépôt du kit, lui, les a tous.
 
 > Les fichiers `*-full.txt` sont **gros** (2+ Mo) : c'est toute la doc. Donne le `llms.txt` court en priorité, et le `-full` seulement si l'IA a besoin de détails précis.
 

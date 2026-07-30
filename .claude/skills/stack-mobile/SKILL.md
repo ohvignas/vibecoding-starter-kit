@@ -8,10 +8,10 @@ description: Use when building a mobile iOS/Android app with the vibecoding stac
 Aide un·e débutant·e à construire une app mobile iOS + Android. Réponds en français, simplement, **une étape à la fois**, et fais valider chaque plan avant de coder.
 
 ## Ordre de construction
-1. **Setup** — app qui tourne sur le téléphone via Expo Go + Convex connecté.
+1. **Setup** — app qui tourne sur le téléphone via Expo Go + Convex connecté. (Push et modules natifs → **dev build**, iOS comme Android : Expo Go ne les embarque pas.)
 2. **Schéma** Convex → faire valider.
 3. **Navigation** (Expo Router, fichiers dans `app/`).
-4. **Auth** (Convex Auth simple, ou Better Auth).
+4. **Auth** (Convex Auth — simple mais **en bêta** — ou Better Auth).
 5. **Première fonctionnalité** (query + mutation Convex), puis **build EAS**.
 
 ## Setup (quickstart officiel Convex)
@@ -35,8 +35,8 @@ npm start          # terminal 2 (scan QR avec Expo Go)
 - Seul package requis : `convex`. Logique = `query`/`mutation`/`action`. Front réactif via `useQuery` dans `<ConvexProvider>`.
 
 ## Auth mobile
-- Simple : **Convex Auth** (repo `get-convex/expo-convex-auth`).
+- Simple : **Convex Auth** (`get-convex/convex-auth`) — **en bêta** : son API peut bouger.
 - Cohérent avec un SaaS : **Better Auth** (https://labs.convex.dev/better-auth/framework-guides/expo) + `expo-secure-store`.
 
 ## Contexte IA dans ce dépôt
-`ai-context/react-native-expo/`, `ai-context/convex/` · `stacks/mobile/AGENTS.md` · `stacks/mobile/prompts-de-demarrage.md`.
+`ai-context/react-native-expo/`, `ai-context/convex/` · les règles de la stack : `AGENTS-stack.md` à la racine du projet (dans le dépôt du kit : `stacks/mobile/AGENTS.md`).

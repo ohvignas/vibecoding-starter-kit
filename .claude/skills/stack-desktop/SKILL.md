@@ -7,8 +7,8 @@ description: Use when building a desktop app (Windows/Mac/Linux) with Electron i
 
 Aide un·e débutant·e à construire une app desktop avec Electron. Réponds en français, simplement, **une étape à la fois**.
 
-## Règle n°1 : utilise les skills electron:* officiels
-Cet environnement a des skills Electron complets. Appuie-toi dessus au lieu de coder à l'aveugle :
+## Règle n°1 : utilise les skills electron:*
+Cet environnement a des skills Electron complets. ⚠️ Ils sont **communautaires** (`ohvignas/claude-electron-skills`, écrit pour Electron 42) — pas officiels : sur un détail de version, la doc electronjs.org tranche. Appuie-toi dessus au lieu de coder à l'aveugle :
 - `electron:create-app` — démarrer (sécurisé par défaut)
 - `electron:add-ipc` — communication renderer ↔ main sûre
 - `electron:add-feature` — tray, notifications, raccourcis, deep links
@@ -36,4 +36,4 @@ npm run make   # packager en installateur
 
 ## À savoir
 - ⚠️ Electron **ne publie pas** de `llms.txt` ni de MCP officiel — ne les cherche pas. Doc officielle : https://www.electronjs.org/docs/latest
-- Fichier de règles à copier dans le projet : `stacks/desktop/AGENTS.md`.
+- Règles de la stack : `AGENTS-stack.md` à la racine du projet (dans le dépôt du kit : `stacks/desktop/AGENTS.md`).

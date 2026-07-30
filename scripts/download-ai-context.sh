@@ -53,6 +53,12 @@ echo "▸ Electron"
 echo "  ℹ️  Electron ne publie pas de llms.txt officiel."
 echo "     → Utilise les skills locaux 'electron:*' dans Claude Code (voir stacks/desktop/README.md)."
 
+echo "▸ Astro (stack vitrine)"
+echo "  ℹ️  Astro a RETIRÉ son llms.txt (mai 2026) : il n'y a rien à télécharger."
+echo "     → La source à jour est le MCP Docs Astro, déjà configuré dans les projets vitrine :"
+echo "       npx -y mcp-remote https://mcp.docs.astro.build/mcp"
+echo "     → Voir ai-context/astro/README.md."
+
 echo ""
 echo "──────────────────────────────────────────"
 printf "Terminé : %s fichier(s) OK, %s échec(s).\n" "$ok" "$fail"

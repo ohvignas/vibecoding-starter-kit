@@ -5,7 +5,7 @@ import { resolveStackManifest, SUPERPOWERS, SHADCN_NOTE } from './matrix.mjs';
 import { mergeMcpConfig, expandMcpCommands } from './mcp.mjs';
 import { extendCursorHooks, claudeSettings, prePushScript, preCommitCheckLine } from './hooks.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
-import { renderDomains, SHARED_DOMAINS } from './domains.mjs';
+import { renderDomains, secretsBlock, MARQUE_SECRETS, SHARED_DOMAINS, DOMAIN_TRIGGERS } from './domains.mjs';
 import { ensureDir } from './fsops.mjs';
 
 // Écrit l'environnement IA d'une stack dans un projet (déclaratif, additif, non destructif).
@@ -71,11 +71,24 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
   } catch (e) { failed.push(`A-FAIRE (${e.message})`); }
 
   // 6b. DOMAINS.md (catalogue métier de la stack) — même protection : `/new-project` l'enrichit.
+  // Les déclencheurs (DOMAIN_TRIGGERS) sont RENDUS dans le catalogue, et appliqués au PRD s'il
+  // existe déjà (`selectDomains`) : la table pilotait jusqu'ici du vide.
   try {
-    const rendered = renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS });
+    const rendered = renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS, triggers: DOMAIN_TRIGGERS, prd: read('docs/PRD.md') ?? '' });
     if (read('docs/DOMAINS.md') === null) { write('docs/DOMAINS.md', rendered); done.push('docs/DOMAINS.md'); }
     else { write('docs/DOMAINS.md.new', rendered); done.push('docs/DOMAINS.md.new (ton DOMAINS.md est conservé)'); }
   } catch (e) { failed.push(`DOMAINS (${e.message})`); }
+
+  // 6b-bis. Les secrets que ces domaines DÉCLARENT, ajoutés au `.env.example` du projet.
+  // Ils étaient déclarés dans matrix.mjs et n'atterrissaient nulle part : l'utilisateur
+  // découvrait la variable manquante au runtime. Additif et idempotent.
+  try {
+    const env = read('.env.example');
+    if (env !== null && !env.includes(MARQUE_SECRETS)) {
+      const bloc = secretsBlock(manifest.domains, env);
+      if (bloc) { write('.env.example', `${env.replace(/\s*$/, '\n')}\n${bloc}`); done.push('.env.example (secrets des capacités)'); }
+    }
+  } catch (e) { failed.push(`.env.example secrets (${e.message})`); }
 
   // 6c. Mémoire partagée du crew, dans `docs/agents/` — jamais écrasée : journal append-only, état
   // courant, et l'inventaire de complétude que les 3 critiques reçoivent par son chemin (Lot C).

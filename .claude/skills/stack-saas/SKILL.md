@@ -38,4 +38,4 @@ npm run dev         # terminal 2
 
 ## Contexte IA disponible dans ce dépôt
 - `ai-context/convex/`, `ai-context/tanstack-start/`, `ai-context/better-auth/` (lancer `scripts/download-ai-context.sh`).
-- `stacks/saas/AGENTS.md` (règles à copier dans le projet), `stacks/saas/prompts-de-demarrage.md`.
+- Règles de la stack : `AGENTS-stack.md` à la racine du projet (dans le dépôt du kit : `stacks/saas/AGENTS.md` + `stacks/saas/prompts-de-demarrage.md`).

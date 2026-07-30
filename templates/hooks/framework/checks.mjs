@@ -7,21 +7,38 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
+// `script` = le nom du script package.json que la STACK a déclaré pour ce check. Sans lui, le
+// hook lançait `npx tsc --noEmit` partout — y compris sur une vitrine Astro, où `tsc` ne lit
+// AUCUN `.astro` et sort donc 0 sans rien avoir vérifié, pendant que la stack déclarait
+// `astro check`. Le check dit maintenant la vérité : il lance ce que la stack a déclaré.
 export const CHECKS = {
-  typecheck:    { cmd: ['npx', 'tsc', '--noEmit'],                         needs: 'tsconfig.json' },
-  lint:         { cmd: ['npx', 'biome', 'check', '.'],                     needs: 'biome.json' },
-  'lint-expo':  { cmd: ['npx', 'expo', 'lint'],                            needs: 'app.json' },
-  'deps-check': { cmd: ['npx', 'expo', 'install', '--check'],             needs: 'app.json' },
-  doctor:       { cmd: ['npx', 'expo-doctor'],                            needs: 'app.json' },
-  security:     { cmd: ['npx', '@doyensec/electronegativity', '-i', '.'], needs: 'package.json' },
+  typecheck:    { cmd: ['npx', 'tsc', '--noEmit'],             needs: 'tsconfig.json', script: 'typecheck' },
+  lint:         { cmd: ['npx', 'biome', 'check', '.'],         needs: 'biome.json',    script: 'lint' },
+  'lint-expo':  { cmd: ['npx', 'expo', 'lint'],                needs: 'app.json' },
+  'deps-check': { cmd: ['npx', 'expo', 'install', '--check'],  needs: 'app.json' },
+  doctor:       { cmd: ['npx', 'expo-doctor'],                 needs: 'app.json' },
+  // Remplace l'ancien check `security`, qui appelait `@doyensec/electronegativity` — paquet npm
+  // figé au 09/03/2023. `npm audit` est livré avec npm : rien à installer, rien à pourrir.
+  audit:        { cmd: ['npm', 'audit', '--audit-level=high'], needs: 'package-lock.json' },
 };
+
+// Le script déclaré par la stack l'emporte sur la commande par défaut — s'il existe vraiment
+// dans le package.json du projet. Un package.json illisible ne fait pas tomber le hook.
+function scriptCommand(cwd, name) {
+  if (!name) return null;
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
+    return pkg && pkg.scripts && pkg.scripts[name] ? ['npm', 'run', name] : null;
+  } catch { return null; }
+}
 
 export function selectChecks(ids, { cwd = process.cwd() } = {}) {
   return ids.map((id) => {
     const def = CHECKS[id];
     if (!def) return { id, willRun: false, reason: 'inconnu' };
     if (!fs.existsSync(path.join(cwd, def.needs))) return { id, willRun: false, reason: `absent: ${def.needs}` };
-    return { id, willRun: true, cmd: def.cmd };
+    const declare = scriptCommand(cwd, def.script);
+    return { id, willRun: true, cmd: declare ?? def.cmd, via: declare ? 'script' : 'defaut' };
   });
 }
 
@@ -30,9 +47,12 @@ export function selectChecks(ids, { cwd = process.cwd() } = {}) {
 // alors « problème détecté » alors que RIEN n'avait tourné. Même règle que `buildRunCommand`
 // côté installeur (scripts/lib/external.mjs) ; ce fichier est copié dans le projet, il ne peut
 // rien importer du kit, la règle est donc réécrite ici — un test la compare aux deux endroits.
+// `npm` est logé à la même enseigne (`npm.cmd`) : depuis que les checks lancent le script
+// déclaré par la stack, le hook l'invoque autant que `npx`.
+const CMD_WINDOWS = new Set(['npx', 'npm']);
 export function resolveCheckCommand(cmd, platform = process.platform) {
   const [file, ...args] = cmd;
-  if (platform === 'win32' && file === 'npx') return { file: 'npx.cmd', args, options: { shell: true } };
+  if (platform === 'win32' && CMD_WINDOWS.has(file)) return { file: `${file}.cmd`, args, options: { shell: true } };
   return { file, args, options: {} };
 }
 

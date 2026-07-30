@@ -42,8 +42,8 @@ Explique-moi comment le système de fichiers dans app/ crée les écrans.
 ### Prompt 4 — L'authentification mobile
 ```
 Ajoute l'authentification. Commence par le plus simple : Convex Auth
-(inspire-toi du repo officiel get-convex/expo-convex-auth),
-inscription + connexion email/mot de passe.
+(bibliothèque get-convex/convex-auth — elle est en bêta, dis-le-moi si
+son API a changé), inscription + connexion email/mot de passe.
 Stocke la session avec expo-secure-store. Explique comment tester avec un compte.
 ```
 

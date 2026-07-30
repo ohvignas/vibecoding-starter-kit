@@ -67,7 +67,7 @@ Deux voies officielles (les deux documentées par Convex) :
 
 | Option | Pour qui | Doc officielle |
 |---|---|---|
-| **Convex Auth** (natif Convex, *beta*) | Le plus simple à démarrer | https://docs.convex.dev/auth/convex-auth · exemple : https://github.com/get-convex/expo-convex-auth |
+| **Convex Auth** (natif Convex, **en bêta** — l'annonce est dans sa propre doc) | Le plus simple à démarrer | https://docs.convex.dev/auth/convex-auth · bibliothèque : https://github.com/get-convex/convex-auth |
 | **Better Auth + Convex** | Cohérent si tu fais aussi un SaaS avec Better Auth | https://labs.convex.dev/better-auth/framework-guides/expo |
 
 Pour Better Auth sur mobile, les packages sont :
@@ -77,7 +77,7 @@ npm install better-auth @better-auth/expo
 npx expo install expo-secure-store   # stockage sécurisé des sessions sur le téléphone
 ```
 
-> Pour débuter, **Convex Auth** (repo `expo-convex-auth`) est le chemin le plus court. Passe à Better Auth si tu veux la même auth que ton SaaS.
+> Pour débuter, **Convex Auth** (`get-convex/convex-auth`) est le chemin le plus court — en sachant qu'il est **en bêta** : son API peut bouger. Passe à Better Auth si tu veux la même auth que ton SaaS, ou si tu ne veux pas de bêta en production.
 
 ---
 
@@ -101,7 +101,7 @@ npx expo install expo-secure-store   # stockage sécurisé des sessions sur le t
 **Repos GitHub officiels**
 - Exemples Expo : https://github.com/expo/examples
 - Démo Convex + React Native : https://github.com/get-convex/convex-backend (dossier `npm-packages/demos/react-native/`)
-- Expo + Convex Auth : https://github.com/get-convex/expo-convex-auth
+- Convex Auth (la bibliothèque, en bêta) : https://github.com/get-convex/convex-auth
 - Monorepo complet (Expo + Next.js + Convex + Clerk) : https://github.com/get-convex/turbo-expo-nextjs-clerk-convex-monorepo
 
 ---

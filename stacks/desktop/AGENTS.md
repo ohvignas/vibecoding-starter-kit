@@ -7,7 +7,7 @@
 Je construis une **app desktop** (Windows / Mac / Linux) avec **Electron** (HTML/CSS/JS + Chromium + Node.js). Je débute. Explique simplement et avance **une étape à la fois**.
 
 ## Règle spéciale : utilise les skills Electron
-Cet environnement Claude Code contient des **skills Electron officiels**. Utilise-les activement :
+Cet environnement Claude Code contient des **skills Electron communautaires** (dépôt tiers `ohvignas/claude-electron-skills`, écrit pour Electron 42 — ce ne sont **pas** des skills publiés par le projet Electron). Utilise-les activement, mais recoupe toujours avec la doc officielle :
 - `electron:create-app` pour démarrer, `electron:add-ipc` pour la communication, `electron:add-feature` pour tray/notifications/raccourcis, `electron:security` / `electron:security-audit` pour la sécurité, `electron:distribution` pour packager, `electron:doctor` si l'app est cassée.
 - Quand je te demande quelque chose sur Electron, **appuie-toi sur le skill correspondant**.
 
@@ -22,6 +22,7 @@ Cet environnement Claude Code contient des **skills Electron officiels**. Utilis
 
 ## Outillage
 - Scaffolding + packaging via **Electron Forge** : `npx create-electron-app@latest mon-app` ; build : `npm run make`.
+- Au `git push`, le hook lance **`npm audit`** (vulnérabilités des dépendances). L'audit Electron proprement dit, lui, c'est la **checklist officielle des 20 points** ci-dessus — conduite par toi, pas par un scanner.
 - ⚠️ Electron **ne publie pas** de `llms.txt` ni de MCP officiel — ne cherche pas ces fichiers, appuie-toi sur les **skills locaux** et la doc officielle https://www.electronjs.org/docs/latest.
 
 ## Bonnes pratiques

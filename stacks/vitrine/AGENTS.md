@@ -5,7 +5,7 @@
 
 ## Contexte du projet
 Je construis un **site vitrine / blog** rapide et trouvable. Stack imposée :
-- **Astro 5** — framework orienté contenu : HTML statique par défaut, zéro JS sauf demandé.
+- **Astro 7** — framework orienté contenu : HTML statique par défaut, zéro JS sauf demandé. **Exige Node ≥ 22.12** (il refuse de démarrer en dessous).
 - **shadcn/ui** (Tailwind v4 + React) — les composants UI, montés en **îlots** uniquement où il faut de l'interactivité.
 - **Keystatic** — CMS **git** : le contenu vit dans le dépôt, admin visuel sur `/keystatic`.
 
@@ -14,7 +14,8 @@ Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 ## Règles Astro (îlots)
 - **Statique d'abord** : tout est `.astro` sans JS. N'ajoute `client:load` / `client:visible` QUE sur ce qui est vraiment interactif (menu mobile, carrousel, formulaire).
 - ⚠️ **Le contexte React n'est PAS partagé entre îlots.** Des composants shadcn qui interagissent (ex. `Dialog` + son bouton) doivent vivre dans **UN seul fichier `.tsx`**, importé une fois dans le `.astro`. Jamais éparpillés dans le `.astro`.
-- Contenu structuré = **content collections** (`src/content/`), jamais des données en dur dans les pages.
+- Contenu structuré = **content collections**, jamais des données en dur dans les pages. Une collection se DÉCLARE dans **`src/content.config.ts`** avec un **`loader`** (`glob()` / `file()` de `astro/loaders`) : depuis Astro 6, un dossier ne suffit plus, et `src/content/config.ts` n'est plus lu.
+- ⚠️ **APIs supprimées par Astro 6, ne les écris jamais** : `Astro.glob()` (→ `getCollection()` ou `import.meta.glob()`) et `<ViewTransitions />` (→ `<ClientRouter />`).
 - Images : **toujours** `astro:assets` (`<Image />`), jamais `<img>` brut sur une photo.
 - En cas de doute sur une API Astro : interroge le **MCP astro-docs** (la doc à jour — Astro n'a plus de llms.txt).
 
@@ -26,7 +27,7 @@ Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 ## Règles Keystatic (CMS)
 - Config dans `keystatic.config.ts` : une **collection par type de contenu** (pages, articles, témoignages…), storage `{ kind: 'local' }` (le contenu est committé).
 - Admin : `http://localhost:4321/keystatic`. Montre à l'utilisateur comment éditer SANS toucher au code.
-- Le contenu Keystatic alimente les content collections Astro — ne duplique jamais le contenu.
+- Le contenu Keystatic alimente les content collections Astro — ne duplique jamais le contenu. Le `path` Keystatic et le `base` du `loader` Astro doivent viser **le même dossier** (`src/data/<collection>/`).
 
 ## SEO (non négociable — dès le premier jalon)
 - `@astrojs/sitemap` installé + champ **`site`** renseigné dans `astro.config` (sinon pas de sitemap).
