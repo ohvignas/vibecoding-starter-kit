@@ -248,3 +248,88 @@ que le `update.mjs <dir>` positionnel : **un vert doit prouver qu'il a fait quel
 E9 demandait de supprimer `DESIGN_SKILLS`, E8 d'en faire la source unique des skills design : les
 deux items se contredisaient. Résolu en séparant la **chaîne morte** (supprimée) du **tableau
 source** (`DESIGN_SKILL_NAMES`, dont `validate-commands` dérive vraiment).
+
+---
+
+## Lot F — stacks · `PROUVÉ` sous réserve de revue complète (`e4aed2b` → `11049a5`)
+
+⚠️ **Revue par agent frais interrompue** : limite de dépense mensuelle du compte atteinte, deux fois
+(la revue du Lot E l'avait été aussi, sur la limite de session). La vérification consignée ici a été
+faite **par l'orchestrateur**, ciblée sur les faits externes et les consignes perdues — c'est plus
+faible qu'une revue en contexte frais, et c'est dit. **Une revue complète du Lot F reste à faire.**
+
+### Ce qui est vérifié
+- **361 tests / 0 fail** · plugin sans diff · smoke E2E vert · paquet 5/5 · **12 combinaisons exit 0**
+  · `AGENTS.md` à **2189 mots** (aucun fichier de `templates/agents/` touché) · worktree propre.
+- **L'épingle correspond au réel** : `PINS.vitrine = { astro: '7', node: '22.12' }` contre
+  `astro@7.1.6`, `engines.node >=22.12.0`.
+- **Aucun paquet recommandé n'est déprécié** : `react-email`, `convex`, `better-auth`,
+  `@keystatic/core`, `@convex-dev/auth`, `expo`, `electron` — tous contrôlés par `npm view`.
+- **48 lignes de prose retirées**, toutes rattachées à un item (Astro 5→7, `checkout@v4`→v7,
+  « officiels », `electronegativity`, `expo-convex-auth`). Aucune consigne perdue au contrôle :
+  les skills Electron restent recommandés, la bêta de Convex Auth est dite dans les 5 fichiers
+  qui le proposent.
+- **Les 2 tests « retournés » sont plus forts, pas relâchés** : `CHECKS.security` doit désormais
+  être `undefined` (interdit le retour), et `prePush` est contrôlé dans les deux sens.
+
+### Le résiduel que le contrôle a trouvé
+**L'étiquette « officiel » avait survécu en anglais**, dans la `description` du frontmatter de
+`.claude/skills/stack-desktop/SKILL.md` — la ligne que l'assistant lit pour décider de charger le
+skill, dans un fichier qui **part dans le paquet npm**. Le garde F6 n'exigeait que « officiel » et ne
+pouvait pas voir « official ». Corrigé, garde étendu aux deux langues, rouge vérifié sur chacune.
+Leçon : dans un kit francophone dont les frontmatters de skills sont en anglais, **tout garde
+lexical doit couvrir les deux langues**.
+
+### Ce que l'implémenteur a corrigé DANS LE BRIEF, preuves à l'appui
+Le plan était faux sur cinq points ; il a écrit la réalité vérifiée, pas le brief :
+1. La suppression de l'ancienne API de collections est en **Astro 6**, pas 7 — et
+   `legacy.collectionsBackwardsCompat` existe, contrairement au « sans compatibilité » du plan.
+2. « `<Image />` changé » : **introuvable** dans les notes de 7.0.0 → **rien écrit**, consigne laissée
+   en l'état, point listé comme non prouvé.
+3. `Astro.glob()` et `<ViewTransitions />` supprimés en **Astro 6** (PR #14421, #14400), pas 7.
+4. `get-convex/expo-convex-auth` **n'est pas abandonné** (poussé le 2026-02-05) — la correction tient
+   au fait que sa propre description dit `Example app`, donc ce n'est pas une bibliothèque.
+5. `@doyensec/electronegativity` : le **paquet npm** est figé au 2023-03-09 (c'est lui que `npx`
+   installe, et il tournait au `git push`), mais le **dépôt** a été poussé le 2025-08-23.
+
+### Trouvé hors brief, et urgent
+**`gitleaks-action@v2` cesse de fonctionner le 16/09/2026** (release note v3 : runtime Node 20 → 24,
+« stops working regardless of any opt-out flag »). Le kit installe ce workflow chez tous les
+débutants : leur scan de secrets se serait arrêté sans un mot, sept semaines plus tard. Migré en v3,
+remplacement direct (« No changes to inputs, outputs, or behavior »). Vérifié par l'orchestrateur.
+
+### Deux bugs « vert sans rien vérifier »
+- **F4** : `matrix.mjs` déclarait `astro check`, le runner lançait `npx tsc --noEmit` **en dur** — or
+  `tsc` ne lit pas les `.astro`. Reproduit sur un projet Astro réel avec une erreur de type :
+  `tsc` **exit 0, zéro ligne**, `astro check` **exit 1**. Les checks résolvent désormais le script
+  déclaré par la stack.
+- **F5** : le check `security` appelait un paquet npm figé depuis 2023, au `git push` desktop.
+  Remplacé par `npm audit` (livré avec npm, rien à installer). **Le scan Electron n'est pas
+  remplacé** — il est renvoyé à la checklist des 20 points conduite par l'agent sécurité, et le kit
+  le **dit** au lieu de promettre un scan qui ne tournait pas.
+
+### F9 — mesuré, pas estimé
+Une vitrine recevait **4,8 Mo** de doc Convex + Expo sans rapport. Après : `ai-context` à **8 Ko**,
+projet complet **6,4 Mo → 744 Ko** (−96 %). Desktop idem. Mobile ne gagne presque rien : il a
+réellement besoin des deux gros contextes. Le gain vient des stacks qui recevaient de la doc inutile.
+
+### Dette et résiduels
+- **`selectDomains()` ne joue qu'avec un `docs/PRD.md` préexistant**, pas au premier scaffold, et
+  `docs/DOMAINS.md` n'est pas dans `kitOwnedGenerated` (le rafraîchir demanderait d'y passer
+  `projectDir`). Contournement livré : les déclencheurs sont **rendus dans `docs/DOMAINS.md`** et
+  `/new-project` Phase 6 ordonne de les appliquer. La table pilote donc quelque chose de réel, mais
+  l'application est faite par l'IA, pas par le code → **Lot G**.
+- `.claude/skills/stack-saas/SKILL.md:40` renvoie à `scripts/download-ai-context.sh`, **absent du
+  projet généré** (script du dépôt du kit). Même famille que F10 → à trancher.
+- `templates/cursor/environment/vitrine.json` ne fixe aucune version de Node : l'environnement cloud
+  Cursor pourrait démarrer sous Node 20 et casser Astro 7. Aucune clé documentée trouvée pour le
+  déclarer ; **non inventée** → à trancher.
+- `guides/02-installer-les-outils.md:13` dit « installe la LTS » sans chiffre → **Lot H**.
+- `docs/superpowers/plans/2026-07-09-stack-vitrine-seo-geo.md` porte encore tous les textes en
+  Astro 5 : plan livré, donc archive, mais un agent qui le lirait comme source y trouverait la
+  vieille vérité → candidat à une bannière PÉRIMÉ.
+
+### Non prouvé, et déclaré comme tel
+`<Image />` en Astro 7 · `electronegativity` sous Node 22 · la parité composant par composant entre
+`react-email` et `@react-email/components` · le rendu Keystatic `.md`/`.mdoc` · la survie de
+`legacy.collectionsBackwardsCompat` en Astro 7. **Aucune affirmation du kit n'en dépend.**
