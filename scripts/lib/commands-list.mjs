@@ -21,4 +21,8 @@ export function refCommande(assistant, cmd) {
 
 // Dit UNE fois la convention ci-dessus, pour que les renvois qui suivent se lisent. Formulée
 // pour ses deux lecteurs : l'IA (à qui ces fichiers sont adressés) et l'humain qui relit.
-export const NOTE_CODEX_COMMANDES = 'Codex n\'exécute pas de slash-commands : chaque runbook cité ici est un **fichier** — ouvre-le et suis-le pas à pas (ne tape pas `/son-nom`, il ne se passerait rien).';
+// « slash-commands » tout court se contredisait avec la ligne suivante, qui dit à Codex de taper
+// `/plugins` — une commande de SON client, qui elle existe. Le débutant ne pouvait pas trancher
+// laquelle des deux était vraie. On nomme donc précisément ce qui n'existe pas chez lui : les
+// runbooks du kit.
+export const NOTE_CODEX_COMMANDES = 'Chez Codex, les runbooks du kit ne sont pas des slash-commands : chacun est un **fichier** — ouvre-le et suis-le pas à pas (taper `/son-nom` ne ferait rien). Les commandes de Codex lui-même, comme `/plugins`, marchent normalement.';
