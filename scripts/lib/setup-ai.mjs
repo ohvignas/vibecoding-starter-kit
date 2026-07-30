@@ -1,15 +1,22 @@
 // Rend docs/A-FAIRE.md : la checklist que l'IA joue au 1er install (plugins/skills/MCP/superpowers).
 // Les skills design sont déjà installés par le wizard.
 import { buildSkillAddArgs } from './external.mjs';
-import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE, VERIF_TOOLS_NOTE } from './matrix.mjs';
+import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE, VERIF_TOOLS_NOTE, MCP_CONNECT, uiBlocksNote } from './matrix.mjs';
+import { refCommande, NOTE_CODEX_COMMANDES } from './commands-list.mjs';
 import { cursorDeeplink } from './deeplink.mjs';
 
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
-export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shadcnNote, skillsInstalled = true }) {
+export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skillsInstalled = true }) {
+  // La note « blocs d'UI » suit la STACK, jamais l'inverse : mobile n'a pas de DOM (voir matrix).
+  const shadcnNote = uiBlocksNote(stack);
+  // Comment nommer un runbook à CET assistant : `/new-project` chez Cursor et Claude Code,
+  // un fichier à ouvrir chez Codex (qui n'exécute aucune slash-command du kit).
+  const cmd = (c) => refCommande(assistant, c);
   const L = [];
-  L.push(`# À faire — installe ça, puis lance /new-project  (stack ${stack} · ${assistant})`);
+  L.push(`# À faire — installe ça, puis ${assistant === 'codex' ? 'ouvre' : 'lance'} ${cmd('new-project')}  (stack ${stack} · ${assistant})`);
   L.push('');
-  L.push('Le **seul** fichier « à installer ». Ouvre-le dans ton assistant, fais chaque case, coche au fur et à mesure. (`/new-project` y ajoutera une section « Pour ton projet ».)');
+  L.push(`Le **seul** fichier « à installer ». Ouvre-le dans ton assistant, fais chaque case, coche au fur et à mesure. (${cmd('new-project')} y ajoutera une section « Pour ton projet ».)`);
+  if (assistant === 'codex') L.push(`\n> ⚠️ ${NOTE_CODEX_COMMANDES}`);
   L.push('');
   L.push('## 1. Plugins');
   // `note` : ce que le plugin est vraiment (dépôt communautaire, périmètre) — un débutant ne
@@ -29,13 +36,10 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   } else L.push('- [ ] (aucun)');
   L.push('');
   L.push('## 3. MCP à autoriser');
-  // 3 branches : Codex n'a pas de `/mcp` — il faut lui dire quoi recopier, et où.
-  const CONNECT = {
-    cursor: 'ouvre **Settings → MCP** dans Cursor et active-le',
-    'claude-code': 'lance `/mcp` pour connecter',
-    codex: '**recopie la définition** du serveur depuis `.mcp.json` dans ta configuration MCP Codex',
-  };
-  const connect = CONNECT[assistant] ?? CONNECT['claude-code'];
+  // 3 branches : Codex n'a pas de `/mcp` — il faut lui dire quoi recopier, et où. La table vit
+  // dans matrix.mjs (MCP_CONNECT) : le prompt `COLLE-MOI-DANS-L-IA.md` doit dire le même geste,
+  // et il disait `/mcp` aux trois tant que chacun portait sa propre copie.
+  const connect = (MCP_CONNECT[assistant] ?? MCP_CONNECT['claude-code']).long;
   for (const [name, cfg] of Object.entries(manifest.mcp)) {
     L.push(`- [ ] ${name} : ${connect}${cfg.needsAuth ? ' (login requis)' : ''}`);
     if (cfg.prereq) L.push(`  - ⚠️ prérequis : ${cfg.prereq}`);
@@ -44,7 +48,9 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   L.push('');
   L.push('## 4. Boucle superpowers');
   L.push(`- [ ] ${superpowersCmd}`);
-  L.push('- [ ] Vérifie que c\'est actif : tape `/` puis « brainstorm » — si `/superpowers:brainstorming` apparaît dans le menu, superpowers est installé. Sinon, réinstalle le plugin (voir « plugin » au glossaire).');
+  // Le renvoi « voir « plugin » au glossaire » pointait dans le vide : `guides/glossaire.md` vit
+  // dans le kit, jamais dans le projet généré. On définit le mot sur place.
+  L.push('- [ ] Vérifie que c\'est actif : tape `/` puis « brainstorm » — si `/superpowers:brainstorming` apparaît dans le menu, superpowers est installé. Sinon, relance la case ci-dessus (un **plugin** = un paquet d\'extensions que ton assistant installe lui-même, en une commande).');
   L.push('');
   L.push('## 5. Design');
   if (skillsInstalled) {
@@ -53,7 +59,7 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
     L.push('- ⚠️ PAS installés (wizard lancé avec --no-skills) — lance ces commandes :');
     for (const s of DESIGN_SKILL_SPECS) L.push(`  - [ ] \`npx ${buildSkillAddArgs(s, assistant).join(' ')}\``);
   }
-  L.push(`- [ ] ${shadcnNote.replace('<assistant>', assistant)}`);
+  L.push(`- [ ] ${shadcnNote.replace('<assistant>', assistant).replace('<new-project>', cmd('new-project'))}`);
   L.push('');
   L.push('### Skills du crew (agents de revue et de sécurité)');
   if (skillsInstalled) {
@@ -66,8 +72,10 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
   }
   L.push('');
   L.push('### Maquette IA — Stitch (si tu n\'as pas de design à fournir)');
+  // « déjà installés » se lisait « c'est prêt », alors que les DEUX cases suivantes sont
+  // obligatoires pour que Stitch réponde. On borne la promesse à ce qui est vrai.
   L.push(skillsInstalled
-    ? '- ✅ skills Stitch déjà installés par le wizard (generate-design · extract-html · loop · design-md).'
+    ? '- ✅ skills Stitch posés par le wizard (generate-design · extract-html · loop · design-md) — **pas encore utilisables** : les deux cases ci-dessous ouvrent l\'accès.'
     : '- ⚠️ skills Stitch PAS installés : couverts par les commandes de la section 2 ci-dessus (spec « stitch »).');
   L.push(`- [ ] Crée ta **clé API Stitch** : ${STITCH.keyUrl} → ${STITCH.keySteps} → copie-la (garde-la **secrète**, ne la commite jamais).`);
   L.push(`- [ ] Connecte le **MCP Stitch au niveau utilisateur** (hors dépôt → la clé n'est jamais commitée) : ${STITCH.mcp[assistant]}`);
@@ -79,10 +87,14 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, shad
     L.push('');
   }
   // HORS de la condition ci-dessus : mobile a autant besoin des scanners que le web.
-  L.push('### Outils de preuve (toutes les stacks)');
+  L.push('### Outils de preuve (optionnels — toutes les stacks)');
   L.push(`- [ ] ${VERIF_TOOLS_NOTE}`);
   L.push('');
-  L.push('## 6. Scripts package.json (à ajouter si absents après le scaffold)');
+  // Le projet n'a AUCUN `package.json` à ce stade — le kit n'en crée pas. La section listait
+  // des scripts « à ajouter si absents » dans un fichier qui n'existe pas encore : on dit
+  // quand il apparaîtra, et donc quand revenir ici.
+  L.push('## 6. Scripts package.json');
+  L.push(`- ℹ️ Aucun \`package.json\` pour l'instant : il naîtra avec le projet, quand ${cmd('new-project')} (Phase 7) scaffoldera la stack. **Reviens cocher ces cases après.**`);
   for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);
   L.push('');
   return L.join('\n');

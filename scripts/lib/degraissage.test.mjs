@@ -71,7 +71,7 @@ test('A5 — /debug a disparu (template, scaffold, refresh, plugin Cursor, aide)
 });
 
 test('A6 — PixelRAG n\'est plus un prérequis : cité, jamais installé', () => {
-  const render = (stack) => renderSetupAi({ stack, assistant: 'cursor', manifest: resolveStackManifest(stack, 'cursor'), superpowersCmd: 'x', shadcnNote: 'y', skillsInstalled: true });
+  const render = (stack) => renderSetupAi({ stack, assistant: 'cursor', manifest: resolveStackManifest(stack, 'cursor'), superpowersCmd: 'x', skillsInstalled: true });
   for (const s of ['saas', 'mobile', 'desktop', 'vitrine']) {
     assert.doesNotMatch(render(s), /pip install/, `${s} : aucune install Python en prérequis`);
   }

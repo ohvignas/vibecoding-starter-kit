@@ -16,7 +16,7 @@ const GIT_ENV = {
   GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@vibecoding.local',
   GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 'test@vibecoding.local',
 };
-const call = (assistant) => renderSetupAi({ stack: 'saas', assistant, manifest: resolveStackManifest('saas', assistant), superpowersCmd: 'x', shadcnNote: 'y', skillsInstalled: true });
+const call = (assistant) => renderSetupAi({ stack: 'saas', assistant, manifest: resolveStackManifest('saas', assistant), superpowersCmd: 'x', skillsInstalled: true });
 
 test('A-FAIRE : instruction MCP propre à chaque assistant', () => {
   assert.match(call('claude-code'), /lance `\/mcp`/);

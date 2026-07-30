@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { renderSetupAi } from './setup-ai.mjs';
 import { resolveStackManifest, VISUAL_CHECK_STACKS } from './matrix.mjs';
 
-const call = (stack) => renderSetupAi({ stack, assistant: 'cursor', manifest: resolveStackManifest(stack, 'cursor'), superpowersCmd: 'x', shadcnNote: 'y', skillsInstalled: true });
+const call = (stack) => renderSetupAi({ stack, assistant: 'cursor', manifest: resolveStackManifest(stack, 'cursor'), superpowersCmd: 'x', skillsInstalled: true });
 const renderFor = call;
 
 test('A-FAIRE documente les outils de vérification sur TOUTES les stacks', () => {

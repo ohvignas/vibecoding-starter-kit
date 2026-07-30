@@ -21,12 +21,15 @@ Regarde si **`.vibecoding.json`** existe dans le dossier courant.
    - **vitrine** — site vitrine / portfolio / blog (optimisé Google + IA)
 2. **Le nom du projet ?** (ou « ici » pour installer dans le dossier courant).
 
-L'**assistant** = celui où tu tournes (Cursor / Claude Code / Codex) — ne le demande pas, déduis-le.
+L'**assistant** = celui où tu tournes — ne le demande pas, déduis-le.
 
 ## Étape 2 — Scaffold (tu le fais)
-Lance (remplace `<stack>`, `<assistant>`, `<dossier>` ; `.` = dossier courant) :
+Lance (remplace `<stack>`, `<assistant>`, `<dossier>` ; `.` = dossier courant). Les valeurs sont
+**littérales** : le CLI refuse tout le reste et sort en erreur — pas de « Claude Code », pas de `claude`.
 
 ```bash
+# <stack> = saas | mobile | desktop | vitrine
+# <assistant> = cursor | claude-code | codex
 npx -y create-vibecoding-kit@latest --stack <stack> --assistant <assistant> --project <dossier> --yes
 ```
 
@@ -41,6 +44,9 @@ Ouvre **`docs/A-FAIRE.md`** (généré, adapté à sa stack) et traite chaque se
 ## Étape 4 — Vérifie + lance
 - Si superpowers est installé : lance **`/doctor`** (dit ce qui manque encore).
 - Termine : « Tout est prêt 🎉 — tape **`/new-project`** et décris ton idée, je m'occupe du reste. »
+
+> **Sur Codex**, ces runbooks ne sont pas des slash-commands : ils vivent dans `docs/commands/`.
+> Ne lui dis jamais « tape `/doctor` » — ouvre `docs/commands/doctor.md` et suis-le toi-même.
 
 ## Règles
 - Ne submerge pas : **une question / une action à la fois**, attends la réponse.

@@ -7,6 +7,17 @@ export const SUPERPOWERS = {
   'claude-code': '/plugin install superpowers@claude-plugins-official',
   codex: '/plugins  (chercher « Superpowers » puis installer)',
 };
+
+// Le geste MCP, par assistant — SOURCE UNIQUE. `docs/A-FAIRE.md` le disait déjà correctement,
+// mais le prompt de premier contact (`COLLE-MOI-DANS-L-IA.md`) imposait `/mcp` aux trois : une
+// commande qui n'existe ni chez Cursor (Settings → MCP) ni chez Codex (recopie du `.mcp.json`).
+// `court` = la forme d'une parenthèse, `long` = la case à cocher de A-FAIRE ; les deux doivent
+// nommer le même geste (voir « G1 » dans parcours.test.mjs).
+export const MCP_CONNECT = {
+  cursor: { court: 'Settings → MCP', long: 'ouvre **Settings → MCP** dans Cursor et active-le' },
+  'claude-code': { court: '`/mcp`', long: 'lance `/mcp` pour connecter' },
+  codex: { court: 'recopie `.mcp.json` dans ta config MCP Codex', long: '**recopie la définition** du serveur depuis `.mcp.json` dans ta configuration MCP Codex' },
+};
 // Les 4 skills design, SOURCE UNIQUE. La « Règle design » ordonne de les charger, les runbooks
 // les citent, `validate-commands.mjs` vérifie qu'ils y sont, et `DESIGN_SKILL_SPECS` (plus bas)
 // doit les installer : quatre endroits, une seule liste. shadcnblocks n'en fait pas partie —
@@ -139,7 +150,10 @@ export const STACKS = {
       // Bundlé dans le Maestro CLI (pas npx) → prérequis à installer une fois.
       // Chemin ABSOLU (pas `maestro` nu) : Cursor/GUI n'héritent pas du PATH du shell → `spawn ENOENT`.
       // `~/…` est étendu en absolu au moment d'écrire la config (voir expandMcpCommands).
-      maestro: { command: '~/.maestro/bin/maestro', args: ['mcp'], prereq: 'installe le Maestro CLI : `curl -fsSL "https://get.maestro.mobile.dev" | bash` (chemin par défaut `~/.maestro/bin`) + un simulateur iOS / émulateur Android. Après install, **reteste le serveur depuis l\'UI MCP** (Cursor n\'a pas le PATH du terminal). Erreur Java → ajoute `JAVA_HOME` dans `env`.' },
+      // Le prérequis nommait « Cursor » — il partait pourtant tel quel dans le A-FAIRE des trois
+      // assistants : un utilisateur Codex lisait une note écrite pour un autre outil. La cause
+      // (une app GUI n'hérite pas du PATH du shell) vaut pour les trois : on la dit sans nom.
+      maestro: { command: '~/.maestro/bin/maestro', args: ['mcp'], prereq: 'installe le Maestro CLI : `curl -fsSL "https://get.maestro.mobile.dev" | bash` (chemin par défaut `~/.maestro/bin`) + un simulateur iOS / émulateur Android. Après install, **relance ton assistant** puis reteste le serveur : une app lancée depuis le Dock (ou le menu Démarrer) n\'hérite pas du PATH de ton terminal. Erreur Java → ajoute `JAVA_HOME` dans `env`.' },
     },
     skills: [
       { label: 'expo', repo: 'expo/skills' },
@@ -257,14 +271,33 @@ export const AGENT_SKILL_SPECS = [
   { label: 'sécurité (OpenAI)', repo: 'github.com/openai/skills', skills: ['security-best-practices', 'security-threat-model'] },
 ];
 
-export const SHADCN_NOTE = 'Blocs pré-faits **shadcnblocks** via le CLI shadcn natif : `npx shadcn add @shadcnblocks/<bloc>` (ex. `@shadcnblocks/hero125`). Le registry `@shadcnblocks` est ajouté à `components.json` au scaffold (voir /new-project Phase 7). Blocs **gratuits sans clé** ; pour les blocs **pro**, mets `SHADCNBLOCKS_API_KEY` dans `.env`.';
+// « ajouté à components.json au scaffold » était FAUX : le scaffold du kit ne crée aucun
+// `components.json` — il n'y a même pas encore de projet à ce stade. C'est `/new-project`
+// Phase 7 qui, après `shadcn init`, y déclare le registry. Promettre l'inverse envoyait le
+// débutant chercher un fichier inexistant.
+// `<new-project>` est substitué au rendu par la façon dont CET assistant désigne le runbook
+// (`/new-project`, ou le fichier à ouvrir chez Codex) — voir refCommande.
+export const SHADCN_NOTE = 'Blocs pré-faits **shadcnblocks** via le CLI shadcn natif : `npx shadcn add @shadcnblocks/<bloc>` (ex. `@shadcnblocks/hero125`). Rien à faire maintenant : le registry `@shadcnblocks` se déclare dans `components.json`, que **<new-project> Phase 7** crée en même temps que le projet (`shadcn init`). Blocs **gratuits sans clé** ; pour les blocs **pro**, mets `SHADCNBLOCKS_API_KEY` dans `.env`.';
+
+// Mobile : React Native n'a pas de DOM — ni shadcn/ui ni les blocs shadcnblocks n'y tournent
+// (`/new-project` Phase 7 : « mobile : jamais shadcn »). A-FAIRE poussait pourtant la même note
+// qu'en web : une case à cocher intenable, avec une clé d'API à la clé.
+export const NATIVEWIND_NOTE = 'Rien à installer côté blocs : en React Native, l\'UI se compose avec **NativeWind** (Tailwind pour RN) et les composants natifs — les bibliothèques de blocs web visent le DOM, que RN n\'a pas. Le thème vit dans `docs/design.md`.';
+
+// La note « blocs d'UI » de la stack : web → shadcnblocks, mobile → NativeWind.
+export function uiBlocksNote(stack) {
+  return stack === 'mobile' ? NATIVEWIND_NOTE : SHADCN_NOTE;
+}
 
 // Stacks à UI web (rendu HTML/Chrome) → comparaison visuelle maquette↔page possible.
 // Mobile exclu (React Native, pas de rendu Chrome).
 export const VISUAL_CHECK_STACKS = ['saas', 'desktop', 'vitrine'];
 
-// Outils lancés par l'agent sécurité et le vérificateur. Gratuits, sans compte.
-export const VERIF_TOOLS_NOTE = 'Outils de vérification (l\'agent sécurité les lance) : `brew install semgrep gitleaks osv-scanner` (ou `pipx install semgrep`). Sans eux, l\'agent ne peut pas produire de preuve et répondra NON PROUVÉ. Les autres (`npx oxlint`, `npx knip`) s\'exécutent sans installation.';
+// Outils lancés par l'agent sécurité et le vérificateur. Gratuits, sans compte — et OPTIONNELS :
+// rien dans le kit ne les installe, rien ne les exige pour scaffolder, construire ou tester.
+// La case était présentée comme les autres, donc lue comme un prérequis. On dit ce qu'on perd :
+// sans eux l'agent sécurité n'a aucune preuve à produire, et le gate de `/deploy` ne passe pas.
+export const VERIF_TOOLS_NOTE = 'Outils de vérification — **optionnels** : le kit ne les installe pas et tout le reste marche sans. Ce qu\'on perd : l\'agent sécurité n\'a aucune preuve à produire, il répond `NON PROUVÉ`, et le gate sécurité du déploiement ne passe pas. Pour les avoir : `brew install semgrep gitleaks osv-scanner` (ou `pipx install semgrep`). Les autres (`npx oxlint`, `npx knip`) s\'exécutent sans installation.';
 
 // Signal INDICATIF, jamais un prérequis : l'œil (et le screenshot) tranchent. Un outil de
 // comparaison automatique — PixelRAG par exemple — n'est qu'un confort, à installer si tu veux.

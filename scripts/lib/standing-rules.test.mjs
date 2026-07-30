@@ -149,10 +149,14 @@ test('B11 — ordre de lecture : Preuve avant Vérification, design après les t
 });
 
 test('B12 — l\'AGENTS.md rendu tient sous 2 200 mots (relu à chaque message)', () => {
-  for (const assistant of ['cursor', 'claude-code', 'codex']) {
-    for (const learning of [true, false]) {
-      const n = words(rendered({ assistant, learning }));
-      assert.ok(n <= 2200, `${assistant} (learning=${learning}) : ${n} mots > 2200`);
+  // Les 4 stacks, pas seulement saas : le rendu mobile substitue ses règles UI (Lot G4), et une
+  // substitution plus bavarde que la phrase d'origine crèverait le plafond sans rien faire rougir.
+  for (const stack of ['saas', 'mobile', 'desktop', 'vitrine']) {
+    for (const assistant of ['cursor', 'claude-code', 'codex']) {
+      for (const learning of [true, false]) {
+        const n = words(rendered({ stack, assistant, learning }));
+        assert.ok(n <= 2200, `${stack}/${assistant} (learning=${learning}) : ${n} mots > 2200`);
+      }
     }
   }
   // Le seuil mord : au-dessus de 2 200, le test doit échouer.

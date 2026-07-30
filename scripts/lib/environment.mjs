@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolveStackManifest, SUPERPOWERS, SHADCN_NOTE } from './matrix.mjs';
+import { resolveStackManifest, SUPERPOWERS } from './matrix.mjs';
 import { mergeMcpConfig, expandMcpCommands } from './mcp.mjs';
 import { extendCursorHooks, claudeSettings, prePushScript, preCommitCheckLine } from './hooks.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
@@ -65,7 +65,7 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
   // y ajoute une section « Pour ton projet ». Un `update` réécrivait tout et effaçait les deux.
   // La version fraîche part en `.new` pour qu'il puisse comparer.
   try {
-    const rendered = renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE, skillsInstalled });
+    const rendered = renderSetupAi({ stack, assistant, manifest, superpowersCmd: SUPERPOWERS[assistant], skillsInstalled });
     if (read('docs/A-FAIRE.md') === null) { write('docs/A-FAIRE.md', rendered); done.push('docs/A-FAIRE.md'); }
     else { write('docs/A-FAIRE.md.new', rendered); done.push('docs/A-FAIRE.md.new (ton A-FAIRE.md est conservé)'); }
   } catch (e) { failed.push(`A-FAIRE (${e.message})`); }

@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveStackManifest, SUPERPOWERS, SHADCN_NOTE } from './matrix.mjs';
+import { resolveStackManifest, SUPERPOWERS } from './matrix.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
 
 const call = (stack, assistant) => renderSetupAi({
   stack, assistant, manifest: resolveStackManifest(stack, assistant),
-  superpowersCmd: SUPERPOWERS[assistant], shadcnNote: SHADCN_NOTE,
+  superpowersCmd: SUPERPOWERS[assistant],
 });
 
 test('SETUP-AI : plugins, skills, MCP, superpowers, design auto', () => {
@@ -29,7 +29,7 @@ test('SETUP-AI mobile : MCP expo login requis', () => {
 test('SETUP-AI --no-skills : liste les commandes à lancer, ne ment pas', () => {
   const md = renderSetupAi({
     stack: 'saas', assistant: 'claude-code', manifest: resolveStackManifest('saas', 'claude-code'),
-    superpowersCmd: SUPERPOWERS['claude-code'], shadcnNote: SHADCN_NOTE, skillsInstalled: false,
+    superpowersCmd: SUPERPOWERS['claude-code'], skillsInstalled: false,
   });
   assert.ok(!md.includes('déjà installés par le wizard'), 'aucun faux ✅');
   assert.match(md, /PAS installés/);

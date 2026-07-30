@@ -9,7 +9,8 @@ import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir 
 import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
 import { COMMANDS } from './lib/commands-list.mjs';
-import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, SUPERPOWERS } from './lib/matrix.mjs';
+import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS } from './lib/matrix.mjs';
+import { renderColleMoi } from './lib/colle-moi.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
@@ -314,15 +315,7 @@ async function main() {
   console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: cloneSkipped, failed }));
   if (failed.length) process.exitCode = 1; // rapport honnête : l'échec est visible aussi dans le code de sortie
   console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
-  const promptLines = [
-    "Finalise l'install et démarre :",
-    args.noSkills
-      ? '1. Ouvre docs/A-FAIRE.md → installe les plugins, lance les commandes de skills listées (sections 2 et 5), autorise les MCP (/mcp).'
-      : '1. Ouvre docs/A-FAIRE.md → installe les plugins et autorise les MCP (/mcp). (Les skills — design + stack — sont déjà installés par le wizard.)',
-    `2. Boucle superpowers : ${SUPERPOWERS[args.assistant]}`,
-    '3. /doctor pour vérifier.',
-    '4. /new-project (PRD + tech spec + design), puis /build.',
-  ];
+  const promptLines = renderColleMoi({ assistant: args.assistant, skillsInstalled: !args.noSkills });
   // Le prompt survit au terminal : écrit à la racine du projet, dans tous les modes.
   fs.writeFileSync(path.join(projectDir, 'COLLE-MOI-DANS-L-IA.md'), ['# À coller dans ton assistant IA', '', ...promptLines, ''].join('\n'));
   console.log('\n— Colle ce prompt dans ton assistant (aussi sauvé dans COLLE-MOI-DANS-L-IA.md) —\n');

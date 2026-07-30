@@ -15,7 +15,10 @@ test('le rapport liste installé, à-faire-dans-l-IA, sauté, échecs', () => {
   assert.match(out, /superpowers : \/add-plugin superpowers/);
   assert.match(out, /awesome-cursorrules/);
   assert.match(out, /❌ BMAD/);
-  assert.match(out, /new-project/); // prochaine étape
+  // Prochaine étape : le prompt imprimé juste après, puis `/help` — l'entrée du kit.
+  // (Elle disait « lance /new-project », alors que rien n'est encore installé à cette seconde.)
+  assert.match(out, /\/help/);
+  assert.doesNotMatch(out, /lance \/new-project/);
 });
 
 test('le rapport affiche les fichiers conservés (jamais écrasés)', () => {
