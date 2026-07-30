@@ -1,6 +1,6 @@
 ---
 name: stack-desktop
-description: Use when building a desktop app (Windows/Mac/Linux) with Electron in the vibecoding course. Triggers on "app desktop", "Electron", "logiciel bureau", "desktop app", or any installable computer app for beginners. Routes to the official electron:* skills and enforces secure defaults.
+description: Use when building a desktop app (Windows/Mac/Linux) with Electron in the vibecoding course. Triggers on "app desktop", "Electron", "logiciel bureau", "desktop app", or any installable computer app for beginners. Routes to the community electron:* skills (ohvignas/claude-electron-skills) and enforces secure defaults.
 ---
 
 # Stack Desktop — Electron

@@ -128,7 +128,11 @@ test('F5 — aucun paquet déprécié ou abandonné n\'est recommandé', () => {
 // ── F6 — étiquettes ────────────────────────────────────────────────────────────────────────────
 // `gh api repos/ohvignas/claude-electron-skills` → 1 ★, « Electron 42 reference skills ».
 test('F6 — les skills Electron ne sont jamais annoncés « officiels »', () => {
-  const fautes = chercher(/skills?\s+[Ee]lectron[^.\n]*officiel|electron:\*\s*officiel/);
+  // Le motif n'exigeait que « officiel » : l'étiquette a survécu EN ANGLAIS dans la `description`
+  // du frontmatter de `.claude/skills/stack-desktop/SKILL.md` — la ligne même que l'assistant lit
+  // pour décider de charger le skill, et un fichier qui part dans le paquet publié. Un kit
+  // francophone dont les skills portent un frontmatter anglais a besoin des deux langues.
+  const fautes = chercher(/(?:skills?\s+[Ee]lectron|electron:\*)[^.\n]*(?:officiel|official)|(?:officiel(?:le)?s?|official)\s+electron:\*/i);
   assert.deepEqual(fautes, [], `un dépôt tiers d'une étoile n'est pas « officiel » :\n${fautes.join('\n')}`);
 });
 
