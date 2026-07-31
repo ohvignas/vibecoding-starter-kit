@@ -17,10 +17,15 @@ export default config({
 ```
 
 ## Collection Astro — `src/content.config.ts` (OBLIGATOIRE)
-Depuis Astro 6, un dossier ne crée plus de collection : sans cette déclaration, `getCollection('temoignages')`
-ne renvoie rien et le build casse. Le `base` du `loader` vise le **même dossier** que le `path` Keystatic.
+Depuis Astro 6, un dossier ne crée plus de collection. Sans cette déclaration,
+`getCollection('temoignages')` renvoie **une liste vide** — et le build **réussit quand même**
+(`astro build` sort en 0, la page publie une section vide). Rien ne t'avertit : seul
+`astro check` le dit (`The collection "temoignages" does not exist or is empty`). C'est pour ça
+que le typecheck de la stack est `astro check` et pas `tsc`. Le `base` du `loader` vise le
+**même dossier** que le `path` Keystatic.
 ```ts
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
+import { z } from 'astro/zod'; // `z` depuis 'astro:content' est déprécié
 import { glob } from 'astro/loaders';
 
 const temoignages = defineCollection({

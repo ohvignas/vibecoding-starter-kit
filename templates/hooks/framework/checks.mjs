@@ -60,6 +60,10 @@ export function runChecks(ids, { cwd = process.cwd(), spawn = spawnSync, log = c
   let warnings = 0;
   for (const c of selectChecks(ids, { cwd })) {
     if (!c.willRun) { log(`· check ${c.id} sauté (${c.reason})`); continue; }
+    // Le défaut peut ne rien vérifier du tout : sur une vitrine, `tsc --noEmit` ne lit pas les
+    // `.astro` et sort vert. Tant que le projet n'a pas déclaré son script, on le DIT — sinon le
+    // hook affiche un succès pour un contrôle qui n'a rien contrôlé.
+    if (c.via === 'defaut') log(`· check ${c.id} : aucun script "${c.id}" dans package.json → repli sur \`${c.cmd.join(' ')}\`, qui ne couvre peut-être pas ta stack (voir docs/A-FAIRE.md)`);
     const { file, args, options } = resolveCheckCommand(c.cmd, platform);
     const r = spawn(file, args, { cwd, stdio: 'inherit', ...options });
     // Deux issues à ne PAS confondre : l'outil n'a pas démarré (status null + error) ≠ l'outil

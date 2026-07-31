@@ -16,6 +16,7 @@ Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 - ⚠️ **Le contexte React n'est PAS partagé entre îlots.** Des composants shadcn qui interagissent (ex. `Dialog` + son bouton) doivent vivre dans **UN seul fichier `.tsx`**, importé une fois dans le `.astro`. Jamais éparpillés dans le `.astro`.
 - Contenu structuré = **content collections**, jamais des données en dur dans les pages. Une collection se DÉCLARE dans **`src/content.config.ts`** avec un **`loader`** (`glob()` / `file()` de `astro/loaders`) : depuis Astro 6, un dossier ne suffit plus, et `src/content/config.ts` n'est plus lu.
 - ⚠️ **APIs supprimées par Astro 6, ne les écris jamais** : `Astro.glob()` (→ `getCollection()` ou `import.meta.glob()`) et `<ViewTransitions />` (→ `<ClientRouter />`).
+  **Le skill design `ui-ux-pro-max` te les proposera** : sa fiche Astro (`data/stacks/astro.csv`, dépôt tiers que le kit ne modifie pas) date d'avant leur suppression et recommande encore les deux. Cette règle-ci prime — si un skill et cette page se contredisent sur une API Astro, c'est cette page qui a raison.
 - Images : **toujours** `astro:assets` (`<Image />`), jamais `<img>` brut sur une photo.
 - En cas de doute sur une API Astro : interroge le **MCP astro-docs** (la doc à jour — Astro n'a plus de llms.txt).
 
