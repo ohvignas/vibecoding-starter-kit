@@ -333,3 +333,57 @@ réellement besoin des deux gros contextes. Le gain vient des stacks qui recevai
 `<Image />` en Astro 7 · `electronegativity` sous Node 22 · la parité composant par composant entre
 `react-email` et `@react-email/components` · le rendu Keystatic `.md`/`.mdoc` · la survie de
 `legacy.collectionsBackwardsCompat` en Astro 7. **Aucune affirmation du kit n'en dépend.**
+
+---
+
+## Contrôle final — vérification orchestrateur (HEAD `374b3cf`)
+
+⚠️ **Le contrôle final par agent frais n'a pas pu être fait** : limite de dépense mensuelle du compte
+atteinte, trois fois de suite (revue du Lot F, puis contrôle final ×2). Ce qui suit a été mesuré par
+l'orchestrateur. **Trois lots restent non revus par un agent frais : F, G, H.** C'est plus faible
+qu'une revue en contexte frais, et c'est dit.
+
+### Z2 — les 12 combinaisons · **0 anomalie**
+4 stacks × 3 assistants : `exit=0`, `AGENTS.md` ≤ 2200 mots, **10 commandes** livrées,
+`docs/glossaire.md` présent. `--refresh` sur un projet où l'utilisateur a travaillé : *« Zone “Tes
+règles à toi”, src/, docs/ (PRD/design/mémoire) : NON touchés »*, `docs/PRD.md` intact.
+
+### Z3 — gate mécanique · **vert**
+394 tests / 0 fail · plugin Cursor sans diff · smoke E2E vert · `package-publish` 5/5 (dont le
+paquet reconstitué depuis `files[]` seul, scaffoldé sans `--source`).
+
+### Z1bis — orphelins · **aucun réel**
+Balayage de 27 motifs sur les **12 projets générés**. 4 motifs remontaient ; tous vérifiés légitimes :
+- `electronegativity` (12) → un **commentaire** de `checks.mjs` qui explique son remplacement ;
+- `Astro.glob` / `ViewTransitions` (10) → des phrases qui les **interdisent** (« APIs supprimées par
+  Astro 6, ne les écris jamais ») ;
+- `/debug` (273) → `/functions/debugging.md` dans la doc Convex vendorée. **Zéro** occurrence de la
+  commande supprimée ;
+- `formation` (2097) → « information ».
+`checkout@v4` / `setup-node@v4` : **absents** des projets.
+
+### Z4 — cohérence croisée · **tenue**
+- Qui prononce `PROUVÉ` : `security-reviewer` nommé dans `AGENTS.md` **et** dans `build.md` — la
+  contradiction du Lot C ne s'est pas rouverte.
+- L'entrée est `/help` dans les trois endroits qui la nomment : `COLLE-MOI-DANS-L-IA.md`, la sortie
+  console (`report.mjs`), le `README`.
+- Bannière **10 commandes** = 10 livrées = **10/10 citées par `/help`**.
+- Mobile : **0** occurrence de shadcn dans son `AGENTS.md` (saas : 3, à raison).
+
+### Ce qui reste avant une publication npm
+**Rien qui atteigne l'utilisateur n'a été trouvé par ce contrôle.** Mais il est plus faible qu'une
+revue, et trois lots n'ont jamais été relus par un agent frais. Par gravité :
+1. **Revue en contexte frais des lots F, G, H** — ce sont eux qui ont réécrit le plus de prose, et
+   c'est exactement là que les revues des lots B et C avaient trouvé des consignes perdues qu'aucun
+   test ne voyait. **À faire avant de publier.**
+2. **Dette de gardes** : le retour de `pickFromClone` ignoré dans `setup.mjs` (Lot E) laisse la
+   mutation passer ; fermer ce trou demande une intégration réseau.
+3. **`selectDomains()` ne joue qu'avec un `docs/PRD.md` préexistant** (Lot F) : la table pilote
+   quelque chose de réel, mais l'application est faite par l'IA, pas par le code.
+4. **Non prouvables ici** : le comportement Windows réel (`npx.cmd`, `eol=lf` au checkout), et cinq
+   faits externes listés au Lot F — aucune affirmation du kit n'en dépend.
+5. **Cosmétique** : `setup-ai.mjs` s'appelle ainsi alors qu'il rend `docs/A-FAIRE.md` ; un worktree
+   périmé traîne dans `.claude/worktrees/` (gitignoré, hors paquet).
+
+**La publication reste la décision de l'utilisateur.** Aucun `git push`, aucun `npm publish` n'a été
+fait pendant tout le chantier.
