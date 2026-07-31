@@ -8,7 +8,7 @@ import { cursorDeeplink } from './deeplink.mjs';
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
 export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skillsInstalled = true }) {
   // La note « blocs d'UI » suit la STACK, jamais l'inverse : mobile n'a pas de DOM (voir matrix).
-  const shadcnNote = uiBlocksNote(stack);
+  const shadcnNote = uiBlocksNote(stack, refCommande(assistant, 'new-project'));
   // Comment nommer un runbook à CET assistant : `/new-project` chez Cursor et Claude Code,
   // un fichier à ouvrir chez Codex (qui n'exécute aucune slash-command du kit).
   const cmd = (c) => refCommande(assistant, c);

@@ -282,11 +282,15 @@ export const SHADCN_NOTE = 'Blocs pré-faits **shadcnblocks** via le CLI shadcn 
 // Mobile : React Native n'a pas de DOM — ni shadcn/ui ni les blocs shadcnblocks n'y tournent
 // (`/new-project` Phase 7 : « mobile : jamais shadcn »). A-FAIRE poussait pourtant la même note
 // qu'en web : une case à cocher intenable, avec une clé d'API à la clé.
-export const NATIVEWIND_NOTE = 'Rien à installer côté blocs : en React Native, l\'UI se compose avec **NativeWind** (Tailwind pour RN) et les composants natifs — les bibliothèques de blocs web visent le DOM, que RN n\'a pas. Le thème vit dans `docs/design.md`.';
+// `docs/design.md` n'existe pas au scaffold : il naît en Phase 5 de `/new-project`. Le dire, sinon
+// c'est un renvoi vers un fichier absent — exactement le défaut que G5 a corrigé pour le glossaire.
+export const nativewindNote = (refNewProject) => `Rien à installer côté blocs : en React Native, l'UI se compose avec **NativeWind** (Tailwind pour RN) et les composants natifs — les bibliothèques de blocs web visent le DOM, que RN n'a pas. Le thème vivra dans \`docs/design.md\`, que ${refNewProject} crée en Phase 5.`;
 
-// La note « blocs d'UI » de la stack : web → shadcnblocks, mobile → NativeWind.
-export function uiBlocksNote(stack) {
-  return stack === 'mobile' ? NATIVEWIND_NOTE : SHADCN_NOTE;
+// La note « blocs d'UI » de la stack : web → shadcnblocks, mobile → NativeWind. `refNewProject`
+// est la façon dont CET assistant invoque le runbook — sur Codex c'est un fichier à ouvrir, pas
+// une slash-command : sans ça, l'A-FAIRE de Codex porte un `/new-project` qu'il ne peut pas taper.
+export function uiBlocksNote(stack, refNewProject = '/new-project') {
+  return stack === 'mobile' ? nativewindNote(refNewProject) : SHADCN_NOTE;
 }
 
 // Stacks à UI web (rendu HTML/Chrome) → comparaison visuelle maquette↔page possible.

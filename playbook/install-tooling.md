@@ -9,7 +9,7 @@
 - **karpathy** : copié depuis `multica-ai/andrej-karpathy-skills` (fichiers, pas le marketplace). **C'est le seul dépôt externe que le wizard clone.**
 - **caveman** (optionnel, coûts) : installé par `setup.mjs` **seulement** avec le drapeau `--caveman` (défaut : non). Compresse la sortie de l'IA. ⚠️ Coupe les explications utiles à l'apprentissage — voir `guides/03-securite-et-couts.md`.
 
-Règle d'or (déjà écrite dans l'`AGENTS.md` du projet) : **superpowers pilote la boucle** ; karpathy + cursorrules = garde-fous passifs.
+Règle d'or (déjà écrite dans l'`AGENTS.md` du projet) : **superpowers pilote la boucle** ; karpathy = garde-fou passif.
 
 ## Hors installeur (ressources optionnelles à documenter, pas à installer d'office)
 - **Strix** (sécurité) : scan de vulnérabilités avant publication. **Pas** dans l'installeur (exige Docker + clé LLM payante). Voir `guides/03-securite-et-couts.md`.

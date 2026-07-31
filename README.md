@@ -70,7 +70,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🚫 | **Anti-flemme** | **Règle Réalité** : zéro mock, zéro `lorem`, zéro donnée en dur hors des fichiers de test — chaque écran lit et écrit dans le **vrai** backend, chaque bouton marche de bout en bout. Plus zéro placeholder / `// TODO` / stub, zéro report « plus tard ». Non négociable, dans `AGENTS.md` + `.cursor/rules/` |
 | 📓 | **Journal du crew** | trois fichiers partagés dans `docs/agents/` : **`JOURNAL.md`** (append-only — une ligne par mission, avec sa preuve), **`state.yaml`** (l'état courant : jalon, tâche, tentatives de réparation, motif de blocage — **un seul écrivain**, le juge), **`inventaire.md`** (le contrat de couverture : tout ce que la maquette et le PRD promettent, ligne par ligne). Chaque agent les lit **avant** de commencer |
 | 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
-| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : **régénère** les règles (`AGENTS.md`, entre marqueurs) + runbooks + agents + glossaire — ta zone perso, `src/` et **ce que tu as écrit** dans `docs/` **jamais touchés** (`--dry-run` pour prévisualiser) |
+| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : **régénère** les règles (`AGENTS.md`, entre marqueurs) + runbooks + agents + glossaire — ta zone perso, `src/` et **ce que tu as écrit** dans `docs/` (PRD, design, roadmap, mémoire) **jamais touchés** (`--dry-run` pour prévisualiser) |
 | 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt du site, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
@@ -87,11 +87,13 @@ npm create vibecoding-kit@latest
 
 **2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
 
-Ton assistant te guide pour les **gestes manuels** (détaillés dans « [Après l'install](#-après-linstall--ce-quil-te-reste-à-faire) » ci-dessous et dans `docs/A-FAIRE.md`, adapté à ta stack) : installer **superpowers**, le **plugin de ta stack** s'il en existe un, et autoriser les **MCP**. Les skills, eux, sont déjà posés par le wizard. Ensuite, lance :
+Ton assistant te guide pour les **gestes manuels** (détaillés dans « [Après l'install](#-après-linstall--ce-quil-te-reste-à-faire) » ci-dessous et dans `docs/A-FAIRE.md`, adapté à ta stack) : installer **superpowers**, le **plugin de ta stack** s'il en existe un, et autoriser les **MCP**. Les skills, eux, sont déjà posés par le wizard. Ensuite, une seule commande à retenir :
 
 ```
-/new-project
+/help
 ```
+
+Elle liste les 10 runbooks et dit par où continuer. *(Sur Codex, les runbooks ne sont pas des slash-commandes : ouvre `docs/commands/help.md` et suis-le.)*
 
 > [!TIP]
 > La liste exacte des plugins/MCP à cocher est dans **`docs/A-FAIRE.md`**. Tout le reste est déjà posé.
@@ -150,7 +152,7 @@ Tape `/mcp` (ou, sur Cursor, **Settings → MCP**). Les serveurs à activer selo
 |---|---|
 | **SaaS** | Convex · Better Auth · shadcn · **Playwright** *(test E2E)* |
 | **Mobile** | Convex · Expo *(login requis)* · **Maestro** *(test E2E — installe le CLI d'abord, voir A-FAIRE)* |
-| **Desktop** | Chrome DevTools *(test E2E)* |
+| **Desktop** | Chrome DevTools *(test E2E)* · shadcn |
 | **Vitrine** | Astro Docs · shadcn · **Playwright** *(test E2E)* |
 
 ### Optionnel — design par IA (Stitch)
@@ -160,8 +162,10 @@ Si tu n'as **pas** de maquette à fournir : crée une clé API sur [stitch.withg
 ### Puis tu codes
 
 ```
-/new-project « ton idée »
+/help
 ```
+
+`/help` t'oriente ; pour démarrer un projet il t'enverra sur `/new-project « ton idée »`.
 
 | Commande | Ce qu'elle fait |
 |---|---|
@@ -217,11 +221,11 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
 
 > [!TIP]
-> **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt » avant de lancer `/new-project`. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
+> **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt ». Ensuite, `/help` t'oriente. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
 
 > [!TIP]
 > **Récupérer les nouveautés du kit dans un vieux projet** — depuis le dossier du projet, **rien à cloner** :
-> - `npx create-vibecoding-kit --refresh` — **régénère** ce qui est 100 % kit et que tu n'édites pas : les règles (`AGENTS.md`, entre les marqueurs), les 10 runbooks, les 7 agents du crew, `docs/glossaire.md` et `docs/templates/`. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — `docs/PRD.md`, `docs/design.md`, `docs/ROADMAP.md`, `docs/memory/`, `docs/A-FAIRE.md`, `docs/agents/`. Ajoute `--dry-run` pour prévisualiser.
+> - `npx create-vibecoding-kit --refresh` — **régénère** ce qui est 100 % kit et que tu n'édites pas : les règles (`AGENTS.md`, entre les marqueurs), les 10 runbooks, les 7 agents du crew, `docs/glossaire.md` et `docs/templates/`. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — `docs/PRD.md`, `docs/design.md`, `docs/ROADMAP.md`, `docs/memory/`, `docs/A-FAIRE.md`, et la mémoire du crew (`docs/agents/JOURNAL.md`, `state.yaml`, `inventaire.md`). Seule exception, voulue : sur Codex les 7 agents vivent dans `docs/agents/crew/` — ceux-là sont du kit, donc régénérés. Ajoute `--dry-run` pour prévisualiser.
 > - Si tu as le dépôt en local : `node <kit>/scripts/update.mjs` **ajoute** les fichiers neufs sans rien écraser, et `--refresh` fait la même régénération que ci-dessus.
 
 > [!TIP]
