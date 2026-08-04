@@ -3,30 +3,99 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DESIGN_SKILL_NAMES } from './matrix.mjs';
 
-const PHASES =['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
-const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/ARCHITECTURE.md', 'docs/memory'];
-const AGENTS_TEMPLATES = ['templates/agents/loop-section.md', 'templates/agents/design-rule.md', 'templates/agents/subagents-rule.md', 'templates/agents/verify-rule.md', 'templates/agents/reality-rule.md', 'templates/agents/proof-rule.md', 'templates/agents/secrets-cost-rule.md', 'templates/agents/css-maquette-rule.md'];
+const ENTREE = 'templates/commands/new-project.md';
+const ETAPES_DIR = 'templates/commands/new-project';
+
+// `/new-project` est découpé en ÉTAPES : une entrée courte, puis un fichier par étape dans
+// `templates/commands/new-project/`. Les noms sont FIGÉS ici — `--refresh` n'efface jamais
+// (`refresh.mjs`), une renumérotation ultérieure laisserait des orphelins à vie chez l'utilisateur.
+const ETAPE = {
+  cadrage: '01-cadrage.md',
+  prd: '02-prd.md',
+  archi: '03-stack-et-architecture.md',
+  design: '05-design-maquette.md',
+  roadmap: '06-roadmap.md',
+  scaffold: '07-scaffold.md',
+};
+
+// ── ANCRAGE, et pourquoi surtout pas une concaténation ────────────────────────────────────────
+// La tentation, au découpage, est de recoller les étapes en un seul texte et de garder les
+// contrôles tels quels. Ce serait les AFFAIBLIR : `(^|\s)stack($|\s)` trouverait son mot dans
+// n'importe laquelle des étapes — y compris celle qui ne parle pas de stack — donc le contrôle
+// deviendrait PLUS facile à satisfaire qu'avec le fichier unique d'aujourd'hui. L'inverse du but.
+// Chaque exigence est donc ancrée à SON fichier : la phase « stack » se prouve dans l'étape stack,
+// la sortie `docs/ROADMAP.md` dans l'étape roadmap, `@shadcnblocks` dans l'étape scaffold.
+//
+// COMMENT ON TOLÈRE LE DOSSIER VIDE SANS VIDER LE CONTRÔLE DE SON SENS — le dossier d'étapes est
+// dans l'un de deux états, jamais entre les deux :
+//   · ABSENT ou VIDE (avant le découpage) → chaque exigence retombe sur l'entrée `new-project.md`.
+//     C'est mot pour mot le contrôle d'avant : ni plus faible, ni plus fort.
+//   · PEUPLÉ (après) → chaque exigence est cherchée dans SON étape, et une étape que cette carte
+//     nomme mais qui n'est pas sur le disque est une ERREUR (`étape manquante : …`).
+// Autrement dit : l'absence n'est tolérée qu'EN BLOC. Un dossier à moitié découpé, ou dont une
+// étape a été renommée, ne retombe jamais en silence sur l'entrée — c'est ce repli silencieux,
+// et lui seul, qui rendrait la carte vide de sens.
+const PHASES = [
+  ['Brainstorm', ETAPE.cadrage], ['PRD', ETAPE.prd], ['stack', ETAPE.archi],
+  ['architecture', ETAPE.archi], ['Design', ETAPE.design], ['Roadmap', ETAPE.roadmap],
+  ['Mise en place', ETAPE.scaffold],
+];
+const OUTPUTS = [
+  ['docs/PRD.md', ETAPE.prd], ['docs/ROADMAP.md', ETAPE.roadmap], ['docs/design.md', ETAPE.design],
+  ['docs/ARCHITECTURE.md', ETAPE.archi], ['docs/memory', ETAPE.scaffold],
+];
+// …et le runbook doit CITER les templates déplacés par le chemin qu'ils ont dans le projet généré :
+// un template que personne n'ouvre ne vaut pas mieux qu'un template supprimé. Ancrés eux aussi :
+// c'est l'étape qui S'EN SERT qui doit le citer, pas le sommaire d'entrée.
+const RENVOIS = [['docs/templates/PRD.md', ETAPE.prd], ['docs/templates/architecture.md', ETAPE.archi]];
 // Marqueurs de profondeur : ils prouvent que le kit porte de VRAIS templates, pas un runbook
 // « one-liner ». Les templates PRD et architecture ont quitté le runbook (Lot D9 : new-project.md
 // pesait 197 lignes sur les 458 du dossier `templates/commands/`, soit 43 % à lui seul) — le
-// contrôle les SUIT dans leur nouveau fichier au lieu de disparaître avec le texte déplacé.
+// contrôle les SUIT dans leur nouveau fichier au lieu de disparaître avec le texte déplacé. Ceux
+// du runbook suivent de la même façon le texte qui part en étape.
+const DEPTH_RUNBOOK = [
+  ['EXPERIENCE.md', ETAPE.design], ['maquette', ETAPE.design], ['index.html', ETAPE.design],
+  ['ui.shadcn.com/create', ETAPE.design], ['@shadcnblocks', ETAPE.scaffold],
+];
 const DEPTH = {
-  'templates/commands/new-project.md': ['EXPERIENCE.md', 'maquette', 'index.html', 'ui.shadcn.com/create', '@shadcnblocks'],
   'templates/prd/PRD.md': ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses'],
   'templates/specs/architecture.md': ['Invariants', 'Graine structurelle'],
 };
-// …et le runbook doit CITER les templates déplacés par le chemin qu'ils ont dans le projet généré :
-// un template que personne n'ouvre ne vaut pas mieux qu'un template supprimé.
-const RENVOIS = ['docs/templates/PRD.md', 'docs/templates/architecture.md'];
+const AGENTS_TEMPLATES = ['templates/agents/loop-section.md', 'templates/agents/design-rule.md', 'templates/agents/subagents-rule.md', 'templates/agents/verify-rule.md', 'templates/agents/reality-rule.md', 'templates/agents/proof-rule.md', 'templates/agents/secrets-cost-rule.md', 'templates/agents/css-maquette-rule.md'];
 
 export function validateNewProjectCommand(root) {
   const errors = [];
-  const runbook = path.join(root, 'templates/commands/new-project.md');
-  if (!fs.existsSync(runbook)) { errors.push('manquant : templates/commands/new-project.md'); return errors; }
-  const txt = fs.readFileSync(runbook, 'utf8');
-  for (const p of PHASES) if (!new RegExp(`(^|\\s)${p}($|\\s)`).test(txt)) errors.push(`runbook : phase manquante « ${p} »`);
-  for (const o of OUTPUTS) if (!txt.includes(o)) errors.push(`runbook : sortie non référencée « ${o} »`);
-  for (const r of RENVOIS) if (!txt.includes(r)) errors.push(`runbook : template déplacé jamais cité « ${r} »`);
+  if (!fs.existsSync(path.join(root, ENTREE))) { errors.push(`manquant : ${ENTREE}`); return errors; }
+
+  const dir = path.join(root, ETAPES_DIR);
+  // Le filtre `.md` n'est pas cosmétique : sans lui un sous-dossier partirait dans `readFileSync`
+  // → `EISDIR`. Un `.gitkeep` (git ne suit pas un dossier vide) ne compte pas pour une étape.
+  const surDisque = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => n.endsWith('.md')).sort() : [];
+  const decoupe = surDisque.length > 0;
+
+  const cache = new Map();
+  const lire = (rel) => {
+    if (!cache.has(rel)) cache.set(rel, fs.readFileSync(path.join(root, rel), 'utf8'));
+    return cache.get(rel);
+  };
+  const etapesAbsentes = new Set();
+  const ou = (etape) => {
+    if (!decoupe) return ENTREE;
+    if (surDisque.includes(etape)) return `${ETAPES_DIR}/${etape}`;
+    etapesAbsentes.add(etape);
+    return null; // signalé une fois plus bas — jamais un repli silencieux sur l'entrée
+  };
+  const exige = (etape, satisfait, message) => {
+    const f = ou(etape);
+    if (f !== null && !satisfait(lire(f))) errors.push(message(f));
+  };
+
+  for (const [p, e] of PHASES) exige(e, (t) => new RegExp(`(^|\\s)${p}($|\\s)`).test(t), (f) => `${f} : phase manquante « ${p} »`);
+  for (const [o, e] of OUTPUTS) exige(e, (t) => t.includes(o), (f) => `${f} : sortie non référencée « ${o} »`);
+  for (const [r, e] of RENVOIS) exige(e, (t) => t.includes(r), (f) => `${f} : template déplacé jamais cité « ${r} »`);
+  for (const [d, e] of DEPTH_RUNBOOK) exige(e, (t) => t.includes(d), (f) => `${f} : template pas assez détaillé, manque « ${d} »`);
+  for (const e of [...etapesAbsentes].sort()) errors.push(`étape manquante : ${ETAPES_DIR}/${e}`);
+
   for (const [f, marqueurs] of Object.entries(DEPTH)) {
     const p = path.join(root, f);
     if (!fs.existsSync(p)) { errors.push(`template manquant : ${f}`); continue; }

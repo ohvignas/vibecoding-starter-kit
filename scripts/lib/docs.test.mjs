@@ -470,6 +470,22 @@ test('H7bis — un fichier LIVRÉ dans le projet ne parle ni de formation ni d\'
 // encore vers `docs/SETUP-AI.md`, renommé il y a des lots).
 const DOCS_INTERNES = () => ['formateur', 'playbook'].flatMap((d) => fs.readdirSync(path.join(ROOT, d)).map((f) => `${d}/${f}`));
 
+// Tous les runbooks du kit : les fichiers d'entrée de `templates/commands/`, ET les ÉTAPES du
+// sous-dossier `templates/commands/new-project/` (vide tant que `/new-project` n'a pas été
+// découpé). Deux raisons, pas une :
+//  1. le filtre `.md` n'est pas cosmétique — sans lui le sous-dossier LUI-MÊME part dans
+//     `readFileSync`, qui lève `EISDIR: illegal operation on a directory, read`. Le seul `mkdir`
+//     suffisait à casser ce test, avant même qu'aucune étape n'existe ;
+//  2. une étape cautionne les mêmes chemins que le runbook d'entrée. Ne lire que l'entrée ferait
+//     passer pour mort un chemin qu'une étape promet.
+const mdDe = (rel) => (fs.existsSync(path.join(ROOT, rel))
+  ? fs.readdirSync(path.join(ROOT, rel)).filter((n) => n.endsWith('.md')).sort()
+  : []);
+const RUNBOOKS = () => [
+  ...mdDe('templates/commands').map((n) => `templates/commands/${n}`),
+  ...mdDe('templates/commands/new-project').map((n) => `templates/commands/new-project/${n}`),
+];
+
 // Les slash-commandes NATIVES d'un assistant (`/mcp`, `/add-plugin`…) ne sont pas des runbooks
 // du kit : on les recompte là où le kit les déclare, au lieu de les lister à la main.
 const NATIVES = () => new Set(
@@ -485,8 +501,8 @@ test('H8 — docs internes : chaque runbook cité existe, chaque chemin cité ex
   // Un chemin peut naître PLUS TARD, de la main d'un runbook (`docs/design.md` en Phase 5 de
   // `/new-project`). La caution n'est pas une liste écrite ici : c'est que le kit le promette
   // lui-même, dans `templates/commands/`. Rien ne cautionne `docs/SETUP-AI.md`, et c'est le but.
-  const promisParUnRunbook = fs.readdirSync(path.join(ROOT, 'templates/commands'))
-    .map((n) => read(`templates/commands/${n}`)).join('\n');
+  const promisParUnRunbook = RUNBOOKS().map((f) => read(f)).join('\n');
+  assert.ok(RUNBOOKS().length >= 10, `montage : ${RUNBOOKS().length} runbooks lus, la caution des chemins est vide`);
   const inconnus = [], morts = [];
   for (const f of fichiers) {
     read(f).split('\n').forEach((l, i) => {

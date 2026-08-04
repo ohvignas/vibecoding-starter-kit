@@ -9,6 +9,12 @@ export const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 const AGENTS = ['verificateur', 'test-runner', 'security-reviewer', 'code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux'];
 
+// Les ÉTAPES de `/new-project` : `templates/commands/new-project/` portera le runbook découpé.
+// Vide, voire absent (git ne suit pas un dossier vide), tant que le découpage n'a pas eu lieu.
+const ETAPES = () => (fs.existsSync(path.join(ROOT, 'templates/commands/new-project'))
+  ? fs.readdirSync(path.join(ROOT, 'templates/commands/new-project')).filter((n) => n.endsWith('.md')).sort()
+  : []);
+
 test('droits : rédacteurs d\'artefacts écrivent, les autres sont bridés', () => {
   for (const a of ['verificateur', 'security-reviewer']) {
     assert.match(read(`templates/agents/subagents/${a}.md`), /^tools:.*\bWrite\b/m, `${a} écrit son artefact`);
@@ -44,6 +50,12 @@ test('verificateur câblé en gate + state.yaml lu', () => {
 
 test('aucune référence morte ni chemin d\'agents figé sur un seul assistant', () => {
   assert.doesNotMatch(read('scripts/lib/matrix.mjs'), /pixelbrowse/);
+  // GARDE DE MONTAGE. L'interdit ci-dessous est NÉGATIF et porte sur une liste de fichiers écrite
+  // à la main : la ligne visée part en `06-…` au découpage, l'interdit reste vert sur un fichier
+  // qui ne la contient plus, et `.claude/agents/` peut se figer dans une étape sans être vu.
+  assert.deepEqual(ETAPES(), [],
+    'montage : ce contrôle ne lit que help.md et new-project.md. Des étapes existent dans '
+    + 'templates/commands/new-project/ et échappent à l\'interdit `.claude/agents/` — ajoute-les à la liste.');
   for (const f of ['templates/commands/help.md', 'templates/commands/new-project.md']) {
     assert.doesNotMatch(read(f), /`\.claude\/agents\/`/, `${f} : chemin figé claude-code`);
   }

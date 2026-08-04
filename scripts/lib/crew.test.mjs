@@ -23,6 +23,18 @@ const FICHIERS_REGLES = () => [
   ...md('templates/agents/subagents').map((n) => `subagents/${n}`),
 ];
 
+// Les runbooks du kit : les fichiers d'entrée de `templates/commands/` ET les ÉTAPES de
+// `new-project/` (le sous-dossier où `/new-project` sera découpé — vide, voire absent, tant que
+// le découpage n'a pas eu lieu : git ne suit pas un dossier vide). Une attribution de verdict
+// fautive atteint exactement le même lecteur depuis une étape que depuis l'entrée, puisque les
+// deux sont recopiées chez l'utilisateur. Le filtre `.md` évite l'`EISDIR` du sous-dossier.
+const RUNBOOKS = () => [
+  ...md('templates/commands').map((n) => `templates/commands/${n}`),
+  ...(fs.existsSync(path.join(ROOT, 'templates/commands/new-project'))
+    ? md('templates/commands/new-project').map((n) => `templates/commands/new-project/${n}`)
+    : []),
+];
+
 const CREW = ['verificateur', 'test-runner', 'security-reviewer', 'code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux'];
 // Voulu : les deux rédacteurs d'artefact écrivent, les cinq autres sont bridés (cf. proof.test.mjs).
 const ECRIVAINS = ['verificateur', 'security-reviewer'];
@@ -313,10 +325,10 @@ const canonique = () => {
 // `templates/agents/verify-rule.md`, c'est-à-dire dans l'AGENTS.md relu à chaque message.
 test('R2 — ni un agent ni une règle injectée ne réserve un PROUVÉ que le gate exige d\'un autre', () => {
   const exigences = new Map();
-  for (const f of fs.readdirSync(path.join(ROOT, 'templates/commands')).filter((n) => n.endsWith('.md'))) {
-    read(`templates/commands/${f}`).split('\n').forEach((line, i) => {
+  for (const f of RUNBOOKS()) {
+    read(f).split('\n').forEach((line, i) => {
       if (!/PROUVÉ/.test(line)) return;
-      for (const a of CREW) if (line.includes(a) && !exigences.has(a)) exigences.set(a, `templates/commands/${f}:${i + 1}`);
+      for (const a of CREW) if (line.includes(a) && !exigences.has(a)) exigences.set(a, `${f}:${i + 1}`);
     });
   }
   for (const a of ['verificateur', 'security-reviewer']) {
@@ -433,7 +445,7 @@ const nommeUnAgent = (t) => { const bas = t.toLowerCase(); return GRAPHIES.some(
 // trois critiques BRIDÉS reçoivent justement (C2).
 const FICHIERS_SURVEILLES = () => [
   ...FICHIERS_REGLES().map((f) => `templates/agents/${f}`),
-  ...md('templates/commands').map((n) => `templates/commands/${n}`),
+  ...RUNBOOKS(),
   ...fs.readdirSync(path.join(ROOT, 'templates/cursor/rules')).filter((n) => n.endsWith('.mdc')).sort().map((n) => `templates/cursor/rules/${n}`),
   'templates/journal/JOURNAL.md', 'templates/journal/state.yaml', 'templates/journal/inventaire.md',
 ];

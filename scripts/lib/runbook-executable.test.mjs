@@ -29,6 +29,24 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const lire = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+const md = (d) => (fs.existsSync(path.join(ROOT, d))
+  ? fs.readdirSync(path.join(ROOT, d)).filter((n) => n.endsWith('.md')).sort()
+  : []);
+
+// Les ÉTAPES de `/new-project` : le sous-dossier `templates/commands/new-project/` portera le
+// runbook découpé, une étape par fichier. Il est vide (voire absent — git ne suit pas un dossier
+// vide) tant que le découpage n'a pas eu lieu. Le filtre `.md` évite l'`EISDIR` du sous-dossier.
+const ETAPES = () => md('templates/commands/new-project').map((n) => `templates/commands/new-project/${n}`);
+
+// GARDE DE MONTAGE des contrôles qui ne lisent QUE `templates/commands/new-project.md`. Ils sont
+// tous NÉGATIFS (`doesNotMatch`) : une fois le contenu parti dans une étape, ils restent verts
+// sur un fichier qui ne contient plus rien de ce qu'ils interdisent — et l'interdit peut
+// réapparaître dans l'étape sans que personne ne le voie.
+const gardeEtapesNonLues = (quoi) => assert.deepEqual(
+  ETAPES(), [],
+  `montage : ${quoi} ne lit que templates/commands/new-project.md. Des étapes existent dans `
+  + 'templates/commands/new-project/ et échappent à ce contrôle — lis-les aussi.',
+);
 
 // Les drapeaux SANS lesquels `shadcn init` s'arrête sur une question. Mesurés un par un le
 // 2026-08-04 sur shadcn@latest : chaque ligne est un prompt réellement rencontré.
@@ -40,9 +58,12 @@ const DRAPEAUX_SHADCN = [
 ];
 
 test('E2E — une commande `shadcn init` citée par un runbook est non interactive', () => {
-  const fichiers = fs.readdirSync(path.join(ROOT, 'templates/commands'))
-    .filter((n) => n.endsWith('.md'))
-    .map((n) => [`templates/commands/${n}`, lire(`templates/commands/${n}`)]);
+  // Les runbooks d'entrée ET les étapes de `/new-project` : une commande de scaffold interactive
+  // bloque l'IA de la même façon, qu'elle soit dictée par l'entrée ou par l'étape `07-…`.
+  const fichiers = [
+    ...md('templates/commands').map((n) => `templates/commands/${n}`),
+    ...ETAPES(),
+  ].map((f) => [f, lire(f)]);
 
   const fautes = [];
   let vues = 0;
@@ -131,6 +152,7 @@ test('E2E — desktop : Forge n\'a pas de template React, le runbook doit le dir
   // ni react-dom. Les 5 templates de Forge (electron/forge/packages/template) sont `base`, `vite`,
   // `vite-typescript`, `webpack`, `webpack-typescript` — aucun n'amène React. Or le runbook
   // enchaînait sur `shadcn init`, qui en dépend : la chaîne desktop était rompue.
+  gardeEtapesNonLues('l\'interdit « Forge n\'a pas de template React »');
   assert.doesNotMatch(t, /vite\s*\+\s*react/i, 'Forge ne fournit aucun template React');
   const ligne = t.split('\n').find((l) => l.includes('create-electron-app'));
   assert.ok(ligne, 'le runbook ne dit plus comment scaffolder le desktop');
@@ -170,6 +192,7 @@ test('E2E — le tech spec vit à côté du PRD, pas dans la convention interne 
   const t = lire('templates/commands/new-project.md');
   // Il partait dans `docs/superpowers/specs/<date>-<projet>-architecture.md` : dossier ABSENT du
   // projet généré, nom daté, et `AGENTS.md` ne le listait même pas. Un débutant ne le retrouvait pas.
+  gardeEtapesNonLues('l\'interdit « pas de tech spec dans docs/superpowers/specs »');
   assert.doesNotMatch(t, /docs\/superpowers\/specs/, 'le tech spec ne va pas dans la convention interne du kit');
   assert.match(t, /docs\/ARCHITECTURE\.md/, 'le tech spec doit vivre à côté de docs/PRD.md');
   assert.match(lire('scripts/lib/templates.mjs'), /docs\/ARCHITECTURE\.md/, 'AGENTS.md doit y renvoyer');

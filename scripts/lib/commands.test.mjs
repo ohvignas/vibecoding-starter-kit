@@ -19,10 +19,33 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const cmd = (c) => read(`templates/commands/${c}.md`);
 const md = (d) => fs.readdirSync(path.join(ROOT, d)).filter((n) => n.endsWith('.md')).sort();
 const COMMANDES = md('templates/commands').map((n) => n.replace(/\.md$/, ''));
-// Tous les fichiers de prose que le kit recopie chez l'utilisateur : commandes, règles injectées,
-// agents, graines du crew. C'est le périmètre des gardes « orphelins » et « state.yaml ».
+
+// Les ÉTAPES de `/new-project` : `templates/commands/new-project/` portera bientôt le contenu
+// découpé du runbook, une étape par fichier. Le dossier peut ne pas exister (git ne suit pas un
+// dossier vide) — d'où le `existsSync`. Le filtre `.md` protège du même `EISDIR` que
+// `docs.test.mjs` : un sous-dossier n'est pas un fichier de prose.
+const ETAPES = () => (fs.existsSync(path.join(ROOT, 'templates/commands/new-project'))
+  ? md('templates/commands/new-project').map((n) => `templates/commands/new-project/${n}`)
+  : []);
+
+// GARDE DE MONTAGE, à appeler depuis tout contrôle qui ne balaie QUE les fichiers d'entrée de
+// `templates/commands/`. Le jour où une étape existe, ce contrôle-là cesse de vérifier ce qu'il
+// annonce — et il le fait EN SILENCE, en restant vert sur un corpus amputé. Un `vues > 0` ne
+// suffirait pas : `PixelRAG` est cité par `edit-design.md` autant que par `new-project.md`, donc
+// le compteur resterait positif alors que les lignes visées seraient parties.
+const gardeEtapesNonBalayees = (quoi) => assert.deepEqual(
+  ETAPES(), [],
+  `montage : ${quoi} ne lit que les ${COMMANDES.length} runbooks d'entrée. Des étapes existent dans `
+  + 'templates/commands/new-project/ et ne sont contrôlées par personne — étends le balayage à ETAPES().',
+);
+
+// Tous les fichiers de prose que le kit recopie chez l'utilisateur : commandes, ÉTAPES de
+// `/new-project`, règles injectées, agents, graines du crew. C'est le périmètre des gardes
+// « orphelins » et « state.yaml ». Les étapes en font partie de plein droit : elles seront
+// recopiées chez l'utilisateur comme les autres, une consigne fausse y atteint le même lecteur.
 const PROSE = () => [
   ...COMMANDES.map((c) => `templates/commands/${c}.md`),
+  ...ETAPES(),
   ...md('templates/agents').map((n) => `templates/agents/${n}`),
   ...md('templates/agents/subagents').map((n) => `templates/agents/subagents/${n}`),
   'templates/journal/JOURNAL.md', 'templates/journal/state.yaml', 'templates/journal/inventaire.md',
@@ -294,6 +317,10 @@ test('D7bis — tout message d\'erreur cité par un runbook est bien celui que g
 const PIXELRAG_BLOQUANT = /avant de conclure|avant de la rendre|jusqu'à ce que|doit (?:confirmer|valider|approuver|passer)|tant qu[e']|bloqu|gate|exige/i;
 const PIXELRAG_QUALIFIE = /alerte,? (?:elle|il) ne tranche pas|ne remplace pas|signal indicatif|non bloquant|jamais un gate/i;
 test('D9 — PixelRAG alerte, il ne décide pas (dans les commandes comme dans les règles)', () => {
+  // Les deux lignes visées vivent en Phase 5 et Phase 6 de `/new-project` : le découpage les
+  // emmène dans `05-…` / `06-…`, hors de ce balayage, et le contrôle passerait au vert sans que
+  // rien ne surveille plus la qualification de PixelRAG là où elle est écrite.
+  gardeEtapesNonBalayees('le contrôle « PixelRAG alerte »');
   for (const c of COMMANDES) {
     cmd(c).split('\n').forEach((l, i) => {
       if (!/PixelRAG/i.test(l)) return;
@@ -360,6 +387,10 @@ test('D10 — aucune commande ne renvoie à quelque chose qui n\'existe pas', ()
     [/\/debug\b/, 'commande supprimée au Lot A'],
     [/docs\/ONBOARDING\.md/, 'fichier supprimé au Lot A'],
   ];
+  // Contrôle NÉGATIF : il ne peut jamais « ne rien trouver » de façon suspecte, donc sa seule
+  // façon de mentir est de ne plus rien lire. `commit-commands`, `` `dev` ``, `3 essais`,
+  // `STITCH_API_KEY` et `/debug` peuvent réapparaître dans une étape sans que ce test le voie.
+  gardeEtapesNonBalayees('le contrôle des références orphelines');
   const restes = [];
   for (const c of COMMANDES) {
     cmd(c).split('\n').forEach((l, i) => {
@@ -393,9 +424,11 @@ test('résiduel 2 — state.yaml : un seul écrivain, et jamais un statut hors �
   // cas, comme pour R3 de `crew.test.mjs`.
   const VERDICTS = ['PROUVÉ', 'NON PROUVÉ', 'BLOQUÉ'];
   const horsEnum = [];
+  let lignesStateYaml = 0;
   for (const f of PROSE()) {
     read(f).split('\n').forEach((l, i) => {
       if (!l.includes('state.yaml')) return;
+      lignesStateYaml++;
       for (const m of l.matchAll(/en `([^`]+)` dans [^\n]*state\.yaml/g)) {
         if (!ENUM.includes(m[1])) horsEnum.push(`${f}:${i + 1} — « ${m[1]} » hors énumération`);
       }
@@ -405,6 +438,12 @@ test('résiduel 2 — state.yaml : un seul écrivain, et jamais un statut hors �
       }
     });
   }
+  // GARDE DE MONTAGE. Les deux filets ci-dessus ne se déclenchent que sur une ligne qui NOMME
+  // `state.yaml` : le jour où ces lignes partent ailleurs (une étape de `/new-project`, un
+  // fichier hors `PROSE()`), les deux filets restent verts sur zéro ligne inspectée. `PROSE()`
+  // couvre désormais `templates/commands/new-project/` — ce compteur prouve que la couverture
+  // porte, au lieu de la supposer.
+  assert.ok(lignesStateYaml > 0, `montage : aucune ligne parlant de state.yaml dans les ${PROSE().length} fichiers de PROSE() — les deux filets ne prouvent rien`);
   assert.deepEqual(horsEnum, [], `statut hors énumération :\n${horsEnum.join('\n')}`);
 
   // (b) Un seul écrivain. `verify-rule` le NOMME (elle n'écrit pas), `verificateur` l'EST.

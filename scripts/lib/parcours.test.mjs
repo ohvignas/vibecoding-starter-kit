@@ -148,6 +148,20 @@ test('G5 — les promesses de docs/A-FAIRE.md sont tenues dans le projet génér
   assert.equal(fs.existsSync(path.join(proj, 'components.json')), false, 'montage : le scaffold ne crée pas de components.json');
   assert.doesNotMatch(setup, /est ajouté à `components\.json` au scaffold/, 'promesse fausse : rien ne pose ce registry au scaffold');
   assert.match(setup, /Phase 7/, 'dire QUAND le registry est posé');
+  // GARDE DE MONTAGE. La ligne ci-dessus VERROUILLE une promesse faite à l'utilisateur sans
+  // jamais vérifier qu'elle est tenue : `docs/A-FAIRE.md` peut continuer à dire « Phase 7 »
+  // longtemps après que le runbook a été découpé et renuméroté. On exige donc que la phase citée
+  // existe VRAIMENT, comme titre, dans le runbook — entrée ou étape (le découpage l'emmène dans
+  // `templates/commands/new-project/07-…`, ce chemin-là est donc lu dès maintenant).
+  const dossierEtapes = path.join(ROOT, 'templates/commands/new-project');
+  const runbook = [
+    read('templates/commands/new-project.md'),
+    ...(fs.existsSync(dossierEtapes)
+      ? fs.readdirSync(dossierEtapes).filter((n) => n.endsWith('.md')).sort()
+        .map((n) => read(`templates/commands/new-project/${n}`))
+      : []),
+  ].join('\n');
+  assert.match(runbook, /^#+ Phase 7\b/m, 'A-FAIRE.md promet « Phase 7 », mais aucun titre « Phase 7 » n\'existe dans le runbook : la promesse est devenue fausse sans que rien ne rougisse');
 
   // 2. Le glossaire n'est jamais copié dans le projet : y renvoyer est un renvoi mort.
   assert.equal(fs.existsSync(path.join(proj, 'guides/glossaire.md')), false, 'montage : aucun glossaire dans le projet');
