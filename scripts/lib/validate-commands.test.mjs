@@ -7,7 +7,7 @@ import path from 'node:path';
 import { validateNewProjectCommand } from './validate-commands.mjs';
 
 const PHASES = ['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
-const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/superpowers/specs', 'docs/memory'];
+const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/ARCHITECTURE.md', 'docs/memory'];
 const RENVOIS = ['docs/templates/PRD.md', 'docs/templates/architecture.md'];
 // Les marqueurs de profondeur ont suivi le contenu : le runbook garde les siens, les templates
 // PRD/architecture portent les leurs depuis qu'ils vivent dans `templates/` (Lot D9).

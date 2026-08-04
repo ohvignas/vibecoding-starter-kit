@@ -50,11 +50,11 @@ La stack a été **choisie par le wizard** : lis-la dans `AGENTS.md` (et les rè
 
 ---
 
-## Phase 4 — Tech spec / architecture → `docs/superpowers/specs/<date>-<projet>-architecture.md` (gate)
+## Phase 4 — Tech spec / architecture → `docs/ARCHITECTURE.md` (gate)
 
 **Ouvre `docs/templates/architecture.md`** et suis-le : on ne fixe QUE les décisions durables qu'un futur builder ne peut **pas** déduire du code (paradigme, `AD-*` + diagramme de dépendances, conventions de cohérence, stack, graine structurelle, map capacité → architecture, différé). Le template porte aussi sa checklist.
 
-Écris le résultat dans `docs/superpowers/specs/<date>-<projet>-architecture.md`. → **validation utilisateur**.
+Écris le résultat dans `docs/ARCHITECTURE.md`. → **validation utilisateur**.
 
 ---
 
@@ -157,17 +157,14 @@ Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX 
 1. Scaffold la stack choisie, **avec le preset shadcn** noté en Phase 5 :
    - **vitrine** : `npx shadcn@latest init --template astro --base base --no-monorepo --preset <code> --name <nom-du-projet> --yes` (crée l'app Astro complète avec le thème), puis Keystatic (`npx astro add react markdoc` + `@keystatic/core @keystatic/astro`).
      ⚠️ **Les 5 drapeaux sont obligatoires** : sans eux `init` pose 4 questions (monorepo · bibliothèque · preset · nom), 3 aux flèches — `--yes` n'en saute aucune et **une IA reste bloquée sans erreur**. Pas de preset en Phase 5 → `--preset nova`. **`--name` crée un SOUS-DOSSIER** : l'environnement du kit reste à la racine, l'app Astro et son `package.json` vont dans `<nom-du-projet>/` — dis à l'utilisateur que `npm run dev` se lance **de là**. Enfin, **ajoute `"typecheck": "astro check"`** au `package.json` créé : le template n'en pose aucun, et sans lui le hook retombe sur `tsc --noEmit`, qui **ne lit pas les `.astro`** et sort vert sans rien vérifier.
-   - **saas** : `npm create convex@latest` (TanStack Start + Convex), puis **dans le projet** : `npx shadcn@latest init --preset <code> --base base --no-monorepo --yes`.
-   - **desktop** : `create-electron-app` (vite+react), puis **dans le renderer** : `npx shadcn@latest init --preset <code> --base base --no-monorepo --yes`.
-   - **Blocs shadcnblocks** (saas / desktop / vitrine) : après `shadcn init`, ajoute le registry à **`components.json`** (fusionne, n'écrase pas) —
-     ```json
-     { "registries": { "@shadcnblocks": { "url": "https://www.shadcnblocks.com/r/{name}", "headers": { "Authorization": "Bearer ${SHADCNBLOCKS_API_KEY}" } } } }
-     ```
-     puis `npx shadcn add @shadcnblocks/<bloc>` fonctionne (gratuits **sans clé** ; `SHADCNBLOCKS_API_KEY` dans `.env` pour le pro).
+   - **saas** : `npm create convex@latest` (TanStack Start + Convex), puis **dans le projet** : `npx shadcn@latest init --base base --no-monorepo --yes`, puis applique le thème (ci-dessous).
+   - **desktop** : `create-electron-app` (vite+react), puis **dans le renderer** : même chose.
    - **mobile** : `create-expo-app` + **NativeWind** (pas de shadcn en React Native).
-   - Sans preset → `init` sans `--preset` (défaut).
-2. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, **`docs/A-FAIRE.md`**, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle d'ouvrir **`docs/A-FAIRE.md`** (tout ce qu'il reste à installer : gestes de base + ton projet) et d'utiliser `docs/RUN.md` pour lancer l'app.
-3. Crée le squelette `docs/memory/` (index + gotchas/conventions/decisions/archive).
+2. **Applique le thème de la Phase 5** — sur un projet **déjà créé**, ce n'est pas `init` mais : `npx shadcn@latest apply --preset <code> --yes` (`--only theme` ou `--only font` pour n'en prendre qu'une partie). Pour la vitrine, `init --preset` l'a déjà fait à la création.
+3. **Prends les écrans tout faits avant d'en coder un.** Le registry **officiel** livre des blocs complets, **sans clé ni registry à déclarer** : `npx shadcn@latest add dashboard-01` · `login-01..05` · `signup-01..05` · `sidebar-01..12`. Ils **héritent du preset** appliqué à l'étape 2 — c'est la chaîne : thème → bloc → écran déjà à ta charte. Liste complète : `npx shadcn@latest search @shadcn -q <mot>`, et `npx shadcn@latest view <bloc>` pour regarder avant d'installer.
+   Blocs **shadcnblocks.com** (tiers, plus de choix) : ajoute d'abord le registry à **`components.json`** (fusionne, n'écrase pas) — `{ "registries": { "@shadcnblocks": { "url": "https://www.shadcnblocks.com/r/{name}", "headers": { "Authorization": "Bearer ${SHADCNBLOCKS_API_KEY}" } } } }` — puis `npx shadcn add @shadcnblocks/<bloc>` (gratuits sans clé ; `SHADCNBLOCKS_API_KEY` dans `.env` pour le pro).
+4. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, **`docs/A-FAIRE.md`**, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle d'ouvrir **`docs/A-FAIRE.md`** (tout ce qu'il reste à installer : gestes de base + ton projet) et d'utiliser `docs/RUN.md` pour lancer l'app.
+5. Crée le squelette `docs/memory/` (index + gotchas/conventions/decisions/archive).
 
 ## Fini quand
 Les fichiers fondation existent + `docs/A-FAIRE.md` liste **tout ce qu'il reste à installer** (gestes de base + section « Pour ton projet ») + le projet est scaffoldé + `AGENTS.md` contient la boucle et la règle design. Dis à l'utilisateur d'ouvrir `docs/A-FAIRE.md` et de cocher. Ensuite : « pour tout construire dans l'ordre avec un visuel à chaque étape, lance `/build` ; pour une feature isolée, `/new-feature` ».

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { DESIGN_SKILL_NAMES } from './matrix.mjs';
 
 const PHASES =['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
-const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/superpowers/specs', 'docs/memory'];
+const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/ARCHITECTURE.md', 'docs/memory'];
 const AGENTS_TEMPLATES = ['templates/agents/loop-section.md', 'templates/agents/design-rule.md', 'templates/agents/subagents-rule.md', 'templates/agents/verify-rule.md', 'templates/agents/reality-rule.md', 'templates/agents/proof-rule.md', 'templates/agents/secrets-cost-rule.md', 'templates/agents/css-maquette-rule.md'];
 // Marqueurs de profondeur : ils prouvent que le kit porte de VRAIS templates, pas un runbook
 // « one-liner ». Les templates PRD et architecture ont quitté le runbook (Lot D9 : new-project.md

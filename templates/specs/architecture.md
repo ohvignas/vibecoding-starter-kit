@@ -1,7 +1,7 @@
 # Template architecture — la structure à remplir dans la spec du projet
 
 > Ce fichier est un **modèle**, pas ton architecture. `/new-project` Phase 4 le suit et écrit le
-> résultat dans **`docs/superpowers/specs/<date>-<projet>-architecture.md`**. Ne le modifie pas.
+> résultat dans **`docs/ARCHITECTURE.md`**. Ne le modifie pas.
 >
 > **Attribution** : structure **adaptée de BMAD-METHOD** (MIT © 2025 BMad Code, LLC). Adaptée et
 > traduite ; « BMAD » est une marque de BMad Code, LLC (non affiliée).
