@@ -2,7 +2,7 @@
 
 > Étape 06/08 de `/new-project` — de la maquette à la feuille de route. **Mode de travail et tags** : `00-mode-et-cadre.md`. Sommaire : `../new-project.md`.
 
-## Phase 6 — Analyse de la maquette + domaines → Roadmap `docs/ROADMAP.md`
+## Analyse de la maquette + domaines → Roadmap `docs/ROADMAP.md`
 
 1. **Sélection des domaines + doc d'install SUR MESURE** : ouvre `docs/DOMAINS.md` (le catalogue de la stack). Chaque capacité y liste ses **`_Déclencheurs :_`** — les mots qui, présents dans le PRD, l'allument. **Applique-les au texte de `docs/PRD.md`, un par un**, et note les capacités allumées : c'est ta sélection de départ, elle ne se devine pas. (Si `docs/DOMAINS.md` porte déjà des 🎯, c'est le kit qui les a appliqués — vérifie-les, ne les recopie pas les yeux fermés.) Ajoute ensuite ce que les mots ne peuvent pas voir, retire ce que le PRD ne demande pas, et **dis à l'utilisateur ce que tu as ajouté ou retiré, et pourquoi**. Règle : préfère le **built-in / officiel** ; n'ajoute un externe que si le PRD le justifie.
 

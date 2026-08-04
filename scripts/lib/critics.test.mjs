@@ -8,7 +8,7 @@ import { fichiersDuRunbook } from './commands-list.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const CRITICS = ['critique-produit', 'critique-donnees', 'critique-ux'];
-// `/new-project` est découpé : la Phase 6 vit dans l'étape `06-…`, plus dans l'entrée. On lit donc
+// `/new-project` est découpé : la roadmap vit dans l'étape `06-…`, plus dans l'entrée. On lit donc
 // le runbook entier (entrée + étapes), liste dérivée de la source unique `commands-list.mjs`.
 const newProject = () => fichiersDuRunbook(ROOT, 'new-project').map((f) => read(f)).join('\n');
 
@@ -36,7 +36,7 @@ test('crew : chaque agent déclare son modèle et LIT le journal (sans jamais l\
   }
 });
 
-test('Phase 6 : audit de complétude + panel critique en parallèle avant roadmap', () => {
+test('étape roadmap : audit de complétude + panel critique en parallèle avant roadmap', () => {
   const np = newProject();
   assert.match(np, /Audit complet de complétude/);
   assert.match(np, /inventaire de complétude/);

@@ -80,9 +80,9 @@ test('reality-rule : zéro mock + boutons câblés + maquette à l\'identique', 
   assert.doesNotMatch(t, /PixelRAG/);
 });
 
-test('ROADMAP + Phase 6 : données/câblage réel par jalon (zéro mock)', () => {
+test('ROADMAP + étape roadmap : données/câblage réel par jalon (zéro mock)', () => {
   const roadmap = read('templates/roadmap/ROADMAP.md');
-  // La Phase 6 vit dans l'étape `06-…` depuis le découpage : on lit le runbook entier (entrée +
+  // La roadmap vit dans l'étape `06-…` depuis le découpage : on lit le runbook entier (entrée +
   // étapes), énuméré depuis la source unique `commands-list.mjs`.
   const np = fichiersDuRunbook(ROOT, 'new-project').map((f) => read(f)).join('\n');
   assert.match(roadmap, /Données \/ câblage réel/);

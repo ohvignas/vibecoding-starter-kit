@@ -498,7 +498,7 @@ test('H8 — docs internes : chaque runbook cité existe, chaque chemin cité ex
   assert.ok(fichiers.length > 4, `montage : ${fichiers.length} docs internes lues`);
   const natives = NATIVES();
   assert.ok(natives.has('mcp') && natives.has('add-plugin'), 'montage : les commandes natives sont bien recomptées sur matrix.mjs');
-  // Un chemin peut naître PLUS TARD, de la main d'un runbook (`docs/design.md` en Phase 5 de
+  // Un chemin peut naître PLUS TARD, de la main d'un runbook (`docs/design.md` à l'étape design de
   // `/new-project`). La caution n'est pas une liste écrite ici : c'est que le kit le promette
   // lui-même, dans `templates/commands/`. Rien ne cautionne `docs/SETUP-AI.md`, et c'est le but.
   const promisParUnRunbook = RUNBOOKS().map((f) => read(f)).join('\n');

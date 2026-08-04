@@ -311,8 +311,8 @@ test('D7bis — tout message d\'erreur cité par un runbook est bien celui que g
 const PIXELRAG_BLOQUANT = /avant de conclure|avant de la rendre|jusqu'à ce que|doit (?:confirmer|valider|approuver|passer)|tant qu[e']|bloqu|gate|exige/i;
 const PIXELRAG_QUALIFIE = /alerte,? (?:elle|il) ne tranche pas|ne remplace pas|signal indicatif|non bloquant|jamais un gate/i;
 test('D9 — PixelRAG alerte, il ne décide pas (dans les commandes comme dans les règles)', () => {
-  // Les deux lignes visées vivent en Phase 5 et Phase 6 de `/new-project`, donc désormais dans les
-  // étapes `05-…` / `06-…` : le balayage porte sur les entrées ET les étapes, sans quoi il
+  // Les deux lignes visées vivent dans les étapes `05-…` / `06-…` de `/new-project` : le balayage
+  // porte donc sur les entrées ET les étapes, sans quoi il
   // passerait au vert sans que rien ne surveille plus la qualification de PixelRAG là où elle est
   // écrite. Un compteur prouve que le corpus n'est pas vide, et qu'on lit bien plus que les 10
   // entrées.
@@ -329,7 +329,7 @@ test('D9 — PixelRAG alerte, il ne décide pas (dans les commandes comme dans l
 });
 
 // Les fichiers de `/new-project` : l'entrée puis ses étapes. Le runbook est découpé — un contrôle
-// qui ne lirait que l'entrée ne verrait plus aucune des sept phases.
+// qui ne lirait que l'entrée ne verrait plus aucune des neuf étapes.
 const NEW_PROJECT = () => fichiersDuRunbook(ROOT, 'new-project');
 
 test('D9 — l\'inventaire de complétude est cité par son chemin, aux deux endroits qui s\'en servent', () => {
@@ -340,27 +340,30 @@ test('D9 — l\'inventaire de complétude est cité par son chemin, aux deux end
   assert.deepEqual(sansChemin.map(([ou]) => ou), [], 'inventaire cité sans son chemin');
 });
 
-// Une phase = un fichier, et un seul. Le découpage a remplacé le découpage par tranches (`slice`
+// Une ÉTAPE = un fichier, et un seul. Le découpage a remplacé le découpage par tranches (`slice`
 // entre deux titres) : chercher `## Phase 6` dans le fichier de la Phase 5 ne trouverait plus rien,
 // et la tranche vide aurait rendu l'interdit ci-dessous satisfait par construction.
-const fichierDeLaPhase = (n) => {
-  const trouves = NEW_PROJECT().filter((f) => new RegExp(`^#+ Phase ${n}\\b`, 'm').test(read(f)));
-  assert.equal(trouves.length, 1, `Phase ${n} : attendue dans exactement UN fichier du runbook, vue dans ${trouves.length} (${trouves.join(', ') || 'aucun'})`);
+// On désigne l'étape par son NUMÉRO DE FICHIER, plus par un titre « ## Phase N » : ce titre n'a
+// jamais désigné un fichier (la Phase 3 et la Phase 4 partageaient l'étape `03-…`), et le kit ne
+// l'écrit plus nulle part. Le préfixe, lui, est la convention de nommage que E8 verrouille.
+const fichierDeLEtape = (n) => {
+  const trouves = NEW_PROJECT().filter((f) => path.basename(f).startsWith(`${n}-`));
+  assert.equal(trouves.length, 1, `étape ${n} : attendue dans exactement UN fichier du runbook, vue dans ${trouves.length} (${trouves.join(', ') || 'aucun'})`);
   return read(trouves[0]);
 };
 
-test('D9 — le registry @shadcnblocks n\'est pas utilisé en Phase 5 alors qu\'il n\'existe qu\'en Phase 7', () => {
-  const p5 = fichierDeLaPhase(5);
-  const p7 = fichierDeLaPhase(7);
-  assert.doesNotMatch(p5, /npx shadcn add @shadcnblocks/, 'appel au registry avant son ajout à components.json (Phase 7)');
-  assert.match(p7, /@shadcnblocks/, 'le registry doit rester documenté là où il est ajouté');
+test('D9 — le registry @shadcnblocks n\'est pas utilisé à l\'étape design alors qu\'il n\'existe qu\'au scaffold', () => {
+  const design = fichierDeLEtape('05');
+  const scaffold = fichierDeLEtape('07');
+  assert.doesNotMatch(design, /npx shadcn add @shadcnblocks/, 'appel au registry avant son ajout à components.json (étape scaffold)');
+  assert.match(scaffold, /@shadcnblocks/, 'le registry doit rester documenté là où il est ajouté');
 });
 
 test('D9 — les templates PRD et architecture vivent dans templates/ et arrivent dans le projet', () => {
   for (const f of ['templates/prd/PRD.md', 'templates/specs/architecture.md']) {
     assert.ok(fs.existsSync(path.join(ROOT, f)), `template absent : ${f}`);
   }
-  // Les deux renvois vivent dans les étapes qui S'EN SERVENT (Phase 2, Phase 4) : on lit donc le
+  // Les deux renvois vivent dans les étapes qui S'EN SERVENT (`02-…`, `03-…`) : on lit donc le
   // runbook entier, entrée + étapes, pas seulement le sommaire d'entrée.
   const t = NEW_PROJECT().map((f) => read(f)).join('\n');
   assert.match(t, /docs\/templates\/PRD\.md/, 'le runbook ne dit pas où lire le template PRD');

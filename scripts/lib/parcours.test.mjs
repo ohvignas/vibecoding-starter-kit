@@ -15,7 +15,7 @@ import { renderColleMoi } from './colle-moi.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
 import { renderAgentsFile, adapterAuMobile } from './agents-file.mjs';
 import { formatReport } from './report.mjs';
-import { COMMANDS, COMMANDS_DIR, refCommande } from './commands-list.mjs';
+import { COMMANDS, COMMANDS_DIR, refCommande, cheminEtape, etapesDuRunbook } from './commands-list.mjs';
 import { resolveStackManifest, MCP_CONNECT, SUPERPOWERS, VERIF_TOOLS_NOTE } from './matrix.mjs';
 import { validateArgs } from './args.mjs';
 
@@ -37,6 +37,11 @@ const aFaire = (stack, assistant, skillsInstalled = true) => renderSetupAi({
   superpowersCmd: SUPERPOWERS[assistant], skillsInstalled,
 });
 const agentsMd = (stack, assistant = 'cursor') => renderAgentsFile({ source: ROOT, stack, assistant, commandsDir: COMMANDS_DIR[assistant] });
+// Les étapes de tous les runbooks découpés — dérivées de la source unique, jamais recopiées ici.
+// Un renvoi du premier contact vers une étape se vérifie contre CETTE liste : « Phase 7 » ne se
+// vérifiait contre rien, et c'est précisément pour ça qu'il a survécu au découpage.
+const ETAPES = () => new Set(COMMANDS.flatMap((c) => etapesDuRunbook(ROOT, c)));
+const ETAPE_CITEE = /`(\d\d-[\w-]+\.md)`/g;
 
 // Un projet scaffoldé pour de vrai, partagé par les tests qui vérifient une PROMESSE
 // (« ce fichier existe », « ce registry est posé ») : la seule façon de ne pas se payer de mots.
@@ -147,21 +152,25 @@ test('G5 — les promesses de docs/A-FAIRE.md sont tenues dans le projet génér
   // 1. `components.json` : le scaffold n'en crée AUCUN — la promesse « ajouté au scaffold » était fausse.
   assert.equal(fs.existsSync(path.join(proj, 'components.json')), false, 'montage : le scaffold ne crée pas de components.json');
   assert.doesNotMatch(setup, /est ajouté à `components\.json` au scaffold/, 'promesse fausse : rien ne pose ce registry au scaffold');
-  assert.match(setup, /Phase 7/, 'dire QUAND le registry est posé');
-  // GARDE DE MONTAGE. La ligne ci-dessus VERROUILLE une promesse faite à l'utilisateur sans
-  // jamais vérifier qu'elle est tenue : `docs/A-FAIRE.md` peut continuer à dire « Phase 7 »
-  // longtemps après que le runbook a été découpé et renuméroté. On exige donc que la phase citée
-  // existe VRAIMENT, comme titre, dans le runbook — entrée ou étape (le découpage l'emmène dans
-  // `templates/commands/new-project/07-…`, ce chemin-là est donc lu dès maintenant).
-  const dossierEtapes = path.join(ROOT, 'templates/commands/new-project');
-  const runbook = [
-    read('templates/commands/new-project.md'),
-    ...(fs.existsSync(dossierEtapes)
-      ? fs.readdirSync(dossierEtapes).filter((n) => n.endsWith('.md')).sort()
-        .map((n) => read(`templates/commands/new-project/${n}`))
-      : []),
-  ].join('\n');
-  assert.match(runbook, /^#+ Phase 7\b/m, 'A-FAIRE.md promet « Phase 7 », mais aucun titre « Phase 7 » n\'existe dans le runbook : la promesse est devenue fausse sans que rien ne rougisse');
+  // GARDE DE MONTAGE, RÉ-ANCRÉE. La ligne ci-dessus VERROUILLE une promesse faite à l'utilisateur
+  // sans jamais vérifier qu'elle est tenue. Elle disait « Phase 7 » — et exigeait un titre
+  // « ## Phase 7 » dans le runbook. Deux défauts : (1) un numéro de phase ne désigne AUCUN
+  // fichier, donc l'utilisateur à qui on le sert n'a rien à ouvrir ; (2) le découpage a défait la
+  // correspondance phase↔étape (la Phase 3 et la Phase 4 partageaient l'étape `03-…`), si bien
+  // qu'un titre pouvait rester vrai pendant que le renvoi devenait faux.
+  // On ancre donc sur ce qui EXISTE : le fichier d'étape. A-FAIRE doit nommer l'étape qui pose le
+  // registry ; cette étape doit être une vraie étape de `/new-project` ; et son texte doit
+  // vraiment porter la promesse (`components.json`) — sinon le renvoi vise le mauvais fichier.
+  const ligneRegistry = setup.split('\n').find((l) => l.includes('components.json'));
+  assert.ok(ligneRegistry, 'A-FAIRE doit dire OÙ le registry se déclare');
+  ETAPE_CITEE.lastIndex = 0;
+  const citee = ETAPE_CITEE.exec(ligneRegistry);
+  ETAPE_CITEE.lastIndex = 0;
+  assert.ok(citee, `dire QUAND le registry est posé, en nommant l'étape de /new-project — vu : « ${ligneRegistry.trim()} »`);
+  const etapesNP = etapesDuRunbook(ROOT, 'new-project');
+  assert.ok(etapesNP.includes(citee[1]), `A-FAIRE renvoie à « ${citee[1]} », qui n'est pas une étape de /new-project (${etapesNP.join(' · ')})`);
+  assert.match(read(cheminEtape('new-project', citee[1])), /components\.json/,
+    `l'étape « ${citee[1]} » citée par A-FAIRE ne parle pas de components.json : le renvoi vise le mauvais fichier`);
 
   // 2. Le glossaire n'est jamais copié dans le projet : y renvoyer est un renvoi mort.
   assert.equal(fs.existsSync(path.join(proj, 'guides/glossaire.md')), false, 'montage : aucun glossaire dans le projet');
@@ -203,6 +212,8 @@ test('G7 — les outils de vérification sont annoncés OPTIONNELS, avec ce qu\'
 
 test('G8 — les 12 combinaisons : rien d\'inapplicable dans le premier contact', () => {
   let vues = 0;
+  const etapes = ETAPES();
+  assert.ok(etapes.size >= 9, `montage : ${etapes.size} étape(s) connue(s) — sans étape, « le renvoi existe » est vrai à vide`);
   for (const stack of STACKS) {
     for (const assistant of ASSISTANTS) {
       vues++;
@@ -212,6 +223,14 @@ test('G8 — les 12 combinaisons : rien d\'inapplicable dans le premier contact'
         if (assistant !== 'claude-code') assert.doesNotMatch(txt, /lance `?\/mcp`?/, `${ou} : /mcp inapplicable`);
         if (assistant !== 'claude-code') assert.doesNotMatch(txt, /claude mcp add/, `${ou} : CLI Claude Code inapplicable`);
         if (stack === 'mobile') assert.doesNotMatch(txt, /npx shadcn add/, `${ou} : shadcn ne tourne pas en React Native`);
+        // Un renvoi vers une ÉTAPE de runbook doit être ouvrable. « Phase 5 » / « Phase 7 » ne
+        // désignaient aucun fichier du projet généré — l'utilisateur à qui on les servait n'avait
+        // rien à ouvrir, et rien ne rougissait quand la promesse devenait fausse. On exige le nom
+        // du fichier, et que ce fichier soit une étape réelle.
+        assert.doesNotMatch(txt, /\bphases?\s+\d/i, `${ou} : « Phase N » ne désigne aucun fichier du projet généré`);
+        for (const [, e] of txt.matchAll(ETAPE_CITEE)) {
+          assert.ok(etapes.has(e), `${ou} : renvoi mort vers l'étape « ${e} »`);
+        }
         // Le dossier de commandes cité doit être celui de l'assistant, jamais celui d'un autre.
         // Idem pour le NOM de l'assistant : une note écrite pour Cursor lue par un utilisateur
         // Codex, c'est une consigne qu'il ne peut ni suivre ni réfuter.

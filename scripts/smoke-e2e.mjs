@@ -38,7 +38,8 @@ for (const f of [
   // là, ils lisent le vide et l'inventaire de complétude n'a plus d'existence (Lot C).
   'docs/agents/JOURNAL.md', 'docs/agents/state.yaml', 'docs/agents/inventaire.md',
   // Templates que /new-project OUVRE au lieu de les recopier (Lot D9) : il les cite par ces
-  // chemins-là — absents, la Phase 2 et la Phase 4 renvoient dans le vide.
+  // chemins-là — absents, les deux étapes qui les ouvrent renvoient dans le vide. (Aucun nom
+  // d'étape ici, même en commentaire : E8 refuse une deuxième liste, fût-elle inerte.)
   'docs/templates/PRD.md', 'docs/templates/architecture.md',
 ]) check(`fichier ${f}`, fs.existsSync(path.join(project, f)));
 

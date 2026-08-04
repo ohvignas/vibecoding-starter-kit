@@ -9,8 +9,8 @@ import { fichiersDuRunbook } from './commands-list.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-test('new-project : parcours expliqué + Phase 1 débutant, validateur vert', () => {
-  // Le parcours est resté dans l'entrée, la Phase 1 est partie dans l'étape `01-…` : les deux
+test('new-project : parcours expliqué + cadrage débutant, validateur vert', () => {
+  // Le parcours est resté dans l'entrée, le brainstorm est parti dans l'étape `01-…` : les deux
   // promesses ci-dessous se jugent sur le runbook ENTIER, énuméré depuis `commands-list.mjs`.
   const t = fichiersDuRunbook(ROOT, 'new-project').map((f) => read(f)).join('\n');
   assert.match(t, /Ce qu'on va faire ensemble/);

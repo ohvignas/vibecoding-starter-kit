@@ -17,6 +17,7 @@ const ETAPE = {
   cadrage: '01-cadrage.md',
   prd: '02-prd.md',
   archi: '03-stack-et-architecture.md',
+  arbo: '04-arborescence.md',
   design: '05-design-maquette.md',
   roadmap: '06-roadmap.md',
   scaffold: '07-scaffold.md',
@@ -27,7 +28,7 @@ const ETAPE = {
 // contrôles tels quels. Ce serait les AFFAIBLIR : `(^|\s)stack($|\s)` trouverait son mot dans
 // n'importe laquelle des étapes — y compris celle qui ne parle pas de stack — donc le contrôle
 // deviendrait PLUS facile à satisfaire qu'avec le fichier unique d'aujourd'hui. L'inverse du but.
-// Chaque exigence est donc ancrée à SON fichier : la phase « stack » se prouve dans l'étape stack,
+// Chaque exigence est donc ancrée à SON fichier : le sujet « stack » se prouve dans l'étape stack,
 // la sortie `docs/ROADMAP.md` dans l'étape roadmap, `@shadcnblocks` dans l'étape scaffold.
 //
 // COMMENT ON TOLÈRE LE DOSSIER VIDE SANS VIDER LE CONTRÔLE DE SON SENS — le dossier d'étapes est
@@ -39,7 +40,10 @@ const ETAPE = {
 // Autrement dit : l'absence n'est tolérée qu'EN BLOC. Un dossier à moitié découpé, ou dont une
 // étape a été renommée, ne retombe jamais en silence sur l'entrée — c'est ce repli silencieux,
 // et lui seul, qui rendrait la carte vide de sens.
-const PHASES = [
+// Le SUJET de chaque étape : le mot qui prouve qu'elle traite bien ce qu'elle annonce. Ils
+// s'appelaient « phases » — un vocabulaire que le kit n'écrit plus nulle part depuis que les
+// étapes se nomment par leur fichier.
+const SUJETS = [
   ['Brainstorm', ETAPE.cadrage], ['PRD', ETAPE.prd], ['stack', ETAPE.archi],
   ['architecture', ETAPE.archi], ['Design', ETAPE.design], ['Roadmap', ETAPE.roadmap],
   ['Mise en place', ETAPE.scaffold],
@@ -47,6 +51,11 @@ const PHASES = [
 const OUTPUTS = [
   ['docs/PRD.md', ETAPE.prd], ['docs/ROADMAP.md', ETAPE.roadmap], ['docs/design.md', ETAPE.design],
   ['docs/ARCHITECTURE.md', ETAPE.archi], ['docs/memory', ETAPE.scaffold],
+  // L'arborescence n'a pas de fichier à elle : elle s'écrit dans `docs/PRD.md`, la section que le
+  // template porte pour elle. Deux étapes écrivent donc dans le même document — d'où deux entrées
+  // ici, chacune ancrée à l'étape qui écrit. Sans celle-ci, l'étape pourrait cesser de dire OÙ
+  // elle range sa sortie, et la seule chose qui relie les `UJ-*` aux écrans partirait dans le vide.
+  ['docs/PRD.md', ETAPE.arbo],
 ];
 // …et le runbook doit CITER les templates déplacés par le chemin qu'ils ont dans le projet généré :
 // un template que personne n'ouvre ne vaut pas mieux qu'un template supprimé. Ancrés eux aussi :
@@ -60,9 +69,22 @@ const RENVOIS = [['docs/templates/PRD.md', ETAPE.prd], ['docs/templates/architec
 const DEPTH_RUNBOOK = [
   ['EXPERIENCE.md', ETAPE.design], ['maquette', ETAPE.design], ['index.html', ETAPE.design],
   ['ui.shadcn.com/create', ETAPE.design], ['@shadcnblocks', ETAPE.scaffold],
+  // L'arborescence est le PONT entre les parcours `UJ-*` du PRD et les écrans que l'étape design
+  // dessine : sans elle, chacun invente sa liste d'écrans. Ces trois marqueurs sont ce qui la
+  // distingue d'un simple sommaire — d'où elle est DÉRIVÉE (`UJ-*`), comment on circule dedans
+  // (navigation) et comment chaque page s'adresse (URL). Une étape qui les perd redevient une
+  // liste de titres, et l'étape design n'a plus rien à dessiner d'exhaustif.
+  ['UJ-', ETAPE.arbo], ['navigation', ETAPE.arbo], ['URL', ETAPE.arbo],
 ];
 const DEPTH = {
-  'templates/prd/PRD.md': ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses'],
+  // Trois manques mesurés dans le template PRD, ajoutés au TRONC COMMUN (pas à un cluster) :
+  //  · « Problème » — 0 occurrence avant. « Vision : quoi, pour qui, pourquoi ça compte » le
+  //    frôle sans le nommer : un débutant décrivait sa solution sans avoir énoncé le problème.
+  //  · « Objectifs commerciaux » — l'argent n'existait que dans le cluster « entreprise » (ROI),
+  //    donc jamais pour un projet grand public ou perso, qui en a autant besoin.
+  //  · « Arborescence » — 0 occurrence dans PRD.md, architecture.md ET le runbook : le pont
+  //    entre les `UJ-*` et les écrans n'était écrit nulle part.
+  'templates/prd/PRD.md': ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses', 'Problème', 'Objectifs commerciaux', 'Arborescence'],
   'templates/specs/architecture.md': ['Invariants', 'Graine structurelle'],
 };
 const AGENTS_TEMPLATES = ['templates/agents/loop-section.md', 'templates/agents/design-rule.md', 'templates/agents/subagents-rule.md', 'templates/agents/verify-rule.md', 'templates/agents/reality-rule.md', 'templates/agents/proof-rule.md', 'templates/agents/secrets-cost-rule.md', 'templates/agents/css-maquette-rule.md'];
@@ -94,7 +116,7 @@ export function validateNewProjectCommand(root) {
     if (f !== null && !satisfait(lire(f))) errors.push(message(f));
   };
 
-  for (const [p, e] of PHASES) exige(e, (t) => new RegExp(`(^|\\s)${p}($|\\s)`).test(t), (f) => `${f} : phase manquante « ${p} »`);
+  for (const [s, e] of SUJETS) exige(e, (t) => new RegExp(`(^|\\s)${s}($|\\s)`).test(t), (f) => `${f} : sujet manquant « ${s} »`);
   for (const [o, e] of OUTPUTS) exige(e, (t) => t.includes(o), (f) => `${f} : sortie non référencée « ${o} »`);
   for (const [r, e] of RENVOIS) exige(e, (t) => t.includes(r), (f) => `${f} : template déplacé jamais cité « ${r} »`);
   for (const [d, e] of DEPTH_RUNBOOK) exige(e, (t) => t.includes(d), (f) => `${f} : template pas assez détaillé, manque « ${d} »`);

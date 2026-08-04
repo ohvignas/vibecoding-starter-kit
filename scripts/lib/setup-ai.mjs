@@ -94,7 +94,7 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skil
   // des scripts « à ajouter si absents » dans un fichier qui n'existe pas encore : on dit
   // quand il apparaîtra, et donc quand revenir ici.
   L.push('## 6. Scripts package.json');
-  L.push(`- ℹ️ Aucun \`package.json\` pour l'instant : il naîtra avec le projet, quand ${cmd('new-project')} (Phase 7) scaffoldera la stack. **Reviens cocher ces cases après.**`);
+  L.push(`- ℹ️ Aucun \`package.json\` pour l'instant : il naîtra avec le projet, quand ${cmd('new-project')} scaffoldera la stack à son étape \`07-scaffold.md\`. **Reviens cocher ces cases après.**`);
   for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);
   L.push('');
   return L.join('\n');

@@ -6,13 +6,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { validateNewProjectCommand } from './validate-commands.mjs';
 
-const PHASES = ['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
+const SUJETS = ['Brainstorm', 'PRD', 'stack', 'architecture', 'Design', 'Roadmap', 'Mise en place'];
 const OUTPUTS = ['docs/PRD.md', 'docs/ROADMAP.md', 'docs/design.md', 'docs/ARCHITECTURE.md', 'docs/memory'];
 const RENVOIS = ['docs/templates/PRD.md', 'docs/templates/architecture.md'];
 // Les marqueurs de profondeur ont suivi le contenu : le runbook garde les siens, les templates
 // PRD/architecture portent les leurs depuis qu'ils vivent dans `templates/` (Lot D9).
-const DEPTH_RUNBOOK = ['EXPERIENCE.md', 'maquette', 'index.html', 'ui.shadcn.com/create', '@shadcnblocks'];
-const DEPTH_PRD = ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses'];
+const DEPTH_RUNBOOK = ['EXPERIENCE.md', 'maquette', 'index.html', 'ui.shadcn.com/create', '@shadcnblocks', 'UJ-', 'navigation', 'URL'];
+const DEPTH_PRD = ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses', 'Problème', 'Objectifs commerciaux', 'Arborescence'];
 const DEPTH_ARCHI = ['Invariants', 'Graine structurelle'];
 
 // Le découpage à venir : une entrée courte + un fichier par étape. La carte ci-dessous dit quel
@@ -24,6 +24,9 @@ const ETAPES = {
   '01-cadrage.md': ['Brainstorm'],
   '02-prd.md': ['PRD', 'docs/PRD.md', 'docs/templates/PRD.md'],
   '03-stack-et-architecture.md': ['stack', 'architecture', 'docs/ARCHITECTURE.md', 'docs/templates/architecture.md'],
+  // L'arborescence n'a pas de sortie à elle : elle écrit dans `docs/PRD.md`, comme l'étape PRD.
+  // Deux étapes ancrées sur la MÊME sortie — c'est le cas que la carte doit savoir traiter.
+  '04-arborescence.md': ['docs/PRD.md', 'UJ-', 'navigation', 'URL'],
   '05-design-maquette.md': ['Design', 'docs/design.md', 'EXPERIENCE.md', 'maquette', 'index.html', 'ui.shadcn.com/create'],
   '06-roadmap.md': ['Roadmap', 'docs/ROADMAP.md'],
   '07-scaffold.md': ['Mise en place', 'docs/memory', '@shadcnblocks'],
@@ -49,11 +52,11 @@ function makeRoot({ omitPhase = null, omitTemplate = false, omitDepth = null, om
   fs.mkdirSync(path.join(root, 'templates/agents'), { recursive: true });
   fs.mkdirSync(path.join(root, 'templates/prd'), { recursive: true });
   fs.mkdirSync(path.join(root, 'templates/specs'), { recursive: true });
-  const phases = PHASES.filter(p => p !== omitPhase).join(' ');
+  const sujets = SUJETS.filter(s => s !== omitPhase).join(' ');
   const outputs = OUTPUTS.join(' ');
   const renvois = RENVOIS.filter(r => r !== omitRenvoi).join(' ');
   const depth = DEPTH_RUNBOOK.filter(d => d !== omitDepth).join(' ');
-  fs.writeFileSync(path.join(root, 'templates/commands/new-project.md'), `${phases}\n${outputs}\n${renvois}\n${depth}\n`);
+  fs.writeFileSync(path.join(root, 'templates/commands/new-project.md'), `${sujets}\n${outputs}\n${renvois}\n${depth}\n`);
   poserEtapes(root, etapes);
   if (omitDepthFile !== 'templates/prd/PRD.md') {
     fs.writeFileSync(path.join(root, 'templates/prd/PRD.md'), DEPTH_PRD.filter(d => d !== omitDepth).join('\n') + '\n');
@@ -81,21 +84,21 @@ test('runbook complet + templates → aucune erreur, dossier d\'étapes vide OU 
   //     qui rend le repli sur l'entrée honnête, au lieu d'un simple « on ne regarde pas ».
   assert.deepEqual(validateNewProjectCommand(makeRoot({ etapes: { } })), []);
 });
-test('phase manquante → erreur (dans l\'entrée, comme dans SON étape)', () => {
+test('sujet d\'étape manquant → erreur (dans l\'entrée, comme dans SON étape)', () => {
   assert.ok(validateNewProjectCommand(makeRoot({ omitPhase: 'PRD' })).some(e => /PRD/.test(e)));
   // ANCRAGE. L'entrée porte toujours « Roadmap » : un validateur qui concatènerait les étapes
-  // trouverait le mot et passerait. Ancré, il exige la phase dans l'étape qui la porte.
+  // trouverait le mot et passerait. Ancré, il exige le sujet dans l'étape qui le porte.
   const errs = validateNewProjectCommand(makeRoot({ etapes: { etape: '06-roadmap.md', omitMarqueur: 'Roadmap' } }));
-  assert.ok(errs.some(e => /new-project\/06-roadmap\.md : phase manquante « Roadmap »/.test(e)), `vu : ${JSON.stringify(errs)}`);
-  // …et un marqueur de profondeur est ancré comme une phase : `@shadcnblocks` appartient à
-  // l'étape scaffold (Phase 7), pas à l'étape design qui, elle, ne doit pas l'appeler.
+  assert.ok(errs.some(e => /new-project\/06-roadmap\.md : sujet manquant « Roadmap »/.test(e)), `vu : ${JSON.stringify(errs)}`);
+  // …et un marqueur de profondeur est ancré comme un sujet : `@shadcnblocks` appartient à
+  // l'étape `07-scaffold.md`, pas à l'étape design qui, elle, ne doit pas l'appeler.
   const prof = validateNewProjectCommand(makeRoot({ etapes: { etape: '07-scaffold.md', omitMarqueur: '@shadcnblocks' } }));
   assert.ok(prof.some(e => /07-scaffold\.md : template pas assez détaillé, manque « @shadcnblocks »/.test(e)), `vu : ${JSON.stringify(prof)}`);
   // …et une étape que la carte nomme mais qui n'est pas sur le disque est DITE, jamais repliée en
   // silence sur l'entrée : c'est ce repli-là qui viderait la carte de son sens.
   const trou = validateNewProjectCommand(makeRoot({ etapes: { omitEtape: '02-prd.md' } }));
   assert.ok(trou.some(e => /étape manquante : templates\/commands\/new-project\/02-prd\.md/.test(e)), `vu : ${JSON.stringify(trou)}`);
-  assert.equal(trou.some(e => /phase manquante « PRD »/.test(e)), false, 'l\'étape absente ne doit pas être confondue avec un contenu manquant');
+  assert.equal(trou.some(e => /sujet manquant « PRD »/.test(e)), false, 'l\'étape absente ne doit pas être confondue avec un contenu manquant');
 });
 test('template manquant → erreur', () => {
   assert.ok(validateNewProjectCommand(makeRoot({ omitTemplate: true })).some(e => /loop-section/.test(e)));

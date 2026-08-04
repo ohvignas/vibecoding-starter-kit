@@ -3,7 +3,7 @@
 // EXÉCUTABLES PAR UNE IA ? Toute la suite vérifie que les fichiers DISENT la bonne chose ; aucune
 // ne vérifiait qu'en les suivant, il se passe quelque chose.
 //
-// Né d'un test de bout en bout réel : la Phase 7 de `/new-project` dictait
+// Né d'un test de bout en bout réel : l'étape scaffold de `/new-project` dictait
 //   npx shadcn@latest init --preset <code> --template astro
 // qui pose QUATRE questions interactives (monorepo · bibliothèque · preset · nom), dont trois aux
 // flèches du clavier. `--yes` n'en saute aucune. Un humain répond ; l'IA à qui le runbook est

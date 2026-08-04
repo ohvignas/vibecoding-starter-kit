@@ -4,14 +4,14 @@
 // runbook découpé vaut encore le runbook d'un seul bloc :
 //   1. rien n'est tombé au découpage (l'inventaire ci-dessous, seule trace du fichier d'avant) ;
 //   2. l'entrée est une CHECKLIST : chaque étape du disque y est citée, une fois, dans l'ordre ;
-//   3. le validateur reste vert, phase par phase, dans le fichier qui porte la phase.
+//   3. le validateur reste vert, sujet par sujet, dans le fichier d'étape qui porte le sujet.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateNewProjectCommand } from './validate-commands.mjs';
-import { cheminRunbook, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
+import { COMMANDS, cheminRunbook, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -34,20 +34,20 @@ const FICHIERS = () => fichiersDuRunbook(ROOT, 'new-project');
 const LIGNES_AVANT_DECOUPAGE = [
   "# /new-project — Fondation d'un nouveau projet (runbook IA)",
   "Tu construis la **FONDATION complète** d'un nouveau produit à partir de l'idée donnée en argument.",
-  "Va **phase par phase**, en français. **Chaque artefact attend la validation de l'utilisateur avant le suivant** (gate). Pour aller en profondeur, **lance des sous-agents en parallèle** (recherche, rédaction) puis synthétise — cadre : **« Règle sous-agents »** dans `AGENTS.md` (quand déléguer, comment).",
+  "Va **étape par étape**, en français. **Chaque artefact attend la validation de l'utilisateur avant le suivant** (gate). Pour aller en profondeur, **lance des sous-agents en parallèle** (recherche, rédaction) puis synthétise — cadre : **« Règle sous-agents »** dans `AGENTS.md` (quand déléguer, comment).",
   "Argument : `$ARGUMENTS` = description libre de l'idée.",
   "> Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), **demande la description à l'utilisateur** avant de commencer.",
   "> **Attribution** : la structure des templates PRD & architecture (`docs/templates/PRD.md`, `docs/templates/architecture.md`) est **adaptée de BMAD-METHOD** (MIT © 2025 BMad Code, LLC) — l'attribution est répétée en tête de chacun. Le format `DESIGN.md` suit le spec **google-labs-code/design.md** (Apache-2.0, Google Labs). Adaptée/traduite ; « BMAD » est une marque de BMad Code, LLC (non affiliée).",
   "## Ce qu'on va faire ensemble — explique le parcours (à dire à l'utilisateur, EN PREMIER)",
   "Avant toute question, dis-lui en **langage simple** ce qu'on va faire et ce qu'il obtiendra :",
   "> « On va, ensemble : **1)** bien comprendre ton idée (quelques questions simples) · **2)** écrire le **plan** de ton app · **3)** **dessiner les écrans** (maquette) · **4)** en tirer une **feuille de route**. Ensuite `/build` construit, écran par écran. À la fin de cette étape tu auras un **plan clair + un design + une roadmap** — pas encore de code, et c'est normal. »",
-  "Puis propose le mode de travail. Garde ce cap : à chaque phase, redis en une phrase **ce que tu fais et ce que ça lui apporte**.",
+  "Puis propose le mode de travail. Garde ce cap : à chaque étape, redis en une phrase **ce que tu fais et ce que ça lui apporte**.",
   "## Mode de travail (demande au début)",
   "Propose 2 modes et laisse l'utilisateur choisir :",
   "- **Rapide** : tu proposes des brouillons d'un coup avec tes suppositions taguées `[HYPOTHÈSE: …]` ; l'utilisateur corrige. **Moins de questions** — bien si l'idée est déjà claire.",
   "- **Pas à pas** (par défaut) : tu avances **section par section** avec des questions. Plus guidé, mais **plus de questions** — dis-le pour qu'il choisisse en connaissance de cause.",
   "Discipline transverse : tag `[HYPOTHÈSE: …]`, `[NON-OBJECTIF v1]`, `[À CLARIFIER]` inline dans les brouillons ; balaie-les à la fin dans les sections dédiées.",
-  "## Phase 1 — Brainstorm : comprendre l'idée (gate)",
+  "## Brainstorm : comprendre l'idée (gate)",
   "Invoque `superpowers:brainstorming`, **adapté débutant** :",
   "- **Peu de questions** (vise **4-6 essentielles**), **une à la fois**, en **langage simple**, **zéro jargon** dans la question.",
   "- **Un exemple concret à chaque question** (« ex. : … ») pour qu'il voie ce que tu attends.",
@@ -56,16 +56,16 @@ const LIGNES_AVANT_DECOUPAGE = [
   "- Si tu peux **deviner**, propose une **hypothèse** (`[HYPOTHÈSE: …]`) au lieu de demander.",
   "- L'essentiel à couvrir : **c'est quoi** l'app · **pour qui** · le **truc principal** qu'elle fait · **2-3 fonctions** must-have · ce que ce **n'est pas** (v1).",
   "Le vocabulaire technique (personas, JTBD, exigences…) va dans le **document** `docs/PRD.md`, **jamais** dans les questions posées. → fais valider avant de continuer.",
-  "## Phase 2 — PRD complète → `docs/PRD.md` (gate)",
-  "**Ouvre `docs/templates/PRD.md`** et suis-le section par section (vision, utilisateur cible et parcours `UJ-*`, glossaire, fonctionnalités en `FR-*`, non-objectifs, périmètre MVP, métriques, questions ouvertes, index des hypothèses) — il porte aussi les clusters par type de produit et la checklist qualité. Écris le résultat dans **`docs/PRD.md`** ; le template reste intact.",
+  "## PRD complète → `docs/PRD.md` (gate)",
+  "**Ouvre `docs/templates/PRD.md`** et suis-le section par section (problème, vision, utilisateur cible et parcours `UJ-*`, entreprise et objectifs commerciaux `OC-*`, glossaire, fonctionnalités en `FR-*`, non-objectifs, périmètre MVP, métriques, questions ouvertes, index des hypothèses) — il porte aussi les clusters par type de produit et la checklist qualité. **Laisse la section « Arborescence » vide** : c'est l'étape `04-arborescence.md` qui la remplira, une fois l'architecture posée. Écris le résultat dans **`docs/PRD.md`** ; le template reste intact.",
   "Ne saute aucune section : ce que le PRD ne dit pas, la roadmap ne le construira pas. → **validation utilisateur**.",
-  "## Phase 3 — Stack (déjà fixée)",
+  "## Stack (déjà fixée)",
   "La stack a été **choisie par le wizard** : lis-la dans `AGENTS.md` (et les règles de `.cursor/rules/` ou `.claude/skills/`) — **ne redemande pas**. Le contexte officiel de la stack est dans `ai-context/`. Confirme-la à l'utilisateur en une phrase, puis continue.",
-  "## Phase 4 — Tech spec / architecture → `docs/ARCHITECTURE.md` (gate)",
+  "## Tech spec / architecture → `docs/ARCHITECTURE.md` (gate)",
   "**Ouvre `docs/templates/architecture.md`** et suis-le : on ne fixe QUE les décisions durables qu'un futur builder ne peut **pas** déduire du code (paradigme, `AD-*` + diagramme de dépendances, conventions de cohérence, stack, graine structurelle, map capacité → architecture, différé). Le template porte aussi sa checklist.",
   "Écris le résultat dans `docs/ARCHITECTURE.md`. → **validation utilisateur**.",
-  "## Phase 5 — Maquette + Design → `maquette/` + `docs/design.md` (gate)",
-  "La **maquette est le pivot** : on fixe le design **avant** de coder, on **itère** jusqu'à validation, puis la roadmap en découle (Phase 6). Ne code rien ici.",
+  "## Maquette + Design → `maquette/` + `docs/design.md` (gate)",
+  "La **maquette est le pivot** : on fixe le design **avant** de coder, on **itère** jusqu'à validation, puis la roadmap en découle (étape `06-roadmap.md`). Ne code rien ici.",
   "**Demande d'abord à l'utilisateur son cas** (pour les écrans) — aucune réponse ne bloque :",
   "- **(a)** « J'ai déjà une maquette sur **Stitch** »",
   "- **(b)** « J'ai une maquette **ailleurs** » (Figma, images, HTML)",
@@ -81,7 +81,7 @@ const LIGNES_AVANT_DECOUPAGE = [
   "### Cas (c) — pas de maquette → **design d'abord, maquette ensuite** (étape par étape)",
   "**Étape 1 — `docs/design.md` D'ABORD (préférences shadcn → questions → skills).**",
   "Charge les **4 skills design** (`frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `brand-guidelines`) + le skill **`design-md`**.",
-  "- **Stack web (saas / desktop / vitrine) — commence par récupérer les préférences visuelles :** demande à l'utilisateur d'**ouvrir le compositeur de thème shadcn** en partant de ce preset de départ → **[ui.shadcn.com/create?preset=b27GcrRo](https://ui.shadcn.com/create?preset=b27GcrRo)**, de régler **en visuel** couleurs / rayons / typo, puis de te **renvoyer son code de preset** (l'URL `?preset=<code>`). Ces préférences = **base de `docs/design.md`** (palette/typo/rayons) ; **note le preset pour la Phase 7** (le scaffold l'appliquera). Pour affiner encore : **[tweakcn.com](https://tweakcn.com)** (export variables CSS).",
+  "- **Stack web (saas / desktop / vitrine) — commence par récupérer les préférences visuelles :** demande à l'utilisateur d'**ouvrir le compositeur de thème shadcn** en partant de ce preset de départ → **[ui.shadcn.com/create?preset=b27GcrRo](https://ui.shadcn.com/create?preset=b27GcrRo)**, de régler **en visuel** couleurs / rayons / typo, puis de te **renvoyer son code de preset** (l'URL `?preset=<code>`). Ces préférences = **base de `docs/design.md`** (palette/typo/rayons) ; **note le preset pour l'étape `07-scaffold.md`** (le scaffold l'appliquera). Pour affiner encore : **[tweakcn.com](https://tweakcn.com)** (export variables CSS).",
   "- **Mobile** : jamais shadcn (c'est du DOM web) → NativeWind + patterns RN.",
   "Puis **affine par un vrai aller-retour, une question à la fois** (mode pas à pas) — ce que le preset ne dit pas : ambiance/personnalité de la marque, références qui plaisent, public visé, densité, clair/sombre. Appuie-toi sur les parcours **UJ-*** du PRD. Écris le tout dans **`docs/design.md`** (volets A/B ci-dessous). **→ fais VALIDER `docs/design.md` avant de dessiner.**",
   "**Étape 2 — la maquette ENSUITE : un sous-agent par page (en parallèle), en shadcn/ui.**",
@@ -91,24 +91,24 @@ const LIGNES_AVANT_DECOUPAGE = [
   "- **charge les skills design** → voir **`AGENTS.md` → section « Règle design »** (la liste de référence : `frontend-design`, `ui-ux-pro-max`, `web-design-guidelines`, `brand-guidelines`) ;",
   "- lit **`docs/design.md`** (preset + tokens) — **même source pour tous = maquette cohérente** ;",
   "- produit **sa page** calquée shadcn/ui (composants type shadcn, tokens du preset, Tailwind CDN) → écrit `maquette/parts/<ecran>.html` ;",
-  "- pour aller vite : **repère** les blocs shadcnblocks qui collent (`hero`, `pricing`, `features`…) et recopie leur structure en HTML/Tailwind CDN. On ne les **installe pas** ici : le registry n'est câblé qu'en Phase 7, sur un projet scaffoldé — la maquette, elle, n'est qu'un dossier de pages ;",
+  "- pour aller vite : **repère** les blocs shadcnblocks qui collent (`hero`, `pricing`, `features`…) et recopie leur structure en HTML/Tailwind CDN. On ne les **installe pas** ici : le registry n'est câblé qu'à l'étape `07-scaffold.md`, sur un projet scaffoldé — la maquette, elle, n'est qu'un dossier de pages ;",
   "- **auto-vérifie avant de rendre sa part** : ouvre-la dans le navigateur + screenshot, corrige si c'est cassé ;",
   "- puis compare à l'écran maquette de référence, à l'œil ou avec **PixelRAG** s'il est installé : cette comparaison d'images **alerte, elle ne tranche pas** (voir « Règle de vérification »).",
   "3. **Assemble** les parts en **UN SEUL fichier `maquette/index.html`** — chaque écran = une **section pleine largeur, titrée, empilée**. Fais une **passe de cohérence** (mêmes boutons/espacements/typo partout), puis un seul fichier à ouvrir pour tout voir.",
   "- **Stitch connecté** : à la place, un `generate_screen_from_text` par écran (skill `stitch::generate-design`) en passant le design → importe dans `maquette/`.",
   "- **Mobile** : sous-agents calqués **NativeWind / patterns RN** (pas shadcn).",
-  "> Rappel : la maquette **EST** le design final (le scaffold Phase 7 la transforme en **vrais composants shadcn**, même preset), pas un wireframe gris.",
+  "> Rappel : la maquette **EST** le design final (le scaffold de l'étape `07-scaffold.md` la transforme en **vrais composants shadcn**, même preset), pas un wireframe gris.",
   "**Itère jusqu'à validation** : montre, applique les retours, recommence. Vrai aller-retour, pas un one-shot.",
   "### Le design system → `docs/design.md` (deux volets)",
   "Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX volets :",
   "**A. DESIGN.md — l'identité visuelle** *(format google-labs design.md)*",
   "- *Frontmatter tokens* (machine) : `colors` (nom→hex), `typography` (fontFamily/size/weight/lineHeight), `rounded`, `spacing`, `components` (composant→tokens).",
   "- *Marque & style* · *Couleurs* (rôle) · *Typographie* (rôles, échelle) · *Layout & espacements* (grille, breakpoints) · *Élévation* (ombres) · *Formes* (rayons) · *Composants* (specs par composant) · *À faire / à éviter*.",
-  "- shadcn/Tailwind : réfère les tokens par nom plutôt que de tout redéfinir. Affine sur **[tweakcn.com](https://tweakcn.com)** → colle dans `globals.css` + les *tokens* de `docs/design.md`. Le scaffold appliquera ce preset en **Phase 7** (la commande exacte y est écrite — ne la recopie pas ici, elle a cinq drapeaux obligatoires).",
+  "- shadcn/Tailwind : réfère les tokens par nom plutôt que de tout redéfinir. Affine sur **[tweakcn.com](https://tweakcn.com)** → colle dans `globals.css` + les *tokens* de `docs/design.md`. Le scaffold appliquera ce preset à l'étape **`07-scaffold.md`** (la commande exacte y est écrite — ne la recopie pas ici, elle a cinq drapeaux obligatoires).",
   "**B. EXPERIENCE.md — le comportement**",
   "- *Fondation* (form-factor, système d'UI) · *Architecture de l'information* · *Voix & ton* (microcopy) · *Patterns de composants* + *d'état* (chargement/vide/erreur/succès) · *Primitives d'interaction* · *Plancher d'accessibilité* · *Flux clés* (parcours avec protagoniste nommé + climax).",
-  "→ **validation utilisateur** (la maquette **et** le `design.md`) avant la Phase 6.",
-  "## Phase 6 — Analyse de la maquette + domaines → Roadmap `docs/ROADMAP.md`",
+  "→ **validation utilisateur** (la maquette **et** le `design.md`) avant l'étape `06-roadmap.md`.",
+  "## Analyse de la maquette + domaines → Roadmap `docs/ROADMAP.md`",
   "1. **Sélection des domaines + doc d'install SUR MESURE** : ouvre `docs/DOMAINS.md` (le catalogue de la stack). Chaque capacité y liste ses **`_Déclencheurs :_`** — les mots qui, présents dans le PRD, l'allument. **Applique-les au texte de `docs/PRD.md`, un par un**, et note les capacités allumées : c'est ta sélection de départ, elle ne se devine pas. (Si `docs/DOMAINS.md` porte déjà des 🎯, c'est le kit qui les a appliqués — vérifie-les, ne les recopie pas les yeux fermés.) Ajoute ensuite ce que les mots ne peuvent pas voir, retire ce que le PRD ne demande pas, et **dis à l'utilisateur ce que tu as ajouté ou retiré, et pourquoi**. Règle : préfère le **built-in / officiel** ; n'ajoute un externe que si le PRD le justifie.",
   "**Stack vitrine** : les domaines `seo`, `geo` et `images` sont **toujours sélectionnés** (raison d'être de la stack), quel que soit le PRD — les déclencheurs ne servent que pour `forms`, `analytics`, `i18n`…",
   "Puis **complète le fichier unique `docs/A-FAIRE.md`** (déjà créé par le wizard avec les gestes de base) en y ajoutant, à la fin, une section **`## Pour ton projet`** : **une entrée par domaine détecté**, en français simple, pour que l'utilisateur n'ait **rien à deviner**. Pour chacune : une ligne « à quoi ça sert », le **paquet** à installer (option officielle par défaut, tirée de `DOMAINS.md`), la **commande MCP** s'il y en a une (ex. paiement → `claude mcp add --transport http stripe https://mcp.stripe.com`), et le **secret** à mettre dans `.env.example` (ou l'env Convex). Chaque item en case `- [ ]`, commande copiable, **rien d'inventé** (tout vient de `DOMAINS.md`). Les secrets des capacités sont déjà proposés (commentés) dans `.env.example` sous « Secrets des capacités métier » : **décommente ceux des domaines retenus**, n'en invente aucun autre.",
@@ -129,14 +129,14 @@ const LIGNES_AVANT_DECOUPAGE = [
   "**Deux passes MAXIMUM** (la 2ᵉ ne relit que ce qui vient d'être ajouté). Ne boucle pas au-delà : au-delà de 2 tours, une revue multi-agents produit surtout des **faux positifs** et des sur-corrections — on gagne du bruit, pas de la qualité. S'il reste un doute après la 2ᵉ passe, **tranche avec l'utilisateur**, pas avec un 3ᵉ tour.",
   "> Ces agents vivent dans le dossier d'agents de ton assistant : `.cursor/agents/ (Cursor) · .claude/agents/ (Claude Code) · docs/agents/crew/ (Codex)` — tu peux les **appeler n'importe quand** (« lance `critique-ux` sur cet écran »), pas seulement ici.",
   "6. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.",
-  "## Phase 7 — Mise en place du projet",
-  "1. Scaffold la stack choisie, **avec le preset shadcn** noté en Phase 5 :",
+  "## Mise en place du projet",
+  "1. Scaffold la stack choisie, **avec le preset shadcn** noté à l'étape `05-design-maquette.md` :",
   "- **vitrine** : `npx shadcn@latest init --template astro --base base --no-monorepo --preset <code> --name <nom-du-projet> --yes` (crée l'app Astro complète avec le thème), puis Keystatic (`npx astro add react markdoc` + `@keystatic/core @keystatic/astro`).",
-  "⚠️ **Les 5 drapeaux sont obligatoires** : sans eux `init` pose 4 questions (monorepo · bibliothèque · preset · nom), 3 aux flèches — `--yes` n'en saute aucune et **une IA reste bloquée sans erreur**. Pas de preset en Phase 5 → `--preset nova`. **`--name` crée un SOUS-DOSSIER** : l'environnement du kit reste à la racine, l'app Astro et son `package.json` vont dans `<nom-du-projet>/` — dis à l'utilisateur que `npm run dev` se lance **de là**. Enfin, **ajoute `\"typecheck\": \"astro check\"`** au `package.json` créé : le template n'en pose aucun, et sans lui le hook retombe sur `tsc --noEmit`, qui **ne lit pas les `.astro`** et sort vert sans rien vérifier.",
+  "⚠️ **Les 5 drapeaux sont obligatoires** : sans eux `init` pose 4 questions (monorepo · bibliothèque · preset · nom), 3 aux flèches — `--yes` n'en saute aucune et **une IA reste bloquée sans erreur**. Pas de preset à l'étape `05-design-maquette.md` → `--preset nova`. **`--name` crée un SOUS-DOSSIER** : l'environnement du kit reste à la racine, l'app Astro et son `package.json` vont dans `<nom-du-projet>/` — dis à l'utilisateur que `npm run dev` se lance **de là**. Enfin, **ajoute `\"typecheck\": \"astro check\"`** au `package.json` créé : le template n'en pose aucun, et sans lui le hook retombe sur `tsc --noEmit`, qui **ne lit pas les `.astro`** et sort vert sans rien vérifier.",
   "- **saas** : `npm create convex@latest <nom> -- -t tanstack-start` — ⚠️ **le `-t` est obligatoire** : sans lui, `create-convex` s'arrête sur un sélecteur aux flèches et une IA reste bloquée. Le template **n'inclut aucune auth** (`convex/` sort avec `schema.ts` + `myFunctions.ts`) : Better Auth s'ajoute ensuite. Puis, **dans le projet** : `npx shadcn@latest init --base base --no-monorepo --yes`, puis applique le thème (ci-dessous).",
   "- **desktop** : `npx create-electron-app@latest <nom> --template=vite-typescript`. ⚠️ **Forge n'a pas de template React** (ses 5 templates : `base`, `vite`, `vite-typescript`, `webpack`, `webpack-typescript`) — le projet sort **sans React**. Ajoute-le avant shadcn, qui en dépend : `npm i react react-dom` puis `npm i -D @vitejs/plugin-react@^4 @types/react @types/react-dom`. ⚠️ **La `^4` est obligatoire** : la v6 exige `vite@^8` alors que Forge livre `vite@5` (`ERESOLVE`), et la v5 est **ESM-only** alors que la config vite de Forge est chargée en `require`. Seule la v4 est dual-format. Branche `react()` dans `vite.renderer.config.ts`, renomme `src/renderer.ts` en `.tsx`, ajoute `<div id=\"root\">` à `index.html` et monte un `createRoot`. Ensuite seulement : `npx shadcn@latest init --base base --no-monorepo --yes`. Ensuite seulement : `npx shadcn@latest init --base base --no-monorepo --yes`.",
   "- **mobile** : `npx create-expo-app@latest <nom> --yes`, puis **NativeWind** (pas de shadcn en React Native) : `npx expo install nativewind tailwindcss react-native-reanimated react-native-safe-area-context` — `expo install` choisit les versions compatibles de ton SDK, `npm i` ne le fait pas. Config officielle : [nativewind.dev](https://www.nativewind.dev/getting-started/installation).",
-  "2. **Applique le thème de la Phase 5** — sur un projet **déjà créé**, ce n'est pas `init` mais : `npx shadcn@latest apply --preset <code> --yes` (`--only theme` ou `--only font` pour n'en prendre qu'une partie). Pour la vitrine, `init --preset` l'a déjà fait à la création.",
+  "2. **Applique le thème de l'étape `05-design-maquette.md`** — sur un projet **déjà créé**, ce n'est pas `init` mais : `npx shadcn@latest apply --preset <code> --yes` (`--only theme` ou `--only font` pour n'en prendre qu'une partie). Pour la vitrine, `init --preset` l'a déjà fait à la création.",
   "3. **Prends les écrans tout faits avant d'en coder un.** Le registry **officiel** livre des blocs complets, **sans clé ni registry à déclarer** : `npx shadcn@latest add dashboard-01` · `login-01..05` · `signup-01..05` · `sidebar-01..12`. Ils **héritent du preset** appliqué à l'étape 2 — c'est la chaîne : thème → bloc → écran déjà à ta charte. Liste complète : `npx shadcn@latest search @shadcn -q <mot>`, et `npx shadcn@latest view <bloc>` pour regarder avant d'installer.",
   "Blocs **shadcnblocks.com** (tiers, plus de choix) : ajoute d'abord le registry à **`components.json`** (fusionne, n'écrase pas) — `{ \"registries\": { \"@shadcnblocks\": { \"url\": \"https://www.shadcnblocks.com/r/{name}\", \"headers\": { \"Authorization\": \"Bearer ${SHADCNBLOCKS_API_KEY}\" } } } }` — puis `npx shadcn add @shadcnblocks/<bloc>` (gratuits sans clé ; `SHADCNBLOCKS_API_KEY` dans `.env` pour le pro).",
   "4. **Complète** l'`AGENTS.md` existant (déjà généré avec la boucle et la règle design — ne l'écrase pas) : ajoute des liens vers `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DOMAINS.md`, **`docs/A-FAIRE.md`**, `docs/design.md`, la spec architecture, et `docs/memory/`. Rappelle d'ouvrir **`docs/A-FAIRE.md`** (tout ce qu'il reste à installer : gestes de base + ton projet) et d'utiliser `docs/RUN.md` pour lancer l'app.",
@@ -203,6 +203,64 @@ test('$ARGUMENTS reste dans l\'entrée : une étape ne le substitue pas', () => 
   assert.deepEqual(fautives, [], 'une étape n\'est pas chargée comme commande : `$ARGUMENTS` y resterait littéral');
 });
 
-test('le runbook /new-project est cohérent (phases + sorties + templates)', () => {
+test('le runbook /new-project est cohérent (sujets + sorties + templates)', () => {
   assert.deepEqual(validateNewProjectCommand(ROOT), []);
 });
+
+// ── UNE SEULE FAÇON DE NOMMER UNE ÉTAPE ───────────────────────────────────────────────────────
+// Un runbook découpé a UN identifiant par étape : le nom de son FICHIER. « Phase 7 » n'en est pas
+// un — rien sur le disque ne porte ce nom, donc rien ne peut vérifier qu'un renvoi « Phase 7 »
+// vise encore quelque chose. Le découpage l'a rendu carrément faux : la Phase 3 et la Phase 4
+// tenaient dans le MÊME fichier (`03-…`), et deux étapes (arborescence, fini-quand) n'avaient
+// aucune phase. Le numéro de phase et le numéro d'étape avaient donc cessé de coïncider, en
+// silence, dans 24 textes livrés (`docs/A-FAIRE.md`, `.env.example`, `docs/templates/PRD.md` et
+// `architecture.md`, `/edit-design`, la règle design, et les étapes elles-mêmes).
+//
+// CONVENTION RETENUE, et la seule vérifiable : **une étape se nomme par son fichier**
+// (`07-scaffold.md`). Deux exigences sur tout ce que `templates/` livre :
+//   1. aucun « Phase N » — un numéro de phase ne désigne aucun fichier ;
+//   2. toute étape citée entre backticks existe VRAIMENT, dans le dossier d'étapes d'un runbook.
+// Et dans le runbook découpé lui-même, le mot « phase » ne survit pas du tout : une seule chose,
+// un seul mot — sans quoi l'entrée parlerait d'étapes pendant que les étapes parlent de phases.
+const PHASE_NUMEROTEE = /\bphases?\s+\d/i;
+const ETAPE_CITEE = /`(\d\d-[\w-]+\.md)`/g;
+const sousArbre = (rel) => fs.readdirSync(path.join(ROOT, rel), { withFileTypes: true })
+  .flatMap((d) => (d.isDirectory() ? sousArbre(`${rel}/${d.name}`) : [`${rel}/${d.name}`]));
+
+test('P4 — une étape se nomme par son fichier, jamais « Phase N »', () => {
+  const livres = sousArbre('templates');
+  assert.ok(livres.length > 80, `montage : ${livres.length} fichiers balayés dans templates/ — le corpus est vide ou tronqué`);
+  // …et le balayage descend vraiment dans les sous-dossiers : les quatre familles qui portaient
+  // une fuite (les étapes, les env, le template PRD, les règles d'agent) doivent toutes y être.
+  for (const p of ['templates/commands/new-project/', 'templates/env/', 'templates/prd/', 'templates/agents/']) {
+    assert.ok(livres.some((f) => f.startsWith(p)), `montage : aucun fichier de ${p} dans le corpus`);
+  }
+  // Toutes les étapes du kit, tous runbooks confondus. Dérivées de la source unique : ce test ne
+  // recopie aucun nom, et un runbook découpé demain tombe de lui-même sous le contrôle.
+  const etapes = new Set(COMMANDS.flatMap((c) => etapesDuRunbook(ROOT, c)));
+  assert.ok(etapes.size >= 9, `montage : ${etapes.size} étape(s) connue(s) — sans étape, « l'étape citée existe » est vrai à vide`);
+
+  const phases = [];
+  const mortes = [];
+  for (const f of livres) {
+    read(f).split('\n').forEach((l, i) => {
+      if (PHASE_NUMEROTEE.test(l)) phases.push(`  ${f}:${i + 1} — ${l.trim().slice(0, 100)}`);
+      for (const [, e] of l.matchAll(ETAPE_CITEE)) {
+        if (!etapes.has(e)) mortes.push(`  ${f}:${i + 1} — « ${e} » n'est une étape d'aucun runbook`);
+      }
+    });
+  }
+  assert.deepEqual(phases, [], ['« Phase N » désigne un fichier qui n\'existe pas :', ...phases, '',
+    'Nomme l\'étape par son fichier (`07-scaffold.md`) : c\'est le seul identifiant qu\'un lecteur',
+    'peut ouvrir, et le seul qu\'un test peut vérifier.'].join('\n'));
+  assert.deepEqual(mortes, [], ['Renvois morts vers une étape inexistante :', ...mortes].join('\n'));
+
+  // Dans le runbook découpé, le MOT disparaît aussi : l'entrée annonce des étapes, les étapes ne
+  // peuvent pas se rappeler entre elles par un autre nom.
+  const reste = [];
+  for (const f of FICHIERS()) {
+    read(f).split('\n').forEach((l, i) => { if (/\bphases?\b/i.test(l)) reste.push(`  ${f}:${i + 1} — ${l.trim().slice(0, 100)}`); });
+  }
+  assert.deepEqual(reste, [], ['Le runbook dit encore « phase » là où l\'entrée dit « étape » :', ...reste].join('\n'));
+});
+

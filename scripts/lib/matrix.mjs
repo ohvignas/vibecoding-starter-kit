@@ -256,7 +256,7 @@ export function resolveStackManifest(stack, assistant) {
 }
 
 // Skills design auto-installables (headless) via le CLI skills. Les blocs shadcnblocks ne sont PAS un skill :
-// ils s'ajoutent via le registry natif du CLI shadcn (voir SHADCN_NOTE + /new-project Phase 7).
+// ils s'ajoutent via le registry natif du CLI shadcn (voir SHADCN_NOTE + /new-project, étape `07-scaffold.md`).
 export const DESIGN_SKILL_SPECS = [
   // webapp-testing vient du MÊME dépôt : ajouté ici plutôt qu'en second clone (un seul `skills add`).
   { label: 'frontend-design + brand-guidelines + webapp-testing', repo: 'github.com/anthropics/skills', skills: ['frontend-design', 'brand-guidelines', 'webapp-testing'] },
@@ -273,18 +273,20 @@ export const AGENT_SKILL_SPECS = [
 
 // « ajouté à components.json au scaffold » était FAUX : le scaffold du kit ne crée aucun
 // `components.json` — il n'y a même pas encore de projet à ce stade. C'est `/new-project`
-// Phase 7 qui, après `shadcn init`, y déclare le registry. Promettre l'inverse envoyait le
+// qui, à son étape `07-scaffold.md` et après `shadcn init`, y déclare le registry. Promettre
+// l'inverse envoyait le
 // débutant chercher un fichier inexistant.
 // `<new-project>` est substitué au rendu par la façon dont CET assistant désigne le runbook
 // (`/new-project`, ou le fichier à ouvrir chez Codex) — voir refCommande.
-export const SHADCN_NOTE = 'Blocs pré-faits **shadcnblocks** via le CLI shadcn natif : `npx shadcn add @shadcnblocks/<bloc>` (ex. `@shadcnblocks/hero125`). Rien à faire maintenant : le registry `@shadcnblocks` se déclare dans `components.json`, que **<new-project> Phase 7** crée en même temps que le projet (`shadcn init`). Blocs **gratuits sans clé** ; pour les blocs **pro**, mets `SHADCNBLOCKS_API_KEY` dans `.env`.';
+export const SHADCN_NOTE = 'Blocs pré-faits **shadcnblocks** via le CLI shadcn natif : `npx shadcn add @shadcnblocks/<bloc>` (ex. `@shadcnblocks/hero125`). Rien à faire maintenant : le registry `@shadcnblocks` se déclare dans `components.json`, que **<new-project>** crée en même temps que le projet, à son étape `07-scaffold.md` (`shadcn init`). Blocs **gratuits sans clé** ; pour les blocs **pro**, mets `SHADCNBLOCKS_API_KEY` dans `.env`.';
 
 // Mobile : React Native n'a pas de DOM — ni shadcn/ui ni les blocs shadcnblocks n'y tournent
-// (`/new-project` Phase 7 : « mobile : jamais shadcn »). A-FAIRE poussait pourtant la même note
+// (`/new-project`, étape `07-scaffold.md` : « mobile : jamais shadcn »). A-FAIRE poussait pourtant
 // qu'en web : une case à cocher intenable, avec une clé d'API à la clé.
-// `docs/design.md` n'existe pas au scaffold : il naît en Phase 5 de `/new-project`. Le dire, sinon
+// `docs/design.md` n'existe pas au scaffold : il naît à l'étape `05-design-maquette.md` de
+// `/new-project`. Le dire, sinon
 // c'est un renvoi vers un fichier absent — exactement le défaut que G5 a corrigé pour le glossaire.
-export const nativewindNote = (refNewProject) => `Rien à installer côté blocs : en React Native, l'UI se compose avec **NativeWind** (Tailwind pour RN) et les composants natifs — les bibliothèques de blocs web visent le DOM, que RN n'a pas. Le thème vivra dans \`docs/design.md\`, que ${refNewProject} crée en Phase 5.`;
+export const nativewindNote = (refNewProject) => `Rien à installer côté blocs : en React Native, l'UI se compose avec **NativeWind** (Tailwind pour RN) et les composants natifs — les bibliothèques de blocs web visent le DOM, que RN n'a pas. Le thème vivra dans \`docs/design.md\`, que ${refNewProject} crée à son étape \`05-design-maquette.md\`.`;
 
 // La note « blocs d'UI » de la stack : web → shadcnblocks, mobile → NativeWind. `refNewProject`
 // est la façon dont CET assistant invoque le runbook — sur Codex c'est un fichier à ouvrir, pas

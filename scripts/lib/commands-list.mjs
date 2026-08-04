@@ -74,4 +74,13 @@ export function refCommande(assistant, cmd) {
 // `/plugins` — une commande de SON client, qui elle existe. Le débutant ne pouvait pas trancher
 // laquelle des deux était vraie. On nomme donc précisément ce qui n'existe pas chez lui : les
 // runbooks du kit.
-export const NOTE_CODEX_COMMANDES = 'Chez Codex, les runbooks du kit ne sont pas des slash-commands : chacun est un **fichier** — ouvre-le et suis-le pas à pas (taper `/son-nom` ne ferait rien). Les commandes de Codex lui-même, comme `/plugins`, marchent normalement.';
+//
+// ⚠️ CE QU'UN PROJET CODEX REÇOIT VRAIMENT, depuis le découpage — mesuré, pas supposé. Pour un
+// runbook découpé, il reçoit DEUX choses : `docs/commands/<cmd>.md`, l'entrée SUIVIE de toutes
+// ses étapes en un seul fichier (`runbookConcatene`), ET `docs/commands/<cmd>/`, les mêmes
+// étapes en fichiers séparés — parce que l'entrée les cite par leur chemin et qu'un chemin cité
+// qui n'existe pas est un renvoi mort (`kit-owned.mjs`). « Chacun est un fichier » restait vrai
+// pour ce qu'il faut OUVRIR, mais laissait le débutant devant un dossier de neuf fichiers sans
+// savoir s'il devait les ouvrir aussi — alors que celui qu'il a déjà sous les yeux les contient.
+// La note dit donc les deux, et `codex.test.mjs` vérifie que les deux livraisons ont bien lieu.
+export const NOTE_CODEX_COMMANDES = 'Chez Codex, les runbooks du kit ne sont pas des slash-commands : chacun est un **fichier** — ouvre-le et suis-le pas à pas (taper `/son-nom` ne ferait rien). Un runbook long arrive aussi **découpé en étapes** dans un dossier à son nom, juste à côté : tu n\'as pas à les ouvrir une par une, le fichier que tu ouvres **les contient déjà**, dans l\'ordre. Les commandes de Codex lui-même, comme `/plugins`, marchent normalement.';
