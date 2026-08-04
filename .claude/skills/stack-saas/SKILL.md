@@ -37,5 +37,5 @@ npm run dev         # terminal 2
 - Utilise toujours la dernière version des APIs ; en cas de doute, réfère-toi aux fichiers de `ai-context/` ou au MCP Convex (`npx -y convex@latest mcp start`).
 
 ## Contexte IA disponible dans ce dépôt
-- `ai-context/convex/`, `ai-context/tanstack-start/`, `ai-context/better-auth/` (lancer `scripts/download-ai-context.sh`).
-- Règles de la stack : `AGENTS-stack.md` à la racine du projet (dans le dépôt du kit : `stacks/saas/AGENTS.md` + `stacks/saas/prompts-de-demarrage.md`).
+- `ai-context/convex/`, `ai-context/tanstack-start/`, `ai-context/better-auth/` — déjà remplis ; `npx create-vibecoding-kit@latest --refresh` les remet à jour.
+- Règles de la stack : `AGENTS-stack.md` à la racine du projet.

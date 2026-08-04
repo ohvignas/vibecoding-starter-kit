@@ -13,9 +13,14 @@ Node.js exécute le JavaScript/TypeScript sur ta machine. Toutes nos stacks en d
 - Va sur **https://nodejs.org** et installe la version **LTS** (le gros bouton de gauche).
 - Vérifie dans un terminal :
   ```bash
-  node --version   # doit afficher v20 ou plus
+  node --version   # doit afficher v22.12 ou plus
   npm --version    # doit afficher un numéro
   ```
+
+> **Pourquoi 22.12 et pas 20 ?** Le kit lui-même tourne dès **20.12**, mais la **stack vitrine**
+> (Astro 7) *refuse de démarrer* en dessous de **22.12**. Prends 22.12+ tout de suite : tu n'auras
+> pas à réinstaller Node le jour où tu fais un site vitrine. Si `node --version` affiche moins,
+> retourne sur nodejs.org et réinstalle — c'est le même bouton.
 
 > `npm` (livré avec Node) sert à installer des librairies et à lancer les commandes de création de projet (`npm create ...`).
 
@@ -107,7 +112,7 @@ Ce n'est **pas** nécessaire pour créer un projet : `npm create` fait tout.
 
 | Outil | Rôle | Vérification |
 |---|---|---|
-| Node.js (LTS) | Exécute le code | `node --version` |
+| Node.js **22.12+** | Exécute le code | `node --version` |
 | Cursor **ou** VS Code | Éditer le code | l'app s'ouvre |
 | Claude Code / IA Cursor | L'assistant | `claude` se lance |
 | Git | Sauvegardes | `git --version` |

@@ -101,7 +101,7 @@
 - <a id="stitch"></a>**Stitch (Google)** — Un **outil de design par IA, gratuit** (compte Google) : tu décris un écran, il le génère (HTML/CSS), tu itères. Le kit installe ses skills et l'utilise pour créer la [maquette](#maquette). *Ex. : « une page de connexion épurée » → un écran prêt à exporter dans `maquette/`.*
 - **tweakcn** — Un **éditeur de thème visuel** gratuit pour shadcn/Tailwind : tu règles couleurs/typo/rayons avec preview live, puis tu **exportes les variables CSS** à coller dans ton projet. *Ex. : donner son identité visuelle à l'app sans écrire de CSS.*
 - **git / GitHub** — **git** = l'outil qui versionne ton code (historique, branches) ; **GitHub** = l'hébergeur en ligne des dépôts git (+ PR, Actions). *Ex. : chaque étape qui marche = un commit git.*
-- **Node.js** — L'**environnement qui exécute du JavaScript** hors navigateur (outils, serveurs, scripts). Prérequis du kit (≥ 20.12). *Ex. : `node scripts/setup.mjs` lance le wizard.*
+- **Node.js** — L'**environnement qui exécute du JavaScript** hors navigateur (outils, serveurs, scripts). Prérequis du kit (≥ 20.12). *Ex. : `npx create-vibecoding-kit@latest` lance le wizard.*
 - **npm / npx** — **npm** installe des paquets ; **npx** exécute un paquet sans l'installer durablement. *Ex. : `npx expo-doctor` lance un check sans rien garder.*
 
 ## 4. 💳 Capacités métier (domaines)

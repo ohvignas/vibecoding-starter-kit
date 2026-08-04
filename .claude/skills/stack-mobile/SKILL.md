@@ -39,4 +39,4 @@ npm start          # terminal 2 (scan QR avec Expo Go)
 - Cohérent avec un SaaS : **Better Auth** (https://labs.convex.dev/better-auth/framework-guides/expo) + `expo-secure-store`.
 
 ## Contexte IA dans ce dépôt
-`ai-context/react-native-expo/`, `ai-context/convex/` · les règles de la stack : `AGENTS-stack.md` à la racine du projet (dans le dépôt du kit : `stacks/mobile/AGENTS.md`).
+`ai-context/react-native-expo/`, `ai-context/convex/` · les règles de la stack : `AGENTS-stack.md` à la racine du projet.

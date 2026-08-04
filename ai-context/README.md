@@ -2,15 +2,23 @@
 
 Ce dossier contient les **fichiers officiels** qui apprennent à ton IA à utiliser correctement chaque techno. **Sans eux, l'IA invente des fonctions périmées.**
 
-## Comment le remplir
+## Comment le mettre à jour
 
-Lance depuis la racine du dépôt :
+**Dans ton projet, le dossier est déjà rempli** — le scaffold l'a posé. Pour le rafraîchir avec la
+dernière version du kit, depuis la racine de ton projet :
+
 ```bash
-bash scripts/download-ai-context.sh
+npx create-vibecoding-kit@latest --refresh
 ```
-Ça télécharge les `llms.txt` et règles officielles (relance-le de temps en temps, les outils évoluent).
 
-## Ce qu'il y a dedans (après téléchargement)
+Ça remet à jour les `llms.txt` **et** les règles/runbooks du kit, sans toucher à ton code ni à tes
+documents. À relancer de temps en temps : les outils évoluent, et une doc périmée fait inventer des
+fonctions qui n'existent plus.
+
+Le retéléchargement depuis les sources officielles (convex.dev, tanstack.com…) se fait **dans le
+dépôt du kit**, pas ici : c'est le kit qui embarque la version à jour, et `--refresh` te la donne.
+
+## Ce qu'il y a dedans
 
 | Dossier | Stack(s) | Fichiers | Source officielle |
 |---|---|---|---|

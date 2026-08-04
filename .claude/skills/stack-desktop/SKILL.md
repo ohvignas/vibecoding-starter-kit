@@ -36,4 +36,4 @@ npm run make   # packager en installateur
 
 ## À savoir
 - ⚠️ Electron **ne publie pas** de `llms.txt` ni de MCP officiel — ne les cherche pas. Doc officielle : https://www.electronjs.org/docs/latest
-- Règles de la stack : `AGENTS-stack.md` à la racine du projet (dans le dépôt du kit : `stacks/desktop/AGENTS.md`).
+- Règles de la stack : `AGENTS-stack.md` à la racine du projet.

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COMMANDS, COMMANDS_DIR, cheminRunbook, cheminEtape, etapesDuRunbook } from './commands-list.mjs';
-import { resolveStackManifest } from './matrix.mjs';
+import { resolveStackManifest, AI_CONTEXT } from './matrix.mjs';
 import { prePushScript, preCommitCheckLine } from './hooks.mjs';
 import { mergeMcpConfig, expandMcpCommands } from './mcp.mjs';
 import { renderRunDoc } from './run-doc.mjs';
@@ -25,6 +25,15 @@ export const MCP_FILE = (assistant) => (assistant === 'cursor' ? '.cursor/mcp.js
 const listKit = (rel, ext) => {
   try { return fs.readdirSync(path.join(KIT_ROOT, rel)).filter((f) => f.endsWith(ext)); }
   catch { return []; }
+};
+// Variante « tous les fichiers, quelle que soit l'extension » : `ai-context/` mélange `.txt`,
+// `.mdc` et `.md`. Les sous-dossiers sont écartés — `refresh.mjs` lit chaque entrée comme un
+// fichier, un dossier lui donnerait EISDIR.
+const listKitFiles = (rel) => {
+  try {
+    return fs.readdirSync(path.join(KIT_ROOT, rel), { withFileTypes: true })
+      .filter((e) => e.isFile()).map((e) => e.name).sort();
+  } catch { return []; }
 };
 
 export function kitOwnedFiles(stack, assistant) {
@@ -60,6 +69,19 @@ export function kitOwnedFiles(stack, assistant) {
   // de `guides/` plutôt que de `templates/`. Sans cette ligne, un projet créé aujourd'hui garderait
   // à jamais le vocabulaire d'aujourd'hui — un glossaire périmé est pire que pas de glossaire.
   pairs.push({ from: 'guides/glossaire.md', to: 'docs/glossaire.md' });
+
+  // `ai-context/` — les `llms.txt` officiels des technos de la stack, recopiés VERBATIM depuis la
+  // doc amont. 100 % kit : l'utilisateur n'y écrit jamais.
+  // POURQUOI CETTE LIGNE EXISTE : le dossier arrivait au scaffold puis ne bougeait plus JAMAIS.
+  // Un projet gardait à vie les docs de sa date de création — précisément ce que le README du
+  // dossier annonce comme le pire cas (« sans eux, l'IA invente des fonctions périmées »). Le seul
+  // moyen de rafraîchir qu'il indiquait, `scripts/download-ai-context.sh`, n'est PAS livré dans le
+  // projet : la commande était morte chez l'utilisateur, et rien d'autre ne prenait le relais.
+  // Fichier par fichier, jamais le dossier : `refresh.mjs` lit chaque `from` avec `readFileSync`.
+  pairs.push({ from: 'ai-context/README.md', to: 'ai-context/README.md' });
+  for (const d of AI_CONTEXT[stack] ?? []) {
+    for (const f of listKitFiles(`ai-context/${d}`)) pairs.push({ from: `ai-context/${d}/${f}`, to: `ai-context/${d}/${f}` });
+  }
 
   // Les 7 agents du crew, dans le dossier natif de l'assistant. Cursor ne comprend pas le
   // frontmatter Claude Code → transform 'cursor-agent' (appliqué par refresh.mjs).
