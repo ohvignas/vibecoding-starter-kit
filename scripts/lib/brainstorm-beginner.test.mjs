@@ -22,7 +22,11 @@ test('new-project : parcours expliqué + cadrage débutant, validateur vert', ()
 });
 
 test('new-feature : brainstorm débutant, validateur vert', () => {
-  const t = read('templates/commands/new-feature.md');
+  // Même raison que ci-dessus : `/new-feature` est découpé, et le brainstorm débutant est parti
+  // dans l'étape `01-…`. Le runbook ENTIER, énuméré depuis `commands-list.mjs`.
+  const fichiers = fichiersDuRunbook(ROOT, 'new-feature');
+  assert.ok(fichiers.length >= 6, `montage : ${fichiers.length} fichier(s) — le runbook découpé n'est pas lu en entier`);
+  const t = fichiers.map((f) => read(f)).join('\n');
   assert.match(t, /langage simple/i);
   assert.match(t, /exemple concret/i);
   assert.match(t, /brainstorming/); // requis par le validateur

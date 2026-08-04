@@ -4,55 +4,12 @@ Argument : `$ARGUMENTS` = description de la feature à construire.
 > Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), **demande la description à l'utilisateur** avant de commencer.
 Suis la **boucle d'itération** de l'`AGENTS.md` (issue de `templates/agents/loop-section.md`), sans sauter d'étape. **Gates humains** au brainstorm et au plan ; autonome ensuite jusqu'au merge.
 
-> **Attribution** : le format story + critères d'acceptation ci-dessous est adapté de BMAD-METHOD (MIT © 2025 BMad Code, LLC). Adapté/traduit ; « BMAD » est une marque de BMad Code, LLC.
-
-## Préflight
-1. Vérifie GitHub : `gh auth status`. Vérifie le remote : `git remote`. Si aucun remote → propose `gh repo create` et relie le projet.
-2. Crée un **worktree** isolé pour la feature (`superpowers:using-git-worktrees`) sur une branche `feat/…`.
-
 ## Boucle
+> Ses 5 étapes vivent dans le dossier `new-feature/` posé **à côté de ce fichier** : `.cursor/commands/new-feature/` (Cursor) · `.claude/commands/new-feature/` (Claude Code) · `docs/commands/new-feature/` (Codex). Pour chacune : **ouvre le fichier, fais ce qu'il dit, passe à la suivante**. N'en saute aucune et ne la résume pas de mémoire — la sortie d'une étape est l'entrée de la suivante.
+> *(Chez Codex, ce fichier-ci contient déjà les 5 étapes à la suite : tu peux simplement continuer à lire, dans le même ordre.)*
 
-### 1. Brainstorm → **Spec de feature** (`superpowers:brainstorming`) — gate
-D'abord, dis en une phrase **ce qu'on va faire** (« on cadre ta feature, puis je la construis et je la teste en vrai »). Puis pose **peu de questions** (2-4), **une à la fois**, en **langage simple**, avec un **exemple concret** à chaque fois et le **pourquoi** ; reformule la réponse. Zéro jargon dans les questions — le vocabulaire (UJ, FR, AC…) reste dans le document. Scopé à la feature, référence `docs/PRD.md`. Produis ensuite une **spec de feature** avec ce template, puis fais valider :
-
-- **Intention** — quelle capacité, quel(s) parcours (UJ-X) et exigence(s) (FR-Y) du PRD ça réalise.
-- **Story(s)** — format `En tant que [persona], je veux [action] [sous conditions], pour [bénéfice].` (numérote Story-1, Story-2… si plusieurs).
-- **Critères d'acceptation (testables)** — `AC-1`, `AC-2`… chacun vérifiable : *« Étant donné [contexte], quand [action], alors [résultat observable]. »* Ce sont eux que le **test live** (étape 5) vérifiera.
-- **Périmètre** — *dans* / *hors* (ce que cette feature ne fait **pas** ; renvoie aux Non-objectifs du PRD si besoin).
-- **Impact** — fichiers/composants touchés, modèle de données, exigences non-fonctionnelles pertinentes (perf, sécu, accessibilité).
-- **Plan de test live** — comment tu vérifieras en vrai (parcours navigateur / écran desktop / smoke mobile) que **chaque AC** passe.
-
-→ **gate (validation utilisateur)**.
-
-### 2. Plan (`superpowers:writing-plans`) — gate
-Plan TDD, tâches bite-sized, **dérivées des critères d'acceptation** (chaque AC → au moins un test). → **gate (validation)**.
-
-### 3. Exécution (`superpowers:subagent-driven-development` + TDD)
-Tâche par tâche, test rouge → vert (cadre de délégation : **« Règle sous-agents »** dans `AGENTS.md`). Un `[À CLARIFIER]` bloquant → repasse par la gate.
-
-### 4. Review code (`superpowers:requesting-code-review`)
-Bugs, conventions, sécurité du diff. Lance le sous-agent `code-reviewer` sur le diff : il existe sur les 3 assistants, la commande `/code-review` seulement sur Claude Code.
-
-### 5. Test live — vérifie CHAQUE critère d'acceptation en vrai
-Lance l'app et **valide chaque `AC-n`** de la spec : navigateur pour le web, fenêtre pour desktop, smoke pour mobile. Screenshot(s) à l'appui (voir **« Règle de vérification »** dans `AGENTS.md`). Un AC non satisfait → retour étape 3 (`superpowers:systematic-debugging`).
-
-### 6. Sécu
-Revue sécurité des changements de la branche. Lance le sous-agent `security-reviewer` : il existe sur les 3 assistants, la commande `/security-review` seulement sur Claude Code.
-
-### 6bis. Verdict (obligatoire avant commit)
-Lance **`verificateur`** en contexte frais : il ne voit que le diff + les `AC`. **PROUVÉ** requis pour continuer. **NON PROUVÉ** → retour à l'étape 3. **BLOQUÉ** → dis ce qui bloque, ne commit pas.
-
-### 7. Commit
-`git add -A` puis `git commit` en **Conventional Commits** (`feat:`, `fix:`, `docs:`… + un corps qui dit le *pourquoi*). Aucun plugin de commit n'est installé par le kit : c'est `git`, directement.
-
-### 8. PR
-`git push -u origin <branche>` puis `gh pr create --fill --base main`. Description = quoi + pourquoi + comment tester (les AC).
-
-### 9. CI — surveille jusqu'au bout
-`gh pr checks <n>` puis `gh run watch <id> --exit-status`. Rouge → diagnostiquer (`superpowers:systematic-debugging`), pas de merge.
-
-### 10. Merge sur **`main`** (`superpowers:finishing-a-development-branch`, squash)
-Le scaffold ne crée que `main` : n'invente aucune branche d'intégration intermédiaire.
-
-## Fini quand
-Mergé sur **`main`** (CI verte + review OK, un PR à la fois) **ET** **chaque critère d'acceptation testé en live** par l'agent. Tests unitaires + CI verte = nécessaires mais **pas** suffisants. Si un blocage externe empêche d'aller au bout → **dire exactement ce qui manque**.
+- [ ] **00** `new-feature/00-preflight.md` → GitHub joignable, un **remote** relié, et un **worktree** isolé sur une branche `feat/…`
+- [ ] **01** `new-feature/01-spec-de-feature.md` → la **spec de feature** validée : story, `AC-*` testables, périmètre, plan de test live (gate)
+- [ ] **02** `new-feature/02-plan-et-execution.md` → le **plan TDD** validé (gate), puis le code écrit tâche par tâche, test rouge → vert
+- [ ] **03** `new-feature/03-verification.md` → le diff relu, **chaque `AC` vérifié en vrai**, la sécu passée, et le verdict **PROUVÉ** obtenu
+- [ ] **04** `new-feature/04-livraison.md` → commit, PR, **CI verte**, la branche mergée sur `main`, et le contrôle de fin

@@ -49,8 +49,20 @@ test('D0 — les 10 commandes du kit sont bien celles que le plugin Cursor embar
   assert.equal(COMMANDES.length, 10, `10 commandes attendues, vues : ${COMMANDES.join(', ')}`);
 });
 
+// `/new-feature` est DÉCOUPÉ : son entrée est une checklist, et les commandes que D1/D2 jugent
+// (`git commit`, `gh pr create`, la cible du merge) vivent dans l'étape `04-…`. Lire la seule
+// entrée rendrait les deux exigences POSITIVES impossibles à satisfaire, et surtout les deux
+// interdits (`commit-commands`, `` `dev` ``) verts sur un corpus amputé — un contrôle négatif ne
+// peut mentir que de cette façon-là. Liste dérivée de la source unique : aucun nom d'étape ici.
+const NEW_FEATURE = () => fichiersDuRunbook(ROOT, 'new-feature');
+const texteNewFeature = () => {
+  const fichiers = NEW_FEATURE();
+  assert.ok(fichiers.length >= 6, `montage : ${fichiers.length} fichier(s) de /new-feature lus — le runbook découpé n'est pas lu en entier`);
+  return fichiers.map((f) => read(f)).join('\n');
+};
+
 test('D1 — /new-feature commite et ouvre la PR avec git/gh, jamais via un plugin non installé', () => {
-  const t = cmd('new-feature');
+  const t = texteNewFeature();
   assert.doesNotMatch(t, /commit-commands/, 'plugin jamais installé par le kit');
   assert.match(t, /git commit/, 'le commit se fait avec git');
   assert.match(t, /gh pr create/, 'la PR s\'ouvre avec gh');
@@ -59,7 +71,7 @@ test('D1 — /new-feature commite et ouvre la PR avec git/gh, jamais via un plug
 });
 
 test('D2 — /new-feature merge sur `main` : le scaffold ne crée aucune branche `dev`', () => {
-  const t = cmd('new-feature');
+  const t = texteNewFeature();
   assert.doesNotMatch(t, /`dev`/, 'branche inventée');
   assert.match(t, /Merge sur \*\*`main`\*\*/, 'la cible du merge est nommée');
   assert.match(t, /mergé sur \*\*`main`\*\*/i, '« fini » = mergé sur main');
@@ -180,7 +192,16 @@ test('D7 — /build : arguments transmis, E2E délégué, tag annoté ET publié
   assert.ok(ligneAll, '`--all` doit être annoncé désactivé tant que le mode apprentissage est actif');
 });
 
+// POURQUOI `cmd('help')` ET PAS LE RUNBOOK ENTIER, alors que trois runbooks sont découpés :
+// `/help` n'en est pas un et n'a pas à le devenir. Ce n'est pas une suite d'actions mais un
+// CATALOGUE, affiché d'un coup (« Affiche la liste ci-dessous »), qui ne produit aucun fichier et
+// ne modifie rien. Un découpage lui coûterait deux fois : la checklist des runbooks découpés
+// promet une SORTIE par étape, et `/help` n'en a aucune ; et pour répondre à « quelles commandes
+// existent ? » l'assistant devrait rouvrir quatre fichiers là où il en lit un — un utilisateur
+// Codex recevrait un dossier de fragments d'une seule liste. Le contrôle ci-dessous reste donc
+// exact tant que `etapesDuRunbook(ROOT, 'help')` est vide, et le montage le vérifie.
 test('D8 — /help se liste, liste les 10 commandes, et ne donne qu\'une réponse à « je commence par quoi ? »', () => {
+  assert.deepEqual(etapesDuRunbook(ROOT, 'help'), [], '/help a été découpé : ce contrôle ne lit que son entrée, étends-le au runbook entier — ou remets le catalogue d\'un bloc');
   const t = cmd('help');
   for (const c of COMMANDES) assert.match(t, new RegExp(`\\*\\*/${c}\\*\\*`), `/help ne se liste pas : /${c} absent`);
   const aide = t.split('## Aide-mémoire')[1];
@@ -262,22 +283,29 @@ test('D7bis — tout message d\'erreur cité par un runbook est bien celui que g
 
   const fautes = [];
   for (const c of COMMANDES) {
-    const t = cmd(c);
+    // Le runbook ENTIER, entrée + étapes : depuis le découpage, `git push -u origin <branche>` et
+    // le message qu'on lui prête peuvent vivre dans une étape. Un garde qui ne lirait que l'entrée
+    // resterait vert sur une citation fausse écrite un dossier plus bas. On garde le `fichier:ligne`
+    // exact — c'est tout ce qui rend le message utile.
+    const fichiers = fichiersDuRunbook(ROOT, c);
+    const t = fichiers.map((f) => read(f)).join('\n');
     const pushs = [...t.matchAll(/`(git push[^`\n]*)`/g)].map((m) => m[1]);
     // Une citation n'est jugée que si SA LIGNE parle de push : ailleurs, on ne peut pas savoir
     // quelle commande produit ce message, et accuser au hasard ferait corriger de la doc juste.
     const citees = [];
-    t.split('\n').forEach((ligne, i) => {
-      if (!/\bpush\b/i.test(ligne)) return;
-      if (NON_ANALYSABLE.test(ligne)) {
-        fautes.push(`${c}.md:${i + 1} cite une erreur contenant un backtick — ce garde ne sait pas où elle s'arrête. Écris-la sans backtick interne.`);
-        return;
-      }
-      for (const m of ligne.matchAll(CITATION)) citees.push({ txt: nu(m[1] ?? m[2]), backtickee: m[1] !== undefined, n: i + 1 });
-    });
+    for (const f of fichiers) {
+      read(f).split('\n').forEach((ligne, i) => {
+        if (!/\bpush\b/i.test(ligne)) return;
+        if (NON_ANALYSABLE.test(ligne)) {
+          fautes.push(`${f}:${i + 1} cite une erreur contenant un backtick — ce garde ne sait pas où elle s'arrête. Écris-la sans backtick interne.`);
+          return;
+        }
+        for (const m of ligne.matchAll(CITATION)) citees.push({ txt: nu(m[1] ?? m[2]), backtickee: m[1] !== undefined, ou: `${f}:${i + 1}` });
+      });
+    }
     if (!citees.length) continue;
     if (!pushs.length) {
-      fautes.push(`${c}.md:${citees[0].n} cite une erreur de push mais la page ne prescrit aucune commande \`git push …\` en backticks simples — impossible de la rejouer.`);
+      fautes.push(`${citees[0].ou} cite une erreur de push mais le runbook ne prescrit aucune commande \`git push …\` en backticks simples — impossible de la rejouer.`);
       continue;
     }
     // Ce que ces commandes produisent VRAIMENT, sans remote — le cas décrit par les pages.
@@ -286,12 +314,12 @@ test('D7bis — tout message d\'erreur cité par un runbook est bien celui que g
       const r = git(p.split(/\s+/).slice(1));
       `${r.stderr}${r.stdout}`.split('\n').forEach((l) => { if (l.trim().startsWith('fatal:')) produites.add(nu(l)); });
     }
-    for (const { txt, backtickee, n } of citees) {
+    for (const { txt, backtickee, ou } of citees) {
       // Backtickée : l'auteur a délimité lui-même, on exige l'égalité. Nue : on ne sait pas où
       // la prose reprend, donc il suffit que le texte COMMENCE par un message réellement produit.
       const ok = backtickee ? produites.has(txt) : [...produites].some((p) => txt.startsWith(p));
       if (!ok) {
-        fautes.push(`${c}.md:${n} annonce « ${txt} »\n    or ${pushs.map((p) => `\`${p}\``).join(' / ')} sans remote répond${produites.size ? ' :\n      ' + [...produites].join('\n      ') : ' sans aucune ligne fatal:'}`);
+        fautes.push(`${ou} annonce « ${txt} »\n    or ${pushs.map((p) => `\`${p}\``).join(' / ')} sans remote répond${produites.size ? ' :\n      ' + [...produites].join('\n      ') : ' sans aucune ligne fatal:'}`);
       }
     }
   }

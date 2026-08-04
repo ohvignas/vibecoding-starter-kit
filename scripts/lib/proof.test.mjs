@@ -37,9 +37,15 @@ test('règles portées par chaque agent (il ne voit pas AGENTS.md)', () => {
 });
 
 test('verificateur câblé en gate + state.yaml lu', () => {
-  for (const f of ['templates/commands/build.md', 'templates/commands/new-feature.md', 'templates/agents/verify-rule.md']) {
+  // `/new-feature` est découpé : son gate `verificateur` vit dans l'étape `03-…`. Le gate se
+  // cherche donc dans le runbook ENTIER (entrée + étapes, liste dérivée de `commands-list.mjs`),
+  // pas dans la seule entrée — qui n'est plus qu'une checklist.
+  const gates = ['templates/commands/build.md', ...fichiersDuRunbook(ROOT, 'new-feature'), 'templates/agents/verify-rule.md'];
+  assert.ok(gates.length >= 8, `montage : ${gates.length} fichiers surveillés — le runbook découpé n'est pas lu en entier`);
+  for (const f of ['templates/commands/build.md', 'templates/agents/verify-rule.md']) {
     assert.match(read(f), /verificateur/, `${f}`);
   }
+  assert.ok(fichiersDuRunbook(ROOT, 'new-feature').some((f) => /verificateur/.test(read(f))), '/new-feature : aucun fichier du runbook ne câble le gate `verificateur`');
   assert.match(read('templates/agents/verify-rule.md'), /state\.yaml/);
 });
 

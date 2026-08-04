@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { COMMANDS, fichiersDuRunbook } from './commands-list.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -23,17 +24,16 @@ const FICHIERS_REGLES = () => [
   ...md('templates/agents/subagents').map((n) => `subagents/${n}`),
 ];
 
-// Les runbooks du kit : les fichiers d'entrée de `templates/commands/` ET les ÉTAPES de
-// `new-project/` (le sous-dossier où `/new-project` sera découpé — vide, voire absent, tant que
-// le découpage n'a pas eu lieu : git ne suit pas un dossier vide). Une attribution de verdict
-// fautive atteint exactement le même lecteur depuis une étape que depuis l'entrée, puisque les
-// deux sont recopiées chez l'utilisateur. Le filtre `.md` évite l'`EISDIR` du sous-dossier.
-const RUNBOOKS = () => [
-  ...md('templates/commands').map((n) => `templates/commands/${n}`),
-  ...(fs.existsSync(path.join(ROOT, 'templates/commands/new-project'))
-    ? md('templates/commands/new-project').map((n) => `templates/commands/new-project/${n}`)
-    : []),
-];
+// Les runbooks du kit : les fichiers d'entrée de `templates/commands/` ET les ÉTAPES de CHAQUE
+// runbook découpé. Une attribution de verdict fautive atteint exactement le même lecteur depuis
+// une étape que depuis l'entrée, puisque les deux sont recopiées chez l'utilisateur.
+// La liste ne nommait que `new-project/` — le seul dossier d'étapes qui existât alors. Le jour où
+// un deuxième runbook s'est découpé (`/new-feature`), ses trois lignes inventoriées ici (les deux
+// relectures + le verdict `6bis`) sont sorties du balayage : R3 les aurait déclarées PÉRIMÉES,
+// c'est-à-dire supprimées, alors qu'elles n'avaient que changé de fichier. On énumère donc la
+// source unique (`commands-list.mjs`), qui rend l'entrée puis ses étapes, pour les 10 runbooks —
+// aucun nom d'étape recopié, et le prochain découpage entre sous contrôle sans toucher à ceci.
+const RUNBOOKS = () => COMMANDS.flatMap((c) => fichiersDuRunbook(ROOT, c));
 
 const CREW = ['verificateur', 'test-runner', 'security-reviewer', 'code-reviewer', 'critique-produit', 'critique-donnees', 'critique-ux'];
 // Voulu : les deux rédacteurs d'artefact écrivent, les cinq autres sont bridés (cf. proof.test.mjs).
@@ -497,12 +497,17 @@ const LIGNES_APPROUVEES = [
   "- **verificateur** — le juge : il ne voit que le diff et les critères, et tranche **PROUVÉ / NON PROUVÉ / BLOQUÉ**. À lancer avant de dire qu'une étape est finie.",
   "- **test-runner** — teste une feature en vrai dans le navigateur/simulateur et rend un verdict.",
   "- **code-reviewer** · **security-reviewer** — relisent le code et la sécurité d'un changement.",
-  // Ces deux-là relisent, elles ne tranchent pas : le `PROUVÉ` de /new-feature reste à l'étape 6bis
-  // (ligne suivante). Elles disent en plus la vérité que loop-section dit déjà — la commande
-  // `//code-review` n'existe que sur Claude Code, le sous-agent existe partout.
+  // Ces deux-là relisent, elles ne tranchent pas : le `PROUVÉ` de /new-feature reste au verdict
+  // `6bis` (ligne suivante), dans l'étape `03-verification.md`. Elles disent en plus la vérité que
+  // loop-section dit déjà — la commande `//code-review` n'existe que sur Claude Code, le
+  // sous-agent existe partout.
   "Bugs, conventions, sécurité du diff. Lance le sous-agent `code-reviewer` sur le diff : il existe sur les 3 assistants, la commande `/code-review` seulement sur Claude Code.",
   "Revue sécurité des changements de la branche. Lance le sous-agent `security-reviewer` : il existe sur les 3 assistants, la commande `/security-review` seulement sur Claude Code.",
-  "Lance **`verificateur`** en contexte frais : il ne voit que le diff + les `AC`. **PROUVÉ** requis pour continuer. **NON PROUVÉ** → retour à l'étape 3. **BLOQUÉ** → dis ce qui bloque, ne commit pas.",
+  // Le RENVOI de cette ligne a changé au découpage de `/new-feature`, et lui seul : « retour à
+  // l'étape 3 » ne désignait plus rien d'ouvrable une fois les dix temps de la boucle regroupés en
+  // cinq fichiers — pire, lu depuis `03-verification.md`, il se lisait comme un renvoi vers le
+  // fichier courant. L'attribution du verdict, elle, est mot pour mot la même.
+  "Lance **`verificateur`** en contexte frais : il ne voit que le diff + les `AC`. **PROUVÉ** requis pour continuer. **NON PROUVÉ** → retour à l'exécution, `02-plan-et-execution.md`. **BLOQUÉ** → dis ce qui bloque, ne commit pas.",
   "- **`critique-produit`** (Vera) — features/écrans/parcours oubliés ;",
   "- **`critique-donnees`** (Marc) — données réelles, modèle, câblage, zéro mock, permissions ;",
   "- **`critique-ux`** (Lina) — états vide/chargement/erreur, impasses, responsive, accessibilité.",

@@ -15,7 +15,7 @@ import { renderColleMoi } from './colle-moi.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
 import { renderAgentsFile, adapterAuMobile } from './agents-file.mjs';
 import { formatReport } from './report.mjs';
-import { COMMANDS, COMMANDS_DIR, refCommande, cheminEtape, etapesDuRunbook } from './commands-list.mjs';
+import { COMMANDS, COMMANDS_DIR, refCommande, cheminEtape, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
 import { resolveStackManifest, MCP_CONNECT, SUPERPOWERS, VERIF_TOOLS_NOTE } from './matrix.mjs';
 import { validateArgs } from './args.mjs';
 
@@ -91,7 +91,15 @@ test('G2 — Codex : le premier contact ne lui demande jamais de « lancer » un
 });
 
 test('G3 — /init-vibecoding dicte les valeurs EXACTES de --assistant (jouées, exit 0)', () => {
-  const rb = read('templates/commands/init-vibecoding.md');
+  // `/init-vibecoding` est découpé : la commande de scaffold et ses valeurs littérales vivent dans
+  // l'étape `02-…`. Ne lire que l'entrée ferait échouer la RECHERCHE du motif, et le jour où elle
+  // reviendrait dans l'entrée sous une autre forme, on validerait deux dictées concurrentes. On lit
+  // donc le runbook entier, énuméré depuis `commands-list.mjs` — et on exige qu'il n'en dicte
+  // qu'UNE (deux réponses différentes à « quelles valeurs ? » se contrediraient chez le débutant).
+  const fichiers = fichiersDuRunbook(ROOT, 'init-vibecoding');
+  assert.ok(fichiers.length >= 6, `montage : ${fichiers.length} fichier(s) — le runbook découpé n'est pas lu en entier`);
+  const rb = fichiers.map((f) => read(f)).join('\n');
+  assert.equal([...rb.matchAll(/<assistant>\s*=\s*[^\n]+/g)].length, 1, '/init-vibecoding doit dicter les valeurs de <assistant> une seule fois');
   const m = /<assistant>\s*=\s*([^\n]+)/.exec(rb);
   assert.ok(m, 'init-vibecoding doit énoncer les valeurs de <assistant> (« <assistant> = … »)');
   const valeurs = m[1].split('|').map((v) => v.trim().replace(/[`*]/g, '')).filter(Boolean);

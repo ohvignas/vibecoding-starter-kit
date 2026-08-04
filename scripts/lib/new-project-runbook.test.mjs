@@ -255,10 +255,14 @@ test('P4 — une étape se nomme par son fichier, jamais « Phase N »', () => {
     'peut ouvrir, et le seul qu\'un test peut vérifier.'].join('\n'));
   assert.deepEqual(mortes, [], ['Renvois morts vers une étape inexistante :', ...mortes].join('\n'));
 
-  // Dans le runbook découpé, le MOT disparaît aussi : l'entrée annonce des étapes, les étapes ne
-  // peuvent pas se rappeler entre elles par un autre nom.
+  // Dans un runbook découpé, le MOT disparaît aussi : l'entrée annonce des étapes, les étapes ne
+  // peuvent pas se rappeler entre elles par un autre nom. Vrai pour TOUS les runbooks découpés, pas
+  // seulement `/new-project` — un deuxième découpage aurait pu réintroduire le vocabulaire abandonné
+  // sans que rien ne le voie.
+  const decoupes = COMMANDS.filter((c) => etapesDuRunbook(ROOT, c).length > 0);
+  assert.ok(decoupes.length >= 3, `montage : ${decoupes.length} runbook(s) découpé(s) — l'interdit ne porterait presque sur rien`);
   const reste = [];
-  for (const f of FICHIERS()) {
+  for (const f of decoupes.flatMap((c) => fichiersDuRunbook(ROOT, c))) {
     read(f).split('\n').forEach((l, i) => { if (/\bphases?\b/i.test(l)) reste.push(`  ${f}:${i + 1} — ${l.trim().slice(0, 100)}`); });
   }
   assert.deepEqual(reste, [], ['Le runbook dit encore « phase » là où l\'entrée dit « étape » :', ...reste].join('\n'));

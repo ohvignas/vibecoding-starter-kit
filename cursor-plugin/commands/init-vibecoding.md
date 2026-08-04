@@ -2,51 +2,15 @@
 
 Tu installes l'environnement vibecoding **à la place de l'utilisateur** : tu exécutes les commandes du terminal, tu poses les questions en **langage simple**, tu expliques. L'utilisateur répond juste dans le chat. En français, chaleureux, zéro jargon non expliqué.
 
-## Étape 0 — Détecte l'état
-Regarde si **`.vibecoding.json`** existe dans le dossier courant.
+## Les 5 étapes — ouvre-les UNE PAR UNE, dans cet ordre
+> Elles vivent dans le dossier `init-vibecoding/` posé **à côté de ce fichier** : `.cursor/commands/init-vibecoding/` (Cursor) · `.claude/commands/init-vibecoding/` (Claude Code) · `docs/commands/init-vibecoding/` (Codex). Pour chacune : **ouvre le fichier, fais ce qu'il dit, passe à la suivante**. N'en saute aucune et ne la résume pas de mémoire.
+> *(Chez Codex, ce fichier-ci contient déjà les 5 étapes à la suite : tu peux simplement continuer à lire, dans le même ordre.)*
 
-- **Il existe** → le projet est **déjà initialisé**. Lis sa `kitVersion`. Dis-le, et propose de **mettre à jour** :
-  1. Montre d'abord ce qui changerait : `npx -y create-vibecoding-kit@latest --project . --refresh --dry-run`.
-  2. Si l'utilisateur est d'accord : `npx -y create-vibecoding-kit@latest --project . --refresh`.
-  3. Si le message parle d'« ancienne version / bloc en double », **ouvre `AGENTS.md`** et supprime l'ancien bloc de règles sous `vibecoding:end` (garde ses notes perso). Explique-lui ce que tu fais.
-  → **Stop ici** (pas de re-scaffold). Termine par « ton projet est à jour ✅ ».
-
-- **Il n'existe pas** → nouveau projet, continue.
-
-## Étape 1 — Les 2 questions (simples)
-1. **Quel type d'app ?** (donne des exemples) :
-   - **saas** — site/app web avec comptes (SaaS, dashboard, réservation…)
-   - **mobile** — app iPhone/Android
-   - **desktop** — logiciel installable (Windows/Mac/Linux)
-   - **vitrine** — site vitrine / portfolio / blog (optimisé Google + IA)
-2. **Le nom du projet ?** (ou « ici » pour installer dans le dossier courant).
-
-L'**assistant** = celui où tu tournes — ne le demande pas, déduis-le.
-
-## Étape 2 — Scaffold (tu le fais)
-Lance (remplace `<stack>`, `<assistant>`, `<dossier>` ; `.` = dossier courant). Les valeurs sont
-**littérales** : le CLI refuse tout le reste et sort en erreur — pas de « Claude Code », pas de `claude`.
-
-```bash
-# <stack> = saas | mobile | desktop | vitrine
-# <assistant> = cursor | claude-code | codex
-npx -y create-vibecoding-kit@latest --stack <stack> --assistant <assistant> --project <dossier> --yes
-```
-
-Montre le résultat, confirme que les fichiers sont créés (AGENTS.md, docs/, .mcp.json…).
-
-## Étape 3 — Onboarding (déroule `docs/A-FAIRE.md` AVEC lui)
-Ouvre **`docs/A-FAIRE.md`** (généré, adapté à sa stack) et traite chaque section :
-- **Ce que tu peux faire toi** : skills (`npx skills add …` s'ils manquent), MCP en ligne de commande pour Claude Code (`claude mcp add …`). Fais-les, montre le résultat.
-- **Ce qui demande son clic** (explique simplement, une action à la fois) : installer le plugin **superpowers**, installer le plugin de sa stack s'il y en a un, autoriser les **MCP** (toggle Cursor / `/mcp`). Attends qu'il confirme avant de passer au suivant.
-- Coche mentalement chaque case ; ne le noie pas — **une étape à la fois**.
-
-## Étape 4 — Vérifie + lance
-- Si superpowers est installé : lance **`/doctor`** (dit ce qui manque encore).
-- Termine : « Tout est prêt 🎉 — tape **`/new-project`** et décris ton idée, je m'occupe du reste. »
-
-> **Sur Codex**, ces runbooks ne sont pas des slash-commands : ils vivent dans `docs/commands/`.
-> Ne lui dis jamais « tape `/doctor` » — ouvre `docs/commands/doctor.md` et suis-le toi-même.
+- [ ] **00** `init-vibecoding/00-detecter-l-etat.md` → tu sais si le projet est neuf ou **déjà initialisé** (déjà initialisé : tu le mets à jour, et tu t'arrêtes là)
+- [ ] **01** `init-vibecoding/01-les-2-questions.md` → le **type d'app** et le **nom du projet**, en deux questions simples
+- [ ] **02** `init-vibecoding/02-scaffold.md` → le projet **créé** par le CLI, résultat montré (AGENTS.md, docs/, .mcp.json…)
+- [ ] **03** `init-vibecoding/03-onboarding.md` → `docs/A-FAIRE.md` déroulé **avec lui**, case par case, une action à la fois
+- [ ] **04** `init-vibecoding/04-verifier-et-lancer.md` → l'environnement vérifié, et la **prochaine commande** donnée à l'utilisateur
 
 ## Règles
 - Ne submerge pas : **une question / une action à la fois**, attends la réponse.

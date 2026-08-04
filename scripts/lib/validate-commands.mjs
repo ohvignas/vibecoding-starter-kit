@@ -1,7 +1,7 @@
 // scripts/lib/validate-commands.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-import { DESIGN_SKILL_NAMES } from './matrix.mjs';
+import { DESIGN_SKILL_NAMES, STACKS } from './matrix.mjs';
 import { cheminRunbook, dossierEtapes } from './commands-list.mjs';
 
 // Les MÊMES chemins que ceux du scaffold, du `--refresh` et du plugin Cursor (`commands-list.mjs`).
@@ -9,6 +9,10 @@ import { cheminRunbook, dossierEtapes } from './commands-list.mjs';
 // personne ne livre — vert au dépôt, absent chez l'utilisateur.
 const ENTREE = cheminRunbook('new-project');
 const ETAPES_DIR = dossierEtapes('new-project');
+const ENTREE_NF = cheminRunbook('new-feature');
+const ETAPES_DIR_NF = dossierEtapes('new-feature');
+const ENTREE_IV = cheminRunbook('init-vibecoding');
+const ETAPES_DIR_IV = dossierEtapes('init-vibecoding');
 
 // `/new-project` est découpé en ÉTAPES : une entrée courte, puis un fichier par étape dans
 // `templates/commands/new-project/`. Les noms sont FIGÉS ici — `--refresh` n'efface jamais
@@ -40,6 +44,51 @@ const ETAPE = {
 // Autrement dit : l'absence n'est tolérée qu'EN BLOC. Un dossier à moitié découpé, ou dont une
 // étape a été renommée, ne retombe jamais en silence sur l'entrée — c'est ce repli silencieux,
 // et lui seul, qui rendrait la carte vide de sens.
+//
+// TROIS runbooks sont découpés, et les trois s'ancrent de cette façon : le mécanisme vit donc ici,
+// une fois. Ce qui reste propre à chacun, c'est SA carte « exigence → étape », plus bas.
+function ancrage(root, entree, etapesDir, errors) {
+  const dir = path.join(root, etapesDir);
+  // Le filtre `.md` n'est pas cosmétique : sans lui un sous-dossier partirait dans `readFileSync`
+  // → `EISDIR`. Un `.gitkeep` (git ne suit pas un dossier vide) ne compte pas pour une étape.
+  const surDisque = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => n.endsWith('.md')).sort() : [];
+  const decoupe = surDisque.length > 0;
+
+  const cache = new Map();
+  const lire = (rel) => {
+    if (!cache.has(rel)) cache.set(rel, fs.readFileSync(path.join(root, rel), 'utf8'));
+    return cache.get(rel);
+  };
+  const etapesAbsentes = new Set();
+  const ou = (etape) => {
+    if (!decoupe) return entree;
+    if (surDisque.includes(etape)) return `${etapesDir}/${etape}`;
+    etapesAbsentes.add(etape);
+    return null; // signalé une fois par `fin()` — jamais un repli silencieux sur l'entrée
+  };
+  return {
+    // Une exigence, cherchée dans l'étape qui porte le sujet (ou dans l'entrée, dossier vide).
+    exige(etape, satisfait, message) {
+      const f = ou(etape);
+      if (f !== null && !satisfait(lire(f))) errors.push(message(f));
+    },
+    // Une exigence qui reste dans l'ENTRÉE quoi qu'il arrive : le cadre, l'argument, le sommaire.
+    exigeEntree(satisfait, message) {
+      if (!satisfait(lire(entree))) errors.push(message(entree));
+    },
+    // Un INTERDIT porte sur TOUS les fichiers : une référence morte réapparue dans une étape
+    // atteint le même lecteur, et un contrôle négatif qui ne lirait que l'entrée resterait vert.
+    interdit(motif, quoi) {
+      for (const f of [entree, ...surDisque.map((e) => `${etapesDir}/${e}`)]) {
+        if (motif.test(lire(f))) errors.push(`${f} : référence morte — ${quoi}`);
+      }
+    },
+    fin() {
+      for (const e of [...etapesAbsentes].sort()) errors.push(`étape manquante : ${etapesDir}/${e}`);
+    },
+  };
+}
+
 // Le SUJET de chaque étape : le mot qui prouve qu'elle traite bien ce qu'elle annonce. Ils
 // s'appelaient « phases » — un vocabulaire que le kit n'écrit plus nulle part depuis que les
 // étapes se nomment par leur fichier.
@@ -92,35 +141,13 @@ const AGENTS_TEMPLATES = ['templates/agents/loop-section.md', 'templates/agents/
 export function validateNewProjectCommand(root) {
   const errors = [];
   if (!fs.existsSync(path.join(root, ENTREE))) { errors.push(`manquant : ${ENTREE}`); return errors; }
-
-  const dir = path.join(root, ETAPES_DIR);
-  // Le filtre `.md` n'est pas cosmétique : sans lui un sous-dossier partirait dans `readFileSync`
-  // → `EISDIR`. Un `.gitkeep` (git ne suit pas un dossier vide) ne compte pas pour une étape.
-  const surDisque = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => n.endsWith('.md')).sort() : [];
-  const decoupe = surDisque.length > 0;
-
-  const cache = new Map();
-  const lire = (rel) => {
-    if (!cache.has(rel)) cache.set(rel, fs.readFileSync(path.join(root, rel), 'utf8'));
-    return cache.get(rel);
-  };
-  const etapesAbsentes = new Set();
-  const ou = (etape) => {
-    if (!decoupe) return ENTREE;
-    if (surDisque.includes(etape)) return `${ETAPES_DIR}/${etape}`;
-    etapesAbsentes.add(etape);
-    return null; // signalé une fois plus bas — jamais un repli silencieux sur l'entrée
-  };
-  const exige = (etape, satisfait, message) => {
-    const f = ou(etape);
-    if (f !== null && !satisfait(lire(f))) errors.push(message(f));
-  };
+  const { exige, fin } = ancrage(root, ENTREE, ETAPES_DIR, errors);
 
   for (const [s, e] of SUJETS) exige(e, (t) => new RegExp(`(^|\\s)${s}($|\\s)`).test(t), (f) => `${f} : sujet manquant « ${s} »`);
   for (const [o, e] of OUTPUTS) exige(e, (t) => t.includes(o), (f) => `${f} : sortie non référencée « ${o} »`);
   for (const [r, e] of RENVOIS) exige(e, (t) => t.includes(r), (f) => `${f} : template déplacé jamais cité « ${r} »`);
   for (const [d, e] of DEPTH_RUNBOOK) exige(e, (t) => t.includes(d), (f) => `${f} : template pas assez détaillé, manque « ${d} »`);
-  for (const e of [...etapesAbsentes].sort()) errors.push(`étape manquante : ${ETAPES_DIR}/${e}`);
+  fin();
 
   for (const [f, marqueurs] of Object.entries(DEPTH)) {
     const p = path.join(root, f);
@@ -144,28 +171,102 @@ export function validateEditDesignCommand(root) {
   return errors;
 }
 
+// `/new-feature` est découpé lui aussi : les dix temps de la boucle sont regroupés en CINQ
+// fichiers, un par gate réel (cadrer · construire · prouver · livrer, plus le préflight). Noms
+// FIGÉS ici — `refresh.mjs` n'efface jamais, une renumérotation laisserait des orphelins à vie.
+const ETAPE_NF = {
+  preflight: '00-preflight.md',
+  spec: '01-spec-de-feature.md',
+  execution: '02-plan-et-execution.md',
+  verification: '03-verification.md',
+  livraison: '04-livraison.md',
+};
+
+// Chaque exigence dans le fichier qui la porte. Concaténer les étapes rendrait le contrôle PLUS
+// facile à satisfaire qu'avec le fichier d'un bloc : `git commit` trouverait son mot n'importe où,
+// y compris dans l'étape qui ne parle pas de livraison.
+// `git commit` / `gh pr create` / `--base main` remplacent l'ancien duo (plugin de commit +
+// branche `dev`) : ce plugin n'est jamais installé par le kit, et le scaffold ne crée que `main`.
+// `dev` était un contrôle vide — la chaîne apparaît dans « subagent-driven-development ». Son
+// remplaçant `main` l'était tout autant : « Gates humains » le satisfaisait, donc n'importe quel
+// runbook le satisfaisait, y compris un qui ne nomme aucune branche. On exige donc la chaîne
+// OPÉRANTE, qui ne peut pas apparaître par accident dans une phrase française : `--base main`.
+const ETAPES_NF = [
+  ['worktree', ETAPE_NF.preflight],
+  ['brainstorming', ETAPE_NF.spec],
+  ['writing-plans', ETAPE_NF.execution],
+  ['subagent-driven-development', ETAPE_NF.execution],
+  ['code-review', ETAPE_NF.verification],
+  ['Règle de vérification', ETAPE_NF.verification],
+  ['security-review', ETAPE_NF.verification],
+  ['git commit', ETAPE_NF.livraison],
+  ['gh pr create', ETAPE_NF.livraison],
+  ['gh run watch', ETAPE_NF.livraison],
+  ['finishing-a-development-branch', ETAPE_NF.livraison],
+  ['--base main', ETAPE_NF.livraison],
+];
+// Profondeur : la spec de feature (story + critères d'acceptation) doit être présente, pas un
+// simple « brainstorm » — et elle se prouve dans l'étape qui la produit.
+const DEPTH_NF = [["Critères d'acceptation", ETAPE_NF.spec], ['En tant que', ETAPE_NF.spec], ['Périmètre', ETAPE_NF.spec]];
+
 export function validateNewFeatureCommand(root) {
   const errors = [];
-  const rb = path.join(root, 'templates/commands/new-feature.md');
-  if (!fs.existsSync(rb)) { errors.push('manquant : templates/commands/new-feature.md'); return errors; }
-  const txt = fs.readFileSync(rb, 'utf8');
-  // `git commit` / `gh pr create` / `--base main` remplacent l'ancien duo (plugin de commit +
-  // branche `dev`) : ce plugin n'est jamais installé par le kit, et le scaffold ne crée que `main`.
-  // `dev` était un contrôle vide — la chaîne apparaît dans « subagent-driven-development ». Son
-  // remplaçant `main` l'était tout autant : « Gates humains » (new-feature.md:5) le satisfait, donc
-  // n'importe quel runbook le satisfaisait, y compris un qui ne nomme aucune branche. On exige
-  // désormais la chaîne OPÉRANTE, celle qui fixe vraiment la cible du merge et qui ne peut pas
-  // apparaître par accident dans une phrase française : `--base main` (l'argument de `gh pr create`).
-  const steps = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'git commit', 'gh pr create', 'gh run watch', 'finishing-a-development-branch', '--base main'];
-  for (const s of steps) if (!txt.includes(s)) errors.push(`new-feature : étape non référencée « ${s} »`);
-  if (!txt.includes('loop-section.md')) errors.push('new-feature : ne référence pas templates/agents/loop-section.md');
-  // Interdits : le validateur ne se contente plus d'exiger le bon, il refuse le faux.
-  for (const [motif, quoi] of [[/commit-commands/, 'plugin de commit jamais installé par le kit'], [/`dev`/, 'branche `dev` : le scaffold ne crée que `main`']]) {
-    if (motif.test(txt)) errors.push(`new-feature : référence morte — ${quoi}`);
+  if (!fs.existsSync(path.join(root, ENTREE_NF))) { errors.push(`manquant : ${ENTREE_NF}`); return errors; }
+  const { exige, exigeEntree, interdit, fin } = ancrage(root, ENTREE_NF, ETAPES_DIR_NF, errors);
+
+  for (const [s, e] of ETAPES_NF) exige(e, (t) => t.includes(s), (f) => `${f} : étape non référencée « ${s} »`);
+  for (const [d, e] of DEPTH_NF) exige(e, (t) => t.includes(d), (f) => `${f} : spec pas assez détaillée, manque « ${d} »`);
+  // Le CADRE reste dans l'entrée : c'est le fichier chargé comme commande, celui qui dit à quelle
+  // boucle d'`AGENTS.md` les étapes appartiennent. Une étape seule ne peut pas porter ce renvoi.
+  exigeEntree((t) => t.includes('loop-section.md'), (f) => `${f} : ne référence pas templates/agents/loop-section.md`);
+  // Interdits : le validateur ne se contente pas d'exiger le bon, il refuse le faux — partout.
+  interdit(/commit-commands/, 'plugin de commit jamais installé par le kit');
+  interdit(/`dev`/, 'branche `dev` : le scaffold ne crée que `main`');
+  fin();
+  return errors;
+}
+
+// `/init-vibecoding` déclarait déjà lui-même ses cinq « Étape 0 » à « Étape 4 » : le découpage
+// reprend exactement ces frontières, un fichier par étape, même numéro. Noms FIGÉS.
+const ETAPE_IV = {
+  etat: '00-detecter-l-etat.md',
+  questions: '01-les-2-questions.md',
+  scaffold: '02-scaffold.md',
+  onboarding: '03-onboarding.md',
+  lancement: '04-verifier-et-lancer.md',
+};
+// Ce que ce runbook doit dire, et OÙ. Rien ici n'était sous contrôle avant le découpage au-delà de
+// cinq chaînes cherchées dans le fichier entier ; les ancrer, c'est resserrer, pas relâcher.
+const ETAPES_IV = [
+  // L'état se détecte sur CE fichier-là, et la mise à jour se montre avant de s'appliquer.
+  ['.vibecoding.json', ETAPE_IV.etat],
+  ['--dry-run', ETAPE_IV.etat],
+  ['--refresh', ETAPE_IV.etat],
+  // La commande de scaffold, avec ses valeurs littérales : c'est elle que G3 rejoue.
+  ['npx -y create-vibecoding-kit@latest --stack', ETAPE_IV.scaffold],
+  ['<assistant> =', ETAPE_IV.scaffold],
+  // L'onboarding déroule LE fichier d'install, pas un doc inventé.
+  ['docs/A-FAIRE.md', ETAPE_IV.onboarding],
+  // Et la sortie : le diagnostic, puis la commande qui enchaîne.
+  ['/doctor', ETAPE_IV.lancement],
+  ['/new-project', ETAPE_IV.lancement],
+];
+
+export function validateInitCommand(root) {
+  const errors = [];
+  if (!fs.existsSync(path.join(root, ENTREE_IV))) { errors.push(`manquant : ${ENTREE_IV}`); return errors; }
+  const { exige, exigeEntree, fin } = ancrage(root, ENTREE_IV, ETAPES_DIR_IV, errors);
+
+  for (const [s, e] of ETAPES_IV) exige(e, (t) => t.includes(s), (f) => `${f} : consigne non référencée « ${s} »`);
+  // Les 4 stacks sont LUES dans matrix.mjs (source de vérité de ce que le CLI accepte) : une stack
+  // ajoutée sans être proposée à l'utilisateur ferait échouer ce test au lieu de passer inaperçue.
+  for (const s of Object.keys(STACKS)) {
+    exige(ETAPE_IV.questions, (t) => t.includes(`**${s}**`), (f) => `${f} : la stack « ${s} » n'est pas proposée à l'utilisateur`);
   }
-  // Profondeur : la spec de feature (story + critères d'acceptation) doit être présente, pas un simple « brainstorm ».
-  const depth = ["Critères d'acceptation", 'En tant que', 'Périmètre'];
-  for (const d of depth) if (!txt.includes(d)) errors.push(`new-feature : spec pas assez détaillée, manque « ${d} »`);
+  // Le CADRE — qui parle, comment — reste dans l'entrée : chaque étape s'y réfère, et c'est le
+  // seul fichier que l'assistant charge comme commande.
+  exigeEntree((t) => t.includes('## Règles'), (f) => `${f} : les règles de conduite transverses ont quitté l'entrée`);
+  fin();
   return errors;
 }
 

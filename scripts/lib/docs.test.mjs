@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { COMMANDS } from './commands-list.mjs';
+import { COMMANDS, fichiersDuRunbook } from './commands-list.mjs';
 import { STACKS, PINS, DESIGN_SKILL_NAMES, AGENT_SKILL_SPECS, SUPERPOWERS, MCP_CONNECT, resolveAssets, resolveStackManifest } from './matrix.mjs';
 import { CREW, kitOwnedFiles } from './kit-owned.mjs';
 import { runWizard } from './wizard.mjs';
@@ -470,21 +470,19 @@ test('H7bis — un fichier LIVRÉ dans le projet ne parle ni de formation ni d\'
 // encore vers `docs/SETUP-AI.md`, renommé il y a des lots).
 const DOCS_INTERNES = () => ['formateur', 'playbook'].flatMap((d) => fs.readdirSync(path.join(ROOT, d)).map((f) => `${d}/${f}`));
 
-// Tous les runbooks du kit : les fichiers d'entrée de `templates/commands/`, ET les ÉTAPES du
-// sous-dossier `templates/commands/new-project/` (vide tant que `/new-project` n'a pas été
-// découpé). Deux raisons, pas une :
+// Tous les runbooks du kit : les fichiers d'entrée de `templates/commands/`, ET les ÉTAPES des
+// runbooks découpés. Deux raisons, pas une :
 //  1. le filtre `.md` n'est pas cosmétique — sans lui le sous-dossier LUI-MÊME part dans
 //     `readFileSync`, qui lève `EISDIR: illegal operation on a directory, read`. Le seul `mkdir`
-//     suffisait à casser ce test, avant même qu'aucune étape n'existe ;
+//     suffisait à casser ce test, avant même qu'aucune étape n'existe. `etapesDuRunbook` le porte ;
 //  2. une étape cautionne les mêmes chemins que le runbook d'entrée. Ne lire que l'entrée ferait
 //     passer pour mort un chemin qu'une étape promet.
-const mdDe = (rel) => (fs.existsSync(path.join(ROOT, rel))
-  ? fs.readdirSync(path.join(ROOT, rel)).filter((n) => n.endsWith('.md')).sort()
-  : []);
-const RUNBOOKS = () => [
-  ...mdDe('templates/commands').map((n) => `templates/commands/${n}`),
-  ...mdDe('templates/commands/new-project').map((n) => `templates/commands/new-project/${n}`),
-];
+// La liste ne nommait que `new-project/` — le seul dossier d'étapes qui existât alors. Un
+// deuxième runbook découpé (`/new-feature`, `/init-vibecoding`) aurait vu ses chemins promis
+// sortir de la caution EN SILENCE : un `docs/…` cité par une doc interne et promis par une étape
+// serait devenu « mort » sans que rien n'ait disparu. On énumère donc la source unique, pour les
+// 10 runbooks — l'entrée, puis ses étapes s'il en a.
+const RUNBOOKS = () => COMMANDS.flatMap((c) => fichiersDuRunbook(ROOT, c));
 
 // Les slash-commandes NATIVES d'un assistant (`/mcp`, `/add-plugin`…) ne sont pas des runbooks
 // du kit : on les recompte là où le kit les déclare, au lieu de les lister à la main.
