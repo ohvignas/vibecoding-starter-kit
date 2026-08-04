@@ -26,27 +26,25 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { COMMANDS, fichiersDuRunbook } from './commands-list.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const lire = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
-const md = (d) => (fs.existsSync(path.join(ROOT, d))
-  ? fs.readdirSync(path.join(ROOT, d)).filter((n) => n.endsWith('.md')).sort()
-  : []);
 
-// Les ÉTAPES de `/new-project` : le sous-dossier `templates/commands/new-project/` portera le
-// runbook découpé, une étape par fichier. Il est vide (voire absent — git ne suit pas un dossier
-// vide) tant que le découpage n'a pas eu lieu. Le filtre `.md` évite l'`EISDIR` du sous-dossier.
-const ETAPES = () => md('templates/commands/new-project').map((n) => `templates/commands/new-project/${n}`);
-
-// GARDE DE MONTAGE des contrôles qui ne lisent QUE `templates/commands/new-project.md`. Ils sont
-// tous NÉGATIFS (`doesNotMatch`) : une fois le contenu parti dans une étape, ils restent verts
-// sur un fichier qui ne contient plus rien de ce qu'ils interdisent — et l'interdit peut
-// réapparaître dans l'étape sans que personne ne le voie.
-const gardeEtapesNonLues = (quoi) => assert.deepEqual(
-  ETAPES(), [],
-  `montage : ${quoi} ne lit que templates/commands/new-project.md. Des étapes existent dans `
-  + 'templates/commands/new-project/ et échappent à ce contrôle — lis-les aussi.',
-);
+// `/new-project` est DÉCOUPÉ : une entrée courte, puis un fichier par étape dans
+// `templates/commands/new-project/`. Toutes les commandes de scaffold vivent dans l'étape `07-…`,
+// et le tech spec dans `03-…` : un contrôle qui ne lirait que l'entrée n'aurait plus rien à juger.
+// Les interdits (`doesNotMatch`) sont les plus exposés — ils resteraient verts sur un fichier qui
+// ne contient plus rien de ce qu'ils refusent, pendant que l'interdit réapparaîtrait dans l'étape.
+// La liste des fichiers vient de la source unique (`commands-list.mjs`) : aucun nom d'étape ici.
+const FICHIERS_NP = () => fichiersDuRunbook(ROOT, 'new-project');
+// Le runbook COMPLET, tel qu'une IA le parcourt de bout en bout (chez Codex, c'est littéralement
+// le fichier qu'elle reçoit : entrée + étapes recollées, cf. `collerRunbook`).
+const runbook = () => {
+  const fichiers = FICHIERS_NP();
+  assert.ok(fichiers.length >= 2, `montage : ${fichiers.length} fichier(s) — le runbook découpé n'est pas lu en entier`);
+  return fichiers.map((f) => lire(f)).join('\n');
+};
 
 // Les drapeaux SANS lesquels `shadcn init` s'arrête sur une question. Mesurés un par un le
 // 2026-08-04 sur shadcn@latest : chaque ligne est un prompt réellement rencontré.
@@ -58,12 +56,9 @@ const DRAPEAUX_SHADCN = [
 ];
 
 test('E2E — une commande `shadcn init` citée par un runbook est non interactive', () => {
-  // Les runbooks d'entrée ET les étapes de `/new-project` : une commande de scaffold interactive
-  // bloque l'IA de la même façon, qu'elle soit dictée par l'entrée ou par l'étape `07-…`.
-  const fichiers = [
-    ...md('templates/commands').map((n) => `templates/commands/${n}`),
-    ...ETAPES(),
-  ].map((f) => [f, lire(f)]);
+  // Les runbooks d'entrée ET leurs étapes : une commande de scaffold interactive bloque l'IA de la
+  // même façon, qu'elle soit dictée par l'entrée ou par l'étape `07-…`.
+  const fichiers = COMMANDS.flatMap((c) => fichiersDuRunbook(ROOT, c)).map((f) => [f, lire(f)]);
 
   const fautes = [];
   let vues = 0;
@@ -87,7 +82,7 @@ test('E2E — une commande `shadcn init` citée par un runbook est non interacti
 });
 
 test('E2E — le runbook dit que shadcn crée un SOUS-DOSSIER, et où lancer les scripts', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   // `--name` fait naître l'app à côté de l'environnement du kit (qui, lui, est à la racine) :
   // `docs/RUN.md` promet `npm run dev` sans dire où. Mesuré : le package.json est un cran plus bas.
   assert.match(t, /SOUS-DOSSIER|sous-dossier/, 'le décalage racine / app n\'est pas dit');
@@ -107,7 +102,7 @@ const SCAFFOLDS = [
 ];
 
 test('E2E — les 4 commandes de scaffold sont non interactives', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   const fautes = [];
   for (const [outil, drapeau, prompt] of SCAFFOLDS) {
     const ligne = t.split('\n').find((l) => l.includes(outil));
@@ -120,7 +115,7 @@ test('E2E — les 4 commandes de scaffold sont non interactives', () => {
 });
 
 test('E2E — mobile : NativeWind est nommé ET son install est donnée', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   // Le kit disait « create-expo-app + NativeWind » sans jamais dire comment l'installer :
   // la techno était nommée, le geste absent. `expo install` (pas `npm i`) choisit les versions
   // compatibles du SDK — c'est ce qui distingue une install qui marche d'une qui casse.
@@ -137,7 +132,7 @@ test('E2E — mobile : NativeWind est nommé ET son install est donnée', () => 
 });
 
 test('E2E — saas : le template Convex n\'apporte pas d\'auth, le runbook le dit', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   // Mesuré : `convex/` sort avec schema.ts + myFunctions.ts, rien d'autre. Il n'existe pas non
   // plus de `template-tanstack-start-convexauth` dans get-convex/templates (contrairement à
   // react-vite et nextjs). Promettre l'auth « incluse » serait faux.
@@ -147,12 +142,11 @@ test('E2E — saas : le template Convex n\'apporte pas d\'auth, le runbook le di
 });
 
 test('E2E — desktop : Forge n\'a pas de template React, le runbook doit le dire', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   // Mesuré : `create-electron-app --template=vite-typescript` produit un package.json SANS react
   // ni react-dom. Les 5 templates de Forge (electron/forge/packages/template) sont `base`, `vite`,
   // `vite-typescript`, `webpack`, `webpack-typescript` — aucun n'amène React. Or le runbook
   // enchaînait sur `shadcn init`, qui en dépend : la chaîne desktop était rompue.
-  gardeEtapesNonLues('l\'interdit « Forge n\'a pas de template React »');
   assert.doesNotMatch(t, /vite\s*\+\s*react/i, 'Forge ne fournit aucun template React');
   const ligne = t.split('\n').find((l) => l.includes('create-electron-app'));
   assert.ok(ligne, 'le runbook ne dit plus comment scaffolder le desktop');
@@ -169,7 +163,7 @@ test('E2E — desktop : Forge n\'a pas de template React, le runbook doit le dir
 });
 
 test('E2E — le thème s\'applique à un projet existant avec `apply`, pas avec `init`', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   // `shadcn apply [preset]` = « apply a preset to an existing project » (vérifié : shadcn --help).
   // `init --preset` ne vaut qu'à la CRÉATION : sur saas et desktop, où le projet existe déjà,
   // c'était la mauvaise commande.
@@ -177,7 +171,7 @@ test('E2E — le thème s\'applique à un projet existant avec `apply`, pas avec
 });
 
 test('E2E — les blocs OFFICIELS sont proposés avant le registry tiers', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   // Vérifiés dans le registry officiel (`shadcn view`) : aucun registry à déclarer, aucune clé.
   // Le kit ne poussait que `@shadcnblocks/*`, tiers, qui exige une entrée dans components.json.
   for (const bloc of ['dashboard-01', 'login-0', 'signup-0', 'sidebar-0']) {
@@ -189,17 +183,16 @@ test('E2E — les blocs OFFICIELS sont proposés avant le registry tiers', () =>
 });
 
 test('E2E — le tech spec vit à côté du PRD, pas dans la convention interne du kit', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   // Il partait dans `docs/superpowers/specs/<date>-<projet>-architecture.md` : dossier ABSENT du
   // projet généré, nom daté, et `AGENTS.md` ne le listait même pas. Un débutant ne le retrouvait pas.
-  gardeEtapesNonLues('l\'interdit « pas de tech spec dans docs/superpowers/specs »');
   assert.doesNotMatch(t, /docs\/superpowers\/specs/, 'le tech spec ne va pas dans la convention interne du kit');
   assert.match(t, /docs\/ARCHITECTURE\.md/, 'le tech spec doit vivre à côté de docs/PRD.md');
   assert.match(lire('scripts/lib/templates.mjs'), /docs\/ARCHITECTURE\.md/, 'AGENTS.md doit y renvoyer');
 });
 
 test('E2E — le runbook fait poser le script `typecheck` que le template n\'a pas', () => {
-  const t = lire('templates/commands/new-project.md');
+  const t = runbook();
   // Mesuré sur le projet réellement produit : scripts = dev, build, preview, astro, lint.
   // Pas de `typecheck` → le hook du kit retombe sur `tsc --noEmit`, qui ne lit pas les `.astro`
   // et sort vert sans rien vérifier (c'est le bug F4, par un autre chemin).

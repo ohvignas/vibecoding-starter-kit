@@ -3,10 +3,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fichiersDuRunbook } from './commands-list.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const CRITICS = ['critique-produit', 'critique-donnees', 'critique-ux'];
+// `/new-project` est découpé : la Phase 6 vit dans l'étape `06-…`, plus dans l'entrée. On lit donc
+// le runbook entier (entrée + étapes), liste dérivée de la source unique `commands-list.mjs`.
+const newProject = () => fichiersDuRunbook(ROOT, 'new-project').map((f) => read(f)).join('\n');
 
 test('panel de critiques : personas distincts, format MANQUE, ne codent pas', () => {
   const bodies = CRITICS.map((c) => read(`templates/agents/subagents/${c}.md`));
@@ -33,7 +37,7 @@ test('crew : chaque agent déclare son modèle et LIT le journal (sans jamais l\
 });
 
 test('Phase 6 : audit de complétude + panel critique en parallèle avant roadmap', () => {
-  const np = read('templates/commands/new-project.md');
+  const np = newProject();
   assert.match(np, /Audit complet de complétude/);
   assert.match(np, /inventaire de complétude/);
   for (const c of ['critique-produit', 'critique-donnees', 'critique-ux']) assert.match(np, new RegExp(c));

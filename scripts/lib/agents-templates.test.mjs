@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fichiersDuRunbook } from './commands-list.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -81,7 +82,9 @@ test('reality-rule : zéro mock + boutons câblés + maquette à l\'identique', 
 
 test('ROADMAP + Phase 6 : données/câblage réel par jalon (zéro mock)', () => {
   const roadmap = read('templates/roadmap/ROADMAP.md');
-  const np = read('templates/commands/new-project.md');
+  // La Phase 6 vit dans l'étape `06-…` depuis le découpage : on lit le runbook entier (entrée +
+  // étapes), énuméré depuis la source unique `commands-list.mjs`.
+  const np = fichiersDuRunbook(ROOT, 'new-project').map((f) => read(f)).join('\n');
   assert.match(roadmap, /Données \/ câblage réel/);
   assert.match(np, /vraie donnée/i);
   assert.match(np, /zéro mock/i);

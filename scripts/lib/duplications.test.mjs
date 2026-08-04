@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { COMMANDS, COMMANDS_DIR, cheminEtape, collerRunbook, dossierEtapes, etapesDuRunbook, runbookConcatene } from './commands-list.mjs';
+import { COMMANDS, COMMANDS_DIR, cheminEtape, collerRunbook, dossierEtapes, etapesDuRunbook, fichiersDuRunbook, runbookConcatene } from './commands-list.mjs';
 import { CREW, AGENTS_DIR, kitOwnedFiles } from './kit-owned.mjs';
 import { resolveAssets, DESIGN_SKILL_NAMES, DESIGN_SKILL_SPECS } from './matrix.mjs';
 import { isValidProjectName } from './args.mjs';
@@ -137,12 +137,18 @@ test('E8 — les skills design : une liste, et l\'installeur pose bien ceux-là'
 });
 
 test('E8 — la règle design et les runbooks nomment exactement ces 4 skills', () => {
-  const sources = ['templates/agents/design-rule.md', 'templates/commands/edit-design.md', 'templates/commands/new-project.md'];
+  // `/new-project` est découpé : les 4 skills sont chargés par l'étape design, plus par l'entrée.
+  // Le contrôle porte donc sur le runbook ENTIER — et l'interdit du compte périmé, lui, sur CHAQUE
+  // fichier : recoller les textes le rendrait satisfaisable par un seul d'entre eux.
+  const sources = ['templates/agents/design-rule.md', 'templates/commands/edit-design.md', ...fichiersDuRunbook(ROOT, 'new-project')];
   for (const f of sources) {
-    const t = read(f);
-    for (const s of DESIGN_SKILL_NAMES) assert.ok(t.includes(s), `${f} : ${s} manquant`);
-    assert.doesNotMatch(t, /\*\*5 skills design\*\*/, `${f} : compte périmé (shadcnblocks n'est pas un skill)`);
+    assert.doesNotMatch(read(f), /\*\*5 skills design\*\*/, `${f} : compte périmé (shadcnblocks n'est pas un skill)`);
   }
+  for (const f of ['templates/agents/design-rule.md', 'templates/commands/edit-design.md']) {
+    for (const s of DESIGN_SKILL_NAMES) assert.ok(read(f).includes(s), `${f} : ${s} manquant`);
+  }
+  const runbook = fichiersDuRunbook(ROOT, 'new-project').map((f) => read(f)).join('\n');
+  for (const s of DESIGN_SKILL_NAMES) assert.ok(runbook.includes(s), `/new-project : ${s} manquant`);
   // Le validateur de commandes ne doit plus porter sa propre copie de la liste. L'assertion
   // « le fichier cite DESIGN_SKILL_NAMES » était satisfaite par un simple COMMENTAIRE : on exige
   // donc l'import réel, ET l'absence de tout tableau littéral qui rassemblerait ces 4 noms.

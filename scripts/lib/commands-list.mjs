@@ -28,6 +28,15 @@ export function etapesDuRunbook(kitRoot, cmd) {
   catch { return []; }
 }
 
+// TOUS les fichiers d'un runbook : l'entrée, puis ses étapes dans l'ordre des numéros. Un runbook
+// non découpé n'a que son entrée. C'est la forme dont les CONTRÔLES ont besoin : un balayage qui ne
+// lirait que l'entrée resterait vert sur un corpus amputé, et un interdit ne porterait plus sur le
+// texte parti en étape. Dérivé des trois chemins ci-dessus, jamais recopié : aucun test n'a donc à
+// nommer une étape pour la lire.
+export function fichiersDuRunbook(kitRoot, cmd) {
+  return [cheminRunbook(cmd), ...etapesDuRunbook(kitRoot, cmd).map((e) => cheminEtape(cmd, e))];
+}
+
 // Recolle une entrée et ses étapes en UN seul texte. PUR (aucune E/S) : la même fonction sert au
 // scaffold (`setup.mjs`) et à la mise à jour (`refresh.mjs`), jamais deux vérités.
 // À quoi ça sert — chez Codex les runbooks du kit ne sont pas des slash-commands mais des

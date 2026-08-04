@@ -13,6 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { STACKS } from './matrix.mjs';
+import { cheminEtape, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -20,24 +21,17 @@ const cmd = (c) => read(`templates/commands/${c}.md`);
 const md = (d) => fs.readdirSync(path.join(ROOT, d)).filter((n) => n.endsWith('.md')).sort();
 const COMMANDES = md('templates/commands').map((n) => n.replace(/\.md$/, ''));
 
-// Les ÉTAPES de `/new-project` : `templates/commands/new-project/` portera bientôt le contenu
-// découpé du runbook, une étape par fichier. Le dossier peut ne pas exister (git ne suit pas un
-// dossier vide) — d'où le `existsSync`. Le filtre `.md` protège du même `EISDIR` que
-// `docs.test.mjs` : un sous-dossier n'est pas un fichier de prose.
-const ETAPES = () => (fs.existsSync(path.join(ROOT, 'templates/commands/new-project'))
-  ? md('templates/commands/new-project').map((n) => `templates/commands/new-project/${n}`)
-  : []);
+// Les ÉTAPES de `/new-project` : `templates/commands/new-project/` porte le runbook découpé, une
+// étape par fichier. Dérivées de la source unique (`commands-list.mjs`) : aucun nom d'étape n'est
+// recopié ici, et une étape ajoutée demain tombe d'elle-même sous tous les balayages ci-dessous.
+const ETAPES = () => etapesDuRunbook(ROOT, 'new-project').map((n) => cheminEtape('new-project', n));
 
-// GARDE DE MONTAGE, à appeler depuis tout contrôle qui ne balaie QUE les fichiers d'entrée de
-// `templates/commands/`. Le jour où une étape existe, ce contrôle-là cesse de vérifier ce qu'il
-// annonce — et il le fait EN SILENCE, en restant vert sur un corpus amputé. Un `vues > 0` ne
-// suffirait pas : `PixelRAG` est cité par `edit-design.md` autant que par `new-project.md`, donc
-// le compteur resterait positif alors que les lignes visées seraient parties.
-const gardeEtapesNonBalayees = (quoi) => assert.deepEqual(
-  ETAPES(), [],
-  `montage : ${quoi} ne lit que les ${COMMANDES.length} runbooks d'entrée. Des étapes existent dans `
-  + 'templates/commands/new-project/ et ne sont contrôlées par personne — étends le balayage à ETAPES().',
-);
+// Les fichiers d'un runbook : son entrée, et ses étapes s'il est découpé. C'est le corpus de tout
+// contrôle qui portait sur un runbook D'UN SEUL BLOC. Ne lire que l'entrée le laisserait vert sur
+// un corpus amputé — en silence, puisque c'est de la prose. Un `vues > 0` ne suffirait pas :
+// `PixelRAG` est cité par `edit-design.md` autant que par `new-project.md`, donc le compteur
+// resterait positif alors que les lignes visées seraient parties.
+const FICHIERS_RUNBOOKS = () => COMMANDES.flatMap((c) => fichiersDuRunbook(ROOT, c));
 
 // Tous les fichiers de prose que le kit recopie chez l'utilisateur : commandes, ÉTAPES de
 // `/new-project`, règles injectées, agents, graines du crew. C'est le périmètre des gardes
@@ -317,33 +311,47 @@ test('D7bis — tout message d\'erreur cité par un runbook est bien celui que g
 const PIXELRAG_BLOQUANT = /avant de conclure|avant de la rendre|jusqu'à ce que|doit (?:confirmer|valider|approuver|passer)|tant qu[e']|bloqu|gate|exige/i;
 const PIXELRAG_QUALIFIE = /alerte,? (?:elle|il) ne tranche pas|ne remplace pas|signal indicatif|non bloquant|jamais un gate/i;
 test('D9 — PixelRAG alerte, il ne décide pas (dans les commandes comme dans les règles)', () => {
-  // Les deux lignes visées vivent en Phase 5 et Phase 6 de `/new-project` : le découpage les
-  // emmène dans `05-…` / `06-…`, hors de ce balayage, et le contrôle passerait au vert sans que
-  // rien ne surveille plus la qualification de PixelRAG là où elle est écrite.
-  gardeEtapesNonBalayees('le contrôle « PixelRAG alerte »');
-  for (const c of COMMANDES) {
-    cmd(c).split('\n').forEach((l, i) => {
+  // Les deux lignes visées vivent en Phase 5 et Phase 6 de `/new-project`, donc désormais dans les
+  // étapes `05-…` / `06-…` : le balayage porte sur les entrées ET les étapes, sans quoi il
+  // passerait au vert sans que rien ne surveille plus la qualification de PixelRAG là où elle est
+  // écrite. Un compteur prouve que le corpus n'est pas vide, et qu'on lit bien plus que les 10
+  // entrées.
+  const fichiers = FICHIERS_RUNBOOKS();
+  assert.ok(fichiers.length > COMMANDES.length, `montage : ${fichiers.length} fichiers lus pour ${COMMANDES.length} runbooks — les étapes ne sont pas balayées`);
+  for (const f of fichiers) {
+    read(f).split('\n').forEach((l, i) => {
       if (!/PixelRAG/i.test(l)) return;
-      const ou = `templates/commands/${c}.md:${i + 1}`;
+      const ou = `${f}:${i + 1}`;
       assert.doesNotMatch(l, PIXELRAG_BLOQUANT, `${ou} : PixelRAG rendu bloquant`);
       assert.match(l, PIXELRAG_QUALIFIE, `${ou} : PixelRAG cité sans dire qu'il alerte et ne tranche pas — non qualifié, il se lit comme un juge`);
     });
   }
 });
 
+// Les fichiers de `/new-project` : l'entrée puis ses étapes. Le runbook est découpé — un contrôle
+// qui ne lirait que l'entrée ne verrait plus aucune des sept phases.
+const NEW_PROJECT = () => fichiersDuRunbook(ROOT, 'new-project');
+
 test('D9 — l\'inventaire de complétude est cité par son chemin, aux deux endroits qui s\'en servent', () => {
-  const t = cmd('new-project');
-  const lignes = t.split('\n').map((l, i) => [i + 1, l]).filter(([, l]) => /inventaire/i.test(l));
+  const lignes = NEW_PROJECT().flatMap((f) => read(f).split('\n').map((l, i) => [`${f}:${i + 1}`, l]))
+    .filter(([, l]) => /inventaire/i.test(l));
   assert.ok(lignes.length >= 2, 'l\'inventaire est produit puis relu : deux mentions au moins');
   const sansChemin = lignes.filter(([, l]) => !l.includes('docs/agents/inventaire.md'));
-  assert.deepEqual(sansChemin.map(([n]) => `new-project.md:${n}`), [], 'inventaire cité sans son chemin');
+  assert.deepEqual(sansChemin.map(([ou]) => ou), [], 'inventaire cité sans son chemin');
 });
 
+// Une phase = un fichier, et un seul. Le découpage a remplacé le découpage par tranches (`slice`
+// entre deux titres) : chercher `## Phase 6` dans le fichier de la Phase 5 ne trouverait plus rien,
+// et la tranche vide aurait rendu l'interdit ci-dessous satisfait par construction.
+const fichierDeLaPhase = (n) => {
+  const trouves = NEW_PROJECT().filter((f) => new RegExp(`^#+ Phase ${n}\\b`, 'm').test(read(f)));
+  assert.equal(trouves.length, 1, `Phase ${n} : attendue dans exactement UN fichier du runbook, vue dans ${trouves.length} (${trouves.join(', ') || 'aucun'})`);
+  return read(trouves[0]);
+};
+
 test('D9 — le registry @shadcnblocks n\'est pas utilisé en Phase 5 alors qu\'il n\'existe qu\'en Phase 7', () => {
-  const t = cmd('new-project');
-  const p5 = t.slice(t.indexOf('## Phase 5'), t.indexOf('## Phase 6'));
-  const p7 = t.slice(t.indexOf('## Phase 7'));
-  assert.ok(p5.length > 0 && p7.length > 0, 'phases introuvables');
+  const p5 = fichierDeLaPhase(5);
+  const p7 = fichierDeLaPhase(7);
   assert.doesNotMatch(p5, /npx shadcn add @shadcnblocks/, 'appel au registry avant son ajout à components.json (Phase 7)');
   assert.match(p7, /@shadcnblocks/, 'le registry doit rester documenté là où il est ajouté');
 });
@@ -352,11 +360,15 @@ test('D9 — les templates PRD et architecture vivent dans templates/ et arriven
   for (const f of ['templates/prd/PRD.md', 'templates/specs/architecture.md']) {
     assert.ok(fs.existsSync(path.join(ROOT, f)), `template absent : ${f}`);
   }
-  const t = cmd('new-project');
+  // Les deux renvois vivent dans les étapes qui S'EN SERVENT (Phase 2, Phase 4) : on lit donc le
+  // runbook entier, entrée + étapes, pas seulement le sommaire d'entrée.
+  const t = NEW_PROJECT().map((f) => read(f)).join('\n');
   assert.match(t, /docs\/templates\/PRD\.md/, 'le runbook ne dit pas où lire le template PRD');
   assert.match(t, /docs\/templates\/architecture\.md/, 'le runbook ne dit pas où lire le template architecture');
-  const lignes = t.split('\n').length;
-  assert.ok(lignes <= 175, `new-project.md fait encore ${lignes} lignes (les templates devaient sortir du runbook)`);
+  // …et AUCUN des fichiers du runbook ne redevient un mur : ni l'entrée, ni une étape. Le plafond
+  // portait sur le fichier unique de 197 lignes ; il porte maintenant sur chacun d'eux.
+  const gros = NEW_PROJECT().map((f) => [f, read(f).split('\n').length]).filter(([, n]) => n > 175);
+  assert.deepEqual(gros.map(([f, n]) => `${f} : ${n} lignes`), [], 'un fichier du runbook a repris la taille d\'un mur');
   // Le contenu déplacé n'a pas disparu : il est intégralement dans les templates.
   const prd = read('templates/prd/PRD.md');
   for (const s of ['Métriques de succès', 'Non-objectifs', 'Index des hypothèses', 'Jobs To Be Done', 'UJ-1', 'FR-1']) {
@@ -369,8 +381,11 @@ test('D9 — les templates PRD et architecture vivent dans templates/ et arriven
 });
 
 test('D10 — le plugin Cursor est le reflet exact des 10 commandes du kit', () => {
-  for (const c of COMMANDES) {
-    assert.equal(read(`cursor-plugin/commands/${c}.md`), cmd(c), `cursor-plugin/commands/${c}.md a dérivé — relance node scripts/build-cursor-plugin.mjs`);
+  // Les ÉTAPES aussi : un plugin qui n'embarquerait que l'entrée publierait une checklist dont
+  // chaque ligne renvoie à un fichier absent.
+  for (const f of FICHIERS_RUNBOOKS()) {
+    const dansPlugin = f.replace(/^templates\/commands\//, 'cursor-plugin/commands/');
+    assert.equal(read(dansPlugin), read(f), `${dansPlugin} a dérivé — relance node scripts/build-cursor-plugin.mjs`);
   }
 });
 
@@ -389,12 +404,14 @@ test('D10 — aucune commande ne renvoie à quelque chose qui n\'existe pas', ()
   ];
   // Contrôle NÉGATIF : il ne peut jamais « ne rien trouver » de façon suspecte, donc sa seule
   // façon de mentir est de ne plus rien lire. `commit-commands`, `` `dev` ``, `3 essais`,
-  // `STITCH_API_KEY` et `/debug` peuvent réapparaître dans une étape sans que ce test le voie.
-  gardeEtapesNonBalayees('le contrôle des références orphelines');
+  // `STITCH_API_KEY` et `/debug` réapparaîtraient dans une ÉTAPE sans que ce test le voie — le
+  // balayage porte donc sur les entrées ET les étapes, et un compteur prouve qu'il lit les deux.
+  const fichiers = FICHIERS_RUNBOOKS();
+  assert.ok(fichiers.length > COMMANDES.length, `montage : ${fichiers.length} fichiers lus pour ${COMMANDES.length} runbooks — les étapes ne sont pas balayées`);
   const restes = [];
-  for (const c of COMMANDES) {
-    cmd(c).split('\n').forEach((l, i) => {
-      for (const [m, why] of INTERDITS) if (m.test(l)) restes.push(`templates/commands/${c}.md:${i + 1} — ${why} : ${l.trim().slice(0, 90)}`);
+  for (const f of fichiers) {
+    read(f).split('\n').forEach((l, i) => {
+      for (const [m, why] of INTERDITS) if (m.test(l)) restes.push(`${f}:${i + 1} — ${why} : ${l.trim().slice(0, 90)}`);
     });
   }
   assert.deepEqual(restes, [], `références orphelines :\n${restes.join('\n')}`);

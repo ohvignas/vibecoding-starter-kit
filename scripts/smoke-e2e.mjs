@@ -44,10 +44,6 @@ for (const f of [
 
 // Les ÉTAPES d'un runbook découpé, livrées dans le dossier natif de l'assistant. Ce contrôle SUIT
 // le kit : chaque étape que porte `templates/commands/<cmd>/` doit être arrivée dans le projet.
-// ⚠️ Il n'y a volontairement PAS de `vues > 0` ici. Tant que le découpage n'a pas eu lieu, le
-// dossier d'étapes est vide et un tel gate serait rouge sans qu'aucune étape ne manque — il
-// arrive AVEC le découpage (P3), c'est la 8ᵉ garde de montage du plan. En attendant, la boucle
-// prouve déjà la livraison à la seconde où une étape existe.
 let etapesVues = 0;
 for (const c of COMMANDS) {
   for (const e of etapesDuRunbook(kitRoot, c)) {
@@ -55,7 +51,12 @@ for (const c of COMMANDS) {
     check(`étape .cursor/commands/${c}/${e}`, fs.existsSync(path.join(project, '.cursor/commands', c, e)));
   }
 }
-console.log(`    (${etapesVues} étape(s) de runbook attendue(s) dans le projet)`);
+// GARDE DE MONTAGE. La boucle ci-dessus ne peut échouer que sur une étape MANQUANTE : à zéro
+// étape énumérée, elle est verte sans rien avoir vérifié. Or c'est exactement l'état qu'aurait le
+// gate si `templates/commands/<cmd>/` cessait d'être livré (dossier renommé, filtre `.md` cassé,
+// `etapesDuRunbook` qui avale son erreur) — le projet sortirait avec une entrée dont chaque ligne
+// de checklist renvoie à un fichier absent, et le smoke le déclarerait vert.
+check(`au moins une étape de runbook attendue (vues : ${etapesVues})`, etapesVues > 0);
 
 check('dépôt git initialisé (.git présent)', fs.existsSync(path.join(project, '.git')));
 let hooksPath = '';
