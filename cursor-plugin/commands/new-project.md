@@ -113,7 +113,7 @@ Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX 
 **A. DESIGN.md — l'identité visuelle** *(format google-labs design.md)*
 - *Frontmatter tokens* (machine) : `colors` (nom→hex), `typography` (fontFamily/size/weight/lineHeight), `rounded`, `spacing`, `components` (composant→tokens).
 - *Marque & style* · *Couleurs* (rôle) · *Typographie* (rôles, échelle) · *Layout & espacements* (grille, breakpoints) · *Élévation* (ombres) · *Formes* (rayons) · *Composants* (specs par composant) · *À faire / à éviter*.
-- shadcn/Tailwind : réfère les tokens par nom plutôt que de tout redéfinir. Affine sur **[tweakcn.com](https://tweakcn.com)** → colle dans `globals.css` + les *tokens* de `docs/design.md`. Le scaffold appliquera le preset en Phase 7 (`npx shadcn@latest init --preset <code>`).
+- shadcn/Tailwind : réfère les tokens par nom plutôt que de tout redéfinir. Affine sur **[tweakcn.com](https://tweakcn.com)** → colle dans `globals.css` + les *tokens* de `docs/design.md`. Le scaffold appliquera ce preset en **Phase 7** (la commande exacte y est écrite — ne la recopie pas ici, elle a cinq drapeaux obligatoires).
 
 **B. EXPERIENCE.md — le comportement**
 - *Fondation* (form-factor, système d'UI) · *Architecture de l'information* · *Voix & ton* (microcopy) · *Patterns de composants* + *d'état* (chargement/vide/erreur/succès) · *Primitives d'interaction* · *Plancher d'accessibilité* · *Flux clés* (parcours avec protagoniste nommé + climax).
@@ -155,9 +155,10 @@ Avec les 4 skills design, fixe (cas c) ou extrais de la maquette (cas a/b) DEUX 
 
 ## Phase 7 — Mise en place du projet
 1. Scaffold la stack choisie, **avec le preset shadcn** noté en Phase 5 :
-   - **vitrine** : `npx shadcn@latest init --preset <code> --template astro` (crée l'app Astro complète avec le thème), puis Keystatic (`npx astro add react markdoc` + `@keystatic/core @keystatic/astro`).
-   - **saas** : `npm create convex@latest` (TanStack Start + Convex), puis **dans le projet** : `npx shadcn@latest init --preset <code>`.
-   - **desktop** : `create-electron-app` (vite+react), puis **dans le renderer** : `npx shadcn@latest init --preset <code>`.
+   - **vitrine** : `npx shadcn@latest init --template astro --base base --no-monorepo --preset <code> --name <nom-du-projet> --yes` (crée l'app Astro complète avec le thème), puis Keystatic (`npx astro add react markdoc` + `@keystatic/core @keystatic/astro`).
+     ⚠️ **Les 5 drapeaux sont obligatoires** : sans eux `init` pose 4 questions (monorepo · bibliothèque · preset · nom), 3 aux flèches — `--yes` n'en saute aucune et **une IA reste bloquée sans erreur**. Pas de preset en Phase 5 → `--preset nova`. **`--name` crée un SOUS-DOSSIER** : l'environnement du kit reste à la racine, l'app Astro et son `package.json` vont dans `<nom-du-projet>/` — dis à l'utilisateur que `npm run dev` se lance **de là**. Enfin, **ajoute `"typecheck": "astro check"`** au `package.json` créé : le template n'en pose aucun, et sans lui le hook retombe sur `tsc --noEmit`, qui **ne lit pas les `.astro`** et sort vert sans rien vérifier.
+   - **saas** : `npm create convex@latest` (TanStack Start + Convex), puis **dans le projet** : `npx shadcn@latest init --preset <code> --base base --no-monorepo --yes`.
+   - **desktop** : `create-electron-app` (vite+react), puis **dans le renderer** : `npx shadcn@latest init --preset <code> --base base --no-monorepo --yes`.
    - **Blocs shadcnblocks** (saas / desktop / vitrine) : après `shadcn init`, ajoute le registry à **`components.json`** (fusionne, n'écrase pas) —
      ```json
      { "registries": { "@shadcnblocks": { "url": "https://www.shadcnblocks.com/r/{name}", "headers": { "Authorization": "Bearer ${SHADCNBLOCKS_API_KEY}" } } } }
