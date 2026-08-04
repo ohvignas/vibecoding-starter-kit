@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import { STACKS } from './matrix.mjs';
 import { cheminEtape, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
+import { erreursChecklist } from './runbook-decoupe.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -151,6 +152,105 @@ test('D6 — /doctor vérifie les 10 commandes, la mémoire du crew, le MCP shad
   for (const o of ['semgrep', 'gitleaks', 'osv-scanner']) assert.match(t, new RegExp(o), `outil de preuve non vérifié : ${o}`);
   // Variable inexistante : le MCP Stitch prend la clé en header, il n'y a pas de STITCH_API_KEY.
   assert.doesNotMatch(t, /STITCH_API_KEY/, 'variable d\'environnement inexistante');
+});
+
+// ── LE TROU QUE NOTRE DÉCOUPAGE A OUVERT ──────────────────────────────────────────────────────
+// `/doctor` est le **critère officiel de fin d'installation** : son verdict décide si l'utilisateur
+// croit son environnement prêt. Il énumérait « les 10 commandes » — or depuis le découpage, une
+// commande n'est plus forcément UN fichier : trois runbooks sont une entrée + un dossier d'étapes.
+// Un projet peut donc recevoir les 10 entrées et AUCUNE étape (dossier jamais copié, `--refresh`
+// depuis une version antérieure au découpage, dossier supprimé à la main), et /doctor rendait ✅ :
+// l'utilisateur lançait `/new-project`, dont la première case renvoie déjà à un fichier absent.
+//
+// LA FORME EXIGÉE, et pourquoi celle-là. /doctor est un texte LU PAR UNE IA, pas un script : le
+// contrôle doit être une manipulation qu'un assistant sait réellement faire — LISTER le
+// sous-dossier posé à côté de l'entrée, et le COMPARER aux cases de cette entrée. Et la liste
+// attendue se DÉRIVE de ce que le kit livre (les cases `- [ ]` de l'entrée) : une étape nommée en
+// dur serait une deuxième liste — celle que `duplications.test.mjs` E8 refuse partout ailleurs —
+// et elle mentirait au premier renommage sans que rien ne rougisse.
+test('D6bis — /doctor réclame les ÉTAPES de chaque runbook découpé, et n\'en nomme aucune en dur', () => {
+  const t = cmd('doctor');
+  // Montage : sans runbook découpé, l'exigence porterait sur l'ensemble vide.
+  const decoupes = COMMANDES.filter((c) => etapesDuRunbook(ROOT, c).length > 0);
+  assert.ok(decoupes.length >= 3, `montage : ${decoupes.length} runbook(s) découpé(s) — l'item n'aurait rien à contrôler`);
+
+  const lignes = t.split('\n');
+  const item = lignes.find((l) => /^\d+\. \*\*Étapes des runbooks/.test(l));
+  assert.ok(item, '/doctor ne contrôle pas les étapes : un projet amputé d\'un dossier d\'étapes entier obtiendrait ✅');
+  // Exécutable par une IA : où chercher · à quoi se reconnaît une case · comparer · quoi taper.
+  for (const [motif, quoi] of [
+    [/sous-dossier/i, 'où les étapes sont posées'],
+    [/- \[ \]/, 'à quoi se reconnaît une case de la checklist d\'entrée'],
+    [/compar/i, 'le contrôle est une COMPARAISON checklist ↔ dossier, pas une impression'],
+    [/--refresh/, 'la commande exacte qui répare'],
+  ]) assert.match(item, motif, `item « Étapes des runbooks » : ${quoi} manque`);
+
+  // …et il BLOQUE le verdict. Un contrôle hors de la plage « TOUT est ✓ » ne bouche aucun trou :
+  // /doctor listerait le ✗ puis dirait quand même « ton environnement est prêt ».
+  const n = Number(item.match(/^(\d+)\./)[1]);
+  const plage = Number(t.match(/de 1 à \*{0,2}(\d+)/)?.[1]);
+  assert.ok(plage, 'le verdict ne dit plus jusqu\'où va la plage bloquante');
+  assert.ok(n <= plage, `l'item ${n} (étapes) est hors de la plage bloquante « de 1 à ${plage} » : le ✗ serait affiché, puis le verdict ✅ rendu quand même`);
+
+  // AUCUNE étape nommée en dur — ni une qui existe aujourd'hui, ni une qui n'existe pas encore.
+  const connues = [...new Set(COMMANDES.flatMap((c) => etapesDuRunbook(ROOT, c)))].filter((e) => t.includes(e));
+  assert.deepEqual(connues, [], `/doctor nomme des étapes livrées : ${connues.join(', ')} — la liste se dérive des cases de l'entrée, elle ne se recopie pas`);
+  const endur = [...t.matchAll(/`[^`\n]*\d\d-[\w-]+\.md[^`\n]*`/g)].map((m) => m[0]);
+  assert.deepEqual(endur, [], `/doctor fige un nom d'étape : ${endur.join(', ')} — au prochain renommage il réclamerait un fichier que le kit ne livre plus`);
+
+  // ── LA PRÉMISSE DE L'ITEM, GARDÉE POUR TOUT RUNBOOK DÉCOUPÉ ────────────────────────────────
+  // L'item ne sait reconnaître une étape attendue qu'à une case `- [ ]` de l'entrée : « aucune
+  // case de ce genre = runbook non découpé, rien à vérifier pour lui ». Un runbook découpé dont
+  // l'entrée citerait ses étapes AUTREMENT serait donc sauté en silence — le trou d'aujourd'hui,
+  // rouvert pour lui seul. `erreursChecklist` impose exactement cette forme, mais il était appelé
+  // à la main, une fois par runbook découpé, dans le fichier de test de chacun : un 4ᵉ découpage
+  // livré sans son fichier de test n'aurait rien eu. On l'applique donc à TOUS les découpés, par
+  // construction, depuis la source unique.
+  const sansChecklist = decoupes.flatMap((c) => erreursChecklist(ROOT, c, 40).map((e) => `/${c} : ${e}`));
+  assert.deepEqual(sansChecklist, [], 'l\'item « Étapes des runbooks » reconnaît une étape attendue à une case `- [ ]` de'
+    + ` l'entrée : un runbook découpé qui n'en porte pas serait sauté sans un mot.\n${sansChecklist.join('\n')}`);
+});
+
+// ── POURQUOI /doctor RESTE D'UN BLOC (le plan P5 le rangeait parmi les runbooks à découper) ────
+// Mesuré sur le fichier réel, le découpage lui coûterait sans rien lui rendre — trois raisons,
+// dans l'ordre de gravité :
+//  1. LA SORTIE. Le motif impose une SORTIE par étape : `runbook-decoupe.mjs` (`erreursChecklist`)
+//     exige un `→` sur chaque case, et une sortie « trop maigre » est une erreur. /doctor ne
+//     produit AUCUN artefact — ses items sont des lectures qui alimentent UN verdict unique. Il
+//     faudrait inventer des sorties qu'aucun fichier n'enregistre.
+//  2. LE NUMÉRO D'ITEM DEVIENDRAIT UN « Phase N ». Le verdict désigne ses items PAR LEUR NUMÉRO
+//     (« si TOUT est ✓ de 1 à N », « l'item N est optionnel ») et un item renvoie à un autre par
+//     son numéro. Éclatés, ces numéros ne désigneraient plus aucun fichier ouvrable : exactement
+//     l'identifiant que P4 a aboli (`new-project-runbook.test.mjs` — une étape se nomme par son
+//     fichier). Le test ci-dessous verrouille donc AUSSI cette numérotation, seule chose qui tienne
+//     le verdict debout.
+//  3. LA TAILLE. La plupart des items tiennent sur UNE ligne : l'entrée d'un découpage — une case
+//     par étape, sortie comprise, plus le préambule — pèserait plus que les fragments qu'elle
+//     indexe. Le mur que le découpage combat n'existe pas ici.
+// Et à l'usage : « mon environnement est-il prêt ? » exige TOUS les items, jamais un sous-ensemble.
+// L'assistant rouvrirait chaque fragment à chaque fois, avec le risque nouveau d'en sauter un —
+// c'est-à-dire le faux ✅ que D6bis vient de fermer.
+// (`/help` reste d'un bloc pour une raison voisine mais distincte — c'est un catalogue : cf. D8.)
+test('D6ter — /doctor reste d\'un bloc, et son verdict ne laisse aucun item hors de sa plage', () => {
+  assert.deepEqual(etapesDuRunbook(ROOT, 'doctor'), [],
+    '/doctor a été découpé : il n\'a qu\'UNE sortie (son verdict) et numérote ses items — relis l\'argument ci-dessus, ou remets-le d\'un bloc');
+  const t = cmd('doctor');
+  const items = [...t.matchAll(/^(\d+)\. \*\*/gm)].map((m) => Number(m[1]));
+  assert.ok(items.length >= 17, `montage : ${items.length} item(s) reconnu(s) — la numérotation de /doctor n'est plus lisible, les contrôles ci-dessous ne prouvent rien`);
+  assert.deepEqual(items, items.map((_, k) => k + 1), `la numérotation de /doctor saute ou se répète : ${items.join(', ')}`);
+
+  const verdict = t.split('\n').find((l) => /Verdict final/.test(l));
+  assert.ok(verdict, 'le verdict final a disparu : /doctor n\'est plus un critère de fin d\'installation');
+  const plage = Number(verdict.match(/de 1 à \*{0,2}(\d+)/)?.[1]);
+  assert.ok(plage, `le verdict ne dit plus jusqu'où va la plage bloquante : ${verdict.slice(0, 120)}`);
+  // Un item ajouté au-dessus de la plage sans que le verdict le déclare optionnel ne bloque rien,
+  // et personne ne le voit : c'est la façon dont /doctor peut redevenir complaisant en silence.
+  const muets = items.filter((n) => n > plage && !new RegExp(`\\*\\*${n} est optionnel\\*\\*`).test(verdict));
+  assert.deepEqual(muets, [], `item(s) hors de « de 1 à ${plage} » que le verdict ne déclare pas optionnel : ${muets.join(', ')}`);
+  // …et les renvois internes d'un item à l'autre visent un item qui existe : c'est le seul filet
+  // contre une renumérotation à moitié faite.
+  const morts = [...t.matchAll(/l['’]item \*{0,2}(\d+)/gi)].map((m) => Number(m[1])).filter((n) => !items.includes(n));
+  assert.deepEqual(morts, [], `renvoi(s) vers un item inexistant de /doctor : ${morts.join(', ')}`);
 });
 
 test('D7 — /build : arguments transmis, E2E délégué, tag annoté ET publié, --all désactivé en apprentissage', () => {

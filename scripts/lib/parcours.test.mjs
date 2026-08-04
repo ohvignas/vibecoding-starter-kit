@@ -212,10 +212,22 @@ test('G7 — les outils de vérification sont annoncés OPTIONNELS, avec ce qu\'
   const titre = setup.split('\n').find((l) => l.startsWith('### Outils de preuve'));
   assert.ok(titre, 'la section existe');
   assert.match(titre, /optionnel/i, 'le titre de section le dit aussi');
-  // /doctor ne doit pas exiger un item optionnel pour rendre son verdict « prêt ».
+  // /doctor ne doit pas exiger un item OPTIONNEL pour rendre son verdict « prêt ».
+  // Le contrôle épinglait la forme littérale `si TOUT est ✓ (1 à 17)` — la faute exacte corrigée
+  // par `d049e7c`, et rien d'autre. Depuis, le verdict s'écrit « de 1 à N » en gras : le
+  // `doesNotMatch` ne pouvait plus rien rencontrer, et une renumérotation le périmait de toute
+  // façon (mesuré : avec un 18ᵉ item ajouté et un verdict passé à « de 1 à 18 » — qui exige donc
+  // bien l'item optionnel — ce test restait vert). On ne fige donc plus une chaîne : on lit le
+  // NUMÉRO de l'item « Outils de preuve » et la borne de la plage bloquante, et on exige que le
+  // premier soit HORS de la seconde. (`commands.test.mjs` D6ter tient l'autre bout : tout item
+  // hors plage doit être déclaré optionnel par le verdict.)
   const doctor = read('templates/commands/doctor.md');
-  assert.match(doctor, /Outils de preuve \(optionnels/, 'doctor : item 17 optionnel');
-  assert.doesNotMatch(doctor, /si TOUT est ✓ \(1 à 17\)/, 'doctor : le verdict ne peut pas exiger un item optionnel');
+  const outils = doctor.split('\n').find((l) => /^\d+\. \*\*Outils de preuve \(optionnels/.test(l));
+  assert.ok(outils, 'doctor : l\'item « Outils de preuve » doit rester annoncé optionnel');
+  const plage = Number(doctor.match(/de 1 à \*{0,2}(\d+)/)?.[1]);
+  assert.ok(plage, 'doctor : le verdict ne dit plus jusqu\'où va la plage bloquante');
+  const n = Number(outils.match(/^(\d+)\./)[1]);
+  assert.ok(n > plage, `doctor : le verdict exige l'item ${n}, qui est optionnel (plage bloquante « de 1 à ${plage} »)`);
 });
 
 test('G8 — les 12 combinaisons : rien d\'inapplicable dans le premier contact', () => {
