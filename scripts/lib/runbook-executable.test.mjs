@@ -11,8 +11,10 @@
 //
 // CE QUE CE TEST GARANTIT : une commande de scaffold citée par un runbook porte les drapeaux qui
 // la rendent non interactive. C'est statique — il lit les drapeaux, il ne relance pas `npx` (ça
-// coûte plusieurs minutes et le réseau). La vérification par exécution, elle, est dans
-// `docs/superpowers/audits/` : forme complète jouée le 2026-08-04, `[build] Complete!` + `dist/`.
+// coûte plusieurs minutes et le réseau). La vérification par EXÉCUTION, elle, est le corps du
+// commit `6fd94c3` : forme complète jouée prompt par prompt, `[build] Complete!` + `dist/`.
+// (Elle a longtemps été annoncée « dans `docs/superpowers/audits/` » — le fichier n'y a jamais été
+// déposé, ce dossier ne porte que les audits 07-08 et 07-27. On cite donc où la preuve EST.)
 //
 // CE QU'IL NE GARANTIT PAS, et il faut le dire :
 //  · que les drapeaux existent encore dans la prochaine version de l'outil tiers — aucun test

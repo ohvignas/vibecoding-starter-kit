@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateNewProjectCommand } from './validate-commands.mjs';
 import { COMMANDS, cheminRunbook, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
+import { erreursRenvois } from './runbook-decoupe.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -23,6 +24,21 @@ const FICHIERS = () => fichiersDuRunbook(ROOT, 'new-project');
 // Les 111 lignes de contenu (hors lignes vides et `---`) que `templates/commands/new-project.md`
 // portait quand il pesait 170 lignes d'un bloc. Extraites AVANT le commit qui l'a découpé : la
 // référence n'existe plus nulle part ailleurs, ni sur le disque ni dans un test.
+//
+// DIX-NEUF DE CES LIGNES ONT ÉTÉ RÉÉCRITES DEPUIS, et le dire fait partie du contrat que le
+// message d'échec ci-dessous impose (« dis laquelle et pourquoi ») — il avait été tenu pour
+// `/new-feature` (3 lignes) et `/init-vibecoding` (0), jamais ici. Les 92 autres sont mot pour mot
+// celles de `3ca5ecf^`. Les 19, toutes du même lot P4 (« une étape se nomme par son fichier ») :
+//   · 7 TITRES qui perdent leur préfixe (`## Phase 2 — PRD complète…` → `## PRD complète…`) ;
+//   · 2 lignes de cadre où le MOT change (« va phase par phase » → « va étape par étape ») ;
+//   · 9 RENVOIS croisés où le numéro devient un fichier (« noté en Phase 5 » → « noté à l'étape
+//     `05-design-maquette.md` ») — un numéro de phase ne désignait aucun fichier ouvrable, et le
+//     découpage l'avait rendu faux (les Phases 3 et 4 tenaient dans le même `03-…`) ;
+//   · 1 seule ligne au contenu changé, celle du PRD : elle gagne les trois ajouts de P4
+//     (« problème », « entreprise et objectifs commerciaux `OC-*` ») et la consigne « Laisse la
+//     section « Arborescence » vide », qui donne sa raison d'être à l'étape `04-…`.
+// Aucune consigne n'a été retirée : vérifié ligne à ligne contre `3ca5ecf^`, les 19 s'apparient
+// une à une avec les 19 lignes d'origine, et rien ne reste orphelin d'un côté ou de l'autre.
 //
 // POURQUOI CETTE FORME. Une liste de « marqueurs » (chemins, commandes, mots-clés) ne prouve
 // rien : une consigne entière sans backtick ni chemin — « Ne saute aucune section : ce que le PRD
@@ -219,11 +235,16 @@ test('le runbook /new-project est cohérent (sujets + sorties + templates)', () 
 // CONVENTION RETENUE, et la seule vérifiable : **une étape se nomme par son fichier**
 // (`07-scaffold.md`). Deux exigences sur tout ce que `templates/` livre :
 //   1. aucun « Phase N » — un numéro de phase ne désigne aucun fichier ;
-//   2. toute étape citée entre backticks existe VRAIMENT, dans le dossier d'étapes d'un runbook.
+//   2. toute étape citée entre backticks MÈNE QUELQUE PART (`erreursRenvois`). Ce deuxième volet
+//      vivait ici en dur, et il ne connaissait qu'une forme de renvoi : le fichier NU
+//      (`02-prd.md`). La forme que la CHECKLIST D'ENTRÉE écrit — `new-project/02-prd.md`, avec son
+//      dossier — lui échappait entièrement : mesuré, `new-projet/02-prd.md` dans l'entrée laissait
+//      les 416 tests verts, et une 10ᵉ case vers une étape jamais livrée aussi. Le contrôle vit
+//      donc dans `runbook-decoupe.mjs`, avec les autres propriétés du découpage, et distingue les
+//      deux formes (cf. son commentaire).
 // Et dans le runbook découpé lui-même, le mot « phase » ne survit pas du tout : une seule chose,
 // un seul mot — sans quoi l'entrée parlerait d'étapes pendant que les étapes parlent de phases.
 const PHASE_NUMEROTEE = /\bphases?\s+\d/i;
-const ETAPE_CITEE = /`(\d\d-[\w-]+\.md)`/g;
 const sousArbre = (rel) => fs.readdirSync(path.join(ROOT, rel), { withFileTypes: true })
   .flatMap((d) => (d.isDirectory() ? sousArbre(`${rel}/${d.name}`) : [`${rel}/${d.name}`]));
 
@@ -235,25 +256,23 @@ test('P4 — une étape se nomme par son fichier, jamais « Phase N »', () => {
   for (const p of ['templates/commands/new-project/', 'templates/env/', 'templates/prd/', 'templates/agents/']) {
     assert.ok(livres.some((f) => f.startsWith(p)), `montage : aucun fichier de ${p} dans le corpus`);
   }
-  // Toutes les étapes du kit, tous runbooks confondus. Dérivées de la source unique : ce test ne
-  // recopie aucun nom, et un runbook découpé demain tombe de lui-même sous le contrôle.
-  const etapes = new Set(COMMANDS.flatMap((c) => etapesDuRunbook(ROOT, c)));
-  assert.ok(etapes.size >= 9, `montage : ${etapes.size} étape(s) connue(s) — sans étape, « l'étape citée existe » est vrai à vide`);
 
   const phases = [];
-  const mortes = [];
   for (const f of livres) {
     read(f).split('\n').forEach((l, i) => {
       if (PHASE_NUMEROTEE.test(l)) phases.push(`  ${f}:${i + 1} — ${l.trim().slice(0, 100)}`);
-      for (const [, e] of l.matchAll(ETAPE_CITEE)) {
-        if (!etapes.has(e)) mortes.push(`  ${f}:${i + 1} — « ${e} » n'est une étape d'aucun runbook`);
-      }
     });
   }
   assert.deepEqual(phases, [], ['« Phase N » désigne un fichier qui n\'existe pas :', ...phases, '',
     'Nomme l\'étape par son fichier (`07-scaffold.md`) : c\'est le seul identifiant qu\'un lecteur',
     'peut ouvrir, et le seul qu\'un test peut vérifier.'].join('\n'));
-  assert.deepEqual(mortes, [], ['Renvois morts vers une étape inexistante :', ...mortes].join('\n'));
+
+  // 2. Aucun renvoi mort — ni nu, ni avec son dossier. C'est le contrôle que l'item 7 de /doctor
+  // demandera à l'assistant de refaire chez l'utilisateur : ce qui rougit ici lui rendrait un ✗.
+  const mortes = erreursRenvois(ROOT, livres);
+  assert.deepEqual(mortes, [], ['Renvois morts vers une étape inexistante :', ...mortes, '',
+    'Un chemin cité que le kit ne livre pas ouvre dans le vide chez les trois assistants — et',
+    '`/doctor` (item 7) le rendra en ✗ pour un fichier qui n\'a jamais existé.'].join('\n'));
 
   // Dans un runbook découpé, le MOT disparaît aussi : l'entrée annonce des étapes, les étapes ne
   // peuvent pas se rappeler entre elles par un autre nom. Vrai pour TOUS les runbooks découpés, pas

@@ -15,7 +15,7 @@
 // jamais une exception — l'appelant en fait un `deepEqual([])` et voit toutes les fautes d'un coup.
 import fs from 'node:fs';
 import path from 'node:path';
-import { cheminRunbook, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
+import { COMMANDS, cheminRunbook, dossierEtapes, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
 
 const lire = (kitRoot, rel) => fs.readFileSync(path.join(kitRoot, rel), 'utf8');
 
@@ -68,7 +68,63 @@ export function erreursChecklist(kitRoot, cmd, maxLignesEntree) {
   return errors;
 }
 
-// 3. `$ARGUMENTS` ne se substitue que dans le fichier chargé COMME COMMANDE. Dans une étape citée
+// 3. RENVOI VIVANT — l'AUTRE SENS DE LA FLÈCHE, et le seul que l'utilisateur subisse.
+// `erreursChecklist` part des étapes DU DISQUE et vérifie que l'entrée les cite : elle ne voit
+// donc jamais un chemin CITÉ que rien ne porte. L'entrée peut renvoyer vers `new-projet/02-prd.md`
+// (dossier mal orthographié) ou vers une 10ᵉ étape jamais livrée, et la checklist reste verte —
+// mesuré. Or c'est exactement ce que l'item 7 de `/doctor` rendra en ✗ chez l'utilisateur, pour un
+// fichier que le kit n'a jamais posé : la commande démarre, puis renvoie dans le vide dès sa
+// première case.
+//
+// DEUX FORMES DE RENVOI, toutes deux nées du découpage, et elles ne se lisent pas pareil :
+//   · `new-project/02-prd.md` — le chemin depuis le dossier de commandes. C'est ce qu'écrit la
+//     CHECKLIST D'ENTRÉE, le seul renvoi qu'un débutant ouvre à la main. Le dossier compte autant
+//     que le fichier : `new-projet/` mène nulle part même si `02-prd.md` existe.
+//   · `07-scaffold.md` — le seul fichier. Écrit dans un runbook DÉCOUPÉ (une étape qui en rappelle
+//     une autre), il se lit depuis le dossier de ce runbook : il ne peut viser qu'une étape du
+//     MÊME runbook. Écrit AILLEURS — `templates/prd/PRD.md`, `templates/env/*.env.example`,
+//     `/edit-design`, qui n'a aucun dossier à côté de lui — il ne désigne qu'« l'étape du kit qui
+//     porte ce nom », et la prose voisine dit de quel runbook (« `/new-project`, étape … »). On
+//     n'y exige donc que l'existence : réclamer la forme préfixée serait juger une formulation,
+//     ce que ce dépôt refuse partout ailleurs.
+const RENVOI_ETAPE = /`(?:([\w-]+)\/)?(\d\d-[\w-]+\.md)`/g;
+
+export function erreursRenvois(kitRoot, fichiers) {
+  const parRunbook = new Map(COMMANDS.map((c) => [c, new Set(etapesDuRunbook(kitRoot, c))]));
+  const toutes = new Set([...parRunbook.values()].flatMap((s) => [...s]));
+  // GARDES DE MONTAGE. Sans étape livrée, « le renvoi mène quelque part » est vrai à vide ; sans
+  // fichier balayé, le contrôle ne lit rien. Les deux états sont ceux qu'aurait ce garde si le
+  // dossier d'étapes cessait d'être livré — l'accident même qu'il surveille.
+  if (toutes.size === 0) return ['montage : aucune étape dans le kit — « le renvoi mène quelque part » serait vrai à vide'];
+  if (!fichiers.length) return ['montage : aucun fichier balayé — ce garde ne lit rien'];
+
+  const errors = [];
+  for (const f of fichiers) {
+    // Le runbook DÉCOUPÉ auquel ce fichier appartient, s'il y en a un. Un runbook d'un bloc n'a
+    // pas de dossier à côté de lui : un renvoi nu y vaut exactement ce qu'il vaut dans un template
+    // livré ailleurs, donc `proprietaire` reste nul.
+    const proprietaire = COMMANDS.find((c) => parRunbook.get(c).size > 0
+      && (f === cheminRunbook(c) || f.startsWith(`${dossierEtapes(c)}/`))) ?? null;
+    lire(kitRoot, f).split('\n').forEach((l, i) => {
+      for (const [, cmd, etape] of l.matchAll(RENVOI_ETAPE)) {
+        const ou = `  ${f}:${i + 1}`;
+        if (cmd !== undefined) {
+          if (!parRunbook.has(cmd)) errors.push(`${ou} — « ${cmd}/${etape} » : « ${cmd} » n'est pas un runbook du kit`);
+          else if (!parRunbook.get(cmd).has(etape)) errors.push(`${ou} — « ${cmd}/${etape} » : /${cmd} ne livre pas cette étape`);
+        } else if (proprietaire) {
+          if (!parRunbook.get(proprietaire).has(etape)) {
+            errors.push(`${ou} — « ${etape} » : renvoi nu lu depuis le dossier de /${proprietaire}, qui ne livre pas cette étape`);
+          }
+        } else if (!toutes.has(etape)) {
+          errors.push(`${ou} — « ${etape} » n'est une étape d'aucun runbook`);
+        }
+      }
+    });
+  }
+  return errors;
+}
+
+// 4. `$ARGUMENTS` ne se substitue que dans le fichier chargé COMME COMMANDE. Dans une étape citée
 // par son chemin, c'est du texte littéral — et le repli « si vide, demande à l'utilisateur » perd
 // son déclencheur. Il doit donc rester dans l'entrée, et nulle part ailleurs.
 export function erreursArguments(kitRoot, cmd) {
