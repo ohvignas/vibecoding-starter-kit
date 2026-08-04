@@ -2,9 +2,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DESIGN_SKILL_NAMES } from './matrix.mjs';
+import { cheminRunbook, dossierEtapes } from './commands-list.mjs';
 
-const ENTREE = 'templates/commands/new-project.md';
-const ETAPES_DIR = 'templates/commands/new-project';
+// Les MÊMES chemins que ceux du scaffold, du `--refresh` et du plugin Cursor (`commands-list.mjs`).
+// Le validateur les portait en littéral : il aurait pu exiger des étapes dans un dossier que
+// personne ne livre — vert au dépôt, absent chez l'utilisateur.
+const ENTREE = cheminRunbook('new-project');
+const ETAPES_DIR = dossierEtapes('new-project');
 
 // `/new-project` est découpé en ÉTAPES : une entrée courte, puis un fichier par étape dans
 // `templates/commands/new-project/`. Les noms sont FIGÉS ici — `--refresh` n'efface jamais

@@ -10,7 +10,7 @@ import { isCliEntry } from './lib/cli-entry.mjs';
 // Les 10 commandes viennent de la source unique (lib/commands-list.mjs) : ce fichier en portait
 // sa propre copie, dans un autre ordre. Ré-exportée pour que les tests puissent constater
 // l'identité au lieu de la supposer.
-import { COMMANDS } from './lib/commands-list.mjs';
+import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook } from './lib/commands-list.mjs';
 export { COMMANDS };
 
 export function pluginManifest() {
@@ -29,7 +29,13 @@ export function buildCursorPlugin(kitRoot, outDir) {
   fs.writeFileSync(path.join(outDir, '.cursor-plugin', 'plugin.json'), JSON.stringify(pluginManifest(), null, 2) + '\n');
   done.push('.cursor-plugin/plugin.json');
 
-  for (const c of COMMANDS) cp(path.join(kitRoot, 'templates/commands', `${c}.md`), path.join(outDir, 'commands', `${c}.md`));
+  for (const c of COMMANDS) {
+    cp(path.join(kitRoot, cheminRunbook(c)), path.join(outDir, 'commands', `${c}.md`));
+    // Les ÉTAPES d'un runbook découpé. La copie est fichier par fichier : sans cette boucle le
+    // sous-dossier resterait derrière, et le plugin publierait un sommaire qui renvoie à des
+    // fichiers absents. Rien à emporter tant qu'aucun runbook n'est découpé.
+    for (const e of etapesDuRunbook(kitRoot, c)) cp(path.join(kitRoot, cheminEtape(c, e)), path.join(outDir, 'commands', c, e));
+  }
   cp(path.join(kitRoot, 'templates/cursor/rules/00-project.mdc'), path.join(outDir, 'rules', '00-project.mdc'));
 
   return { done };

@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { COMMANDS, etapesDuRunbook } from './lib/commands-list.mjs';
 
 const kitRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const setup = path.join(kitRoot, 'scripts', 'setup.mjs');
@@ -40,6 +41,21 @@ for (const f of [
   // chemins-là — absents, la Phase 2 et la Phase 4 renvoient dans le vide.
   'docs/templates/PRD.md', 'docs/templates/architecture.md',
 ]) check(`fichier ${f}`, fs.existsSync(path.join(project, f)));
+
+// Les ÉTAPES d'un runbook découpé, livrées dans le dossier natif de l'assistant. Ce contrôle SUIT
+// le kit : chaque étape que porte `templates/commands/<cmd>/` doit être arrivée dans le projet.
+// ⚠️ Il n'y a volontairement PAS de `vues > 0` ici. Tant que le découpage n'a pas eu lieu, le
+// dossier d'étapes est vide et un tel gate serait rouge sans qu'aucune étape ne manque — il
+// arrive AVEC le découpage (P3), c'est la 8ᵉ garde de montage du plan. En attendant, la boucle
+// prouve déjà la livraison à la seconde où une étape existe.
+let etapesVues = 0;
+for (const c of COMMANDS) {
+  for (const e of etapesDuRunbook(kitRoot, c)) {
+    etapesVues++;
+    check(`étape .cursor/commands/${c}/${e}`, fs.existsSync(path.join(project, '.cursor/commands', c, e)));
+  }
+}
+console.log(`    (${etapesVues} étape(s) de runbook attendue(s) dans le projet)`);
 
 check('dépôt git initialisé (.git présent)', fs.existsSync(path.join(project, '.git')));
 let hooksPath = '';

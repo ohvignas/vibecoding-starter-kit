@@ -5,10 +5,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { COMMANDS, COMMANDS_DIR } from './commands-list.mjs';
+import { COMMANDS, COMMANDS_DIR, cheminEtape, collerRunbook, dossierEtapes, etapesDuRunbook, runbookConcatene } from './commands-list.mjs';
 import { CREW, AGENTS_DIR, kitOwnedFiles } from './kit-owned.mjs';
 import { resolveAssets, DESIGN_SKILL_NAMES, DESIGN_SKILL_SPECS } from './matrix.mjs';
 import { isValidProjectName } from './args.mjs';
@@ -31,14 +32,65 @@ test('E8 — une seule liste de commandes : scaffold, refresh et plugin lisent l
   for (const a of ASSISTANTS) {
     const cibles = kitOwnedFiles('saas', a).map((p) => p.to);
     for (const c of COMMANDS) assert.ok(cibles.includes(`${COMMANDS_DIR[a]}/${c}.md`), `${a} : /${c} jamais régénéré par --refresh`);
+    // …et les ÉTAPES du runbook découpé, dans le dossier NATIF de l'assistant (jamais celui d'un
+    // autre : parcours.test.mjs G8). Vide tant qu'aucun runbook n'est découpé.
+    for (const c of COMMANDS) {
+      for (const e of etapesDuRunbook(ROOT, c)) assert.ok(cibles.includes(`${COMMANDS_DIR[a]}/${c}/${e}`), `${a} : l'étape ${c}/${e} n'est jamais régénérée par --refresh`);
+    }
   }
 });
 
-test('E8 — le dossier de commandes par assistant n\'est plus défini deux fois', () => {
+test('E8 — le dossier de commandes par assistant, et celui des ÉTAPES, ne sont définis qu\'une fois', () => {
   // `TARGET` (matrix) et `CMD_DIR` (kit-owned) étaient deux cartes identiques sous deux noms.
   for (const a of ASSISTANTS) assert.equal(resolveAssets('saas', a).commandsDir, COMMANDS_DIR[a]);
   assert.doesNotMatch(read('scripts/lib/matrix.mjs'), /^const TARGET\s*=/m, 'matrix doit lire commands-list, pas redéclarer');
   assert.doesNotMatch(read('scripts/lib/kit-owned.mjs'), /^const CMD_DIR\s*=/m);
+
+  // ── Les ÉTAPES d'un runbook : même piège, un cran plus bas ─────────────────────────────────
+  // Un runbook trop long se découpe en `templates/commands/<cmd>/`, et CINQ endroits doivent
+  // alors s'accorder sur « où sont les étapes » — le scaffold, le `--refresh`, le plugin Cursor,
+  // le validateur, le smoke E2E. Une liste de noms recopiée quelque part, et le kit exigerait des
+  // étapes que personne ne livre : vert au dépôt, absent chez l'utilisateur. Aucun de ces
+  // fichiers ne nomme donc une étape — tous énumèrent le dossier.
+  for (const f of ['scripts/setup.mjs', 'scripts/lib/kit-owned.mjs', 'scripts/build-cursor-plugin.mjs', 'scripts/smoke-e2e.mjs']) {
+    assert.match(read(f), /etapesDuRunbook/, `${f} : doit énumérer la source unique (commands-list.mjs)`);
+    // Le risque concret : un nom d'étape en LITTÉRAL (`'01-cadrage.md'`), donc une deuxième
+    // liste. Le motif exige les guillemets, sinon il attraperait des chemins qui n'ont rien à
+    // voir — `guides/02-installer-les-outils.md`, la règle Cursor `10-css-maquette.mdc`.
+    assert.doesNotMatch(read(f), /['"`]\d\d-[\w-]+\.md['"`]/, `${f} : nom d'étape en dur — la liste vivrait à deux endroits`);
+  }
+  // Le validateur (qui, lui, FIGE les noms) doit viser le même dossier que la livraison.
+  assert.match(read('scripts/lib/validate-commands.mjs'), /dossierEtapes\('new-project'\)/, 'le validateur doit dériver le dossier, pas le recopier');
+  // Et le `--refresh` recolle avec la MÊME fonction que le scaffold, pas la sienne.
+  assert.match(read('scripts/lib/refresh.mjs'), /collerRunbook/, 'refresh doit réutiliser le colleur du scaffold');
+  assert.equal(cheminEtape('new-project', '01-cadrage.md'), `${dossierEtapes('new-project')}/01-cadrage.md`);
+
+  // Les noms d'étapes sont FIGÉS (`refresh.mjs` n'efface JAMAIS : une renumérotation laisserait
+  // des orphelins à vie dans tous les projets déjà générés). La convention `NN-nom.md` est ce qui
+  // rend l'ordre des numéros lisible ET l'ordre de livraison déterministe.
+  for (const c of COMMANDS) {
+    for (const e of etapesDuRunbook(ROOT, c)) assert.match(e, /^\d\d-[a-z0-9]+(-[a-z0-9]+)*\.md$/, `${dossierEtapes(c)}/${e} : nom hors convention`);
+  }
+
+  // Le comportement, prouvé sur une racine FABRIQUÉE : le dossier du dépôt est vide aujourd'hui,
+  // seul un faux kit peut montrer ce que fait le câblage une fois peuplé.
+  const faux = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-etapes-'));
+  const dir = path.join(faux, dossierEtapes('new-project'));
+  fs.mkdirSync(path.join(dir, 'un-sous-dossier'), { recursive: true });
+  fs.writeFileSync(path.join(faux, 'templates/commands/new-project.md'), '# entrée\n');
+  // Aucun `.md` : ni le `.gitkeep` ni le sous-dossier ne comptent pour une étape — et surtout
+  // aucun des deux ne part dans `readFileSync`, ce serait `EISDIR`.
+  fs.writeFileSync(path.join(dir, '.gitkeep'), '');
+  assert.deepEqual(etapesDuRunbook(faux, 'new-project'), []);
+  assert.equal(runbookConcatene(faux, 'new-project'), '# entrée\n', 'sans étape : l\'entrée à l\'octet près');
+  // Peuplé : l'ordre est celui des NUMÉROS, pas celui du système de fichiers.
+  fs.writeFileSync(path.join(dir, '07-scaffold.md'), '# sept\n');
+  fs.writeFileSync(path.join(dir, '01-cadrage.md'), '# un\n');
+  assert.deepEqual(etapesDuRunbook(faux, 'new-project'), ['01-cadrage.md', '07-scaffold.md']);
+  assert.equal(runbookConcatene(faux, 'new-project'), '# entrée\n\n---\n\n# un\n\n---\n\n# sept\n');
+  assert.deepEqual(etapesDuRunbook(faux, 'sos'), [], 'runbook jamais découpé : aucune étape, aucune exception');
+  assert.equal(collerRunbook('seul\n', []), 'seul\n');
+  fs.rmSync(faux, { recursive: true, force: true });
 });
 
 // ── 2. Le nom de projet valide ───────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COMMANDS, COMMANDS_DIR } from './commands-list.mjs';
+import { COMMANDS, COMMANDS_DIR, cheminRunbook, cheminEtape, etapesDuRunbook } from './commands-list.mjs';
 import { resolveStackManifest } from './matrix.mjs';
 import { prePushScript, preCommitCheckLine } from './hooks.mjs';
 import { mergeMcpConfig, expandMcpCommands } from './mcp.mjs';
@@ -30,7 +30,26 @@ const listKit = (rel, ext) => {
 export function kitOwnedFiles(stack, assistant) {
   const dir = COMMANDS_DIR[assistant];
   if (!dir) throw new Error(`Assistant inconnu : ${assistant}`);
-  const pairs = COMMANDS.map((c) => ({ from: `templates/commands/${c}.md`, to: `${dir}/${c}.md` }));
+  const pairs = COMMANDS.map((c) => {
+    const paire = { from: cheminRunbook(c), to: `${dir}/${c}.md` };
+    // Codex : l'entrée qu'il reçoit est l'entrée SUIVIE de ses étapes (un seul fichier à ouvrir —
+    // cf. `collerRunbook`). `concat` liste des FICHIERS, jamais le dossier : `refresh.mjs` lit
+    // chaque chemin avec `readFileSync`, un dossier donnerait EISDIR. Sans étape, la liste est
+    // vide et le fichier régénéré est l'entrée telle quelle.
+    const etapes = assistant === 'codex' ? etapesDuRunbook(KIT_ROOT, c) : [];
+    if (etapes.length) paire.concat = etapes.map((e) => cheminEtape(c, e));
+    return paire;
+  });
+
+  // Les ÉTAPES elles-mêmes, dans le dossier natif de l'assistant — FICHIER PAR FICHIER, jamais le
+  // dossier (même raison qu'au-dessus : `refresh.mjs` lit chaque `from` comme un fichier).
+  // Le dossier natif et pas un dossier commun : `parcours.test.mjs` (G8) interdit qu'un
+  // utilisateur d'un assistant soit renvoyé vers le dossier de commandes d'un autre.
+  // Codex les reçoit AUSSI, en plus de son fichier concaténé : l'entrée cite les étapes par leur
+  // chemin, et un chemin cité qui n'existe pas est un renvoi mort.
+  for (const c of COMMANDS) {
+    for (const e of etapesDuRunbook(KIT_ROOT, c)) pairs.push({ from: cheminEtape(c, e), to: `${dir}/${c}/${e}` });
+  }
 
   // Templates que /new-project ouvre (PRD, architecture) : 100 % kit, l'utilisateur écrit dans
   // docs/PRD.md et la spec, jamais ici → régénérables sans risque par `--refresh`.

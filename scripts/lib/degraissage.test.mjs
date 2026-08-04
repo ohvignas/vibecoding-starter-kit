@@ -14,6 +14,7 @@ import { validateExtras, validateMemoryTemplates } from './validate-commands.mjs
 import { parseArgs } from './args.mjs';
 import { runWizard, buildArgsFromAnswers } from './wizard.mjs';
 import { kitOwnedFiles } from './kit-owned.mjs';
+import { COMMANDS, etapesDuRunbook } from './commands-list.mjs';
 import { buildCursorPlugin } from '../build-cursor-plugin.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
 import { resolveAssets, resolveStackManifest } from './matrix.mjs';
@@ -55,16 +56,40 @@ test('A4 — templates/ONBOARDING.md a disparu (fichier + validateur extras)', (
   assert.deepEqual(validateExtras(ROOT), []);
 });
 
+// Les ÉTAPES que le kit porte aujourd'hui, `<cmd>/<fichier>`. Un runbook trop long se découpe en
+// `templates/commands/<cmd>/NN-….md` ; le dossier est vide tant que le découpage n'a pas eu lieu.
+const ETAPES_KIT = () => COMMANDS.flatMap((c) => etapesDuRunbook(ROOT, c).map((e) => `${c}/${e}`));
+
 test('A5 — /debug a disparu (template, scaffold, refresh, plugin Cursor, aide)', () => {
   assert.ok(!fs.existsSync(path.join(ROOT, 'templates/commands/debug.md')), 'templates/commands/debug.md doit être supprimé');
   const owned = kitOwnedFiles('saas', 'cursor').map((p) => p.to);
   assert.ok(!owned.some((t) => t.endsWith('/debug.md')), '--refresh ne doit plus régénérer debug.md');
-  assert.equal(owned.filter((t) => t.startsWith('.cursor/commands/')).length, 10, '10 commandes attendues');
+
+  // « exactement 10 fichiers sous `.cursor/commands/` » devient faux à la première étape livrée.
+  // On ne relâche pas le compte pour autant (un `>= 10` laisserait rentrer une 11ᵉ commande
+  // fantôme) : on sépare les deux populations, et CHACUNE reste exacte — les ENTRÉES sont les 10
+  // runbooks, les ÉTAPES sont exactement celles que porte le kit, ni plus ni moins.
+  const sousCommands = owned.filter((t) => t.startsWith('.cursor/commands/'));
+  const profondeur = (t) => t.split('/').length; // `.cursor/commands/x.md` = 3, une étape = 4
+  assert.equal(sousCommands.filter((t) => profondeur(t) === 3).length, 10, '10 commandes attendues');
+  assert.deepEqual(
+    sousCommands.filter((t) => profondeur(t) > 3).sort(),
+    ETAPES_KIT().map((e) => `.cursor/commands/${e}`).sort(),
+    '--refresh doit régénérer exactement les étapes du kit, aucune de plus',
+  );
 
   const out = tmp('vs-degraissage-plugin-');
   buildCursorPlugin(ROOT, out);
   assert.ok(!fs.existsSync(path.join(out, 'commands', 'debug.md')), 'le plugin Cursor ne doit plus embarquer debug.md');
-  assert.equal(fs.readdirSync(path.join(out, 'commands')).length, 10);
+  const dansPlugin = fs.readdirSync(path.join(out, 'commands'), { withFileTypes: true });
+  assert.equal(dansPlugin.filter((d) => d.isFile()).length, 10, 'le plugin embarque les 10 entrées');
+  // …et leurs étapes : la copie est fichier par fichier, un sous-dossier oublié publierait un
+  // sommaire qui renvoie à des fichiers absents.
+  assert.deepEqual(
+    dansPlugin.filter((d) => d.isDirectory()).flatMap((d) => fs.readdirSync(path.join(out, 'commands', d.name)).map((n) => `${d.name}/${n}`)).sort(),
+    ETAPES_KIT().sort(),
+    'le plugin Cursor doit embarquer exactement les étapes du kit',
+  );
   fs.rmSync(out, { recursive: true, force: true });
 
   assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'templates/commands/help.md'), 'utf8'), /\/debug\b/);

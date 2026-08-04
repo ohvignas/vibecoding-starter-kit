@@ -8,13 +8,13 @@ import { isCliEntry } from './lib/cli-entry.mjs';
 import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './lib/args.mjs';
 import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
-import { COMMANDS } from './lib/commands-list.mjs';
+import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook, runbookConcatene } from './lib/commands-list.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS } from './lib/matrix.mjs';
 import { renderColleMoi } from './lib/colle-moi.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
-import { ensureDir, copyIfAbsent, copyDirIfAbsent } from './lib/fsops.mjs';
+import { ensureDir, copyIfAbsent, copyDirIfAbsent, writeIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, summarizeClone, installCaveman, installSkills } from './lib/external.mjs';
 import { initProjectGit } from './lib/gitinit.mjs';
 import { formatReport } from './lib/report.mjs';
@@ -150,9 +150,23 @@ async function main() {
 
   for (const cmd of COMMANDS) {
     try {
-      const src = path.join(args.source, `templates/commands/${cmd}.md`);
+      const src = path.join(args.source, cheminRunbook(cmd));
+      const dest = path.join(projectDir, assets.commandsDir, `${cmd}.md`);
       // Slash-commands typables pour tous : Cursor → .cursor/commands/, Claude → .claude/commands/, Codex → docs/commands/.
-      track(`${assets.commandsDir}/${cmd}.md`, copyIfAbsent(src, path.join(projectDir, assets.commandsDir, `${cmd}.md`), opt));
+      // Codex n'exécute aucun de ces runbooks : chez lui ce sont des FICHIERS qu'on ouvre. Un
+      // runbook découpé lui ferait ouvrir l'entrée puis chaque étape à la main, dans l'ordre —
+      // il reçoit donc l'entrée SUIVIE de ses étapes, en un seul fichier. Sans étape, c'est
+      // l'entrée à l'octet près (`collerRunbook`).
+      track(`${assets.commandsDir}/${cmd}.md`, args.assistant === 'codex'
+        ? writeIfAbsent(dest, runbookConcatene(args.source, cmd), opt)
+        : copyIfAbsent(src, dest, opt));
+      // Les ÉTAPES, dans le dossier natif de l'assistant — jamais dans celui d'un autre
+      // (`parcours.test.mjs` G8). Rien n'est livré tant que le runbook n'est pas découpé.
+      const etapes = etapesDuRunbook(args.source, cmd);
+      if (etapes.length) {
+        trackDir(`${assets.commandsDir}/${cmd}/ (${etapes.length} étape${etapes.length > 1 ? 's' : ''})`, etapes.map((e) =>
+          copyIfAbsent(path.join(args.source, cheminEtape(cmd, e)), path.join(projectDir, assets.commandsDir, cmd, e), opt)));
+      }
     } catch (e) { failed.push(`commande ${cmd} (${e.message})`); }
   }
   try { trackDir('docs/memory/', copyDirIfAbsent(path.join(args.source, 'templates/memory'), path.join(projectDir, 'docs/memory'), opt)); }
