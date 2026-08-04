@@ -73,6 +73,51 @@ test('E2E — le runbook dit que shadcn crée un SOUS-DOSSIER, et où lancer les
   assert.match(t, /package\.json/, 'où vit le package.json n\'est pas dit');
 });
 
+// Chaque stack a sa commande de scaffold, dictée à une IA. Trois ont été JOUÉES le 2026-08-04 ;
+// ce qu'elles ont produit est ce qui est asserté ici. La 4ᵉ (saas, `npm create convex@latest`)
+// demande un compte Convex : non jouée, donc non assertée — dit plutôt que supposé.
+test('E2E — desktop : Forge n\'a pas de template React, le runbook doit le dire', () => {
+  const t = lire('templates/commands/new-project.md');
+  // Mesuré : `create-electron-app --template=vite-typescript` produit un package.json SANS react
+  // ni react-dom. Les 5 templates de Forge (electron/forge/packages/template) sont `base`, `vite`,
+  // `vite-typescript`, `webpack`, `webpack-typescript` — aucun n'amène React. Or le runbook
+  // enchaînait sur `shadcn init`, qui en dépend : la chaîne desktop était rompue.
+  assert.doesNotMatch(t, /vite\s*\+\s*react/i, 'Forge ne fournit aucun template React');
+  const ligne = t.split('\n').find((l) => l.includes('create-electron-app'));
+  assert.ok(ligne, 'le runbook ne dit plus comment scaffolder le desktop');
+  assert.match(ligne, /--template=vite-typescript/, 'le template doit être nommé, il n\'y a pas de défaut React');
+  assert.match(ligne, /npm i react react-dom|react react-dom/, 'React doit être ajouté avant shadcn, qui en dépend');
+});
+
+test('E2E — le thème s\'applique à un projet existant avec `apply`, pas avec `init`', () => {
+  const t = lire('templates/commands/new-project.md');
+  // `shadcn apply [preset]` = « apply a preset to an existing project » (vérifié : shadcn --help).
+  // `init --preset` ne vaut qu'à la CRÉATION : sur saas et desktop, où le projet existe déjà,
+  // c'était la mauvaise commande.
+  assert.match(t, /shadcn@latest apply --preset/, 'sur un projet déjà créé, le thème s\'applique avec `apply`');
+});
+
+test('E2E — les blocs OFFICIELS sont proposés avant le registry tiers', () => {
+  const t = lire('templates/commands/new-project.md');
+  // Vérifiés dans le registry officiel (`shadcn view`) : aucun registry à déclarer, aucune clé.
+  // Le kit ne poussait que `@shadcnblocks/*`, tiers, qui exige une entrée dans components.json.
+  for (const bloc of ['dashboard-01', 'login-0', 'signup-0', 'sidebar-0']) {
+    assert.ok(t.includes(bloc), `bloc officiel jamais proposé : ${bloc}`);
+  }
+  const iOff = t.indexOf('dashboard-01'), iTiers = t.indexOf('@shadcnblocks');
+  assert.ok(iOff !== -1 && iTiers !== -1 && iOff < iTiers,
+    'les blocs sans clé doivent venir AVANT le registry tiers qui en demande une');
+});
+
+test('E2E — le tech spec vit à côté du PRD, pas dans la convention interne du kit', () => {
+  const t = lire('templates/commands/new-project.md');
+  // Il partait dans `docs/superpowers/specs/<date>-<projet>-architecture.md` : dossier ABSENT du
+  // projet généré, nom daté, et `AGENTS.md` ne le listait même pas. Un débutant ne le retrouvait pas.
+  assert.doesNotMatch(t, /docs\/superpowers\/specs/, 'le tech spec ne va pas dans la convention interne du kit');
+  assert.match(t, /docs\/ARCHITECTURE\.md/, 'le tech spec doit vivre à côté de docs/PRD.md');
+  assert.match(lire('scripts/lib/templates.mjs'), /docs\/ARCHITECTURE\.md/, 'AGENTS.md doit y renvoyer');
+});
+
 test('E2E — le runbook fait poser le script `typecheck` que le template n\'a pas', () => {
   const t = lire('templates/commands/new-project.md');
   // Mesuré sur le projet réellement produit : scripts = dev, build, preview, astro, lint.
