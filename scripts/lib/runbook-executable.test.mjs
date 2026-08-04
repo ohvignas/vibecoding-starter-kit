@@ -76,6 +76,55 @@ test('E2E — le runbook dit que shadcn crée un SOUS-DOSSIER, et où lancer les
 // Chaque stack a sa commande de scaffold, dictée à une IA. Trois ont été JOUÉES le 2026-08-04 ;
 // ce qu'elles ont produit est ce qui est asserté ici. La 4ᵉ (saas, `npm create convex@latest`)
 // demande un compte Convex : non jouée, donc non assertée — dit plutôt que supposé.
+// Les 4 commandes de scaffold, JOUÉES le 2026-08-04. Trois sur quatre bloquaient sur un prompt
+// interactif — le mode d'exécution pour lequel le kit est fait. Ce que chaque drapeau débloque
+// est mesuré, pas supposé.
+const SCAFFOLDS = [
+  ['create-convex', '-t tanstack-start', 'le sélecteur « Choose a client » (flèches)'],
+  ['create-expo-app', '--yes', 'les confirmations d\'Expo'],
+  ['create-electron-app', '--template=vite-typescript', 'le choix du template Forge'],
+];
+
+test('E2E — les 4 commandes de scaffold sont non interactives', () => {
+  const t = lire('templates/commands/new-project.md');
+  const fautes = [];
+  for (const [outil, drapeau, prompt] of SCAFFOLDS) {
+    const ligne = t.split('\n').find((l) => l.includes(outil));
+    if (!ligne) { fautes.push(`${outil} : la commande a disparu du runbook`); continue; }
+    if (!ligne.includes(drapeau)) fautes.push(`${outil} : \`${drapeau}\` manque — ${prompt} bloquera l'IA.`);
+  }
+  // Sans ça, renommer les outils rendrait le test vert à vide.
+  assert.equal(SCAFFOLDS.length, 3, 'garde de montage : 3 outils tiers + shadcn (testé au-dessus)');
+  assert.deepEqual(fautes, [], `scaffolds qui bloqueraient une IA :\n${fautes.join('\n')}`);
+});
+
+test('E2E — mobile : NativeWind est nommé ET son install est donnée', () => {
+  const t = lire('templates/commands/new-project.md');
+  // Le kit disait « create-expo-app + NativeWind » sans jamais dire comment l'installer :
+  // la techno était nommée, le geste absent. `expo install` (pas `npm i`) choisit les versions
+  // compatibles du SDK — c'est ce qui distingue une install qui marche d'une qui casse.
+  //
+  // On juge la COMMANDE, entre backticks — pas la ligne. La 1re version cherchait
+  // `expo install … nativewind` n'importe où sur la ligne : elle restait verte quand la commande
+  // devenait `npm i nativewind`, parce que la phrase d'explication à côté disait encore
+  // « `expo install` choisit les versions ». Un garde qui se satisfait de sa propre prose ne
+  // garde rien.
+  const commandes = [...t.matchAll(/`([^`\n]*nativewind[^`\n]*)`/g)].map((m) => m[1]);
+  assert.ok(commandes.length > 0, 'NativeWind n\'est prescrit par aucune commande');
+  assert.ok(commandes.some((c) => /expo install/.test(c)),
+    `NativeWind doit s'installer avec \`expo install\` (versions du SDK), pas \`npm i\` :\n  ${commandes.join('\n  ')}`);
+});
+
+test('E2E — saas : le template Convex n\'apporte pas d\'auth, le runbook le dit', () => {
+  const t = lire('templates/commands/new-project.md');
+  // Mesuré : `convex/` sort avec schema.ts + myFunctions.ts, rien d'autre. Il n'existe pas non
+  // plus de `template-tanstack-start-convexauth` dans get-convex/templates (contrairement à
+  // react-vite et nextjs). Promettre l'auth « incluse » serait faux.
+  const ligne = t.split('\n').find((l) => l.includes('create-convex'));
+  assert.ok(ligne, 'la commande saas a disparu');
+  assert.match(ligne, /aucune auth|sans auth|n'inclut aucune auth/i, 'le template n\'apporte pas d\'auth : le dire');
+});
+
 test('E2E — desktop : Forge n\'a pas de template React, le runbook doit le dire', () => {
   const t = lire('templates/commands/new-project.md');
   // Mesuré : `create-electron-app --template=vite-typescript` produit un package.json SANS react
