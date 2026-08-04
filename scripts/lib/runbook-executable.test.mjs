@@ -136,6 +136,14 @@ test('E2E — desktop : Forge n\'a pas de template React, le runbook doit le dir
   assert.ok(ligne, 'le runbook ne dit plus comment scaffolder le desktop');
   assert.match(ligne, /--template=vite-typescript/, 'le template doit être nommé, il n\'y a pas de défaut React');
   assert.match(ligne, /npm i react react-dom|react react-dom/, 'React doit être ajouté avant shadcn, qui en dépend');
+  // La version du plugin est le 3e obstacle rencontré en jouant la chaîne, et le moins devinable :
+  //   @vitejs/plugin-react@6 → peer `vite@^8`, Forge livre vite@5 → ERESOLVE, rien ne s'installe ;
+  //   @vitejs/plugin-react@5 → ESM-only, or Forge charge vite.renderer.config.ts en `require`
+  //                            → « resolved to an ESM file », le build échoue ;
+  //   @vitejs/plugin-react@4 → dual (exports.require = ./dist/index.cjs) → `npm run make` sort
+  //                            out/make/zip/…/mon-app-darwin-arm64-1.0.0.zip, React bundlé.
+  // Sans l'épingle, `npm i -D @vitejs/plugin-react` prend la dernière et casse.
+  assert.match(ligne, /@vitejs\/plugin-react@\^?4/, 'sans épingler la v4, l\'install échoue (v6) ou le build échoue (v5)');
 });
 
 test('E2E — le thème s\'applique à un projet existant avec `apply`, pas avec `init`', () => {
