@@ -56,6 +56,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | | Fonctionnalité | Ce que ça fait |
 |---|---|---|
 | 🚀 | **10 commandes** | `/init-vibecoding`, `/help`, `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor`, `/next`, `/sos`, `/deploy` — tout le cycle de vie |
+| 🪜 | **Runbooks en étapes** | les commandes longues ne sont plus un mur de texte : `/new-project` (9 étapes), `/new-feature` (5), `/init-vibecoding` (5) arrivent en **fichiers séparés**, un par étape, avec une **checklist d'entrée** qui dit ce que chacune produit. L'IA en ouvre une à la fois — elle n'en saute plus, et toi tu vois où tu en es |
 | 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework (`.mcp.json` mergé, checks warn-only, `docs/A-FAIRE.md` joué par l'IA) |
 | 💳 | **Catalogue de domaines** | paiement (Stripe/Polar…), email, storage, analytics, erreurs, push, cartes… **choisis d'après le PRD** (`docs/DOMAINS.md`) — pas tout d'un coup |
 | 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
@@ -65,12 +66,12 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 🤖 | **Multi-assistant** | Cursor (règles `.mdc` typées + commandes + hooks sécu + Bugbot), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
 | 🎨 | **Design-first → maquette** | on fixe d'abord le **design system** (`design.md`, thème composé en visuel sur [shadcn/ui create](https://ui.shadcn.com/create)) **puis** la maquette (**un sous-agent par écran**, en shadcn/ui) ; **Stitch** ou tes exports marchent aussi. La **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné** |
 | 🎓 | **Mode apprentissage** | l'IA **explique** ce qu'elle construit et te pose **une question de compréhension** à chaque jalon — tu comprends, tu ne subis pas |
-| 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code |
+| 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code. Le PRD couvre les **12 sections** qu'un vrai cadrage réclame : le **problème** (énoncé sans sa solution), l'**entreprise et ses utilisateurs**, les **objectifs commerciaux** chiffrés et datés, les **parcours utilisateurs**, l'**arborescence** (écrans, navigation, URL) et le **périmètre du MVP** |
 | 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` (revenir au dernier point vert) ; **Règle Preuve : 3 tentatives** puis `BLOQUÉ`, anti-boucle infernale ; tags git par jalon |
 | 🚫 | **Anti-flemme** | **Règle Réalité** : zéro mock, zéro `lorem`, zéro donnée en dur hors des fichiers de test — chaque écran lit et écrit dans le **vrai** backend, chaque bouton marche de bout en bout. Plus zéro placeholder / `// TODO` / stub, zéro report « plus tard ». Non négociable, dans `AGENTS.md` + `.cursor/rules/` |
 | 📓 | **Journal du crew** | trois fichiers partagés dans `docs/agents/` : **`JOURNAL.md`** (append-only — une ligne par mission, avec sa preuve), **`state.yaml`** (l'état courant : jalon, tâche, tentatives de réparation, motif de blocage — **un seul écrivain**, le juge), **`inventaire.md`** (le contrat de couverture : tout ce que la maquette et le PRD promettent, ligne par ligne). Chaque agent les lit **avant** de commencer |
 | 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
-| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : **régénère** les règles (`AGENTS.md`, entre marqueurs) + runbooks + agents + glossaire — ta zone perso, `src/` et **ce que tu as écrit** dans `docs/` (PRD, design, roadmap, mémoire) **jamais touchés** (`--dry-run` pour prévisualiser) |
+| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : **régénère** les règles (`AGENTS.md`, entre marqueurs) + runbooks **et leurs étapes** + agents + glossaire + les **docs officielles** de ta stack (`ai-context/`, les `llms.txt` que l'IA lit pour ne pas inventer d'API périmée) — ta zone perso, `src/` et **ce que tu as écrit** dans `docs/` (PRD, design, roadmap, mémoire) **jamais touchés** (`--dry-run` pour prévisualiser) |
 | 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt du site, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
@@ -169,7 +170,7 @@ Si tu n'as **pas** de maquette à fournir : crée une clé API sur [stitch.withg
 
 | Commande | Ce qu'elle fait |
 |---|---|
-| `/new-project` | PRD + tech spec + **maquette** + roadmap dérivée |
+| `/new-project` | **9 étapes** : problème + entreprise → PRD + tech spec → arborescence → **maquette** → roadmap dérivée |
 | `/build` | construit **jalon par jalon**, comparé à la maquette (visuel à chaque étape) |
 | `/doctor` | vérifie que plugins / MCP / skills sont bien branchés |
 | `/next` · `/sos` · `/deploy` | quoi faire ensuite · débloquer · mettre en ligne |
@@ -209,7 +210,7 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 |---|---|
 | **`/help`** | **L'entrée — la seule à retenir.** Les 10 commandes expliquées en français simple, et « par où continuer » selon ce que l'IA voit dans ton projet |
 | **`/init-vibecoding`** | Le tout-en-un : l'IA **installe l'environnement pour toi** (ou met à jour un projet existant) et te déroule `docs/A-FAIRE.md` pas à pas. À lancer quand rien n'est encore posé |
-| **`/new-project`** | La fondation : interview → **PRD** + **tech spec** + **design system** (`design.md`, thème shadcn) **d'abord**, **puis maquette** (un **sous-agent par écran** en shadcn/ui, ou **Stitch**/la tienne) + **domaines** + **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) |
+| **`/new-project`** | La fondation, en **9 étapes** que l'IA ouvre une par une : cadrage (le **problème**, l'**entreprise**, les **objectifs commerciaux**) → **PRD** → **tech spec** → **arborescence** (écrans, navigation, URL) → **design system** (`design.md`, thème shadcn) **puis maquette** (un **sous-agent par écran** en shadcn/ui, ou **Stitch**/la tienne) → **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) → scaffold |
 | **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » à chaque jalon (`--all` reste désactivé en mode apprentissage) |
 | **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `main` |
 | **`/edit-design`** | Charge les **4 skills design** + `design.md` **avant** de toucher l'UI (+ blocs pré-faits `@shadcnblocks` au besoin) |
@@ -220,12 +221,14 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 
 Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
 
+Les trois commandes longues arrivent en plus avec un **dossier d'étapes à côté d'elles** (`new-project/`, `new-feature/`, `init-vibecoding/`) — **19 fichiers** au total, un par étape. Chez **Codex**, où les runbooks ne sont pas des slash-commandes, le fichier que tu ouvres **contient déjà toutes ses étapes dans l'ordre** : un seul fichier à lire.
+
 > [!TIP]
 > **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt ». Ensuite, `/help` t'oriente. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
 
 > [!TIP]
 > **Récupérer les nouveautés du kit dans un vieux projet** — depuis le dossier du projet, **rien à cloner** :
-> - `npx create-vibecoding-kit --refresh` — **régénère** ce qui est 100 % kit et que tu n'édites pas : les règles (`AGENTS.md`, entre les marqueurs), les 10 runbooks, les 7 agents du crew, `docs/glossaire.md` et `docs/templates/`. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — `docs/PRD.md`, `docs/design.md`, `docs/ROADMAP.md`, `docs/memory/`, `docs/A-FAIRE.md`, et la mémoire du crew (`docs/agents/JOURNAL.md`, `state.yaml`, `inventaire.md`). Seule exception, voulue : sur Codex les 7 agents vivent dans `docs/agents/crew/` — ceux-là sont du kit, donc régénérés. Ajoute `--dry-run` pour prévisualiser.
+> - `npx create-vibecoding-kit --refresh` — **régénère** ce qui est 100 % kit et que tu n'édites pas : les règles (`AGENTS.md`, entre les marqueurs), les 10 runbooks **et leurs 19 étapes**, les 7 agents du crew, `docs/glossaire.md`, `docs/templates/` et les docs officielles d'`ai-context/`. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — `docs/PRD.md`, `docs/design.md`, `docs/ROADMAP.md`, `docs/memory/`, `docs/A-FAIRE.md`, et la mémoire du crew (`docs/agents/JOURNAL.md`, `state.yaml`, `inventaire.md`). Seule exception, voulue : sur Codex les 7 agents vivent dans `docs/agents/crew/` — ceux-là sont du kit, donc régénérés. Ajoute `--dry-run` pour prévisualiser.
 > - Si tu as le dépôt en local : `node <kit>/scripts/update.mjs` **ajoute** les fichiers neufs sans rien écraser, et `--refresh` fait la même régénération que ci-dessus.
 
 > [!TIP]
@@ -252,6 +255,7 @@ mon-app/
 ├── AGENTS.md · CLAUDE.md          # règles + boucle + @import mémoire (toujours les deux)
 ├── .claude/
 │   ├── commands/                  # /new-project /build /new-feature /edit-design /doctor
+│   │   └── new-project/           # ses 9 étapes, une par fichier (idem new-feature/, init-vibecoding/)
 │   ├── settings.json              # hooks PostToolUse (checks) + SessionStart (mémoire) + PreToolUse (garde-shell)
 │   ├── hooks/                     # inject-memory + guard-shell (format Claude Code)
 │   ├── skills/stack-*             # règles de la stack
