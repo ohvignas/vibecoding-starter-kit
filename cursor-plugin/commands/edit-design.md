@@ -17,4 +17,4 @@ Puis seulement :
 5. **Re-screenshot** et compare : le rendu respecte-t-il `docs/design.md` ? Un écart réel se corrige avant de conclure.
 6. Sur stack web, compare aussi le rendu à l'écran de `maquette/` — à l'œil sur les deux captures, ou avec **PixelRAG** s'il est installé. Cette comparaison d'images **alerte, elle ne tranche pas** (voir **« Règle de vérification »** dans `AGENTS.md`) : elle signale, c'est toi qui juges si l'écart est un vrai défaut ou du bruit de rendu.
 
-Rappel : la règle design permanente est déjà dans l'`AGENTS.md` du projet (issue de `templates/agents/design-rule.md`) — elle s'applique aussi hors de cette commande.
+Rappel : la règle design permanente est déjà dans l'`AGENTS.md` du projet — elle s'applique aussi hors de cette commande.

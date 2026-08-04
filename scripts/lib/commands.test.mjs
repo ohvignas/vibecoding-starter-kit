@@ -532,6 +532,13 @@ test('D10 — aucune commande ne renvoie à quelque chose qui n\'existe pas', ()
     // puisqu'il lit `git ls-files` et ne voit pas un fichier encore non suivi.
     [/\/debug\b/, 'commande supprimée au Lot A'],
     [/docs\/ONBOARDING\.md/, 'fichier supprimé au Lot A'],
+    // Un runbook est LIVRÉ dans le projet de l'utilisateur : les dossiers SOURCES du kit n'y
+    // existent pas. Deux notes de provenance s'y étaient glissées (« la boucle de l'`AGENTS.md`
+    // (issue de `templates/agents/loop-section.md`) », idem pour la règle design) : le fichier
+    // visé est bien réel côté kit, donc aucun garde ne bronchait — mais le débutant qui suit le
+    // renvoi cherche un dossier `templates/` que son projet n'a pas. Cite la DESTINATION
+    // (`AGENTS.md`, `docs/…`), jamais la source.
+    [/`(?:templates|stacks|cursor-plugin|scripts)\//, 'dossier source du kit : absent du projet de l\'utilisateur'],
   ];
   // Contrôle NÉGATIF : il ne peut jamais « ne rien trouver » de façon suspecte, donc sa seule
   // façon de mentir est de ne plus rien lire. `commit-commands`, `` `dev` ``, `3 essais`,

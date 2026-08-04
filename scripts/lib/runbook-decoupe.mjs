@@ -60,6 +60,14 @@ export function erreursChecklist(kitRoot, cmd, maxLignesEntree) {
     if (!/→/.test(ligne)) errors.push(`l'entrée cite « ${e} » sans dire ce qu'elle produit`);
     if (!/^- \[ \]/.test(ligne)) errors.push(`« ${e} » n'est pas une case à cocher : l'entrée est une checklist, pas un sommaire`);
     if (ligne.length <= e.length + 30) errors.push(`« ${e} » : sortie attendue trop maigre — ${ligne}`);
+    // Le numéro AFFICHÉ à l'utilisateur. On n'impose pas d'en mettre un — ce serait juger une
+    // formulation ; on interdit qu'il CONTREDISE le fichier. Sans ce contrôle, passer « **05** »
+    // à « **04** » laisse toute la suite verte et affiche deux cases « 04 » : le débutant croit
+    // avoir sauté une étape, ou en refait une. Le fichier reste l'identifiant (leçon du lot P4).
+    const affiche = ligne.match(/\*\*(\d+)\*\*/);
+    if (affiche && affiche[1] !== e.slice(0, affiche[1].length)) {
+      errors.push(`« ${e} » est annoncée « **${affiche[1]}** » — le numéro affiché contredit le fichier`);
+    }
   }
   if (positions.length === etapes.length && positions.some((p, i) => i > 0 && p < positions[i - 1])) {
     errors.push('l\'ordre des étapes dans l\'entrée n\'est pas celui de leurs numéros');

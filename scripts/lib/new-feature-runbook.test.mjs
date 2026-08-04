@@ -28,11 +28,19 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 // renvoi vers le fichier courant. Les trois renvois nomment donc leur FICHIER, exactement comme
 // le lot P4 l'a imposé partout ailleurs (« une étape se nomme par son fichier »). Aucune consigne
 // n'a été retirée ni ajoutée : les lignes ci-dessous sont celles d'après ce seul changement.
+//
+// UNE QUATRIÈME A ÉTÉ RÉÉCRITE DEPUIS, et pas par le découpage : « Suis la **boucle d'itération**
+// de l'`AGENTS.md` » portait une note de provenance — « (issue de `templates/agents/loop-section.md`) ».
+// `templates/` est un dossier SOURCE du kit ; il n'existe pas dans le projet de l'utilisateur. Le
+// débutant qui suit le renvoi cherche un dossier qu'il n'a pas. La parenthèse est retirée : la
+// consigne porte sur l'`AGENTS.md`, qui, lui, est bien là. Aucune consigne perdue — c'était une
+// note pour le mainteneur du kit, jamais une instruction. Désormais gardé par D10
+// (`commands.test.mjs`), qui refuse tout dossier source du kit cité dans un runbook livré.
 const LIGNES_AVANT_DECOUPAGE = [
   "# /new-feature — Boucle de livraison d'une feature (runbook IA)",
   "Argument : `$ARGUMENTS` = description de la feature à construire.",
   "> Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), **demande la description à l'utilisateur** avant de commencer.",
-  "Suis la **boucle d'itération** de l'`AGENTS.md` (issue de `templates/agents/loop-section.md`), sans sauter d'étape. **Gates humains** au brainstorm et au plan ; autonome ensuite jusqu'au merge.",
+  "Suis la **boucle d'itération** de l'`AGENTS.md`, sans sauter d'étape. **Gates humains** au brainstorm et au plan ; autonome ensuite jusqu'au merge.",
   "> **Attribution** : le format story + critères d'acceptation ci-dessous est adapté de BMAD-METHOD (MIT © 2025 BMad Code, LLC). Adapté/traduit ; « BMAD » est une marque de BMad Code, LLC.",
   "## Préflight",
   "1. Vérifie GitHub : `gh auth status`. Vérifie le remote : `git remote`. Si aucun remote → propose `gh repo create` et relie le projet.",

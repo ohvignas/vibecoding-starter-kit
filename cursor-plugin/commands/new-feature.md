@@ -2,7 +2,7 @@
 
 Argument : `$ARGUMENTS` = description de la feature à construire.
 > Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), **demande la description à l'utilisateur** avant de commencer.
-Suis la **boucle d'itération** de l'`AGENTS.md` (issue de `templates/agents/loop-section.md`), sans sauter d'étape. **Gates humains** au brainstorm et au plan ; autonome ensuite jusqu'au merge.
+Suis la **boucle d'itération** de l'`AGENTS.md`, sans sauter d'étape. **Gates humains** au brainstorm et au plan ; autonome ensuite jusqu'au merge.
 
 ## Boucle
 > Ses 5 étapes vivent dans le dossier `new-feature/` posé **à côté de ce fichier** : `.cursor/commands/new-feature/` (Cursor) · `.claude/commands/new-feature/` (Claude Code) · `docs/commands/new-feature/` (Codex). Pour chacune : **ouvre le fichier, fais ce qu'il dit, passe à la suivante**. N'en saute aucune et ne la résume pas de mémoire — la sortie d'une étape est l'entrée de la suivante.

@@ -218,7 +218,24 @@ export function validateNewFeatureCommand(root) {
   for (const [d, e] of DEPTH_NF) exige(e, (t) => t.includes(d), (f) => `${f} : spec pas assez détaillée, manque « ${d} »`);
   // Le CADRE reste dans l'entrée : c'est le fichier chargé comme commande, celui qui dit à quelle
   // boucle d'`AGENTS.md` les étapes appartiennent. Une étape seule ne peut pas porter ce renvoi.
-  exigeEntree((t) => t.includes('loop-section.md'), (f) => `${f} : ne référence pas templates/agents/loop-section.md`);
+  //
+  // ON EXIGE LA DESTINATION, PLUS LA SOURCE. Cette règle réclamait la chaîne `loop-section.md`,
+  // et l'entrée l'a donc portée pendant tout le chantier sous la forme « (issue de
+  // `templates/agents/loop-section.md`) ». Or `templates/` est un dossier du KIT : il n'existe
+  // pas dans le projet livré. Le garde obligeait donc le runbook à renvoyer le débutant vers un
+  // dossier absent de chez lui — un garde qui FABRIQUE le défaut qu'il croit prévenir.
+  // La propriété visée, elle, est bonne, et se dit sans citer aucune source : l'entrée nomme la
+  // BOUCLE et le fichier que l'utilisateur peut vraiment ouvrir.
+  exigeEntree((t) => /boucle/i.test(t) && /AGENTS\.md/.test(t),
+    (f) => `${f} : ne dit pas à quelle boucle de l'AGENTS.md ses étapes appartiennent`);
+  // Et la chaîne reste prouvée de bout en bout — mais ICI, dans le test, pas dans le fichier
+  // livré : la boucle que l'entrée annonce est bien celle que `loop-section.md` rend dans
+  // l'`AGENTS.md` du projet. Sans ce second maillon, l'entrée pourrait renvoyer à une boucle que
+  // rien n'écrit jamais.
+  const source = path.join(root, 'templates/agents/loop-section.md');
+  if (!fs.existsSync(source) || !/boucle/i.test(fs.readFileSync(source, 'utf8'))) {
+    errors.push('templates/agents/loop-section.md : la boucle annoncée par l\'entrée n\'est plus rendue dans AGENTS.md');
+  }
   // Interdits : le validateur ne se contente pas d'exiger le bon, il refuse le faux — partout.
   interdit(/commit-commands/, 'plugin de commit jamais installé par le kit');
   interdit(/`dev`/, 'branche `dev` : le scaffold ne crée que `main`');

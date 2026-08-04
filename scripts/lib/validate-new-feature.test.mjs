@@ -12,13 +12,25 @@ import { validateNewFeatureCommand } from './validate-commands.mjs';
 const STEPS = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'git commit', 'gh pr create', 'gh run watch', 'finishing-a-development-branch', '--base main'];
 const DEPTH = ["Critères d'acceptation", 'En tant que', 'Périmètre'];
 
-function makeRoot({ omitStep = null, omitLoopRef = false, omitRunbook = false, omitDepth = null, ajoute = '' } = {}) {
+// Le CADRE que l'entrée doit porter. Il a changé de nature : il citait la SOURCE
+// (`templates/agents/loop-section.md`), un dossier du kit absent du projet livré, donc un renvoi
+// mort chez l'utilisateur ; il cite maintenant la DESTINATION, le fichier qu'il peut ouvrir.
+const CADRE = 'Suis la **boucle d\'itération** de l\'`AGENTS.md`, sans sauter d\'étape.';
+// Le second maillon, vérifié sur le disque et non dans le fichier livré : la boucle annoncée est
+// bien celle que ce template rend dans l'`AGENTS.md` du projet.
+const SOURCE_BOUCLE = 'templates/agents/loop-section.md';
+
+function makeRoot({ omitStep = null, omitLoopRef = false, omitRunbook = false, omitDepth = null, omitSource = false, ajoute = '' } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nf-'));
+  if (!omitSource) {
+    fs.mkdirSync(path.join(root, 'templates/agents'), { recursive: true });
+    fs.writeFileSync(path.join(root, SOURCE_BOUCLE), '## Boucle d\'itération\nbrainstorming → plan → code → Merge\n');
+  }
   if (!omitRunbook) {
     fs.mkdirSync(path.join(root, 'templates/commands'), { recursive: true });
     const steps = STEPS.filter(s => s !== omitStep).join(' \n');
     const depth = DEPTH.filter(d => d !== omitDepth).join(' \n');
-    const loopRef = omitLoopRef ? '' : 'templates/agents/loop-section.md';
+    const loopRef = omitLoopRef ? '' : CADRE;
     fs.writeFileSync(path.join(root, 'templates/commands/new-feature.md'), `${steps}\n${depth}\n${loopRef}\n${ajoute}\n`);
   }
   return root;
@@ -30,8 +42,22 @@ test('runbook complet → aucune erreur', () => {
 test('étape manquante → erreur', () => {
   assert.ok(validateNewFeatureCommand(makeRoot({ omitStep: 'security-review' })).some(e => /security-review/.test(e)));
 });
-test('référence loop-section manquante → erreur', () => {
-  assert.ok(validateNewFeatureCommand(makeRoot({ omitLoopRef: true })).some(e => /loop-section/.test(e)));
+test('cadre de la boucle manquant dans l\'entrée → erreur', () => {
+  assert.ok(validateNewFeatureCommand(makeRoot({ omitLoopRef: true })).some(e => /boucle de l'AGENTS\.md/.test(e)));
+});
+// Le second maillon doit MORDRE seul : une entrée qui annonce parfaitement sa boucle, mais plus
+// rien pour l'écrire dans l'`AGENTS.md`, renvoie l'utilisateur vers une section qui n'existera
+// pas. Sans ce cas, retirer `loop-section.md` du kit passerait au vert.
+test('boucle annoncée mais plus rendue dans AGENTS.md → erreur', () => {
+  const errs = validateNewFeatureCommand(makeRoot({ omitSource: true }));
+  assert.ok(errs.some(e => /loop-section\.md/.test(e)), `attendu une erreur, vu : ${JSON.stringify(errs)}`);
+});
+// Et le CADRE exigé ne doit pas pouvoir citer un dossier source du kit : c'est exactement la
+// forme qui a fait naître le défaut (« (issue de `templates/agents/loop-section.md`) »), verte
+// pendant tout le chantier. Le garde de destination, lui, ne s'en satisfait pas.
+test('l\'ancienne forme (chemin du kit seul) ne suffit plus à satisfaire le cadre', () => {
+  const errs = validateNewFeatureCommand(makeRoot({ omitLoopRef: true, ajoute: 'templates/agents/loop-section.md' }));
+  assert.ok(errs.some(e => /boucle de l'AGENTS\.md/.test(e)), `attendu une erreur, vu : ${JSON.stringify(errs)}`);
 });
 test('spec pas assez détaillée (critères d\'acceptation manquants) → erreur', () => {
   assert.ok(validateNewFeatureCommand(makeRoot({ omitDepth: "Critères d'acceptation" })).some(e => /profondeur|acceptation/i.test(e)));
