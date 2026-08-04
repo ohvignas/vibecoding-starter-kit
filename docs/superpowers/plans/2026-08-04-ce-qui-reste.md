@@ -8,26 +8,26 @@ coûtent à l'utilisateur, pas par difficulté.
 
 ---
 
-## 🔴 1. Bloquant — trois stacks jamais buildées
+## ✅ 1. Les 4 stacks buildent — LEVÉ le 2026-08-04
 
-Le test de bout en bout a joué les **4 commandes de scaffold** et corrigé 3 blocages. Mais une
-seule stack a été menée jusqu'au **build réel** :
+Chaque stack menée du scaffold jusqu'au **build réel**, artefact vérifié :
 
-| Stack | Scaffold joué | Build joué | Ce qui manque |
-|---|---|---|---|
-| vitrine | ✅ | ✅ `[build] Complete!` + `dist/` | — |
-| saas | ✅ | ❌ | `npm run build` (le script existe) |
-| desktop | ✅ | ❌ | `npm run make` **après** avoir ajouté React |
-| mobile | ✅ | ❌ | pas de `build` : `npx expo export` ou un run simulateur |
+| Stack | Artefact |
+|---|---|
+| vitrine | `dist/index.html` |
+| saas | `dist/client` + `dist/server` — « ✓ built in 105ms » |
+| desktop | `out/make/zip/darwin/arm64/mon-app-darwin-arm64-1.0.0.zip` (129 Mo), React bundlé |
+| mobile | `dist/` — 4 routes exportées |
 
-**Pourquoi ça compte** : le scaffold qui passe ne prouve pas que la stack **produit quelque chose**.
-Pour desktop en particulier, l'ajout de React que je viens d'écrire dans le runbook **n'a jamais été
-exécuté** — c'est de la prose non vérifiée, la catégorie d'erreur que tout ce chantier traque.
+**Desktop a demandé trois tentatives**, chaque obstacle invisible à la lecture : `plugin-react@6`
+exige `vite@^8` quand Forge livre vite@5 (ERESOLVE) · `@5` est ESM-only quand Forge charge la config
+en `require` · seule `@4` est dual-format. L'épingle et ses deux raisons sont dans le runbook, tenues
+par un garde.
 
-**Faire** : jouer la Phase 7 complète des 3 stacks, jusqu'au build. Pour desktop, exécuter
-littéralement les commandes que le runbook dicte et corriger ce qui ne passe pas.
+Confirmation mesurée côté mobile : `expo install` pose **tailwindcss ^3.4.19**, pas la 4.3.3 que
+`npm i` aurait prise — la consigne est justifiée par l'exécution, pas par principe.
 
----
+**Plus aucun bloquant identifié avant publication.**
 
 ## 🟠 2. Défauts vérifiés, non corrigés
 
