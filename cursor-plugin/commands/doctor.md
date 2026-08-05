@@ -32,6 +32,8 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
 
 > `docs/A-FAIRE.md` est le **seul** fichier d'install : l'item 10 couvre déjà toutes ses cases `[ ]` (gestes de base **+** section « Pour ton projet » ajoutée par `/new-project`).
 
-**Verdict final** : si TOUT est ✓ **de 1 à 17**, écris clairement : « ✅ Ton environnement est prêt — tu peux lancer `/new-project` ». C'est le **critère officiel de fin d'installation**. L'item **18 est optionnel** : signale-le s'il manque, avec ce qu'on y perd, mais il ne bloque pas le verdict. Sinon, liste les ✗ et la commande exacte pour chacun.
+19. **Mises à jour du kit en attente (optionnel)** : liste les fichiers `*.new` du projet (`docs/RUN.md.new` et compagnie). Un `--refresh` ne réécrit **jamais** un fichier où tu as pu écrire : il dépose la version du kit à côté, en `.new`. Il y en a ? Dis-le, montre la différence, et laisse l'utilisateur choisir ce qu'il reprend — puis supprime le `.new` une fois traité. Aucun `.new` = rien à faire.
+
+**Verdict final** : si TOUT est ✓ **de 1 à 17**, écris clairement : « ✅ Ton environnement est prêt — tu peux lancer `/new-project` ». C'est le **critère officiel de fin d'installation**. L'item **18 est optionnel** : signale-le s'il manque, avec ce qu'on y perd, mais il ne bloque pas le verdict. L'item **19 est optionnel** lui aussi : un `.new` non repris n'est pas une installation cassée. Sinon, liste les ✗ et la commande exacte pour chacun.
 
 Termine par un résumé : ce qui va, ce qui manque, et les commandes exactes pour corriger.

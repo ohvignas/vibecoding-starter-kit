@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveAssets, AI_CONTEXT } from './matrix.mjs';
-import { kitOwnedFiles } from './kit-owned.mjs';
+import { kitOwnedFiles, kitOwnedGenerated } from './kit-owned.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const STACKS = Object.keys(AI_CONTEXT);
@@ -49,6 +49,12 @@ function livraison(stack, assistant) {
     else carte.set(c.to, c.from);
   }
   for (const p of kitOwnedFiles(stack, assistant)) carte.set(p.to, p.from);
+  // 3ᵉ source, longtemps oubliée : les fichiers CALCULÉS. `docs/RUN.md` en fait partie — il vient
+  // de `templates/run/<stack>.md`. Il n'est ni dans `resolveAssets().copies` ni dans
+  // `kitOwnedFiles`, donc il était invisible à ce contrôle : on pouvait y écrire un chemin du kit
+  // sans que rien ne bronche, dans le seul fichier qu'un débutant ouvre pour lancer son app.
+  // Seuls ceux qui ont un `from` sont jugeables (les autres sont rendus de toutes pièces).
+  for (const g of kitOwnedGenerated(stack, assistant)) if (g.from) carte.set(g.to, g.from);
   return carte;
 }
 
