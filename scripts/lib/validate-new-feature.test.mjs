@@ -9,7 +9,7 @@ import { validateNewFeatureCommand } from './validate-commands.mjs';
 // Miroir de la liste `steps` de validateNewFeatureCommand. `main` nu y était un contrôle vide
 // (« Gates humains » suffisait à le satisfaire) : c'est `--base main`, la cible réelle du merge,
 // qui est exigée — d'où le cas « cible du merge changée » plus bas.
-const STEPS = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'git commit', 'gh pr create', 'gh run watch', 'finishing-a-development-branch', '--base main'];
+const STEPS = ['worktree', 'brainstorming', 'writing-plans', 'subagent-driven-development', 'code-review', 'Règle de vérification', 'security-review', 'git commit', 'gh pr create', 'gh run watch', 'finishing-a-development-branch', '--base <la base relevée au préflight>'];
 const DEPTH = ["Critères d'acceptation", 'En tant que', 'Périmètre'];
 
 // Le CADRE que l'entrée doit porter. Il a changé de nature : il citait la SOURCE
@@ -83,10 +83,14 @@ test('étape `gh pr create` manquante → erreur (la PR ne s\'ouvre pas toute se
 // vise une autre base, doit échouer. Avec l'ancien `main` nu, ce test passait au vert sans que le
 // runbook ne dise nulle part où atterrit la PR — le mot « humains » suffisait.
 test('cible du merge absente → erreur (un runbook sans branche cible ne doit pas passer)', () => {
-  const errs = validateNewFeatureCommand(makeRoot({ omitStep: '--base main' }));
-  assert.ok(errs.some(e => /--base main/.test(e)), `attendu une erreur, vu : ${JSON.stringify(errs)}`);
+  const errs = validateNewFeatureCommand(makeRoot({ omitStep: '--base <la base relevée au préflight>' }));
+  assert.ok(errs.some(e => /--base/.test(e)), `attendu une erreur, vu : ${JSON.stringify(errs)}`);
 });
-test('cible du merge changée (`--base master`) → erreur', () => {
-  const errs = validateNewFeatureCommand(makeRoot({ omitStep: '--base main', ajoute: 'gh pr create --fill --base master' }));
-  assert.ok(errs.some(e => /--base main/.test(e)), `attendu une erreur, vu : ${JSON.stringify(errs)}`);
+// La cible FIGÉE est maintenant la faute, et c'est l'interdit qui la prend — plus l'exigence.
+// Avant la dérivation, écrire `--base master` était « la mauvaise branche » ; depuis, écrire une
+// branche EN DUR est la faute elle-même, quelle qu'elle soit : on brancherait depuis la base
+// relevée au préflight pour ouvrir la PR ailleurs.
+test('cible du merge écrite en dur (`--base main`) → erreur', () => {
+  const errs = validateNewFeatureCommand(makeRoot({ ajoute: 'gh pr create --fill --base main' }));
+  assert.ok(errs.some(e => /en dur/.test(e)), `attendu une erreur, vu : ${JSON.stringify(errs)}`);
 });

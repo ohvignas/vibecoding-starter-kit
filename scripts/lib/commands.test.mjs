@@ -71,11 +71,20 @@ test('D1 — /new-feature commite et ouvre la PR avec git/gh, jamais via un plug
   assert.doesNotMatch(read('scripts/lib/validate-commands.mjs'), /commit-push-pr/, 'le validateur exige encore le plugin fantôme');
 });
 
-test('D2 — /new-feature merge sur `main` : le scaffold ne crée aucune branche `dev`', () => {
+// D2 — LA CIBLE EST DÉRIVÉE, ET ELLE EST DITE. Ce test figeait `Merge sur **`main`**` : le runbook
+// PRÉSUMAIT de la topologie d'un dépôt que le kit n'a pas créé. Un utilisateur qui travaille sur
+// une branche d'intégration branchait donc depuis elle et ouvrait sa PR vers `main` — strictement
+// pire que de ne rien dériver du tout.
+// Ce qui ne change pas : le scaffold ne crée toujours que `main` (`gitinit.mjs`), et aucune branche
+// n'est inventée. Ce qui change : le runbook relève la base au préflight et y revient.
+// LES DEUX ASSERTIONS SONT NÉCESSAIRES. Sans la seconde, D2 ne prouverait plus rien que D10
+// (`:527`) et `validate-commands.mjs:241` ne prouvent déjà — un test vide sous un titre. La
+// propriété survit à la dérivation : le runbook doit dire OÙ la feature atterrit.
+test('D2 — la cible du merge est dérivée, jamais nommée d\'avance, et elle est dite', () => {
   const t = texteNewFeature();
   assert.doesNotMatch(t, /`dev`/, 'branche inventée');
-  assert.match(t, /Merge sur \*\*`main`\*\*/, 'la cible du merge est nommée');
-  assert.match(t, /mergé sur \*\*`main`\*\*/i, '« fini » = mergé sur main');
+  assert.doesNotMatch(t, /--base (main|master)\b/, 'cible en dur : on branche depuis une base et on ouvre la PR ailleurs');
+  assert.match(t, /Mergé sur .{0,40}(base|branche)/i, '« fini » ne dit plus OÙ la feature atterrit');
 });
 
 test('D3 — /deploy couvre les 4 stacks, pose un gate avant la prod et ne dépend pas d\'un skill Claude Code', () => {

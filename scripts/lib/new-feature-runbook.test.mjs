@@ -36,6 +36,21 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 // consigne porte sur l'`AGENTS.md`, qui, lui, est bien là. Aucune consigne perdue — c'était une
 // note pour le mainteneur du kit, jamais une instruction. Désormais gardé par D10
 // (`commands.test.mjs`), qui refuse tout dossier source du kit cité dans un runbook livré.
+// CINQ LIGNES ONT ÉTÉ RÉÉCRITES LE 2026-08-05, par le chantier « features en parallèle », et
+// elles seules. Motif unique : la cible ne peut plus être nommée d'avance. Le runbook PRÉSUMAIT
+// que le dépôt n'avait que `main` — vrai pour un projet du kit, faux dès que l'utilisateur a une
+// branche de travail. Il branchait alors depuis sa base et ouvrait la PR vers `main` : pire que de
+// ne rien dériver. La base se relève au préflight (`git rev-parse --abbrev-ref HEAD`) et tout y
+// revient. Les quatre :
+//   · le préflight passe de « 2. » à « 3. » et part de la base synchronisée (un point inséré
+//     avant lui : la synchro, sans laquelle deux features partent de deux bases différentes) ;
+//   · le push devient `HEAD` et la PR `--base <la base relevée au préflight>` ;
+//   · le titre de l'étape 10 et le « Fini quand » nomment la base au lieu de `main` ;
+//   · la phrase sous l'étape 10 : le scaffold ne crée toujours que `main`, mais ce n'est plus la
+//     raison de ne pas inventer de branche — un dépôt qui en a une l'a déjà, et c'est celle-là
+//     qu'on suit. (La revue du plan n'en avait compté que quatre ; c'est la 5ᵉ, trouvée par ce
+//     test à l'exécution. C'est exactement son rôle.)
+// Aucune consigne retirée ni ajoutée : les lignes ci-dessous sont celles d'après ce seul changement.
 const LIGNES_AVANT_DECOUPAGE = [
   "# /new-feature — Boucle de livraison d'une feature (runbook IA)",
   "Argument : `$ARGUMENTS` = description de la feature à construire.",
@@ -44,7 +59,7 @@ const LIGNES_AVANT_DECOUPAGE = [
   "> **Attribution** : le format story + critères d'acceptation ci-dessous est adapté de BMAD-METHOD (MIT © 2025 BMad Code, LLC). Adapté/traduit ; « BMAD » est une marque de BMad Code, LLC.",
   "## Préflight",
   "1. Vérifie GitHub : `gh auth status`. Vérifie le remote : `git remote`. Si aucun remote → propose `gh repo create` et relie le projet.",
-  "2. Crée un **worktree** isolé pour la feature (`superpowers:using-git-worktrees`) sur une branche `feat/…`.",
+  "3. Crée un **worktree** isolé pour la feature (`superpowers:using-git-worktrees`) sur une branche `feat/…`, **partant de cette base synchronisée**.",
   "## Boucle",
   "### 1. Brainstorm → **Spec de feature** (`superpowers:brainstorming`) — gate",
   "D'abord, dis en une phrase **ce qu'on va faire** (« on cadre ta feature, puis je la construis et je la teste en vrai »). Puis pose **peu de questions** (2-4), **une à la fois**, en **langage simple**, avec un **exemple concret** à chaque fois et le **pourquoi** ; reformule la réponse. Zéro jargon dans les questions — le vocabulaire (UJ, FR, AC…) reste dans le document. Scopé à la feature, référence `docs/PRD.md`. Produis ensuite une **spec de feature** avec ce template, puis fais valider :",
@@ -70,13 +85,13 @@ const LIGNES_AVANT_DECOUPAGE = [
   "### 7. Commit",
   "`git add -A` puis `git commit` en **Conventional Commits** (`feat:`, `fix:`, `docs:`… + un corps qui dit le *pourquoi*). Aucun plugin de commit n'est installé par le kit : c'est `git`, directement.",
   "### 8. PR",
-  "`git push -u origin <branche>` puis `gh pr create --fill --base main`. Description = quoi + pourquoi + comment tester (les AC).",
+  "`git push -u origin HEAD` puis `gh pr create --fill --base <la base relevée au préflight>`. Description = quoi + pourquoi + comment tester (les AC). La cible n'est **jamais** écrite d'avance : tu as branché depuis cette base, la PR y revient — sinon tu ouvres la PR ailleurs que là d'où tu es parti.",
   "### 9. CI — surveille jusqu'au bout",
   "`gh pr checks <n>` puis `gh run watch <id> --exit-status`. Rouge → diagnostiquer (`superpowers:systematic-debugging`), pas de merge.",
-  "### 10. Merge sur **`main`** (`superpowers:finishing-a-development-branch`, squash)",
-  "Le scaffold ne crée que `main` : n'invente aucune branche d'intégration intermédiaire.",
+  "### 10. Merge sur **la base d'où tu es parti** (`superpowers:finishing-a-development-branch`, squash)",
+  "Celle relevée au préflight, pas une autre. **N'invente aucune branche d'intégration** : le scaffold n'en crée pas, et un dépôt qui en a une l'a déjà.",
   "## Fini quand",
-  "Mergé sur **`main`** (CI verte + review OK, un PR à la fois) **ET** **chaque critère d'acceptation testé en live** par l'agent. Tests unitaires + CI verte = nécessaires mais **pas** suffisants. Si un blocage externe empêche d'aller au bout → **dire exactement ce qui manque**.",
+  "Mergé sur **la base relevée au préflight** (CI verte + review OK, un PR à la fois) **ET** **chaque critère d'acceptation testé en live** par l'agent. Tests unitaires + CI verte = nécessaires mais **pas** suffisants. Si un blocage externe empêche d'aller au bout → **dire exactement ce qui manque**.",
 ];
 
 test('non-perte — aucune consigne du runbook d\'un bloc n\'est tombée au découpage', () => {

@@ -190,7 +190,13 @@ const ETAPE_NF = {
 // `dev` était un contrôle vide — la chaîne apparaît dans « subagent-driven-development ». Son
 // remplaçant `main` l'était tout autant : « Gates humains » le satisfaisait, donc n'importe quel
 // runbook le satisfaisait, y compris un qui ne nomme aucune branche. On exige donc la chaîne
-// OPÉRANTE, qui ne peut pas apparaître par accident dans une phrase française : `--base main`.
+// OPÉRANTE, qui ne peut pas apparaître par accident dans une phrase française : `--base`.
+// POURQUOI PLUS `--base main` MAIS `--base` TOUT COURT : la cible de la PR ne peut plus être
+// nommée d'avance. Un dépôt que le kit n'a pas créé a sa propre topologie — l'utilisateur qui
+// travaille sur une branche d'intégration branchait depuis elle et ouvrait sa PR vers `main` :
+// strictement pire que rien. La base se relève au préflight et la PR y revient. La chaîne reste
+// opérante (aucune phrase française ne contient `--base`), et l'interdit plus bas empêche que la
+// dérivation soit contournée en réécrivant une cible en dur.
 const ETAPES_NF = [
   ['worktree', ETAPE_NF.preflight],
   ['brainstorming', ETAPE_NF.spec],
@@ -203,7 +209,7 @@ const ETAPES_NF = [
   ['gh pr create', ETAPE_NF.livraison],
   ['gh run watch', ETAPE_NF.livraison],
   ['finishing-a-development-branch', ETAPE_NF.livraison],
-  ['--base main', ETAPE_NF.livraison],
+  ['--base', ETAPE_NF.livraison],
 ];
 // Profondeur : la spec de feature (story + critères d'acceptation) doit être présente, pas un
 // simple « brainstorm » — et elle se prouve dans l'étape qui la produit.
@@ -239,6 +245,10 @@ export function validateNewFeatureCommand(root) {
   // Interdits : le validateur ne se contente pas d'exiger le bon, il refuse le faux — partout.
   interdit(/commit-commands/, 'plugin de commit jamais installé par le kit');
   interdit(/`dev`/, 'branche `dev` : le scaffold ne crée que `main`');
+  // La contrepartie de `--base` : exiger le drapeau sans interdire la cible figée laisserait
+  // réécrire `--base main` demain, et l'utilisateur brancherait depuis sa base pour ouvrir la PR
+  // ailleurs — la faute exacte que la dérivation existe pour empêcher.
+  interdit(/--base (main|master)\b/, 'cible de PR en dur : elle doit être la base relevée au préflight');
   fin();
   return errors;
 }
