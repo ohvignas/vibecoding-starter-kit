@@ -144,8 +144,15 @@ L'IA construit **une étape à la fois**. À chaque étape :
 - ses relecteurs passent : code, sécurité, fonctionnement,
 - **puis** elle te demande « on continue ? ».
 
-En **mode apprentissage**, elle t'explique ce qu'elle vient de faire et te pose une question de
-compréhension. Tu apprends en regardant construire, tu ne subis pas.
+En **mode apprentissage**, elle t'explique ce qu'elle vient de faire, **pourquoi comme ça**, et te
+donne le mot du jour — pris dans *ton* projet, pas un exemple générique. Puis elle l'écrit dans
+`docs/APPRENTISSAGE.md`.
+
+> **Insiste là-dessus, c'est ce qui plaît :** *« Elle ne vous interroge jamais. Vous n'avez pas
+> d'examen à passer, vous construisez. Mais tout ce qu'elle vous apprend est écrit, numéroté, dans
+> l'ordre. À la fin, ce carnet raconte la construction de votre app du début à la fin — et le jour
+> où vous vous demandez "pourquoi c'est fait comme ça ?", la réponse est à la date où ça s'est
+> décidé. »*
 
 ---
 

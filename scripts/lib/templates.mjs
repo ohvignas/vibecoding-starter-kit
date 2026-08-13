@@ -21,7 +21,7 @@ export function forceAlwaysApplyFalse(text) {
 // vérification, puis les règles transverses — les règles UI (design, CSS) viennent après.
 export function renderProjectAgentsMd({ stack, assistant, commandsDir = '', loopSection = '', designRule = '', subagentsRule = '', verifyRule = '', realityRule = '', proofRule = '', secretsRule = '', cssMaquetteRule = '', memoryRules = '', learning = true }) {
   const learningSection = learning === false ? '' : `## Mode apprentissage
-À chaque jalon terminé : (1) explique en **3 puces simples** ce que tu viens de construire et **pourquoi** ; (2) pose **une question de compréhension** à l'utilisateur et **attends sa réponse** avant de continuer ; (3) \`/build --all\` est **désactivé** (on avance jalon par jalon). Objectif : l'utilisateur comprend, il ne subit pas.
+Tu **enseignes**, tu n'interroges pas : **aucune question** de compréhension. À chaque étape franchie : (1) dis ce que tu viens de faire et **pourquoi ainsi** ; (2) **ajoute la leçon** à \`docs/APPRENTISSAGE.md\` — gabarit et règles en tête du fichier, numérotée, à la suite ; (3) \`/build --all\` reste **désactivé**. Il apprend en te regardant faire.
 
 `;
   const body = `# Règles projet (généré par vibe-stack)

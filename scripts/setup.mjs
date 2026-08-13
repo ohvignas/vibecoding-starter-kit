@@ -172,6 +172,16 @@ async function main() {
   try { trackDir('docs/memory/', copyDirIfAbsent(path.join(args.source, 'templates/memory'), path.join(projectDir, 'docs/memory'), opt)); }
   catch (e) { failed.push(`docs/memory (${e.message})`); }
 
+  // Le carnet d'apprentissage. SEMÉ UNE FOIS, comme la mémoire, et jamais régénéré : l'IA
+  // l'alimente leçon par leçon, et ce qu'il contient appartient à l'utilisateur — c'est sa
+  // formation, écrite pendant qu'il construisait. Un `--refresh` qui l'écraserait détruirait
+  // exactement ce qu'on lui promet de garder. Il n'est donc NI dans `kitOwnedFiles`, NI dans
+  // `kitOwnedGenerated` : `copyDirIfAbsent` ne le pose que s'il n'existe pas.
+  if (args.learning !== false) {
+    try { trackDir('docs/', copyDirIfAbsent(path.join(args.source, 'templates/apprentissage'), path.join(projectDir, 'docs'), opt)); }
+    catch (e) { failed.push(`docs/APPRENTISSAGE.md (${e.message})`); }
+  }
+
   // Templates que /new-project OUVRE au lieu de les recopier dans son propre texte (Lot D9) :
   // le runbook les cite par ces chemins-là, ils doivent donc exister dans le projet généré.
   try {

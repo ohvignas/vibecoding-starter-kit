@@ -46,10 +46,16 @@ test('E10 — les 10 commandes sont annoncées, avec le dossier où les trouver'
   assert.match(out, /\.claude\/commands\//, 'et le chemin des runbooks');
 });
 
-test('mode apprentissage : section présente par défaut, absente si learning:false', () => {
+// LE MODE APPRENTISSAGE ENSEIGNE, IL N'INTERROGE PAS. Il exigeait « une question de compréhension
+// à chaque jalon, attends sa réponse ». À l'usage, ça produisait un interrogatoire : l'utilisateur
+// venait construire, pas passer un examen, et la question arrivait au pire moment — juste après un
+// jalon réussi. Ce test figeait la chaîne `question de compréhension` ; il fige maintenant
+// l'inverse, parce que la réintroduire est le retour en arrière qu'on veut voir rougir.
+test('mode apprentissage : la section enseigne, ne questionne pas, et absente si learning:false', () => {
   const on = renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor', learning: true });
   assert.match(on, /Mode apprentissage/);
-  assert.match(on, /question de compréhension/i);
+  assert.doesNotMatch(on, /question de compréhension/i, 'le mode apprentissage n\'interroge plus : il explique');
+  assert.match(on, /APPRENTISSAGE\.md/, 'la leçon doit atterrir quelque part, sinon elle est perdue au tour suivant');
   const off = renderProjectAgentsMd({ stack: 'saas', assistant: 'cursor', learning: false });
   assert.doesNotMatch(off, /Mode apprentissage/);
 });
