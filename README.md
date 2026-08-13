@@ -212,7 +212,7 @@ Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) :
 | **`/help`** | **L'entrée — la seule à retenir.** Les 10 commandes expliquées en français simple, et « par où continuer » selon ce que l'IA voit dans ton projet |
 | **`/init-vibecoding`** | Le tout-en-un : l'IA **installe l'environnement pour toi** (ou met à jour un projet existant) et te déroule `docs/A-FAIRE.md` pas à pas. À lancer quand rien n'est encore posé |
 | **`/new-project`** | La fondation, en **9 étapes** que l'IA ouvre une par une : cadrage (le **problème**, l'**entreprise**, les **objectifs commerciaux**) → **PRD** → **tech spec** → **arborescence** (écrans, navigation, URL) → **design system** (`design.md`, thème shadcn) **puis maquette** (un **sous-agent par écran** en shadcn/ui, ou **Stitch**/la tienne) → **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) → scaffold |
-| **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » à chaque jalon (`--all` reste désactivé en mode apprentissage) |
+| **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » à chaque jalon (`--all` reste désactivé en mode apprentissage). Chaque jalon franchi ajoute sa **leçon** à `docs/APPRENTISSAGE.md` — ce qu'on a fait, **pourquoi comme ça**, et le mot du jour |
 | **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `main` |
 | **`/edit-design`** | Charge les **4 skills design** + `design.md` **avant** de toucher l'UI (+ blocs pré-faits `@shadcnblocks` au besoin) |
 | **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
@@ -229,7 +229,7 @@ Les trois commandes longues arrivent en plus avec un **dossier d'étapes à côt
 
 > [!TIP]
 > **Récupérer les nouveautés du kit dans un vieux projet** — depuis le dossier du projet, **rien à cloner** :
-> - `npx create-vibecoding-kit --refresh` — **régénère** ce qui est 100 % kit et que tu n'édites pas : les règles (`AGENTS.md`, entre les marqueurs), les 10 runbooks **et leurs 19 étapes**, les 7 agents du crew, `docs/glossaire.md`, `docs/templates/` et les docs officielles d'`ai-context/`. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — `docs/PRD.md`, `docs/design.md`, `docs/ROADMAP.md`, `docs/memory/`, `docs/A-FAIRE.md`, et la mémoire du crew (`docs/agents/JOURNAL.md`, `state.yaml`, `inventaire.md`). Seule exception, voulue : sur Codex les 7 agents vivent dans `docs/agents/crew/` — ceux-là sont du kit, donc régénérés. Ajoute `--dry-run` pour prévisualiser.
+> - `npx create-vibecoding-kit --refresh` — **régénère** ce qui est 100 % kit et que tu n'édites pas : les règles (`AGENTS.md`, entre les marqueurs), les 10 runbooks **et leurs 19 étapes**, les 7 agents du crew, `docs/glossaire.md`, `docs/templates/` et les docs officielles d'`ai-context/`. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — `docs/PRD.md`, `docs/design.md`, `docs/ROADMAP.md`, `docs/memory/`, `docs/A-FAIRE.md`, **`docs/APPRENTISSAGE.md`** (tes leçons t'appartiennent : un refresh qui les écraserait détruirait exactement ce qu'on te promet de garder), et la mémoire du crew (`docs/agents/JOURNAL.md`, `state.yaml`, `inventaire.md`). Seule exception, voulue : sur Codex les 7 agents vivent dans `docs/agents/crew/` — ceux-là sont du kit, donc régénérés. Ajoute `--dry-run` pour prévisualiser.
 > - Si tu as le dépôt en local : `node <kit>/scripts/update.mjs` **ajoute** les fichiers neufs sans rien écraser, et `--refresh` fait la même régénération que ci-dessus.
 
 > [!TIP]
@@ -268,6 +268,7 @@ mon-app/
 │   ├── DOMAINS.md                 # catalogue des capacités métier de la stack
 │   ├── ROADMAP.md                 # jalons (✅ ce que tu vois) — piloté par /build
 │   ├── RUN.md                     # comment lancer l'app + ce que tu dois voir
+│   ├── APPRENTISSAGE.md           # ton carnet : une leçon par étape, dans l'ordre (jamais écrasé)
 │   ├── memory/                    # index + gotchas/conventions/decisions/archive
 │   └── examples/                  # une feature d'exemple, prête à copier
 ├── .github/workflows/             # ci · secrets (gitleaks)
