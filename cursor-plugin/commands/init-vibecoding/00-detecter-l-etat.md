@@ -11,4 +11,10 @@ Regarde si **`.vibecoding.json`** existe dans le dossier courant.
   3. Si le message parle d'« ancienne version / bloc en double », **ouvre `AGENTS.md`** et supprime l'ancien bloc de règles sous `vibecoding:end` (garde ses notes perso). Explique-lui ce que tu fais.
   → **Stop ici** (pas de re-scaffold). Termine par « ton projet est à jour ✅ ».
 
+- **Il n'existe pas, mais le dossier contient déjà quelque chose** (autre chose que `.git/`, `node_modules/`, `.DS_Store`) → c'est un **projet qui existe déjà**. Ne scaffolde **jamais** par-dessus :
+  1. **Montre-lui ce que tu vois** (2 ou 3 fichiers suffisent) et demande si c'est bien ce projet-là qu'il veut équiper. Ne devine pas à sa place.
+  2. S'il confirme : `npx -y create-vibecoding-kit@latest --adopt` **depuis ce dossier**. Le kit lui demande son assistant, n'écrase aucun fichier, et ne revendique **aucune techno**.
+  → **Stop ici** : pas de scaffold, pas de `--stack`. Termine par « la méthode est installée dans ton projet ✅ ».
+
 - **Il n'existe pas** → nouveau projet, continue.
+  (Ce cas suppose un dossier **vide** : s'il contient déjà du code, c'est le cas juste au-dessus.)

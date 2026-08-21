@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { STACK_AUCUNE, estAdopte } from './adoption.mjs';
+import { STACK_AUCUNE, estAdopte, estProjetExistant, entreesDuProjet, runAdoptWizard, besoinDeQuestionsAdoption } from './adoption.mjs';
 import { renderAgentsFile, adapterAuProjetAdopte } from './agents-file.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
 import { resolveAssets } from './matrix.mjs';
@@ -133,4 +133,126 @@ test('adoption — une phrase source qui bouge fait ÉCHOUER la substitution, pa
   assert.throws(() => adapterAuProjetAdopte({
     loopSection: 'x', realityRule: 'x', verifyRule: 'x', subagentsRule: 'x', secretsRule: 'x',
   }), /la phrase à adapter pour un projet adopté a changé/);
+});
+
+// --- Le point d'entrée `--adopt` --------------------------------------------------------------
+// Rendre `aucune` légale (tâches 1-4) ne sert à rien tant que l'utilisateur n'a pas de commande
+// pour la déclencher. `--adopt`, lancé DEPUIS son projet, est cette commande.
+const NULL_OUT = { write() {} };
+const capture = () => { const lignes = []; return { out: { write: (s) => lignes.push(s) }, texte: () => lignes.join('') }; };
+const scripted = (reponses) => { let i = 0; return async () => reponses[i++]; };
+// Le CLI joué pour de vrai. On garde le CODE DE SORTIE : c'est lui que lisent l'utilisateur, sa CI
+// et le runbook — un refus qui sortirait en 0 se ferait enchaîner comme une réussite.
+const lancerSetup = (argv) => {
+  const cmd = [path.resolve('scripts/setup.mjs'), ...argv];
+  try { return { code: 0, out: String(execFileSync(process.execPath, cmd, { stdio: 'pipe' })), err: '' }; }
+  catch (e) { return { code: e.status ?? 1, out: String(e.stdout ?? ''), err: String(e.stderr ?? '') }; }
+};
+
+test('adoption — le critère de détection', () => {
+  const vide = fs.mkdtempSync(path.join(os.tmpdir(), 'vide-'));
+  assert.equal(estProjetExistant(vide), false, 'dossier vide = neuf');
+  fs.mkdirSync(path.join(vide, '.git'));
+  assert.equal(estProjetExistant(vide), false, 'dossier vide SOUS GIT = neuf, rien à adopter');
+  fs.writeFileSync(path.join(vide, 'README.md'), '#');
+  assert.equal(estProjetExistant(vide), true, 'une entrée réelle = existant');
+});
+
+test('adoption — le critère ignore les 4 entrées qui ne prouvent aucun projet, et jamais une 5ᵉ', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ignore-'));
+  fs.mkdirSync(path.join(dir, '.git'));
+  fs.mkdirSync(path.join(dir, 'node_modules'));
+  fs.writeFileSync(path.join(dir, '.DS_Store'), '');
+  fs.writeFileSync(path.join(dir, '.vibecoding.json'), '{}');
+  assert.equal(estProjetExistant(dir), false, 'les 4 entrées ignorées ne prouvent aucun projet');
+  assert.deepEqual(entreesDuProjet(dir), [], 'et rien à MONTRER : il n\'y a rien');
+  // Un `.gitignore` (ou n'importe quel 5ᵉ fichier caché) EST du projet : ne pas l'ignorer aussi.
+  fs.writeFileSync(path.join(dir, '.gitignore'), 'node_modules/\n');
+  assert.equal(estProjetExistant(dir), true);
+  assert.deepEqual(entreesDuProjet(dir), ['.gitignore']);
+  // Dossier inexistant : pas de crash, et « rien à adopter ».
+  assert.equal(estProjetExistant(path.join(dir, 'nulle-part')), false);
+});
+
+test('adoption — parseArgs accepte --adopt', () => {
+  assert.equal(parseArgs(['--adopt']).adopt, true);
+  assert.equal(parseArgs([]).adopt, false);
+});
+
+test('adoption — le parcours adopté MONTRE ce qu\'il a trouvé, puis demande l\'assistant', async () => {
+  const { out, texte } = capture();
+  const r = await runAdoptWizard(scripted(['o', '2']), false, out, { projectDir: '/tmp/mon-app', entrees: ['README.md', 'src'] });
+  assert.deepEqual(r, { assistant: 'claude-code' });
+  const t = texte();
+  assert.match(t, /\/tmp\/mon-app/, 'le dossier visé doit être écrit noir sur blanc');
+  assert.match(t, /README\.md/, 'MONTRER ce qu\'on a trouvé — jamais de devinette silencieuse');
+  assert.match(t, /src/);
+  // La stack n'est PAS demandée : elle vaut `aucune` par construction (décision 1).
+  for (const mot of ['Que veux-tu construire', 'SaaS web', 'Electron', 'Site vitrine']) {
+    assert.ok(!t.includes(mot), `« ${mot} » : la stack ne se demande pas sur un projet existant`);
+  }
+});
+
+test('adoption — répondre non n\'installe rien : le kit demande avant de toucher au projet', async () => {
+  const r = await runAdoptWizard(scripted(['n']), false, NULL_OUT, { projectDir: '/tmp/mon-app', entrees: ['README.md'] });
+  assert.equal(r, null, 'un refus doit remonter, pas être écrasé par un défaut');
+});
+
+test('adoption — un dossier sans rien à adopter : le kit le DIT, et ne l\'adopte pas tout seul', async () => {
+  // Le cas limite du critère : « README.md posé par GitHub » est classé EXISTANT alors que
+  // l'utilisateur voulait du neuf, et un dossier vide sous git est classé NEUF. Dans les deux sens,
+  // c'est la question qui tranche — jamais le critère seul.
+  const { out, texte } = capture();
+  const r = await runAdoptWizard(scripted(['']), false, out, { projectDir: '/tmp/vide', entrees: [] });
+  assert.equal(r, null, 'sans rien à adopter, le défaut est NON');
+  assert.match(texte(), /rien à adopter/i);
+  assert.match(texte(), /create-vibecoding-kit/, 'et la commande du parcours NEUF doit être nommée');
+});
+
+test('adoption — `--adopt` sort avant needsWizard : il scaffolde sans --stack', () => {
+  // `needsWizard(['--adopt'], true) === true` (wizard.mjs:22-26 exige --stack ET --assistant ET
+  // --project) : sans early-return, ce run finirait sur « --stack doit valoir … » et exit 1.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adoptcli-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"deja-la"}');
+  const r = lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']);
+  assert.equal(r.code, 0, `--adopt doit sortir en 0 sans --stack : ${r.err}`);
+  const mf = JSON.parse(fs.readFileSync(path.join(dir, '.vibecoding.json'), 'utf8'));
+  assert.equal(mf.stack, 'aucune', '--adopt doit forcer la stack `aucune`');
+  assert.equal(mf.assistant, 'claude-code');
+  assert.ok(fs.existsSync(path.join(dir, 'AGENTS.md')), 'la méthode doit être installée');
+  assert.ok(!fs.existsSync(path.join(dir, '.env.example')), 'rien de stack-keyé sur un projet adopté');
+  assert.match(r.out, /package\.json/, 'la sortie doit MONTRER ce que le kit a trouvé');
+});
+
+test('adoption — `--adopt` sans --assistant hors terminal : refus nommé, rien d\'installé', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adoptnotty-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"x"}');
+  const r = lancerSetup(['--adopt', '--project', dir, '--no-skills']);
+  assert.equal(r.code, 1);
+  assert.match(r.err, /--assistant/, 'le message doit nommer le drapeau qui manque');
+  assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md')), 'un refus n\'écrit rien');
+});
+
+test('adoption — `--adopt` sur un dossier sans rien à adopter, hors terminal : refus, pas de devinette', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adoptvide-'));
+  const r = lancerSetup(['--adopt', '--assistant', 'cursor', '--project', dir, '--no-skills']);
+  assert.equal(r.code, 1);
+  assert.match(r.err, /rien à adopter/i);
+  assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md')));
+});
+
+test('adoption — quand le parcours adopté pose ses questions, et quand il ne PEUT pas', () => {
+  assert.equal(besoinDeQuestionsAdoption({ assistant: null }, true, ['--adopt']), true);
+  assert.equal(besoinDeQuestionsAdoption({ assistant: 'cursor' }, true, ['--adopt']), false, 'le drapeau a déjà répondu');
+  assert.equal(besoinDeQuestionsAdoption({ assistant: null }, false, ['--adopt']), false, 'hors terminal, on ne PEUT pas demander');
+  assert.equal(besoinDeQuestionsAdoption({ assistant: null }, true, ['--adopt', '--yes']), false, '--yes = jamais de question');
+});
+
+test('adoption — `--adopt --stack saas` est refusé : une contradiction ne se corrige pas en silence', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adoptstack-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"x"}');
+  const r = lancerSetup(['--adopt', '--stack', 'saas', '--assistant', 'cursor', '--project', dir, '--no-skills']);
+  assert.equal(r.code, 1);
+  assert.match(r.err, /--stack/);
+  assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md')), 'un refus n\'écrit rien');
 });

@@ -269,6 +269,9 @@ const ETAPES_IV = [
   ['.vibecoding.json', ETAPE_IV.etat],
   ['--dry-run', ETAPE_IV.etat],
   ['--refresh', ETAPE_IV.etat],
+  // 3ᵉ cas : pas de `.vibecoding.json` mais un dossier NON VIDE. Sans cette ligne, l'IA scaffolde
+  // une stack par-dessus un projet de deux ans — le défaut que tout le parcours adopté supprime.
+  ['--adopt', ETAPE_IV.etat],
   // La commande de scaffold, avec ses valeurs littérales : c'est elle que G3 rejoue.
   ['npx -y create-vibecoding-kit@latest --stack', ETAPE_IV.scaffold],
   ['<assistant> =', ETAPE_IV.scaffold],

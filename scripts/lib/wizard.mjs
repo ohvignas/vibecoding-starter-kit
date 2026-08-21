@@ -7,7 +7,8 @@ const STACKS = [
   { key: 'desktop', label: 'Desktop', hint: 'Electron' },
   { key: 'vitrine', label: 'Site vitrine / blog', hint: 'Astro + shadcn/ui + Keystatic (CMS) — SEO/GEO' },
 ];
-const ASSISTANTS = [
+// EXPORTÉE : le parcours adopté (adoption.mjs) pose la même question, avec les mêmes libellés.
+export const ASSISTANTS = [
   { key: 'cursor', label: 'Cursor' },
   { key: 'claude-code', label: 'Claude Code' },
   { key: 'codex', label: 'Codex' },
@@ -71,7 +72,8 @@ export function renderBackendNote(stack, backend) {
 }
 
 // Question à choix numérotés : redemande jusqu'à un choix valide, renvoie la clé.
-async function pickOne(ask, on, out, question, options) {
+// EXPORTÉE pour la même raison qu'ASSISTANTS : un second rendu de menu divergerait du premier.
+export async function pickOne(ask, on, out, question, options) {
   for (;;) {
     out.write(menu(question, options, on) + '\n');
     const idx = Number.parseInt((await ask('  › ')).trim(), 10);
