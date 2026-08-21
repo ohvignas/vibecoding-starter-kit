@@ -24,7 +24,7 @@ Chaque tâche en hérite implicitement.
 | Suite | `node --run test` | **PAS** `node --test scripts/` (échoue) |
 | Base verte | **432 / 0 fail** à `97e7b2a` | Chaque tâche finit à 432 + ses tests, 0 fail |
 | `--project` | chemin **ABSOLU** | Un nom nu crée le projet dans le HOME. Projets de test dans `/private/tmp/claude-501/-Users-antoinevigneau-best-practices-vibecoding/7518a38b-5d92-45e6-9d4a-0c79949df393/scratchpad/` |
-| Plugin Cursor | `node scripts/build-cursor-plugin.mjs` | À régénérer **dans chaque tâche** qui touche `templates/commands/` — sinon D10 rouge |
+| Plugin Cursor | `node scripts/build-cursor-plugin.mjs` | À régénérer **dans chaque tâche** qui touche `templates/commands/` **ou `templates/cursor/rules/`** — le plugin embarque les deux. ⛔ La v1 de cette contrainte ne nommait que `commands/` : la tâche 3 a corrigé `00-project.mdc` sans régénérer, et la copie committée `cursor-plugin/rules/00-project.mdc` a dérivé. Aucun test ne le voyait — D10 ne compare que `commands/`. Garde ajouté au round 2 de T3 |
 | Plafond `AGENTS.md` | 2196 / 2200 mots | **4 mots de marge.** Aucune règle standing nouvelle |
 | `grep` | aliasé sur `ugrep` ; `perl -i` peut ne rien faire | Tout harnais de mutation **sort en erreur** si la cible est introuvable |
 | Mutation | commiter d'abord, restaurer depuis une **copie mémoire** | Un `git checkout -- .` a déjà détruit un palier |
