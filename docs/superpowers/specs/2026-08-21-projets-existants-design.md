@@ -1,158 +1,207 @@
-# Le kit s'installe sur un projet qui existe déjà — design
+# Le kit s'installe sur un projet qui existe déjà — design v2
 
-**Date :** 2026-08-21 · **Base :** `b512b24`, kit 0.16.0, 432 tests verts.
+**Date :** 2026-08-21 · **Base :** `513d1f2`, kit 0.16.0, 432 tests verts.
+**v1 : À REPRENDRE** (revue par agent frais, 2026-08-21). Six bloquants, dont une prémisse fausse.
+Tout ce qui suit a été **remesuré**.
 
-## Le problème
+---
 
-Le kit crée des projets neufs. Sur un projet qui existe déjà, il **échoue en silence** : il ne
-casse rien, et il ne sert à rien.
+## Ce que la v1 affirmait de faux
 
-Mesuré le 2026-08-21 sur un projet Next.js + Prisma sous git, avec un `AGENTS.md` personnel :
+> v1 : « rien n'est écrasé. `package.json`, `src/`, les règles personnelles : intacts. »
+
+Faux. Sur un projet Next.js + Prisma sous git, après installation :
+
+```
+ M package.json
+```
+
+Le fichier est **entièrement réécrit** (reformaté par `JSON.stringify`) et `environment.mjs:107-110`
+y injecte `typecheck` — et `lint: biome check .` si le projet n'en avait pas, sur un projet qui
+utilise probablement eslint. Le test de la v1 vérifiait que le *nom* du projet survivait : il
+survit à une réécriture complète. **Un test qui ne pouvait pas échouer pour la bonne raison.**
+
+## Le problème, remesuré
 
 | Ce qui se passe | Conséquence |
 |---|---|
-| `setup.mjs:103-113` refuse d'écrire `AGENTS.md` et pond `AGENTS.md.new` | **La méthodologie n'arrive jamais.** Son `AGENTS.md` reste sans les règles du kit |
-| L'avertissement est imprimé **ligne 58 sur 74** | Les 6 dernières lignes disent de lancer `/new-project`. Le message défile |
-| Le wizard a posé `stack: saas` → Convex + TanStack | Le projet est Next.js + Prisma. `AGENTS-stack.md` parle de Convex : **règles d'une stack absente** |
-| Le rapport annonce « Projet créé » | Sur un dépôt qui a deux ans d'historique |
+| `setup.mjs:103-113` refuse d'écrire `AGENTS.md` **et** `CLAUDE.md` → deux `.new` | **La méthodologie n'arrive jamais** |
+| Les deux avertissements sont imprimés **lignes 57 et 58 sur 74** | Les 6 dernières lignes disent de lancer `/new-project` |
+| `.env.example` est posé, mais `.gitignore` existant n'est **pas** complété | ⛔ **Régression de sécurité.** Mesuré : `git check-ignore .env` → **non ignoré**. Le kit invite à créer un `.env` qui partira au commit |
+| Le wizard a posé `stack: saas` → Convex | Projet Next.js + Prisma. `AGENTS-stack.md`, `ai-context/`, `.env.example` d'une stack absente |
+| `docs/ROADMAP.md` squelette posé (`setup.mjs:242`) | `/build` exécute un plan fictif |
+| `maquette/` créé vide (`setup.mjs:119`) | L'IA croira qu'il y a une maquette à comparer |
+| Rapport : « Projet créé » | Sur un dépôt qui a deux ans d'historique |
 
-Et `/init-vibecoding` ne rattrape pas : son étape `00-detecter-l-etat.md` ne connaît que **deux**
-cas — `.vibecoding.json` existe (→ refresh) ou n'existe pas (→ **projet neuf**). Le cas « projet
-réel que le kit n'a jamais touché » n'existe nulle part.
+`/init-vibecoding` ne rattrape pas : `00-detecter-l-etat.md` ne connaît que deux cas —
+`.vibecoding.json` présent (→ refresh) ou absent (→ **projet neuf**).
 
-**Ce qui marche déjà, et qu'on ne refait pas :** rien n'est écrasé. `package.json`, `src/`, les
-règles personnelles : intacts. C'est la base sur laquelle on construit.
+---
 
-## Ce qu'on construit
+## Décision 1 — La méthode, pas la stack, et un endroit où l'écrire
 
-Un troisième parcours — **adopter un projet existant** — à côté de « créer » et « mettre à jour ».
-Il installe la **méthodologie**, jamais des affirmations sur une techno que le kit n'a pas vérifiée.
+Le kit **n'écrit aucune règle de techno** sur un projet adopté : il ne peut pas prouver ce qu'il n'a
+pas vérifié, et une règle Convex dans un projet Prisma est **pire que pas de règle**.
 
-### Décision 1 — La méthode, pas la stack
+**Observer n'est pas prescrire.** Écrire « ce projet se lance avec `pnpm dev` » est un constat
+vérifiable. Écrire « avec Prisma, fais plutôt ceci » est une prescription non vérifiée.
 
-Le kit **n'écrit aucune règle de techno** sur un projet existant. Il ne peut pas prouver ce qu'il
-n'a pas vérifié, et une règle Convex dans un projet Prisma est **pire que pas de règle**.
+**⛔ Ce que la v1 avait raté : la décision n'avait nulle part où s'écrire.** `args.mjs:56` et
+`matrix.mjs:44` rejettent toute valeur hors des 4 stacks — mesuré : `refreshProject` avec
+`stack:'existant'` jette `Stack inconnue`. Sans correctif, **chaque `--refresh` re-livrerait à vie**
+`AGENTS-stack.md`, `.claude/skills/stack-X`, `ai-context/` et `.env.example` d'une stack fictive.
 
-**Observer n'est pas prescrire.** Le kit a le droit d'écrire « ce projet utilise Prisma, on le
-lance avec `pnpm dev` » — c'est un constat, vérifiable en regardant le dépôt. Il n'a pas le droit
-d'écrire « avec Prisma, fais ceci plutôt que cela » — c'est une prescription qu'il n'a pas vérifiée.
-La décision 4 relève du premier registre, jamais du second.
+**→ Une 5ᵉ valeur : `aucune`.** Elle ne livre ni règles de stack, ni `ai-context/`, ni
+`.env.example`, ni skill de stack. C'est le changement le plus profond du lot ; il est le socle de
+tout le reste.
 
-Rejeté : générer les règles de stack en lisant le projet. Ce dépôt refuse par principe ce qu'il ne
-peut pas prouver — et 432 tests garantissent aujourd'hui que la Règle Preuve dit exactement ce
-qu'elle dit. Générée, elle deviendrait un texte différent à chaque installation, que rien ne vérifie.
+## Décision 2 — Réécrire les 6 renvois, pas les abandonner
 
-### Décision 2 — Sélection, pas compression
+Composition mesurée (2196 mots, `saas/*/learning=true`) : **1768 de méthode**, **338 qui pointent
+des fichiers absents** (design 147 · CSS maquette 144 · Docs projet 27 · Contexte stack 20), 90 de
+plomberie. On retire les 338.
 
-Composition mesurée de l'`AGENTS.md` rendu (2196 mots, pire cas `saas/*/learning=true`) :
+**⛔ Ce que la v1 avait raté : 4 des 8 sections gardées citent ce qu'on retire.** Mesuré :
 
-| Bloc | Mots | Sur un projet existant |
+| Fichier gardé | Ligne | Renvoi |
 |---|---|---|
-| Règle Preuve · sous-agents · vérification · boucle · Réalité · mémoire · secrets · apprentissage | **1768** | ✅ c'est ce qu'il vient chercher |
-| Règle design (147) · CSS maquette (144) · Docs du projet (27) · Contexte stack (20) | **338** | ❌ pointent `docs/design.md`, `maquette/`, `AGENTS-stack.md`, `ai-context/` — absents |
-| plomberie | 90 | — |
+| `reality-rule.md` | **1** | le **titre** : « maquette à l'identique » |
+| `reality-rule.md` | **9** | « Reproduis la maquette à l'identique » |
+| `verify-rule.md` | **7** | « Compare à `maquette/` » |
+| `verify-rule.md` | **11** | comparaison d'images avec `maquette/` |
+| `subagents-rule.md` | **12** | « charge les skills design (**Règle design**) » ← **renvoi interne vers la section supprimée** |
+| `subagents-rule.md` | **19** | « même source pour tous (`docs/design.md`) » |
 
-On **retire les 338 mots qui parlent de fichiers absents**. Résultat : ~1860 mots, **zéro règle de
-méthode perdue**. C'est de la sélection, donc c'est testable : chaque section retirée l'est parce
-que le fichier qu'elle cite n'existe pas.
+« Zéro règle perdue » devenait « une règle qui renvoie dans le vide ».
 
-Rejeté : couper les justifications des grosses règles pour descendre à ~1200. Ce dépôt a déjà
-mesuré qu'une règle sans son pourquoi se fait contourner.
+**→ Les 6 phrases sont réécrites pour tenir SANS maquette**, en gardant leur exigence : comparer au
+**rendu attendu** quand il existe, et le dire quand il n'existe pas. Le rendu adopté descend à
+~1860 mots, sans renvoi mort.
 
-Rejeté aussi : déporter le détail dans `docs/METHODE.md` et ne garder que les interdits (~700
-mots). Un `AGENTS.md` est **toujours** en contexte ; un fichier renvoyé ne l'est que si quelque
-chose l'ouvre. On échangerait 1100 mots garantis contre 1100 mots peut-être lus.
+Rejeté : garder design + CSS-maquette (retour à 2196, et l'IA cherche une maquette absente).
+Rejeté : couper les justifications des grosses règles — ce dépôt a mesuré qu'une règle sans son
+pourquoi se fait contourner.
 
-### Décision 3 — Fusion par marqueurs, après accord
+## Décision 3 — Fusion par marqueurs, après accord
 
-Le mécanisme **existe déjà** : `mergeManagedSection` (`managed-section.mjs:25`) remplace le bloc
-entre `vibecoding:start` et `vibecoding:end`, et **tout ce qui est hors des marqueurs n'est jamais
-touché**. Il n'est appelé que par `refresh.mjs:36` — jamais à l'installation.
+`mergeManagedSection` (`managed-section.mjs:25`) remplace le bloc entre `vibecoding:start` et
+`vibecoding:end` ; **tout ce qui est dehors n'est jamais touché**. Il n'est appelé que par
+`refresh.mjs:36`. Le parcours « adopter » l'appelle aussi.
 
-Le parcours « adopter » l'appelle. Résultat dans son fichier :
-
-```
-<!-- vibecoding:start -->     ← bloc du kit, régénérable, remplacé EN PLACE au refresh
-   la méthode
-<!-- vibecoding:end -->
-
-# Mes règles                   ← ce que l'utilisateur a écrit : jamais lu, jamais modifié
-- pnpm, pas npm
-```
+Vérifié par la revue, sur un projet réel : règles perso intactes, bloc du kit présent, **et
+`refreshProject` joué deux fois ne duplique pas le bloc**.
 
 **On montre, on demande une fois, on écrit.** Le fichier qui pilote son IA ne se modifie pas en
-silence : on affiche ce qui sera inséré, on dit ce que ça change, on attend un oui. Une seule fois —
-`--refresh` ne redemande pas, il remplace en place.
+silence. `--refresh` ne redemande pas ensuite.
 
-Garanties : rien hors marqueurs n'est modifié (propriété testée) · réversible (`git diff`) ·
-`--refresh` reste idempotent.
+**⛔ Perte de texte mesurée.** Si le fichier perso contient une occurrence **littérale** de
+`<!-- vibecoding:start` (cas réel : il a recopié des morceaux d'un `AGENTS.md.new`), `indexOf`
+(`managed-section.mjs:28`) mord dedans et **supprime tout jusqu'au premier `vibecoding:end`**.
+**→ Avant toute fusion : si le fichier contient un marqueur orphelin, on refuse et on le dit.**
 
-### Décision 4 — L'analyse produit deux fichiers, et pas plus
+**`CLAUDE.md` — trou de la v1.** `refresh.mjs:33` saute le fichier s'il est absent (mesuré :
+`["CLAUDE.md (absent)"]`, jamais créé). Or Claude Code lit `CLAUDE.md` en priorité.
+**→ Le parcours « adopter » crée les deux**, comme pour un projet neuf. Même bloc, même marqueurs.
 
-- **`docs/RUN.md`** — comment lancer *ce* projet (`pnpm dev`, pas `npm run dev`).
-- **`docs/ETAT-DES-LIEUX.md`** — ce que l'IA a compris : technos vues, structure, comment on lance,
-  comment on teste, **et ce qu'elle n'a pas su déterminer**. Ce fichier devient la première page de
-  la mémoire : la session suivante démarre en sachant où elle est.
+## Décision 4 — Deux fichiers, écrits d'observation
 
-Sans trace écrite, l'analyse meurt avec la conversation — le défaut exact corrigé en 0.16.0 sur le
-mode apprentissage.
+- **`docs/RUN.md`** — comment lancer *ce* projet, **relevé dans son `package.json`**.
+  **⛔ Conflit raté par la v1** : `setup.mjs:247` l'écrit depuis `templates/run/<stack>.md` — sur le
+  projet mesuré, il a produit « Lancer l'app — SaaS (Convex + TanStack Start) · `npx convex dev` ».
+  **→ Sur `stack: aucune`, aucun modèle de stack n'est posé.** L'analyse l'écrit, ou le fichier
+  reste absent et on le dit.
+- **`docs/ETAT-DES-LIEUX.md`** — technos vues, structure, comment on lance, comment on teste, **et
+  ce que l'IA n'a pas su déterminer**. Première page de la mémoire.
 
-Rejeté : y ajouter un diagnostic de dette (tests manquants, CI absente, secrets en clair). C'est un
-audit, ça mérite sa propre commande, et ça commencerait la relation en jugeant son code.
+Rejeté : un diagnostic de dette. C'est un audit, ça mérite sa commande, et ça commencerait la
+relation en jugeant son code.
 
-### Décision 5 — `autoskills` recommandé, jamais embarqué
+## Décision 5 — `autoskills` recommandé, jamais embarqué
 
-[`midudev/autoskills`](https://github.com/midudev/autoskills) scanne `package.json` / Gradle /
-configs, détecte la stack, installe des skills curés (100+ technos), et pose un `skills-lock.json`
-avec le SHA-256 de chacun.
+[`midudev/autoskills`](https://github.com/midudev/autoskills) — `npx autoskills`, scanne les
+fichiers de config, installe des skills curés, pose un `skills-lock.json` avec le SHA-256 de chacun.
 
-**Le kit ne l'embarque pas.** Licence **CC BY-NC 4.0** contre un kit **MIT** : embarquer
-redistribuerait du non-commercial sous MIT. Le lancer chez l'utilisateur ne redistribue rien —
-c'est déjà le traitement des outils tiers (`/plugin install superpowers@…`, `npx skills add`).
+**Le kit ne l'embarque pas.** Licence **CC BY-NC 4.0** contre un kit **MIT** (vérifié dans son
+`LICENSE`) : l'embarquer redistribuerait du non-commercial sous MIT. Le faire lancer par
+l'utilisateur ne redistribue rien — c'est déjà le traitement de superpowers et de `npx skills add`.
 
-Trois garde-fous, tous obligatoires :
+**⛔ Deux erreurs de la v1, corrigées :**
 
-1. **`--dry-run` d'abord.** On montre ce qui serait installé, puis on demande.
-2. **La question n'apparaît pas sous Codex** — autoskills couvre Claude Code et Cursor seulement.
-3. **On nomme l'outil, son auteur et sa licence.** Ces skills ne viennent pas du kit et n'ont pas
-   été relus par lui.
+1. **Cursor n'est PAS supporté.** `skills-map.ts:1390` : `AGENT_FOLDER_MAP` liste `.claude`,
+   `.cline`, `.junie`, `.codebuddy`, `.continue`, `.kiro`. Sous Cursor, aucun lien n'est créé.
+   **→ La question est masquée sous Cursor ET Codex** — 2 assistants du kit sur 3.
+2. **Collision prouvée.** `frontend-design` est dans le registre autoskills **et** dans
+   `DESIGN_SKILL_NAMES` (`matrix.mjs:25`). `installer.ts` fait
+   `rmSync(.claude/skills/<nom>, {recursive:true, force:true})` avant de lier : **il remplace le
+   skill du kit par une autre révision, en silence**, et `/doctor` item 11 continue de dire ✅
+   (il vérifie la présence, pas le contenu).
+   **→ autoskills est proposé APRÈS l'installation du kit, et l'écran de résultat nomme les skills
+   remplacés.** Un `--dry-run` obligatoire d'abord.
 
-**Zone grise assumée, à trancher hors de ce document :** la clause **NC** porte sur l'*usage*. Des
-élèves l'utilisant dans le cadre d'une prestation payante — c'est une question pour midudev, pas
-pour cette spec. Le kit n'y est pas exposé (il ne redistribue rien) ; l'utilisateur final l'est.
+Garde-fous : `--dry-run` toujours en premier · masqué sous Cursor et Codex · l'outil, son auteur et
+sa licence sont nommés — ces skills ne viennent pas du kit et n'ont pas été relus par lui.
 
-### Décision 6 — La 6ᵉ question ne touche pas le parcours neuf
+## Décision 6 — Le point d'entrée est un drapeau, pas une question
 
-`degraissage.test.mjs:49` fige **5 questions max** et vérifie la forme exacte des réponses. Ce n'est
-pas un accident : c'est la promesse d'accueil (« quatre à cinq questions et c'est fini »).
+**⛔ Ce que la v1 avait raté :** le wizard demande la **stack en question 1** (`wizard.mjs:89`) et le
+**dossier en question 3** (`:94`). Il choisit une stack deux questions avant de savoir où il
+atterrit. Une « question 0 » décalerait le script que `degraissage.test.mjs:50` fige — donc casserait
+le test que la v1 promettait de garder vert.
 
-La question autoskills n'a de sens que sur un projet existant — un projet neuf n'a pas encore de
-`package.json` à scanner, et le kit connaît déjà sa stack.
+**→ `npx create-vibecoding-kit@latest --adopt`, lancé depuis le projet.** Pas de question ajoutée au
+wizard ; le parcours neuf est **strictement inchangé**, ses 5 questions et son test aussi.
 
-| Parcours | Questions |
+**Critère d'adoption** : le dossier contient ≥ 1 entrée hors `.git/`, `.DS_Store`, `node_modules/`,
+`.vibecoding.json`. Le kit **montre ce qu'il a trouvé et demande** — jamais de devinette silencieuse.
+Cas limites assumés : dossier vide sous git → *neuf* (rien à adopter) · projet non-JS sans
+`package.json` → adopté, mais `RUN.md` restera vide et le dira · monorepo → `gitinit.mjs:37-42`
+saute déjà les hooks proprement, mais les fichiers iront au niveau visé par `--project`, et on le dit.
+
+`/init-vibecoding` `00-detecter-l-etat.md` gagne son **troisième cas** : pas de `.vibecoding.json`
+mais un dossier non vide → propose `--adopt`, jamais le scaffold.
+
+## Décision 7 — On ne touche pas à son `package.json`
+
+C'est son fichier de build. `environment.mjs:107-110` n'est **pas** appelé sur le parcours adopté.
+Conséquence assumée et dite : les checks du kit (`typecheck`, `lint`) ne tourneront pas
+automatiquement. L'état des lieux relève les scripts **qui existent** et s'en sert.
+
+## Décision 8 — Le `.gitignore` est complété, pas ignoré
+
+⛔ Régression mesurée : projet avec `.gitignore` ne contenant que `node_modules/` → le kit pose
+`.env.example` (donc invite à créer un `.env`) et `copyIfAbsent` (`setup.mjs:279`) **saute** le
+`.gitignore`. Résultat : `git check-ignore .env` → **non ignoré**. Son secret part au commit.
+
+**→ Sur le parcours adopté : pas de `.env.example` (stack absente, décision 1), et les lignes
+`.env` / `.env.*` / `!.env.example` sont AJOUTÉES à son `.gitignore` si elles manquent**, après
+accord, en fin de fichier, sans rien réordonner.
+
+---
+
+## Périmètre — hors de ce chantier, mais DIT
+
+Chacun est un défaut réel, mesuré, laissé de côté volontairement :
+
+| Laissé | Ce que ça fait en attendant |
 |---|---|
-| **Neuf** | les 5 d'aujourd'hui. Inchangé, test vert |
-| **Existant** | son propre flux, la question y vit |
-
-## Correctif à passer au même endroit
-
-`wizard.mjs:104` promet encore l'ancien mode apprentissage :
-`« l'IA t'explique ce qu'elle fait et vérifie que tu suis ? »`. Le « vérifie que tu suis » a été
-retiré en 0.16.0 — la question annonce ce que le kit ne fait plus. Une ligne.
-
-## Périmètre — ce qui N'EST PAS dans ce chantier
-
-- Aucun audit de dette technique.
-- Aucune génération de règles de techno.
-- Aucune modification du parcours « projet neuf ».
-- Codex ne reçoit pas de skills tiers (limite d'autoskills, dite, pas contournée).
+| **`docs/ROADMAP.md` squelette** (`setup.mjs:242`) | **Non posé sur le parcours adopté** — sinon `/build` exécute un plan fictif. `/build` sans roadmap renvoie déjà à `/next` |
+| **`/doctor` sur projet adopté** | Items 8/10/11/15/16/17 supposent des fichiers du kit, et le verdict (`doctor.md:37`) renvoie à `/new-project`. **Un item de plus dira que sur `stack: aucune`, ces items sont sans objet** — l'adapter en profondeur est un autre lot |
+| **3 des 7 agents du crew** (`critique-produit:11`, `critique-ux:16,27`, `critique-donnees:11`) citent `maquette/`, `docs/PRD.md`, `docs/ROADMAP.md` | Ils dégraderont mal sur un projet adopté. À traiter au lot suivant, avec les mêmes réécritures que la décision 2 |
+| **`.github/workflows/secrets.yml`** posé sur un dépôt existant | **Non posé sans accord** : un workflow qui tourne au push chez quelqu'un d'autre se demande |
+| **`maquette/` créé vide** (`setup.mjs:119`) | **Non créé** sur le parcours adopté |
 
 ## Ce qu'il faudra prouver
 
-- Sur un projet réel (Next.js + Prisma + `AGENTS.md` personnel) : les règles de méthode arrivent
-  **dans** `AGENTS.md`, entre marqueurs, et les règles personnelles sont **intactes** ligne à ligne.
-- Aucun renvoi mort : aucune section livrée ne cite un fichier absent du projet
-  (`promesses-livrees.test.mjs` couvre déjà cette classe).
-- `--refresh` reste **idempotent** : deux passages ne dupliquent pas le bloc.
-- Le parcours neuf : **5 questions**, forme des réponses inchangée, `degraissage.test.mjs` vert.
-- Sous Codex, la question autoskills **n'apparaît pas**.
+- Projet réel (Next.js + Prisma + `AGENTS.md` perso + `.gitignore` à une ligne) : les règles de
+  méthode arrivent **dans** `AGENTS.md` **et** `CLAUDE.md`, entre marqueurs, perso **intact ligne à
+  ligne**, et `git status` ne montre **aucun** ` M ` sur un fichier qu'il possédait.
+- `git check-ignore .env` → **ignoré**.
+- **Aucun renvoi mort** dans le bloc livré : un garde neuf, car `promesses-livrees.test.mjs` ne
+  couvre PAS cette classe — sa regex (`:68`) ne lit que `scripts|templates|stacks|cursor-plugin`,
+  son message (`:97`) **encourage** `docs/…`, et `AGENTS.md` n'est pas dans sa carte
+  (`carte.has('AGENTS.md') === false`, mesuré).
+- `--refresh` **idempotent** sur projet adopté : deux passages, un seul bloc, et **aucun fichier de
+  stack re-livré**.
+- Fichier perso contenant un marqueur littéral → **refus explicite**, zéro perte.
+- Parcours neuf : **5 questions**, forme des réponses inchangée, `degraissage.test.mjs` vert.
+- Sous **Cursor et Codex** : la question autoskills n'apparaît pas.
