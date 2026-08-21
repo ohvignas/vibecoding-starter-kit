@@ -215,7 +215,12 @@ async function main() {
       // trouvée en exerçant `--assistant cursor` : `scandir` ENOENT sinon).
       trackDir('.cursor/rules/ (00-project + règles typées par framework)', [
         copyIfAbsent(path.join(args.source, 'templates/cursor/rules/00-project.mdc'), path.join(projectDir, '.cursor/rules/00-project.mdc'), opt),
-        copyIfAbsent(path.join(args.source, 'templates/cursor/rules/10-css-maquette.mdc'), path.join(projectDir, '.cursor/rules/10-css-maquette.mdc'), opt),
+        // `10-css-maquette.mdc` traduit `css-maquette-rule.md` pour Cursor. Sur un projet adopté,
+        // cette règle est RETIRÉE d'AGENTS.md (aucune `maquette/` livrée) : la copier quand même
+        // laissait la version Cursor seule à porter une consigne que les deux autres assistants ne
+        // reçoivent plus — l'asymétrie exacte que `promesses-livrees.test.mjs` interdit entre une
+        // règle source et sa traduction.
+        ...(estAdopte(args.stack) ? [] : [copyIfAbsent(path.join(args.source, 'templates/cursor/rules/10-css-maquette.mdc'), path.join(projectDir, '.cursor/rules/10-css-maquette.mdc'), opt)]),
         ...(estAdopte(args.stack) ? [] : copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt)),
       ]);
       // Même chose pour `.cursor/environment.json` : `templates/cursor/environment/${stack}.json`

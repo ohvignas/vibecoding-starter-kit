@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { estAdopte } from './adoption.mjs';
 import { COMMANDS, COMMANDS_DIR, cheminRunbook, cheminEtape, etapesDuRunbook } from './commands-list.mjs';
 import { resolveStackManifest, AI_CONTEXT } from './matrix.mjs';
 import { prePushScript, preCommitCheckLine } from './hooks.mjs';
@@ -107,7 +108,9 @@ export function kitOwnedFiles(stack, assistant) {
 
   if (assistant === 'cursor') {
     pairs.push({ from: 'templates/cursor/rules/00-project.mdc', to: '.cursor/rules/00-project.mdc' });
-    pairs.push({ from: 'templates/cursor/rules/10-css-maquette.mdc', to: '.cursor/rules/10-css-maquette.mdc' });
+    // Pas sur un projet adopté : le scaffold ne la pose plus (setup.mjs), et un `--refresh` qui
+    // la recréerait ramènerait l'asymétrie par la porte de derrière.
+    if (!estAdopte(stack)) pairs.push({ from: 'templates/cursor/rules/10-css-maquette.mdc', to: '.cursor/rules/10-css-maquette.mdc' });
     // Règles typées par framework : copiées À PLAT (c'est ce que fait le scaffold, setup.mjs:179).
     for (const f of listKit(`templates/cursor/rules/${stack}`, '.mdc')) {
       pairs.push({ from: `templates/cursor/rules/${stack}/${f}`, to: `.cursor/rules/${f}` });
