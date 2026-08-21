@@ -10,6 +10,7 @@ import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
 import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook, runbookConcatene } from './lib/commands-list.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS } from './lib/matrix.mjs';
+import { estAdopte } from './lib/adoption.mjs';
 import { renderColleMoi } from './lib/colle-moi.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
@@ -116,7 +117,8 @@ async function main() {
       done.push(name);
     }
   }
-  ensureDir(path.join(projectDir, 'maquette'));
+  // Un `maquette/` vide, sur un projet adopté, ferait croire à l'IA qu'une maquette existe.
+  if (!estAdopte(args.stack)) ensureDir(path.join(projectDir, 'maquette'));
 
   for (const c of assets.copies) {
     try {
@@ -207,14 +209,20 @@ async function main() {
         ...copyDirIfAbsent(path.join(args.source, 'templates/cursor/hooks'), path.join(projectDir, '.cursor/hooks'), opt),
         copyIfAbsent(path.join(args.source, 'templates/cursor/cursorignore'), path.join(projectDir, '.cursorignore'), opt),
       ]);
+      // Les deux premiers fichiers sont génériques (toute stack, y compris `aucune`) ; le dossier
+      // de règles TYPÉES par framework (`templates/cursor/rules/${stack}`) n'existe que pour les
+      // 4 stacks offertes — pas de variante `aucune` (même logique que les 6 chemins ci-dessus,
+      // trouvée en exerçant `--assistant cursor` : `scandir` ENOENT sinon).
       trackDir('.cursor/rules/ (00-project + règles typées par framework)', [
         copyIfAbsent(path.join(args.source, 'templates/cursor/rules/00-project.mdc'), path.join(projectDir, '.cursor/rules/00-project.mdc'), opt),
         copyIfAbsent(path.join(args.source, 'templates/cursor/rules/10-css-maquette.mdc'), path.join(projectDir, '.cursor/rules/10-css-maquette.mdc'), opt),
-        ...copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt),
+        ...(estAdopte(args.stack) ? [] : copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt)),
       ]);
+      // Même chose pour `.cursor/environment.json` : `templates/cursor/environment/${stack}.json`
+      // n'a pas de variante `aucune` — BUGBOT.md et cursorindexingignore restent génériques.
       trackDir('.cursor/BUGBOT.md + .cursor/environment.json + .cursorindexingignore', [
         copyIfAbsent(path.join(args.source, 'templates/cursor/BUGBOT.md'), path.join(projectDir, '.cursor/BUGBOT.md'), opt),
-        copyIfAbsent(path.join(args.source, `templates/cursor/environment/${args.stack}.json`), path.join(projectDir, '.cursor/environment.json'), opt),
+        ...(estAdopte(args.stack) ? [] : [copyIfAbsent(path.join(args.source, `templates/cursor/environment/${args.stack}.json`), path.join(projectDir, '.cursor/environment.json'), opt)]),
         copyIfAbsent(path.join(args.source, 'templates/cursor/cursorindexingignore'), path.join(projectDir, '.cursorindexingignore'), opt),
       ]);
     } catch (e) { failed.push(`cursor extras (${e.message})`); }
@@ -230,30 +238,44 @@ async function main() {
   }
 
   // Sécurité (tous assistants) : .env.example par stack + scan de secrets gitleaks.
-  try { track('.env.example', copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt)); }
-  catch (e) { failed.push(`.env.example (${e.message})`); }
+  // Sur `aucune`, aucun modèle `templates/env/aucune.env.example` n'existe — et n'en aurait pas
+  // le sens : un projet adopté a déjà (ou pas) son .env, ce n'est pas au kit de le poser.
+  if (!estAdopte(args.stack)) {
+    try { track('.env.example', copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt)); }
+    catch (e) { failed.push(`.env.example (${e.message})`); }
+  }
   try { track('scan secrets (gitleaks)', copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt)); }
   catch (e) { failed.push(`secrets (${e.message})`); }
 
   // CI par stack (tous assistants). La checklist d'install, c'est docs/A-FAIRE.md — un seul fichier.
-  try { track('.github/workflows/ci.yml', copyIfAbsent(path.join(args.source, `templates/ci/${args.stack}.yml`), path.join(projectDir, '.github/workflows/ci.yml'), opt)); }
-  catch (e) { failed.push(`ci (${e.message})`); }
+  // Pas de `templates/ci/aucune.yml` : le kit ne connaît ni le build ni les tests d'un projet adopté.
+  if (!estAdopte(args.stack)) {
+    try { track('.github/workflows/ci.yml', copyIfAbsent(path.join(args.source, `templates/ci/${args.stack}.yml`), path.join(projectDir, '.github/workflows/ci.yml'), opt)); }
+    catch (e) { failed.push(`ci (${e.message})`); }
+  }
 
-  try { track('docs/ROADMAP.md (squelette)', copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt)); }
-  catch (e) { failed.push(`roadmap (${e.message})`); }
+  // Squelette de plan — jamais sur `aucune` : `/build` l'exécuterait comme un vrai plan.
+  if (!estAdopte(args.stack)) {
+    try { track('docs/ROADMAP.md (squelette)', copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt)); }
+    catch (e) { failed.push(`roadmap (${e.message})`); }
+  }
   // docs/RUN.md est RENDU (modèle de la stack + notes backend/Codex) par une source unique —
   // la même que `--refresh` réutilise, sinon le refresh ne saurait pas reproduire ce qu'on écrit ici.
-  try {
-    const runPath = path.join(projectDir, 'docs/RUN.md');
-    if (!fs.existsSync(runPath) || args.force) {
-      ensureDir(path.dirname(runPath));
-      fs.writeFileSync(runPath, renderRunDoc({
-        template: fs.readFileSync(path.join(args.source, `templates/run/${args.stack}.md`), 'utf8'),
-        stack: args.stack, assistant: args.assistant, backend: args.backend,
-      }));
-      done.push('docs/RUN.md');
-    } else kept.push('docs/RUN.md');
-  } catch (e) { failed.push(`run (${e.message})`); }
+  // Sur `aucune`, aucun modèle de stack à rendre : le fichier sera écrit par l'analyse (tâche 6)
+  // ou restera absent.
+  if (!estAdopte(args.stack)) {
+    try {
+      const runPath = path.join(projectDir, 'docs/RUN.md');
+      if (!fs.existsSync(runPath) || args.force) {
+        ensureDir(path.dirname(runPath));
+        fs.writeFileSync(runPath, renderRunDoc({
+          template: fs.readFileSync(path.join(args.source, `templates/run/${args.stack}.md`), 'utf8'),
+          stack: args.stack, assistant: args.assistant, backend: args.backend,
+        }));
+        done.push('docs/RUN.md');
+      } else kept.push('docs/RUN.md');
+    } catch (e) { failed.push(`run (${e.message})`); }
+  }
 
   // Parité : chaque assistant reçoit les 7 agents dans SON dossier natif.
   // Cursor ne comprend que name/description/model/readonly → frontmatter transformé (toCursorAgent).
@@ -276,8 +298,12 @@ async function main() {
     }
     trackDir(`${agentsDir}/ (agents du crew (${CREW.length}))`, results);
   } catch (e) { failed.push(`agents (${e.message})`); }
-  try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
-  catch (e) { failed.push(`.gitignore (${e.message})`); }
+  // Pas de `templates/gitignore/aucune.gitignore` : un projet adopté a déjà le sien (ou pas),
+  // ce n'est pas au kit de lui en imposer un générique par stack.
+  if (!estAdopte(args.stack)) {
+    try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
+    catch (e) { failed.push(`.gitignore (${e.message})`); }
+  }
   // Fins de ligne : sur Windows, sans ça, les hooks bash du projet sont checkoutés en CRLF et
   // échouent sur « bad interpreter: ^M » — le scan de secrets ne tourne plus, sans rien dire.
   try { track('.gitattributes', copyIfAbsent(path.join(args.source, 'templates/gitattributes'), path.join(projectDir, '.gitattributes'), opt)); }
@@ -294,8 +320,11 @@ async function main() {
     failed.push(...env.failed);
   } catch (e) { failed.push(`environnement (${e.message})`); }
 
-  try { track('docs/examples/feature-exemple.md', copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt)); }
-  catch (e) { failed.push(`exemple (${e.message})`); }
+  // Pas de `templates/examples/aucune.md` : l'exemple de feature est écrit pour une stack connue.
+  if (!estAdopte(args.stack)) {
+    try { track('docs/examples/feature-exemple.md', copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt)); }
+    catch (e) { failed.push(`exemple (${e.message})`); }
+  }
 
   // Manifeste : mémorise stack+assistant (+ version du kit) pour que `scripts/update.mjs` puisse récupérer les nouveaux fichiers du kit.
   // `learning` et `backend` y sont AUSSI : ce sont deux choix de l'utilisateur, et `--refresh`

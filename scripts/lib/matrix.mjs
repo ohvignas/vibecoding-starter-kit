@@ -245,6 +245,21 @@ export const STACKS = {
 };
 
 export function resolveStackManifest(stack, assistant) {
+  // Projet adopté : aucun script injecté (décision 7 — c'est SON fichier de build), aucun MCP de
+  // stack, aucun plugin. Mesuré : avec `scripts: {}`, `package.json` ressort octet pour octet
+  // identique — `environment.mjs:109` n'ajoute rien, `changed` reste false, `:110` n'écrit jamais.
+  // La fonction EST appelée normalement : elle pose aussi docs/agents/JOURNAL.md et state.yaml,
+  // cités par verify-rule.md:14 et subagents-rule.md:12, deux règles GARDÉES.
+  //
+  // Forme complète, pas seulement `scripts`/`mcp`/`checks.prePush` : `environment.mjs` lit aussi
+  // `checks.onEdit` et `checks.preCommit` sans garde (`RUN(ids).join(...)` plante sur `undefined`,
+  // et `checks.onEdit` est lu INCONDITIONNELLEMENT pour cursor/claude-code) ; `setup-ai.mjs` lit
+  // `plugins` déjà résolu pour CET assistant — un tableau, jamais un objet par assistant — et
+  // `skills.length`. Toutes vides, jamais absentes : un champ manquant fait planter le consommateur
+  // ailleurs, exactement ce que cette étape doit éviter.
+  if (estAdopte(stack)) {
+    return { plugins: [], mcp: {}, skills: [], checks: { onEdit: [], preCommit: [], prePush: [] }, scripts: {}, rules: [], domains: {} };
+  }
   const s = STACKS[stack];
   if (!s) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(STACKS).join('|')})`);
   return {

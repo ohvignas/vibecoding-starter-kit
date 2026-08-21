@@ -1,5 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { STACK_AUCUNE, estAdopte } from './adoption.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
 import { resolveAssets } from './matrix.mjs';
@@ -26,4 +30,25 @@ test('adoption — `aucune` ne livre ni règles de stack, ni ai-context, ni skil
 test('adoption — les 4 stacks offertes ne changent pas', () => {
   const { copies } = resolveAssets('saas', 'claude-code');
   assert.ok(copies.some((c) => c.to === 'AGENTS-stack.md'), 'saas doit toujours livrer ses règles');
+});
+
+test('adoption — scaffold `aucune` : exit 0, et aucun fichier de stack posé', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adopt-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"x"}');
+  execFileSync(process.execPath, [
+    path.resolve('scripts/setup.mjs'),
+    '--stack', 'aucune', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes',
+  ], { stdio: 'pipe' });
+  for (const absent of ['.env.example', '.github/workflows/ci.yml', 'docs/examples/feature-exemple.md', 'AGENTS-stack.md', 'maquette', 'docs/ROADMAP.md']) {
+    assert.ok(!fs.existsSync(path.join(dir, absent)), `${absent} ne doit pas être posé sur aucune`);
+  }
+  assert.ok(fs.existsSync(path.join(dir, 'docs/agents/JOURNAL.md')), 'JOURNAL.md DOIT être posé : deux règles gardées le citent');
+});
+
+test('adoption — package.json ressort octet pour octet identique', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pkg-'));
+  const avant = '{ "name": "x", "scripts": { "dev": "next dev" } }';
+  fs.writeFileSync(path.join(dir, 'package.json'), avant);
+  execFileSync(process.execPath, [path.resolve('scripts/setup.mjs'), '--stack', 'aucune', '--assistant', 'cursor', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
+  assert.equal(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'), avant, 'le kit a touché son package.json');
 });
