@@ -1,6 +1,7 @@
 // Dossier de commandes par assistant : source unique dans commands-list.mjs (il était recopié
 // ici sous le nom `TARGET` et dans kit-owned.mjs sous le nom `CMD_DIR`).
 import { COMMANDS_DIR } from './commands-list.mjs';
+import { estAdopte } from './adoption.mjs';
 
 export const SUPERPOWERS = {
   cursor: '/add-plugin superpowers',
@@ -41,21 +42,23 @@ export function resolveAssets(stack, assistant) {
   if (!COMMANDS_DIR[assistant]) throw new Error(`Assistant inconnu : ${assistant} (attendu: ${Object.keys(COMMANDS_DIR).join('|')})`);
   // Garde d'entrée : sans elle, une stack mal orthographiée partait avec ZÉRO contexte IA, en
   // silence — le scaffold réussissait, le projet naissait aveugle.
-  if (!AI_CONTEXT[stack]) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(AI_CONTEXT).join('|')})`);
+  if (!estAdopte(stack) && !AI_CONTEXT[stack]) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(AI_CONTEXT).join('|')}|aucune)`);
   // `skipped` a disparu : il était toujours vide (plus rien n'y était poussé depuis le retrait
   // d'awesome-cursorrules) et le rapport le concaténait avec les vrais « sautés » du scaffold.
   const copies = [], clones = [], inAssistant = [];
   const isCursor = assistant === 'cursor';
   const isClaude = assistant === 'claude-code';
 
-  if (isCursor) {
-    copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `.cursor/rules/stack-${stack}.mdc`, transform: 'mdc', description: `Règles complètes de la stack ${stack} (charge quand pertinent)`, alwaysApply: false });
-  } else {
-    copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `AGENTS-stack.md`, transform: 'raw' });
-    if (isClaude) copies.push({ from: `.claude/skills/stack-${stack}`, to: `.claude/skills/stack-${stack}`, transform: 'dir' });
+  if (!estAdopte(stack)) {
+    if (isCursor) {
+      copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `.cursor/rules/stack-${stack}.mdc`, transform: 'mdc', description: `Règles complètes de la stack ${stack} (charge quand pertinent)`, alwaysApply: false });
+    } else {
+      copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `AGENTS-stack.md`, transform: 'raw' });
+      if (isClaude) copies.push({ from: `.claude/skills/stack-${stack}`, to: `.claude/skills/stack-${stack}`, transform: 'dir' });
+    }
+    copies.push({ from: 'ai-context/README.md', to: 'ai-context/README.md', transform: 'raw' });
+    for (const d of AI_CONTEXT[stack]) copies.push({ from: `ai-context/${d}`, to: `ai-context/${d}`, transform: 'dir' });
   }
-  copies.push({ from: 'ai-context/README.md', to: 'ai-context/README.md', transform: 'raw' });
-  for (const d of AI_CONTEXT[stack]) copies.push({ from: `ai-context/${d}`, to: `ai-context/${d}`, transform: 'dir' });
 
   clones.push({
     repo: KARPATHY_REPO,

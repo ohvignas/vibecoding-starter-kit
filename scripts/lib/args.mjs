@@ -1,6 +1,8 @@
 import path from 'node:path';
 
-const STACKS = ['saas', 'mobile', 'desktop', 'vitrine'];
+// `aucune` = parcours « projet existant » (voir adoption.mjs). Elle est LÉGALE en argument mais
+// n'est PAS une stack offerte : le wizard ne la propose pas, la doc ne la liste pas.
+const STACKS = ['saas', 'mobile', 'desktop', 'vitrine', 'aucune'];
 const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
 
 export function parseArgs(argv) {
