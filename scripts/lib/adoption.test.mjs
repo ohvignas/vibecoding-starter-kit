@@ -66,8 +66,13 @@ test('adoption — les 4 sections qui pointent des fichiers absents sont retiré
   for (const titre of ['Règle design', 'Règle CSS maquette', 'Contexte de la stack', 'Docs du projet']) {
     assert.doesNotMatch(t, new RegExp(`^## .*${titre}`, 'm'), `« ${titre} » pointe des fichiers absents d'un projet adopté`);
   }
+  // ANCRÉ SUR L'EN-TÊTE, comme la moitié négative au-dessus. Sans `^## `, 4 de ces 8 noms sont
+  // aussi cités en RENVOI CROISÉ depuis d'autres règles (« Règle Preuve » ×5, « Règle Réalité » ×2,
+  // « Règle de vérification » ×3, « Règle sous-agents » ×3) : la section pouvait disparaître
+  // entièrement du rendu sans que cette assertion bronche — mesuré, les 4 vidées une à une la
+  // laissaient verte. Seul le comptage de mots rougissait, avec un message qui ne nomme rien.
   for (const garde of ['Règle Preuve', 'Règle Réalité', 'Règle de vérification', 'Boucle d\'itération', 'Règle sous-agents', 'Mémoire du projet', 'Règle secrets', 'Mode apprentissage']) {
-    assert.match(t, new RegExp(garde), `« ${garde} » est de la méthode : elle DOIT rester`);
+    assert.match(t, new RegExp(`^## .*${garde}`, 'm'), `« ${garde} » est de la méthode : elle DOIT rester`);
   }
 });
 

@@ -2,7 +2,7 @@
 alwaysApply: true
 ---
 
-Cursor lit **aussi** `AGENTS.md` : les règles du projet (Preuve, Réalité, vérification, sous-agents, secrets & coûts, design, CSS-maquette, mémoire) y sont écrites **une seule fois**. Ne les redéfinis pas ici — suis-les.
+Cursor lit **aussi** `AGENTS.md` : les règles du projet (Preuve, Réalité, vérification, sous-agents, secrets & coûts, mémoire) y sont écrites **une seule fois**. Ne les redéfinis pas ici — suis-les.
 
 - Tout est en **TypeScript strict**. Pas de `any` sans raison justifiée.
 - En cas de doute sur une API, lis les docs officielles de `ai-context/` (jamais d'API inventée).

@@ -18,6 +18,7 @@
 // que le projet reçoit : skills de stack, README de contexte, templates. D'où ce fichier.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { renderAgentsFile } from './agents-file.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -167,5 +168,30 @@ test('une règle Cursor ne relâche pas un interdit que sa source pose comme abs
     assert.match(src, /Jamais/i, `montage : ${source} ne pose plus « ${ancre} » comme un absolu — revoir cette table`);
     assert.match(ligneAvec(cursor), /Jamais/i,
       `${cursor} : « ${ancre} » est un interdit ABSOLU dans ${source}. La variante Cursor doit le poser aussi fort — pas sous condition.`);
+  }
+});
+
+// `00-project.mdc` est `alwaysApply: true` : Cursor le relit à CHAQUE tour. Sa première phrase
+// ÉNUMÈRE les règles qu'il promet de trouver dans `AGENTS.md` — et cette liste vivait sans aucun
+// garde. La tâche « projets existants » a retiré « Règle design » et « Règle CSS maquette » du
+// rendu adopté ; l'énumération, elle, continuait de les annoncer. Sur cursor/`aucune`, la règle
+// CSS-maquette n'existait plus nulle part et ce fichier envoyait quand même l'agent la chercher :
+// un renvoi mort, relu à chaque tour, dans le fichier le plus lu de Cursor.
+test('00-project.mdc n\'annonce que des règles qu\'AGENTS.md porte VRAIMENT, sur les 5 stacks', () => {
+  const mdc = fs.readFileSync(path.join(ROOT, 'templates/cursor/rules/00-project.mdc'), 'utf8');
+  const enumere = /les règles du projet \(([^)]+)\)/.exec(mdc);
+  assert.ok(enumere, 'montage : l\'énumération de 00-project.mdc a changé de forme — ce contrôle ne compare plus rien');
+  const noms = enumere[1].split(',').map((s) => s.trim()).filter(Boolean);
+  assert.ok(noms.length >= 5, `montage : ${noms.length} nom(s) extrait(s), l'expression capture mal`);
+  // Les deux côtés sont normalisés PAREIL : l'énumération écrit « CSS-maquette » là où l'en-tête
+  // écrit « CSS maquette », et « mémoire » là où l'en-tête écrit « Mémoire du projet ».
+  const norm = (s) => s.toLowerCase().replace(/-/g, ' ');
+  for (const stack of ['saas', 'mobile', 'desktop', 'vitrine', 'aucune']) {
+    const titres = renderAgentsFile({ source: ROOT, stack, assistant: 'cursor', commandsDir: '.cursor/commands', learning: true })
+      .split('\n').filter((l) => l.startsWith('## ')).map(norm);
+    for (const nom of noms) {
+      assert.ok(titres.some((t) => t.includes(norm(nom))),
+        `templates/cursor/rules/00-project.mdc annonce « ${nom} » dans AGENTS.md, mais le rendu ${stack}/cursor n'a aucune section qui le porte — renvoi mort, relu à chaque tour (alwaysApply: true).`);
+    }
   }
 });
