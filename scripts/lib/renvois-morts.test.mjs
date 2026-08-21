@@ -15,6 +15,13 @@ import { renderAgentsFile } from './agents-file.mjs';
 const ASSISTANTS = ['claude-code', 'codex', 'cursor'];
 const STACKS_OFFERTES = ['saas', 'mobile', 'desktop', 'vitrine'];
 
+// Les 8 règles standing que le rendu adopté DOIT garder — même liste, même ancrage que
+// `adoption.test.mjs` (`^## .*` + le titre, sur une ligne). Sans l'ancrage `^## `, un renvoi
+// CROISÉ vers le nom d'une section depuis une AUTRE règle encore présente suffit à faire passer
+// le test alors que la section elle-même a disparu — mesuré par la tâche 3 (finding 2, revue) :
+// 4 des 8 noms restaient verts en vidant la section correspondante, faute de cet ancrage.
+const GARDES = ['Règle Preuve', 'Règle Réalité', 'Règle de vérification', 'Boucle d\'itération', 'Règle sous-agents', 'Mémoire du projet', 'Règle secrets', 'Mode apprentissage'];
+
 // Ce qu'un projet ADOPTÉ n'a pas. Liste dérivée des décisions 1, 2, 4 et 8 de la spec
 // (docs/superpowers/specs/2026-08-21-projets-existants-design.md).
 //
@@ -61,10 +68,16 @@ test('renvois morts — le bloc adopté ne cite aucun fichier absent', () => {
     // `''.includes(x)` est toujours faux, donc `fautes` resterait `[]` même si `renderAgentsFile`
     // avait cessé de rendre quoi que ce soit. Mesuré : claude-code et codex rendent 1874 mots,
     // cursor 1857 (pas de note Karpathy — matrix.mjs, gate `assistant !== 'cursor'`). Le brief de
-    // cette tâche proposait « > 1700 » : ça tient les deux valeurs mesurées, mais avec 157 à 174
-    // mots de mou — assez pour qu'UNE des 8 sections gardées disparaisse entièrement (chacune
-    // ~150-300 mots, décision 2 de la spec) sans faire rougir ce plancher. 1800 tient toujours les
-    // deux (57 à 74 mots de marge, mesuré) tout en étant sensiblement plus exigeant.
+    // cette tâche proposait « > 1700 » ; 1800 tient toujours les deux (57 à 74 mots de marge).
+    //
+    // CE PLANCHER NE PROUVE PAS « aucune section gardée n'a disparu ». Une revue l'a mesuré, en
+    // vidant un snippet à la fois : Règle secrets coûte 122 mots, Mémoire du projet 139, et
+    // **Mode apprentissage seulement 60** — pas « 150-300 chacune » comme une version antérieure
+    // de ce commentaire l'affirmait, à tort. Perdre CETTE section-là ne fait tomber le total qu'à
+    // 1814 (claude-code/codex) ou 1797 (cursor) : 1814 > 1800, ce plancher seul ne l'aurait PAS vu
+    // sur 2 des 3 assistants. C'est la boucle `GARDES` plus bas, ancrée sur les en-têtes — pas ce
+    // comptage — qui a la charge de prouver qu'aucune des 8 sections n'a disparu. Ce plancher, lui,
+    // ne garde que sa promesse d'origine : rejeter un rendu effondré/vide.
     const n = t.trim().split(/\s+/).length;
     assert.ok(n > 1800, `montage (${assistant}) : rendu de seulement ${n} mots, le contrôle ne juge rien d'assez substantiel`);
 
@@ -74,6 +87,16 @@ test('renvois morts — le bloc adopté ne cite aucun fichier absent', () => {
       ...fautes.map((f) => `  ${f}`),
       'Retire la section, ou substitue la phrase (SUBSTITUTIONS_ADOPTE, agents-file.mjs).',
     ].join('\n'));
+
+    // Aucune des 8 sections gardées n'a disparu — ANCRÉ SUR L'EN-TÊTE (`^## `), comme
+    // `adoption.test.mjs`. Sans cette boucle, la perte de « Mode apprentissage » (60 mots, la plus
+    // petite des 8) ne se voyait QUE par la disparition accidentelle de `docs/APPRENTISSAGE.md`
+    // dans le contrôle PRESENTS ci-dessous — un filet qui n'a pas été CONÇU pour ça, et qui
+    // cesserait de mordre si `docs/APPRENTISSAGE.md` sortait un jour de `PRESENTS` (exactement le
+    // raisonnement qui a fait sortir `docs/glossaire.md` de cette même liste, plus haut).
+    for (const garde of GARDES) {
+      assert.match(t, new RegExp(`^## .*${garde}`, 'm'), `${assistant} : « ${garde} » a disparu du rendu adopté — elle est de la méthode, elle DOIT rester`);
+    }
 
     // Contrôle symétrique : on n'a pas coupé trop large. Chacune de ces 4 chaînes est mesurée
     // présente dans le rendu aujourd'hui — si une substitution future les efface par effet de
