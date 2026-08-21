@@ -5,9 +5,11 @@
 // `aucune` est donc la stack « je n'en revendique pas ».
 
 import fs from 'node:fs';
-// La liste des assistants et le rendu d'une question à choix numérotés viennent du wizard du
-// parcours NEUF : les recopier ici en ferait une 3ᵉ copie, qui divergerait au premier assistant
-// ajouté (E8 — duplications.test.mjs).
+// Le menu (libellés) et le rendu d'une question à choix numérotés viennent du wizard du parcours
+// NEUF ; les CLÉS et la VALIDATION viennent d'args.mjs, comme pour toutes les autres branches du
+// CLI. Juger l'assistant contre une liste et le reste du CLI contre une autre, c'était déjà deux
+// vérités pour la même chose (E8 — duplications.test.mjs).
+import { ASSISTANT_KEYS, validateArgs } from './args.mjs';
 import { ASSISTANTS, pickOne } from './wizard.mjs';
 import { heading, hint } from './ui.mjs';
 
@@ -59,34 +61,58 @@ export function renderInventaire(projectDir, entrees, on) {
   return lignes.join('\n');
 }
 
-// Une question fermée dont le DÉFAUT est écrit dans le libellé ([O/n] ou [o/N]). Une réponse non
-// comprise retombe sur ce défaut ANNONCÉ — jamais sur « oui » par commodité : sur la question du
-// dossier vide, ce raccourci ferait installer le kit là où l'utilisateur venait de dire non.
+// Une question fermée dont le DÉFAUT est écrit dans le libellé ([O/n] ou [o/N]).
+// ⛔ Une réponse non comprise REBOUCLE, elle ne vaut aucun des deux — même patron que `pickOne`.
+// Mesuré sur la version d'avant, qui retombait sur le défaut : « nan », « nope », « non merci »,
+// « bof », « plutôt pas » valaient tous OUI sur la porte [O/n], soit 6 refus plausibles sur 7 qui
+// entraient. Une porte qui s'ouvre sur « nan » n'est pas une porte, et c'est la question dont
+// l'enjeu est d'écrire dans le projet réel de l'utilisateur.
+// La chaîne vide, elle, garde le défaut : taper Entrée devant « [O/n] » est un consentement, il
+// est écrit dans la question.
 const OUI = ['o', 'oui', 'y', 'yes'];
 const NON = ['n', 'non', 'no'];
-async function demanderOuiNon(ask, question, defaut) {
-  const r = (await ask(question)).trim().toLowerCase();
-  if (OUI.includes(r)) return true;
-  if (NON.includes(r)) return false;
-  return defaut;
+async function demanderOuiNon(ask, on, out, question, defaut) {
+  for (;;) {
+    const r = (await ask(question)).trim().toLowerCase();
+    if (r === '') return defaut;
+    if (OUI.includes(r)) return true;
+    if (NON.includes(r)) return false;
+    out.write(hint('  Réponds par o (oui) ou n (non) — ou tape Entrée pour le choix par défaut.', on) + '\n');
+  }
 }
 
-// Le parcours adopté pose ses questions quand il en a BESOIN et quand il PEUT : un `--assistant`
-// déjà passé y répond, `--yes` et un terminal non interactif interdisent de les poser.
-// (Le pendant de `needsWizard` pour ce parcours — qui, lui, ne serait jamais atteint : il exige
-// --stack ET --assistant ET --project, que `--adopt` ne fournit pas.)
-export function besoinDeQuestionsAdoption(args, isTTY, argv = []) {
-  if (args.assistant) return false;
-  if (argv.includes('--yes')) return false;
-  return isTTY === true;
+// Le parcours adopté demande dès qu'il PEUT : terminal interactif, et pas de `--yes`.
+// ⛔ Il regardait aussi `args.assistant` — ce qui confondait « la question de l'assistant a déjà
+// sa réponse » et « pas besoin de demander avant d'écrire ». Mesuré sur pty :
+// `--adopt --assistant cursor` montrait le dossier puis écrivait tout, sans une seule question,
+// dans un terminal où demander était possible. Un drapeau répond à UNE question ; il ne consent
+// pas à la place de l'utilisateur. La question de l'assistant, elle, est sautée dans le parcours.
+export function peutDemanderAdoption(isTTY, argv = []) {
+  return isTTY === true && !argv.includes('--yes');
 }
+
+// La validation du parcours adopté EST celle du parcours neuf — `validateArgs`, source unique —
+// avec DEUX exemptions, chacune pour une raison nommée :
+//   · `project` : ici le chemin n'est pas TAPÉ mais OBSERVÉ (le dossier de l'utilisateur), et
+//     `isValidProjectName` refuse « ( ) ! $ * ? » — donc « ~/dev/Mon projet (v2) », un dossier
+//     qu'il ne peut pas renommer ;
+//   · `assistant` absent : c'est la question 1/2, elle a le droit de manquer ici. Une valeur
+//     FAUSSE, elle, reste une faute — la sonde ne remplace que l'absence.
+// ⛔ Sans cet appel, `--adopt --backend nawak` sortait en exit 0 et persistait « nawak » dans
+// `.vibecoding.json`, que `--refresh` relit ; la même valeur sort en 1 sur le parcours neuf.
+export const erreursAdoption = (args) => validateArgs({
+  ...args,
+  stack: STACK_AUCUNE,
+  project: 'projet-adopte',
+  assistant: args.assistant ?? ASSISTANT_KEYS[0],
+});
 
 // Ce qui bloque un `--adopt` sans questions possibles. Hors terminal non plus, le kit ne devine
 // pas : il refuse en nommant ce qui manque, avant d'avoir écrit le moindre octet.
 export function erreursAdoptionNonInteractive(args, entrees, projectDir) {
   const errors = [];
-  if (!ASSISTANTS.some((a) => a.key === args.assistant)) {
-    errors.push(`--adopt : je ne peux pas deviner ton assistant. Relance avec --assistant ${ASSISTANTS.map((a) => a.key).join('|')}.`);
+  if (!ASSISTANT_KEYS.includes(args.assistant)) {
+    errors.push(`--adopt : je ne peux pas deviner ton assistant. Relance avec --assistant ${ASSISTANT_KEYS.join('|')}.`);
   }
   if (!entrees.length) {
     errors.push(`--adopt : rien à adopter dans ${projectDir}. Pour créer un projet NEUF : npx create-vibecoding-kit@latest`);
@@ -96,21 +122,23 @@ export function erreursAdoptionNonInteractive(args, entrees, projectDir) {
 
 // LES DEUX QUESTIONS du parcours adopté. La stack n'en fait PAS partie : elle vaut `aucune` par
 // construction. Renvoie `null` si l'utilisateur refuse le dossier proposé — rien n'a été touché.
-export async function runAdoptWizard(ask, on, out, { projectDir, entrees }) {
+export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assistant: fourni }) {
   out.write('\n' + heading('Vibecoding Starter Kit · projet existant', on) + '\n\n');
   out.write(renderInventaire(projectDir, entrees, on) + '\n\n');
 
   // On montre, on demande UNE fois, puis on écrit. Le défaut suit ce qu'on a trouvé — oui quand il
   // y a un projet, non quand il n'y a rien — mais dans les deux sens c'est la réponse qui tranche.
   const feuVert = entrees.length
-    ? await demanderOuiNon(ask, '  Installer la méthode du kit dans CE projet ? (rien ne sera écrasé) [O/n] : ', true)
-    : await demanderOuiNon(ask, '  Installer quand même la méthode ici ? [o/N] : ', false);
+    ? await demanderOuiNon(ask, on, out, '  Installer la méthode du kit dans CE projet ? (rien ne sera écrasé) [O/n] : ', true)
+    : await demanderOuiNon(ask, on, out, '  Installer quand même la méthode ici ? [o/N] : ', false);
   if (!feuVert) { out.write(hint('  Rien n\'a été touché.', on) + '\n'); return null; }
   out.write('\n');
 
   // Question 1/2 — L'ASSISTANT. Indevinable depuis le disque, et obligatoire : c'est lui qui décide
-  // dans quel dossier natif partent commandes, agents et hooks.
-  const assistant = await pickOne(ask, on, out, 'Quel assistant IA utilises-tu ?', ASSISTANTS);
+  // dans quel dossier natif partent commandes, agents et hooks. SAUTÉE si `--assistant` l'a déjà
+  // donnée (jugée en amont par `erreursAdoption`) : la reposer serait du bruit. Le CONSENTEMENT
+  // ci-dessus, lui, n'est jamais sauté par un drapeau — c'est deux choses différentes.
+  const assistant = fourni ?? await pickOne(ask, on, out, 'Quel assistant IA utilises-tu ?', ASSISTANTS);
 
   // Question 2/2 — LE SCAN AUTOSKILLS. Sa place est ICI, après l'assistant dont elle dépend (elle
   // est masquée sous Cursor et Codex). Tâche 9 : la poser sans le run derrière serait une promesse

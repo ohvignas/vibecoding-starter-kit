@@ -10,7 +10,7 @@ import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
 import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook, runbookConcatene } from './lib/commands-list.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS } from './lib/matrix.mjs';
-import { estAdopte, STACK_AUCUNE, entreesDuProjet, renderInventaire, besoinDeQuestionsAdoption, erreursAdoptionNonInteractive, runAdoptWizard } from './lib/adoption.mjs';
+import { estAdopte, STACK_AUCUNE, entreesDuProjet, renderInventaire, peutDemanderAdoption, erreursAdoption, erreursAdoptionNonInteractive, runAdoptWizard } from './lib/adoption.mjs';
 import { renderColleMoi } from './lib/colle-moi.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
@@ -21,7 +21,7 @@ import { initProjectGit } from './lib/gitinit.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
-import { needsWizard, buildArgsFromAnswers, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
+import { choisirMode, buildArgsFromAnswers, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
 import { renderRunDoc } from './lib/run-doc.mjs';
 import { supportsColor, ok } from './lib/ui.mjs';
 
@@ -47,9 +47,14 @@ async function main() {
   const isTTY = Boolean(process.stdin.isTTY);
   const kitRoot = kitRootFromModuleUrl(import.meta.url);
 
+  // Quel mode ? L'ORDRE est dans `choisirMode` (wizard.mjs), pur et donc assertable : --refresh,
+  // puis --adopt, puis seulement le wizard du parcours neuf. Hors TTY, `needsWizard` sort à sa
+  // première ligne — un test qui lance le CLI par un pipe ne mesure jamais cet ordre-là.
+  const mode = choisirMode(argv, isTTY);
+
   // Mode --refresh : met à jour un projet DÉJÀ généré (règles + fichiers 100% kit), sans scaffolder.
   // Early return AVANT toute la logique wizard/validate/scaffold → le scaffold par défaut est inchangé.
-  if (argv.includes('--refresh')) {
+  if (mode === 'refresh') {
     const a = parseArgs(argv);
     a.source = a.source ?? kitRoot;
     const baseDir = projectBaseDir(kitRoot, process.cwd());
@@ -64,27 +69,31 @@ async function main() {
     return;
   }
   let args;
-  // Mode --adopt : installe la MÉTHODE dans un projet qui existe déjà. Traité AVANT `needsWizard`,
-  // comme --refresh ci-dessus — mesuré : `needsWizard(['--adopt'], true) === true`, parce que
-  // wizard.mjs:22-26 exige --stack ET --assistant ET --project. Sans ce bloc, `--adopt` tombait
-  // dans le wizard du parcours NEUF, qui commence par demander une stack — celle qu'on refuse
-  // précisément de revendiquer ici. Le parcours neuf, lui, ne voit jamais ce bloc : il ne bouge pas.
-  if (argv.includes('--adopt')) {
+  // Mode --adopt : installe la MÉTHODE dans un projet qui existe déjà. Passe AVANT le wizard du
+  // parcours neuf (voir `choisirMode`), qui commencerait par demander une stack — celle qu'on
+  // refuse précisément de revendiquer ici. Le parcours neuf ne voit jamais ce bloc : il ne bouge pas.
+  if (mode === 'adopt') {
     const base = parseArgs(argv); // drapeaux partiels (--no-skills, --source, --force…) conservés
     // `--adopt --stack saas` est une contradiction, pas un défaut à corriger en silence.
     if (base.stack && !estAdopte(base.stack)) {
       console.error(`--adopt installe la méthode dans un projet qui existe déjà : sa stack est « ${STACK_AUCUNE} », il n'y a pas de --stack à choisir (reçu : ${base.stack}).`);
       process.exit(1);
     }
+    // Les drapeaux sont jugés par la MÊME fonction que le parcours neuf, et AVANT la moindre
+    // question : échouer sur `--backend nawak` après avoir fait répondre l'utilisateur lui ferait
+    // perdre ses réponses. Après les questions, la seule valeur neuve est l'assistant — sortie de
+    // `pickOne`, donc valide par construction : ce contrôle-ci est complet.
+    const errsDrapeaux = erreursAdoption(base);
+    if (errsDrapeaux.length) { console.error(errsDrapeaux.join('\n')); process.exit(1); }
     // Par défaut, le dossier COURANT : `--adopt` se lance depuis le projet à adopter.
     const projectDir = resolveProjectDir(expandHome(base.project ?? '.', os.homedir()), projectBaseDir(kitRoot, process.cwd()));
     const entrees = entreesDuProjet(projectDir);
     let reponses;
-    if (besoinDeQuestionsAdoption(base, isTTY, argv)) {
+    if (peutDemanderAdoption(isTTY, argv)) {
       const readline = await import('node:readline/promises');
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       wireSigint(rl);
-      try { reponses = await runAdoptWizard((q) => rl.question(q), on, process.stdout, { projectDir, entrees }); }
+      try { reponses = await runAdoptWizard((q) => rl.question(q), on, process.stdout, { projectDir, entrees, assistant: base.assistant }); }
       finally { rl.close(); }
       if (!reponses) return; // refus : le parcours l'a dit, et rien n'a été touché
     } else {
@@ -95,11 +104,8 @@ async function main() {
       if (errs.length) { console.error('\n' + errs.join('\n')); process.exit(1); }
       reponses = { assistant: base.assistant };
     }
-    // `isValidProjectName` ne s'applique PAS ici : le chemin n'est pas TAPÉ, il est OBSERVÉ (le
-    // dossier de l'utilisateur). Le refuser parce qu'il contient « (v2) » ou « ! » serait un faux
-    // refus sur un dossier qu'il ne peut pas renommer. L'assistant, lui, est validé ci-dessus.
     args = { ...base, stack: STACK_AUCUNE, assistant: reponses.assistant, project: projectDir };
-  } else if (needsWizard(argv, isTTY)) {
+  } else if (mode === 'wizard') {
     const base = parseArgs(argv); // drapeaux partiels (--no-skills, --source…) conservés
     const readline = await import('node:readline/promises'); // dynamique : le check Node ci-dessus tourne même sur Node 16
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

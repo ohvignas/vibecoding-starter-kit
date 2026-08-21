@@ -3,7 +3,11 @@ import path from 'node:path';
 // `aucune` = parcours « projet existant » (voir adoption.mjs). Elle est LÉGALE en argument mais
 // n'est PAS une stack offerte : le wizard ne la propose pas, la doc ne la liste pas.
 const STACKS = ['saas', 'mobile', 'desktop', 'vitrine', 'aucune'];
-const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
+// SOURCE UNIQUE des assistants. `validateArgs` juge contre elle, le wizard du parcours neuf y
+// accroche ses libellés (wizard.mjs) et le parcours adopté juge contre elle aussi. Elle vivait en
+// double — ici les clés, là-bas la liste complète — et les deux parcours ne jugeaient déjà plus
+// contre la même chose.
+export const ASSISTANT_KEYS = ['cursor', 'claude-code', 'codex'];
 
 export function parseArgs(argv) {
   // source: null = « non fourni » → setup.mjs y mettra la racine du kit (dérivée de import.meta.url).
@@ -59,7 +63,7 @@ export function isValidProjectName(project) {
 export function validateArgs(args) {
   const errors = [];
   if (!STACKS.includes(args.stack)) errors.push(`--stack doit valoir ${STACKS.join('|')}`);
-  if (!ASSISTANTS.includes(args.assistant)) errors.push(`--assistant doit valoir ${ASSISTANTS.join('|')}`);
+  if (!ASSISTANT_KEYS.includes(args.assistant)) errors.push(`--assistant doit valoir ${ASSISTANT_KEYS.join('|')}`);
   if (!isValidProjectName(args.project)) errors.push('--project : nom invalide');
   if (args.backend !== undefined && !['cloud', 'local'].includes(args.backend)) errors.push('--backend doit valoir cloud|local');
   return errors;

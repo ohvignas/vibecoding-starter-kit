@@ -4,9 +4,10 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { STACK_AUCUNE, estAdopte, estProjetExistant, entreesDuProjet, runAdoptWizard, besoinDeQuestionsAdoption } from './adoption.mjs';
+import { STACK_AUCUNE, estAdopte, estProjetExistant, entreesDuProjet, runAdoptWizard, peutDemanderAdoption, erreursAdoption } from './adoption.mjs';
 import { renderAgentsFile, adapterAuProjetAdopte } from './agents-file.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
+import { choisirMode, needsWizard } from './wizard.mjs';
 import { resolveAssets } from './matrix.mjs';
 import { kitOwnedFiles } from './kit-owned.mjs';
 
@@ -241,11 +242,13 @@ test('adoption — `--adopt` sur un dossier sans rien à adopter, hors terminal 
   assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md')));
 });
 
-test('adoption — quand le parcours adopté pose ses questions, et quand il ne PEUT pas', () => {
-  assert.equal(besoinDeQuestionsAdoption({ assistant: null }, true, ['--adopt']), true);
-  assert.equal(besoinDeQuestionsAdoption({ assistant: 'cursor' }, true, ['--adopt']), false, 'le drapeau a déjà répondu');
-  assert.equal(besoinDeQuestionsAdoption({ assistant: null }, false, ['--adopt']), false, 'hors terminal, on ne PEUT pas demander');
-  assert.equal(besoinDeQuestionsAdoption({ assistant: null }, true, ['--adopt', '--yes']), false, '--yes = jamais de question');
+test('adoption — le parcours demande dès qu\'il PEUT ; un --assistant ne vaut pas consentement', () => {
+  assert.equal(peutDemanderAdoption(true, ['--adopt']), true);
+  // ⛔ Le défaut mesuré par la revue : `--assistant` répond à UNE des deux questions, il n'autorise
+  // pas à écrire dans le projet sans demander. Confondre les deux, c'était écrire sans porte.
+  assert.equal(peutDemanderAdoption(true, ['--adopt', '--assistant', 'cursor']), true, 'un drapeau ne remplace pas le consentement');
+  assert.equal(peutDemanderAdoption(false, ['--adopt']), false, 'hors terminal, on ne PEUT pas demander');
+  assert.equal(peutDemanderAdoption(true, ['--adopt', '--yes']), false, '--yes = jamais de question');
 });
 
 test('adoption — `--adopt --stack saas` est refusé : une contradiction ne se corrige pas en silence', () => {
@@ -255,4 +258,74 @@ test('adoption — `--adopt --stack saas` est refusé : une contradiction ne se 
   assert.equal(r.code, 1);
   assert.match(r.err, /--stack/);
   assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md')), 'un refus n\'écrit rien');
+});
+
+// --- Les quatre trous trouvés par la revue -----------------------------------------------------
+
+test('adoption — L\'ORDRE des modes : `--adopt` passe AVANT le wizard du parcours neuf', () => {
+  // ⛔ Le trou : tous les tests CLI passent par `stdio:'pipe'`, donc `isTTY` est faux, donc
+  // `needsWizard` sort à wizard.mjs:24 sans regarder les drapeaux. L'ordre n'est observable qu'en
+  // TTY — et la mutation « le bloc ne sort plus avant needsWizard » laissait 459/459 verts.
+  // Cette mesure-là était en commentaire dans le code ; elle est ce qui rend l'ordre nécessaire.
+  assert.equal(needsWizard(['--adopt'], true), true, 'si ceci devient false, l\'ordre cesse d\'être nécessaire — dis-le');
+  assert.equal(choisirMode(['--adopt'], true), 'adopt', 'en TTY, --adopt ne doit JAMAIS tomber dans le wizard du parcours neuf');
+  assert.equal(choisirMode(['--adopt'], false), 'adopt');
+  assert.equal(choisirMode(['--refresh', '--adopt'], true), 'refresh', '--refresh reste le premier servi');
+  // Le parcours neuf, inchangé : les deux seules autres issues.
+  assert.equal(choisirMode([], true), 'wizard');
+  assert.equal(choisirMode([], false), 'drapeaux');
+  assert.equal(choisirMode(['--stack', 'saas', '--assistant', 'cursor', '--project', 'x'], true), 'drapeaux');
+});
+
+test('adoption — une réponse non comprise fait REDEMANDER : « nan » n\'ouvre pas la porte', async () => {
+  // ⛔ Mesuré par la revue : avec `NON = ['n','non','no']`, « nan », « nope », « non merci »,
+  // « bof » valaient OUI — 6 refus plausibles sur 7 franchissaient la porte, sur la question dont
+  // l'enjeu est d'écrire dans le projet réel. Le patron correct est celui de `pickOne` : reboucler.
+  const { out, texte } = capture();
+  const r = await runAdoptWizard(scripted(['nan', 'bof', 'n']), false, out, { projectDir: '/tmp/mon-app', entrees: ['src'] });
+  assert.equal(r, null, '« nan » puis « bof » puis « n » : la seule réponse comprise est le refus');
+  assert.ok(texte().includes('Réponds par'), 'et chaque réponse non comprise doit le DIRE, pas être avalée');
+});
+
+test('adoption — Entrée vaut le défaut ANNONCÉ dans le libellé, dans les deux sens', async () => {
+  // La chaîne vide est un consentement explicite au défaut écrit ([O/n] ou [o/N]) — c'est le seul
+  // raccourci gardé, et il ne dit jamais oui là où le libellé annonce non.
+  const surProjet = await runAdoptWizard(scripted(['', '2']), false, NULL_OUT, { projectDir: '/tmp/a', entrees: ['src'] });
+  assert.deepEqual(surProjet, { assistant: 'claude-code' }, '[O/n] + Entrée = oui');
+  const surVide = await runAdoptWizard(scripted(['']), false, NULL_OUT, { projectDir: '/tmp/b', entrees: [] });
+  assert.equal(surVide, null, '[o/N] + Entrée = non');
+});
+
+test('adoption — `--assistant` saute la QUESTION, jamais la porte de consentement', async () => {
+  // ⛔ Mesuré sur pty : `--adopt --assistant cursor` montrait le dossier puis écrivait tout, sans
+  // une seule question, dans un terminal où demander était possible. Le MONTRE tenait, pas le DEMANDE.
+  const refus = await runAdoptWizard(scripted(['n']), false, NULL_OUT, { projectDir: '/tmp/x', entrees: ['package.json'], assistant: 'cursor' });
+  assert.equal(refus, null, 'un --assistant répond à une question, il ne consent pas à écrire');
+  // Et l'inverse : la question de l'assistant, elle, est bien sautée — une réponse de plus dans le
+  // script ferait échouer bruyamment (`undefined.trim()`), c'est ce qui rend l'assertion honnête.
+  const accord = await runAdoptWizard(scripted(['o']), false, NULL_OUT, { projectDir: '/tmp/x', entrees: ['package.json'], assistant: 'cursor' });
+  assert.deepEqual(accord, { assistant: 'cursor' });
+});
+
+test('adoption — les drapeaux du parcours adopté sont jugés par la MÊME règle que le parcours neuf', () => {
+  // ⛔ Mesuré : `--adopt --backend nawak` sortait en exit 0 et persistait « nawak » dans
+  // .vibecoding.json, que `--refresh` relit. La même valeur sort en 1 sur le parcours neuf.
+  assert.deepEqual(erreursAdoption(parseArgs(['--adopt', '--assistant', 'cursor'])), []);
+  assert.ok(erreursAdoption(parseArgs(['--adopt', '--assistant', 'nawak'])).some((e) => /assistant/.test(e)));
+  assert.ok(erreursAdoption(parseArgs(['--adopt', '--assistant', 'cursor', '--backend', 'nawak'])).some((e) => /backend/.test(e)));
+  // Deux exemptions, et seulement deux : l'assistant absent (c'est la question 1/2) et le nom de
+  // projet (le chemin est OBSERVÉ, pas tapé — `isValidProjectName` refuse « ( ) ! $ »).
+  assert.deepEqual(erreursAdoption(parseArgs(['--adopt'])), [], 'un assistant absent n\'est pas une faute : c\'est la question 1/2');
+  assert.deepEqual(erreursAdoption({ ...parseArgs(['--adopt']), project: '/Users/x/Mon projet (v2)' }), [],
+    'un dossier que l\'utilisateur ne peut pas renommer ne doit pas être refusé');
+});
+
+test('adoption — `--adopt --backend nawak` : exit 1, et rien de persisté', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adoptbk-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"x"}');
+  const r = lancerSetup(['--adopt', '--assistant', 'cursor', '--backend', 'nawak', '--project', dir, '--no-skills']);
+  assert.equal(r.code, 1);
+  assert.match(r.err, /backend/);
+  assert.ok(!fs.existsSync(path.join(dir, '.vibecoding.json')), 'une valeur refusée ne doit pas atterrir dans le manifeste');
+  assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md')));
 });
