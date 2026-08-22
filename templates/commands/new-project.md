@@ -6,6 +6,8 @@ Va **étape par étape**, en français. **Chaque artefact attend la validation d
 Argument : `$ARGUMENTS` = description libre de l'idée.
 > Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), **demande la description à l'utilisateur** avant de commencer.
 
+> ⛔ **`docs/ETAT-DES-LIEUX.md` existe ? Tu t'arrêtes ici.** C'est un projet **existant** que le kit a adopté (`--adopt`) : il a déjà son code, et ce runbook FONDE un projet — PRD, architecture, maquette, roadmap, scaffold. Le jouer par-dessus écraserait un projet qui tourne. **Ne scaffolde rien, ne crée aucun fichier de fondation.** Dis-le en une phrase, puis renvoie à **`/next`** (la prochaine action sur CE code) ou à **`/new-feature`** (ajouter UNE fonctionnalité). C'est la dernière porte : `/help`, `/next` et `/build` la ferment déjà en amont.
+
 ## Ce qu'on va faire ensemble — explique le parcours (à dire à l'utilisateur, EN PREMIER)
 Avant toute question, dis-lui en **langage simple** ce qu'on va faire et ce qu'il obtiendra :
 > « On va, ensemble : **1)** bien comprendre ton idée (quelques questions simples) · **2)** écrire le **plan** de ton app · **3)** **dessiner les écrans** (maquette) · **4)** en tirer une **feuille de route**. Ensuite `/build` construit, écran par écran. À la fin de cette étape tu auras un **plan clair + un design + une roadmap** — pas encore de code, et c'est normal. »

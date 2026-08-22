@@ -2,7 +2,11 @@
 
 L'utilisateur veut savoir **quelles commandes existent et à quoi elles servent**. Ne modifie RIEN. Affiche la liste ci-dessous en français simple, groupée.
 
-**Une seule réponse à « je commence par quoi ? » : `/help`** — il y est déjà, et cette page le mène partout ailleurs. Ensuite, **adapte à ce que tu vois** : pas de `.vibecoding.json` → `/init-vibecoding` ; pas de `docs/ROADMAP.md` → `/new-project` ; roadmap présente → `/build`.
+**Une seule réponse à « je commence par quoi ? » : `/help`** — il y est déjà, et cette page le mène partout ailleurs. Ensuite, **adapte à ce que tu vois**, et **regarde le disque avant de répondre** — dans CET ordre :
+1. pas de `.vibecoding.json` → `/init-vibecoding` ;
+2. **`docs/ETAT-DES-LIEUX.md` présent → projet EXISTANT adopté par le kit (`--adopt`)** : il a déjà son code. Ne propose **jamais** `/new-project` (il fonderait un projet par-dessus le sien) et ne scaffolde rien. Renvoie à **`docs/ETAT-DES-LIEUX.md`** — c'est lui qui apprend le projet à l'IA — puis à **`/next`** pour la prochaine action. Ce projet n'aura **jamais** de `docs/ROADMAP.md` : son absence ne veut donc rien dire ici, d'où cette règle **avant** la suivante ;
+3. pas de `docs/ROADMAP.md` → `/new-project` ;
+4. roadmap présente → `/build`.
 
 ## Pour démarrer / avancer
 - **/help** — cette page : les 10 commandes et par où continuer. C'est **la seule à retenir**.

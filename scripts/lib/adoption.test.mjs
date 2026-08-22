@@ -985,3 +985,76 @@ test('parité neuf — la FORME de docs/A-FAIRE.md est gardée, pas seulement so
     }
   }
 });
+
+// ── LES PORTES QUI RESTAIENT OUVERTES ─────────────────────────────────────────────────────────
+// ⛔ ROUND 2 DE LA REVUE, et le premier trou ANNULAIT la fonctionnalité. J'avais gardé `/build` et
+// `/next` ; `/help` est la PORTE D'ENTRÉE des deux — « C'est le seul à retenir », dit COLLE-MOI —
+// et son heuristique était inconditionnelle : « pas de `docs/ROADMAP.md` → `/new-project` ». Sur un
+// projet adopté la roadmap n'existe JAMAIS : `/help` envoyait donc sur l'action que tout ce
+// chantier existe pour empêcher. Mesuré avant correctif : `grep -c "adopt|ETAT-DES-LIEUX"` = 0.
+
+// Le relevé se fait sur le projet RÉELLEMENT livré : un runbook ajouté demain y sera, sans que
+// personne ait à l'inscrire dans une liste.
+const runbooksLivres = (dir) => {
+  const d = path.join(dir, '.claude/commands');
+  return fs.readdirSync(d).filter((f) => f.endsWith('.md')).sort()
+    .map((f) => [f, fs.readFileSync(path.join(d, f), 'utf8')]);
+};
+
+test('adoption — tout runbook qui cite le PRD ou la ROADMAP sait que le projet peut être ADOPTÉ', () => {
+  // LA CLASSE, pas les deux cas. `docs/PRD.md` et `docs/ROADMAP.md` sont les deux fichiers que
+  // seul `/new-project` produit : un runbook de 1er niveau qui les cite SANS savoir que le projet
+  // peut être adopté enverra fonder un projet par-dessus du code qui tourne, ou inventera des
+  // UJ/FR que rien ne soutient. Ce test attrape le prochain, pas seulement ceux d'aujourd'hui.
+  const { dir } = projetExistant('portes');
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']).code, 0);
+  const concernes = runbooksLivres(dir).filter(([, t]) => /docs\/(PRD|ROADMAP)\.md/.test(t));
+  // Montage : un relevé vide rendrait le contrôle vrai à vide.
+  assert.ok(concernes.length >= 4,
+    `montage : seulement ${concernes.length} runbooks citent PRD/ROADMAP — le relevé est cassé`);
+  const aveugles = concernes.filter(([, t]) => !/ETAT-DES-LIEUX/.test(t)).map(([f]) => f);
+  assert.deepEqual(aveugles, [], [
+    'Ces runbooks citent `docs/PRD.md` ou `docs/ROADMAP.md` sans savoir que le projet peut être ADOPTÉ :',
+    ...aveugles.map((f) => `  ${f}`),
+    '',
+    'Sur un projet adopté, ces deux fichiers n\'existent JAMAIS. Un runbook qui en déduit « rien',
+    'n\'existe encore » propose `/new-project` — il fonderait un PRD, une roadmap et un scaffold',
+    'par-dessus un projet qui tourne. Ajoute la branche `docs/ETAT-DES-LIEUX.md` (voir build.md).',
+  ].join('\n'));
+});
+
+test('adoption — `/help`, « le seul à retenir », teste l\'adoption AVANT de conclure « rien n\'existe »', () => {
+  for (const rel of ['templates/commands/help.md', 'cursor-plugin/commands/help.md']) {
+    const t = fs.readFileSync(path.resolve(rel), 'utf8');
+    assert.match(t, /ETAT-DES-LIEUX\.md/, `${rel} : /help ne sait rien de l'adoption — il est la porte d'entrée de /build et /next`);
+    const branche = t.split('\n').find((l) => l.includes('ETAT-DES-LIEUX.md') && l.includes('new-project'));
+    assert.ok(branche, `${rel} : la branche adoptée doit statuer sur /new-project, pas l'ignorer`);
+    assert.match(branche, /jamais/i, `${rel} : elle doit INTERDIRE /new-project, pas seulement le mentionner`);
+
+    // ⛔ L'ORDRE EST LE GARDE, pas la simple présence. « pas de ROADMAP → /new-project » et la
+    // branche adoptée sont toutes deux vraies sur un projet adopté (la roadmap y est TOUJOURS
+    // absente). Une IA qui lit de haut en bas applique la première : placée APRÈS, la branche
+    // adoptée serait morte tout en gardant ce test vert sans cette assertion.
+    const lignes = t.split('\n');
+    const iAdopte = lignes.findIndex((l) => l.includes('ETAT-DES-LIEUX.md') && l.includes('new-project'));
+    const iRoadmap = lignes.findIndex((l) => /pas de `docs\/ROADMAP\.md` → `\/new-project`/.test(l));
+    assert.ok(iRoadmap > 0, `${rel} : la règle « pas de roadmap → /new-project » a disparu du relevé`);
+    assert.ok(iAdopte < iRoadmap,
+      `${rel} : la branche adoptée (ligne ${iAdopte + 1}) est APRÈS « pas de roadmap → /new-project » (ligne ${iRoadmap + 1}) — lue de haut en bas, elle ne sera jamais atteinte`);
+  }
+});
+
+test('adoption — `/new-feature` dégrade proprement sans `docs/PRD.md` au lieu d\'inventer', () => {
+  // `/help` recommande `/new-feature` pour « ajouter une fonctionnalité à un projet qui existe
+  // déjà » — la description littérale d'un projet adopté. Or il cite `docs/PRD.md` (UJ-X, FR-Y)
+  // sans le créer, et n'est bloqué ni par `/build` ni par `/next`. Un critère d'acceptation dérivé
+  // d'un PRD inventé se teste VERT et ne prouve rien.
+  for (const rel of ['templates/commands/new-feature/01-spec-de-feature.md', 'cursor-plugin/commands/new-feature/01-spec-de-feature.md']) {
+    const t = fs.readFileSync(path.resolve(rel), 'utf8');
+    const repli = t.split('\n').find((l) => /Pas de `docs\/PRD\.md`/.test(l));
+    assert.ok(repli, `${rel} : aucun repli quand le PRD manque — le runbook cite UJ-X/FR-Y d'un fichier absent`);
+    assert.match(repli, /ETAT-DES-LIEUX\.md/, `${rel} : le repli doit dire OÙ lire le projet à la place`);
+    assert.match(repli, /invente/i, `${rel} : il doit INTERDIRE d'inventer les UJ/FR, pas seulement signaler l'absence`);
+    assert.doesNotMatch(repli, /lance `?\/new-project`?/, `${rel} : le repli ne doit pas renvoyer à /new-project`);
+  }
+});
