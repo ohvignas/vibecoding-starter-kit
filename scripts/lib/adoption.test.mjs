@@ -8,7 +8,9 @@ import { STACK_AUCUNE, estAdopte, estProjetExistant, entreesDuProjet, runAdoptWi
 import { renderAgentsFile, adapterAuProjetAdopte } from './agents-file.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
 import { choisirMode, needsWizard } from './wizard.mjs';
-import { resolveAssets } from './matrix.mjs';
+import { resolveAssets, resolveStackManifest, SUPERPOWERS } from './matrix.mjs';
+import { renderColleMoi } from './colle-moi.mjs';
+import { renderSetupAi } from './setup-ai.mjs';
 import { kitOwnedFiles, kitOwnedGenerated } from './kit-owned.mjs';
 import { MARK_START_PREFIX, MARK_END } from './managed-section.mjs';
 
@@ -699,5 +701,217 @@ test('adoption — sous `--force`, le rapport DIT que le drapeau a été écart�
   for (const f of ['docs/ETAT-DES-LIEUX.md', 'docs/RUN.md']) {
     assert.ok(dejaPresentNormal.includes(f),
       `${f} : sans --force, « déjà présent » EST la bonne raison — elle doit rester là où elle est vraie`);
+  }
+});
+
+// ── TÂCHE 7 · LE PREMIER CONTACT D'UN PROJET ADOPTÉ ────────────────────────────────────────────
+// ⛔ CE QUI SUIT N'EXISTAIT PAS. Le code des tâches précédentes était écrit et JUSTE, mais RIEN ne
+// le tenait : les trois fautes ci-dessous — `/new-project` remis dans le prompt adopté, « Projet
+// créé » remis au rapport, l'étape 0 retirée de `/build` — ont été réinjectées ensemble, et la
+// suite est restée VERTE (498/498, mesuré, plugin régénéré). Le seul test qui bronchait était D10,
+// le miroir `templates/` ↔ `cursor-plugin/`, et il rougissait pour une dérive de copie, pas pour
+// la faute. Un chantier dont le code est bon et les gardes absentes est un chantier qui repartira.
+
+const ASSISTANTS_TOUS = ['cursor', 'claude-code', 'codex'];
+const afaire = (stack, assistant, skillsInstalled = true) => renderSetupAi({
+  stack, assistant, manifest: resolveStackManifest(stack, assistant),
+  superpowersCmd: SUPERPOWERS[assistant], skillsInstalled,
+});
+// Un runner qui porte une identité git : le parcours NEUF fait `git init` + commit initial, et sans
+// ça le discriminant échouerait sur la machine de CI pour une raison qui n'a rien à voir.
+const GIT_ENV_ADOPT = {
+  ...process.env,
+  GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@vibecoding.local',
+  GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 'test@vibecoding.local',
+};
+const lancerSetupGit = (argv) => {
+  const cmd = [path.resolve('scripts/setup.mjs'), ...argv];
+  try { return { code: 0, out: String(execFileSync(process.execPath, cmd, { stdio: 'pipe', env: GIT_ENV_ADOPT })), err: '' }; }
+  catch (e) { return { code: e.status ?? 1, out: String(e.stdout ?? ''), err: String(e.stderr ?? '') }; }
+};
+
+test('adoption — le prompt du premier contact ne renvoie JAMAIS à `/new-project`', () => {
+  // `COLLE-MOI-DANS-L-IA.md` est le TOUT PREMIER texte lu. Sa dernière ligne dit « et maintenant ? ».
+  // Sur un projet adopté elle disait `/new-project` : fonder un PRD, une tech spec et un design
+  // par-dessus un projet qui a déjà son code — et l'utilisateur n'a aucun moyen de savoir que
+  // c'est le kit qui a tort.
+  for (const assistant of ASSISTANTS_TOUS) {
+    for (const skillsInstalled of [true, false]) {
+      const ou = `${assistant} · skills=${skillsInstalled}`;
+      const t = renderColleMoi({ assistant, stack: STACK_AUCUNE, skillsInstalled }).join('\n');
+      assert.doesNotMatch(t, /new-project/,
+        `${ou} : le prompt adopté envoie fonder un PRD par-dessus un projet qui a déjà son code`);
+      assert.match(t, /docs\/ETAT-DES-LIEUX\.md/,
+        `${ou} : la dernière ligne doit renvoyer à l'état des lieux — seul fichier qui apprend CE projet à l'IA`);
+      // Les deux gestes SANS OBJET : `aucune` ne déclare ni MCP ni plugin (0 et 0, mesuré).
+      assert.doesNotMatch(t, /autorise les MCP/,
+        `${ou} : aucun MCP n'est déclaré sur un projet adopté — le geste n'a pas d'objet`);
+      assert.doesNotMatch(t, /sections 2 et 5/,
+        `${ou} : ces numéros de section n'existent pas dans le A-FAIRE adopté — renvoi mort dès la 1re ligne`);
+    }
+  }
+
+  // ── LE DISCRIMINANT ─────────────────────────────────────────────────────────────────────────
+  // Sans lui, supprimer la ligne 5 pour TOUT LE MONDE rendrait la moitié du haut verte, et le
+  // parcours neuf perdrait sa seule indication de départ.
+  for (const assistant of ASSISTANTS_TOUS) {
+    const t = renderColleMoi({ assistant, stack: 'saas' }).join('\n');
+    assert.match(t, /new-project/,
+      `${assistant} : sur un projet NEUF, /new-project EST la bonne suite — elle doit rester`);
+    assert.doesNotMatch(t, /ETAT-DES-LIEUX/,
+      `${assistant} : un projet neuf n'a pas d'état des lieux à remplir`);
+  }
+});
+
+test('adoption — `renderColleMoi` sans `stack` JETTE au lieu de retomber sur le parcours neuf', () => {
+  // Une valeur par défaut aurait fait retomber un appelant distrait sur `/new-project` — EN
+  // SILENCE, et sur le premier texte lu. On échoue plutôt que de deviner.
+  assert.throws(() => renderColleMoi({ assistant: 'cursor' }), /stack/i,
+    'une `stack` absente doit être une erreur, pas un défaut silencieux');
+  try {
+    renderColleMoi({ assistant: 'cursor' });
+    assert.fail('aurait dû jeter');
+  } catch (e) {
+    assert.match(e.message, /new-project/,
+      'le message doit NOMMER le défaut qu\'il ferme, sinon le prochain appelant remettra un défaut');
+  }
+});
+
+test('adoption — le rapport final ne dit pas « Projet créé » sur un dépôt qui a déjà son histoire', () => {
+  // ⛔ C'était la DERNIÈRE phrase du rapport, imprimée sur un dépôt qui a parfois deux ans de
+  // commits. Le kit n'a rien créé là : il a posé son environnement À CÔTÉ du code existant.
+  const { dir } = projetExistant('rapport-cree');
+  const r = lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']);
+  assert.equal(r.code, 0, `--adopt doit rester un run valide : ${r.err}`);
+  assert.ok(!r.out.includes('Projet créé'),
+    'le rapport annonce « Projet créé » sur un projet que l\'utilisateur a écrit lui-même');
+  assert.match(r.out, /projet existant/i,
+    'et il doit DIRE ce qui s\'est vraiment passé : un environnement posé dans un projet existant');
+
+  // ── LE DISCRIMINANT ─────────────────────────────────────────────────────────────────────────
+  // Sans lui, supprimer la phrase des DEUX parcours passerait — et le parcours neuf perdrait la
+  // seule ligne qui dit où le projet a atterri.
+  const racine = fs.mkdtempSync(path.join(os.tmpdir(), 'neuf-rapport-'));
+  const neuf = lancerSetupGit(['--stack', 'saas', '--assistant', 'claude-code', '--project', path.join(racine, 'p'), '--no-skills', '--yes']);
+  assert.equal(neuf.code, 0, `le parcours neuf doit rester vert : ${neuf.err}`);
+  assert.ok(neuf.out.includes('Projet créé'),
+    'sur un projet NEUF, « Projet créé » est vrai — la phrase doit rester là où elle l\'est');
+});
+
+test('adoption — `/build` s\'ARRÊTE sans roadmap au lieu de scaffolder par-dessus un projet qui tourne', () => {
+  // `/build` est le runbook que le débutant lance en premier quand il ne sait plus quoi faire.
+  // Sans roadmap il enchaînait sur son « Jalon 0 » — les fichiers de fondation — DANS un projet
+  // qui a déjà les siens. Le garde est vérifié sur les DEUX copies : le plugin Cursor est livré
+  // tel quel, et une copie en retard est un projet écrasé.
+  for (const rel of ['templates/commands/build.md', 'cursor-plugin/commands/build.md']) {
+    const t = fs.readFileSync(path.resolve(rel), 'utf8');
+    const etape0 = t.split('\n').find((l) => l.startsWith('0.'));
+    assert.ok(etape0, `${rel} : aucune étape 0 — sans roadmap, /build enchaîne sur « Jalon 0 » et scaffolde par-dessus le projet`);
+    assert.match(etape0, /ROADMAP\.md/, `${rel} : l'étape 0 doit nommer le fichier dont l'ABSENCE la déclenche`);
+    assert.match(etape0, /scaffolde? rien|ne scaffolde/i, `${rel} : l'étape 0 doit INTERDIRE le scaffold, pas seulement signaler l'absence`);
+    assert.match(etape0, /\/next/, `${rel} : l'étape 0 doit renvoyer à /next, sinon elle laisse l'utilisateur sans suite`);
+    // « Jalon 0 » est nommément couvert : c'est l'étape qui posait les fichiers de fondation.
+    assert.match(etape0, /Jalon 0/, `${rel} : l'étape 0 doit dire que « Jalon 0 » lui-même ne s'applique pas`);
+  }
+});
+
+test('adoption — `/next` ne propose jamais `/new-project` à un projet qui a déjà son code', () => {
+  // L'étape 0 de `/build` renvoie à `/next`. Si `/next` propose `/new-project` dès que la roadmap
+  // manque, le défaut est intact — déplacé d'un cran, avec un détour qui le rend plus crédible.
+  for (const rel of ['templates/commands/next.md', 'cursor-plugin/commands/next.md']) {
+    const t = fs.readFileSync(path.resolve(rel), 'utf8');
+    assert.match(t, /ETAT-DES-LIEUX\.md/,
+      `${rel} : /next doit distinguer « projet adopté » de « rien n'existe » — les deux ont une roadmap absente`);
+    const branche = t.split('\n').find((l) => l.includes('ETAT-DES-LIEUX.md') && l.includes('new-project'));
+    assert.ok(branche, `${rel} : la branche adoptée doit statuer sur /new-project, pas l'ignorer`);
+    assert.match(branche, /jamais/i,
+      `${rel} : la branche adoptée doit INTERDIRE /new-project — le mentionner sans l'interdire laisse le choix à l'IA`);
+    // Et l'autre branche reste vivante : « rien n'existe encore » a toujours besoin de /new-project.
+    assert.match(t, /sinon.*new-project/is,
+      `${rel} : sur un dossier vide, /new-project reste la bonne réponse`);
+  }
+});
+
+test('adoption — `docs/DOMAINS.md` n\'est pas posé : un catalogue de 0 capacité n\'apprend rien', () => {
+  // ⛔ Le plan disait « vide : non posé » ; trois mesures indépendantes l'ont trouvé POSÉ
+  // (692 octets, 114 mots, catalogue vide, titré « Capacités métier — stack aucune »). `aucune` ne
+  // déclare aucun domaine, et la section d'`AGENTS.md` qui nommait ce fichier est retirée du bloc
+  // adopté : il sortait orphelin ET vide. Ce que le projet a à la place : `docs/ETAT-DES-LIEUX.md`.
+  const { dir } = projetExistant('domains');
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']).code, 0);
+  assert.ok(!fs.existsSync(path.join(dir, 'docs/DOMAINS.md')),
+    'docs/DOMAINS.md est posé sur un projet adopté : catalogue vide, cité par rien');
+  assert.ok(!fs.existsSync(path.join(dir, 'docs/DOMAINS.md.new')),
+    'ni en .new : un catalogue vide ne vaut pas mieux avec une autre extension');
+  assert.ok(fs.existsSync(path.join(dir, 'docs/ETAT-DES-LIEUX.md')),
+    'et ce qui le remplace doit bien être là');
+
+  // ── LE DISCRIMINANT ─────────────────────────────────────────────────────────────────────────
+  // Sur les 4 stacks offertes, DOMAINS.md porte un vrai catalogue : le supprimer partout viderait
+  // `/new-project` et `/build`, qui le lisent tous les deux.
+  const racine = fs.mkdtempSync(path.join(os.tmpdir(), 'neuf-domains-'));
+  const projet = path.join(racine, 'p');
+  assert.equal(lancerSetupGit(['--stack', 'saas', '--assistant', 'claude-code', '--project', projet, '--no-skills', '--yes']).code, 0);
+  const cat = path.join(projet, 'docs/DOMAINS.md');
+  assert.ok(fs.existsSync(cat), 'sur une stack OFFERTE, docs/DOMAINS.md DOIT rester posé');
+  assert.ok(fs.readFileSync(cat, 'utf8').split(/\s+/).length > 200,
+    'et porter un vrai catalogue — pas les 114 mots d\'un catalogue vide');
+});
+
+test('adoption — `docs/A-FAIRE.md` : numérotation contiguë, aucune section vide, aucun renvoi mort', () => {
+  // Trois des six sections sortaient VIDES sur un projet adopté (`aucune` ne déclare ni plugin, ni
+  // skill de stack, ni MCP) : « ## 3. MCP à autoriser » n'était qu'un titre suivi de RIEN. Et les
+  // sections restantes gardaient leur numéro d'origine — « ## 1. … ## 4. … » se lit comme un
+  // fichier tronqué, sur le seul fichier que le kit demande d'ouvrir.
+  for (const assistant of ASSISTANTS_TOUS) {
+    for (const skillsInstalled of [true, false]) {
+      const ou = `${assistant} · skills=${skillsInstalled}`;
+      const t = afaire(STACK_AUCUNE, assistant, skillsInstalled);
+      const lignes = t.split('\n');
+
+      const nums = lignes.filter((l) => /^## \d+\. /.test(l)).map((l) => Number(l.match(/^## (\d+)\./)[1]));
+      assert.ok(nums.length >= 3, `${ou} : trop peu de sections rendues (${nums.length})`);
+      assert.deepEqual(nums, nums.map((_, i) => i + 1),
+        `${ou} : la numérotation saute (${nums.join(', ')}) — le fichier se lit comme tronqué`);
+
+      // Aucune section titrée qui ne dise rien.
+      const titres = lignes.map((l, i) => [l, i]).filter(([l]) => /^#{2,3} /.test(l));
+      for (const [titre, i] of titres) {
+        const fin = titres.find(([, j]) => j > i)?.[1] ?? lignes.length;
+        const corps = lignes.slice(i + 1, fin).filter((l) => l.trim() !== '');
+        assert.ok(corps.length > 0, `${ou} : « ${titre} » est un titre suivi de rien`);
+      }
+
+      // Les renvois morts : tout ce qui suppose `/new-project`, une maquette ou un scaffold.
+      for (const mort of [/new-project/, /shadcnblocks/i, /Stitch/, /components\.json/, /07-scaffold/, /package\.json/]) {
+        assert.doesNotMatch(t, mort, `${ou} : ${mort} suppose un parcours qui ne sera pas joué ici`);
+      }
+      // Ce qui RESTE dû : le wizard installe les skills design sur TOUS les parcours, et la
+      // « Règle sous-agents » du bloc adopté les exige. Les taire ferait le renvoi mort inverse.
+      assert.match(t, /frontend-design/, `${ou} : les skills design sont installés et exigés — ils doivent être listés`);
+      assert.match(t, /docs\/ETAT-DES-LIEUX\.md/, `${ou} : le titre doit dire par où on continue ici`);
+    }
+  }
+});
+
+test('adoption — le saut de section est gardé par `aucune`, JAMAIS par « c\'est vide »', () => {
+  // ⛔ LE PIÈGE de la numérotation à la volée. Une règle « section vide → non rendue » aurait l'air
+  // plus simple et DÉPLACERAIT le parcours neuf : `saas`/`codex` a lui aussi ZÉRO plugin, et sa
+  // section 1 doit continuer de dire « aucun plugin dédié pour cet assistant » — sinon le débutant
+  // sous Codex croit que le kit a oublié une section.
+  assert.equal(resolveStackManifest('saas', 'codex').plugins.length, 0,
+    'le témoin de ce test DOIT être une section vide du parcours neuf — sinon il ne prouve rien');
+  const t = afaire('saas', 'codex');
+  assert.match(t, /^## 1\. Plugins$/m, 'saas/codex garde sa section « Plugins », vide mais DITE');
+  assert.match(t, /aucun plugin dédié/, 'et elle doit dire pourquoi elle est vide');
+
+  // Les 6 sections du parcours neuf, dans l'ordre, sur les 12 combinaisons.
+  for (const stack of ['saas', 'mobile', 'desktop', 'vitrine']) {
+    for (const assistant of ASSISTANTS_TOUS) {
+      const nums = afaire(stack, assistant).split('\n')
+        .filter((l) => /^## \d+\. /.test(l)).map((l) => Number(l.match(/^## (\d+)\./)[1]));
+      assert.deepEqual(nums, [1, 2, 3, 4, 5, 6],
+        `${stack}/${assistant} : le parcours neuf doit garder ses 6 sections numérotées 1…6`);
+    }
   }
 });

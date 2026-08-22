@@ -506,8 +506,13 @@ async function main() {
 
   console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, promesse, inAssistant: assets.inAssistant, skipped: cloneSkipped, failed }));
   if (failed.length) process.exitCode = 1; // rapport honnête : l'échec est visible aussi dans le code de sortie
-  console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
-  const promptLines = renderColleMoi({ assistant: args.assistant, skillsInstalled: !args.noSkills });
+  // ⛔ « Projet créé dans : … » était la DERNIÈRE phrase du rapport, imprimée sur un dépôt qui a
+  // parfois deux ans d'historique. Le kit n'a rien créé là : il a posé son environnement à côté du
+  // code existant, sans écraser un seul fichier — et c'est exactement ce que la ligne doit dire.
+  console.log('\n' + ok(estAdopte(args.stack)
+    ? `Config prête. Environnement installé dans un projet existant : ${projectDir}`
+    : `Config prête. Projet créé dans : ${projectDir}`, on));
+  const promptLines = renderColleMoi({ assistant: args.assistant, stack: args.stack, skillsInstalled: !args.noSkills });
   // Le prompt survit au terminal : écrit à la racine du projet, dans tous les modes.
   fs.writeFileSync(path.join(projectDir, 'COLLE-MOI-DANS-L-IA.md'), ['# À coller dans ton assistant IA', '', ...promptLines, ''].join('\n'));
   console.log('\n— Colle ce prompt dans ton assistant (aussi sauvé dans COLLE-MOI-DANS-L-IA.md) —\n');

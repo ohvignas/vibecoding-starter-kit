@@ -31,7 +31,11 @@ const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
 // Le NOM commercial de chaque assistant, tel qu'il apparaîtrait dans une note écrite pour lui.
 const LABELS = { cursor: /\bCursor\b/, 'claude-code': /\bClaude Code\b/, codex: /\bCodex\b/ };
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-const colleMoi = (assistant, skillsInstalled = true) => renderColleMoi({ assistant, skillsInstalled }).join('\n');
+// `stack` est OBLIGATOIRE pour `renderColleMoi` depuis que le prompt diffère sur un projet
+// ADOPTÉ (`aucune`) : une valeur par défaut dans la FONCTION aurait fait retomber un appelant
+// distrait sur `/new-project`. Ce fichier couvre le parcours NEUF, d'où le défaut `saas` ICI —
+// le rendu adopté a son propre garde (`adoption.test.mjs`).
+const colleMoi = (assistant, skillsInstalled = true, stack = 'saas') => renderColleMoi({ assistant, stack, skillsInstalled }).join('\n');
 const aFaire = (stack, assistant, skillsInstalled = true) => renderSetupAi({
   stack, assistant, manifest: resolveStackManifest(stack, assistant),
   superpowersCmd: SUPERPOWERS[assistant], skillsInstalled,
@@ -237,7 +241,7 @@ test('G8 — les 12 combinaisons : rien d\'inapplicable dans le premier contact'
   for (const stack of STACKS) {
     for (const assistant of ASSISTANTS) {
       vues++;
-      const textes = { 'COLLE-MOI': colleMoi(assistant), 'A-FAIRE': aFaire(stack, assistant), 'AGENTS.md': agentsMd(stack, assistant) };
+      const textes = { 'COLLE-MOI': colleMoi(assistant, true, stack), 'A-FAIRE': aFaire(stack, assistant), 'AGENTS.md': agentsMd(stack, assistant) };
       for (const [nom, txt] of Object.entries(textes)) {
         const ou = `${stack}/${assistant} · ${nom}`;
         if (assistant !== 'claude-code') assert.doesNotMatch(txt, /lance `?\/mcp`?/, `${ou} : /mcp inapplicable`);
