@@ -654,3 +654,50 @@ test('adoption — sur une stack OFFERTE, `--force` garde son sens sur docs/RUN.
   assert.ok(!fs.readFileSync(path.join(dir, 'docs/RUN.md'), 'utf8').includes('GRIBOUILLIS'),
     'stack offerte : --force doit toujours régénérer docs/RUN.md depuis le modèle de stack');
 });
+
+// Extrait les lignes d'une section du rapport (jusqu'à la ligne vide suivante).
+const sectionDuRapport = (sortie, titre) => {
+  const apres = sortie.split(titre)[1];
+  return apres === undefined ? null : apres.split('\n\n')[0];
+};
+
+test('adoption — sous `--force`, le rapport DIT que le drapeau a été écarté, et pourquoi', () => {
+  // ⛔ MESURÉ, et c'est pire qu'un silence. Le rapport a un seul bac « conservé », dont le titre
+  // annonce la raison. Sur le MÊME projet :
+  //   · sans `--force` : 25 lignes sous « Conservé (déjà présent — le kit n'écrase jamais tes
+  //     fichiers) », et le titre dit vrai pour les 25 ;
+  //   · avec `--force` : exactement DEUX lignes, sous le même titre INCHANGÉ.
+  // Or « déjà présent » n'est pas la raison de leur survie : les 23 autres étaient déjà présents
+  // aussi, et ont été écrasés. Les deux seules lignes qui ont écarté le drapeau de l'utilisateur
+  // s'affichaient comme si le drapeau n'avait jamais été tapé. Ni vrai, ni silencieux : FAUX.
+  const { dir } = projetExistant('rapportforce', { pkg: '{"name":"x","scripts":{"dev":"vite"}}' });
+  const argv = ['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills'];
+  assert.equal(lancerSetup(argv).code, 0);
+
+  const normal = lancerSetup(argv);
+  const force = lancerSetup([...argv, '--force']);
+  assert.equal(force.code, 0, `--force doit rester un run valide : ${force.err}`);
+
+  // ── LE RUN --force ──────────────────────────────────────────────────────────────────────────
+  for (const f of ['docs/ETAT-DES-LIEUX.md', 'docs/RUN.md']) {
+    assert.ok(force.out.includes(f), `${f} doit apparaître au rapport du run --force`);
+    const dejaPresent = sectionDuRapport(force.out, 'Conservé (déjà présent') ?? '';
+    assert.ok(!dejaPresent.includes(f),
+      `${f} est annoncé « déjà présent » alors que les autres fichiers déjà présents de ce run ont été ÉCRASÉS — la raison affichée est fausse`);
+  }
+  assert.match(force.out, /--force/, 'le rapport doit NOMMER le drapeau qu\'il a écarté');
+  assert.match(force.out, /promis|promesse/i, 'et DIRE pourquoi : le kit a promis de ne jamais régénérer ces fichiers');
+  // L'échappatoire, sinon « ignoré » se lit comme « cassé » par qui voulait vraiment repartir à neuf.
+  assert.match(force.out, /supprime/i, 'et dire comment repartir du gabarit, puisque --force ne le fera pas');
+
+  // ── LE DISCRIMINANT : un run NORMAL ne doit rien dire de tout ça ─────────────────────────────
+  // Sans cette moitié, une mention affichée EN PERMANENCE rendrait la moitié du haut verte pour la
+  // mauvaise raison — et ferait parler d'un drapeau que l'utilisateur n'a jamais tapé.
+  assert.equal(normal.code, 0);
+  assert.doesNotMatch(normal.out, /--force/, 'un run sans --force ne doit pas parler de --force');
+  const dejaPresentNormal = sectionDuRapport(normal.out, 'Conservé (déjà présent') ?? '';
+  for (const f of ['docs/ETAT-DES-LIEUX.md', 'docs/RUN.md']) {
+    assert.ok(dejaPresentNormal.includes(f),
+      `${f} : sans --force, « déjà présent » EST la bonne raison — elle doit rester là où elle est vraie`);
+  }
+});

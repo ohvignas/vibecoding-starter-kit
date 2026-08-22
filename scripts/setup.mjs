@@ -130,6 +130,9 @@ async function main() {
   if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }
 
   const done = [], kept = [], failed = [];
+  // Les fichiers que `--force` n'a PAS écrasés parce que le kit a promis de ne jamais les
+  // régénérer. Bac séparé : leur raison de survivre n'est pas « déjà présent » (voir report.mjs).
+  const promesse = [];
   const opt = { force: args.force };
   // 3 états honnêtes : créé (done) / conservé (kept, déjà présent, jamais écrasé) / échec (failed).
   const track = (label, res) => { (res.status === 'copied' ? done : kept).push(label); };
@@ -273,7 +276,16 @@ async function main() {
   // On passe donc `{}` et non `opt` : `--force` ne gouverne pas ce fichier. Qui veut repartir du
   // gabarit le supprime — c'est un geste, pas un effet de bord.
   if (estAdopte(args.stack)) {
-    try { trackDir('docs/ETAT-DES-LIEUX.md (à remplir par l\'IA, en premier)', copyDirIfAbsent(path.join(args.source, 'templates/adoption'), path.join(projectDir, 'docs'), {})); }
+    // TROIS ISSUES, TROIS PHRASES VRAIES — le rapport ne donne jamais la raison d'une autre :
+    //   · posé maintenant  → « à remplir par l'IA » (il est vide, il n'y a rien dedans à protéger) ;
+    //   · déjà là, sans `--force` → « déjà présent », la raison ordinaire, et elle est exacte ;
+    //   · déjà là, AVEC `--force` → le drapeau a été écarté, et c'est une autre raison : bac à part.
+    try {
+      const res = copyDirIfAbsent(path.join(args.source, 'templates/adoption'), path.join(projectDir, 'docs'), {});
+      if (res.some((r) => r.status === 'copied')) done.push('docs/ETAT-DES-LIEUX.md (à remplir par l\'IA, en premier)');
+      else if (args.force) promesse.push('docs/ETAT-DES-LIEUX.md — tes réponses aux « À DÉTERMINER » sont dedans');
+      else kept.push('docs/ETAT-DES-LIEUX.md (à remplir par l\'IA, en premier)');
+    }
     catch (e) { failed.push(`docs/ETAT-DES-LIEUX.md (${e.message})`); }
   }
 
@@ -391,7 +403,8 @@ async function main() {
       }
       fs.writeFileSync(runPath, contenu);
       done.push(estAdopte(args.stack) ? 'docs/RUN.md (relevé dans ton package.json)' : 'docs/RUN.md');
-    } else kept.push('docs/RUN.md');
+    } else if (args.force && estAdopte(args.stack)) promesse.push('docs/RUN.md — tes corrections aux commandes relevées sont dedans');
+    else kept.push('docs/RUN.md');
   } catch (e) { failed.push(`run (${e.message})`); }
 
   // Parité : chaque assistant reçoit les 7 agents dans SON dossier natif.
@@ -491,7 +504,7 @@ async function main() {
     } catch (e) { failed.push(`skills stack (${e.message})`); }
   }
 
-  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: cloneSkipped, failed }));
+  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, promesse, inAssistant: assets.inAssistant, skipped: cloneSkipped, failed }));
   if (failed.length) process.exitCode = 1; // rapport honnête : l'échec est visible aussi dans le code de sortie
   console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
   const promptLines = renderColleMoi({ assistant: args.assistant, skillsInstalled: !args.noSkills });
