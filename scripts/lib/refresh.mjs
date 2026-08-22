@@ -28,15 +28,32 @@ export function refreshProject({ source, projectDir, manifest, dryRun = false })
   // d'avant la mémorisation) = `true`, exactement le défaut du scaffold.
   const learning = manifest.learning !== false;
   const fresh = renderAgentsFile({ source, stack, assistant, commandsDir, learning });
+  // ── DEUX TEMPS : ON VALIDE LES DEUX FICHIERS, PUIS ON ÉCRIT LES DEUX ───────────────────────
+  //
+  // `mergeManagedSection` JETTE sur des marqueurs dépareillés (perte de texte mesurée —
+  // managed-section.mjs), et ce refus est le bon comportement : `skipped` n'est destructuré NULLE
+  // PART (ni `setup.mjs --refresh`, ni `update.mjs`), donc y ranger le refus le rendrait invisible.
+  //
+  // ⛔ MAIS EN UN SEUL TEMPS, LE REFUS ARRIVAIT TROP TARD. Mesuré, avec un `AGENTS.md` périmé et un
+  // `CLAUDE.md` abîmé : AGENTS.md était RÉÉCRIT, puis le `throw` tombait sur CLAUDE.md et emportait
+  // `changed` avec lui. L'utilisateur lisait « Rien n'a été écrit » + exit 1, et retrouvait
+  // AGENTS.md modifié dans son `git status`. Rien de PERDU (cette écriture est un refresh légitime
+  // et idempotent), mais une opération non atomique annoncée comme un échec total — dans un outil
+  // dont la règle affichée est « dis ce que tu as fait ».
+  //
+  // La validation remonte donc AVANT la première écriture : soit les deux fichiers passent, soit
+  // aucun n'est touché.
+  const aFusionner = [];
   for (const name of ['AGENTS.md', 'CLAUDE.md']) {
     const dest = path.join(projectDir, name);
     if (!fs.existsSync(dest)) { skipped.push(`${name} (absent)`); continue; }
     const existing = fs.readFileSync(dest, 'utf8');
+    // Le NOM est passé pour le message de refus : un projet a DEUX de ces fichiers.
+    // « Erreur de fusion » sans le nom envoie chercher dans les deux.
+    aFusionner.push({ name, dest, existing, merged: mergeManagedSection(existing, fresh, name) });
+  }
+  for (const { name, dest, existing, merged } of aFusionner) {
     if (!existing.includes(MARK_START_PREFIX)) migrated.push(name); // vieux projet : bloc préfixé, ancien contenu conservé dessous
-    // Le NOM est passé pour le message de refus : un projet a DEUX de ces fichiers, et
-    // `mergeManagedSection` jette sur des marqueurs dépareillés (perte de texte mesurée —
-    // managed-section.mjs). « Erreur de fusion » sans le nom envoie chercher dans les deux.
-    const merged = mergeManagedSection(existing, fresh, name);
     if (merged !== existing) { if (!dryRun) fs.writeFileSync(dest, merged); changed.push(name); }
   }
   for (const { from, to, transform, concat = [] } of kitOwnedFiles(stack, assistant)) {

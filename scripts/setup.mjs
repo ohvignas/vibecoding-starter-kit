@@ -263,8 +263,17 @@ async function main() {
   // NI dans `kitOwnedFiles` NI dans `kitOwnedGenerated`. Ce que l'IA y écrit (et ce que
   // l'utilisateur y corrige) est le compte rendu de SON projet : un `--refresh` qui le régénérerait
   // remettrait des « À DÉTERMINER » par-dessus des réponses.
+  //
+  // ⛔ INSENSIBLE À `--force` — ET C'EST LA PROMESSE ELLE-MÊME QUI L'EXIGE. Le gabarit écrit noir
+  // sur blanc « le kit ne régénère jamais ce fichier ». Mesuré avant ce garde : l'utilisateur
+  // répondait aux « À DÉTERMINER », relançait `--adopt --force`, et ses réponses étaient écrasées —
+  // sans `.bak`, avec un « ✅ » au rapport, PENDANT que `docs/A-FAIRE.md` était protégé par un
+  // `.new` au même instant. L'inversion était le défaut : sous `--force`, les fichiers du KIT
+  // étaient ménagés et le travail écrit À LA MAIN était détruit.
+  // On passe donc `{}` et non `opt` : `--force` ne gouverne pas ce fichier. Qui veut repartir du
+  // gabarit le supprime — c'est un geste, pas un effet de bord.
   if (estAdopte(args.stack)) {
-    try { trackDir('docs/ETAT-DES-LIEUX.md (à remplir par l\'IA, en premier)', copyDirIfAbsent(path.join(args.source, 'templates/adoption'), path.join(projectDir, 'docs'), opt)); }
+    try { trackDir('docs/ETAT-DES-LIEUX.md (à remplir par l\'IA, en premier)', copyDirIfAbsent(path.join(args.source, 'templates/adoption'), path.join(projectDir, 'docs'), {})); }
     catch (e) { failed.push(`docs/ETAT-DES-LIEUX.md (${e.message})`); }
   }
 
@@ -361,7 +370,11 @@ async function main() {
   // l'utilisateur corrige, pas un rendu du kit.
   try {
     const runPath = path.join(projectDir, 'docs/RUN.md');
-    if (!fs.existsSync(runPath) || args.force) {
+    // `--force` régénère ce fichier SUR LES 4 STACKS OFFERTES (c'est un rendu du kit, il ne promet
+    // rien), mais JAMAIS sur un projet adopté : là, il porte « c'est ton fichier : le kit ne le
+    // régénère jamais » et les réponses que l'utilisateur a écrites sous « ce que le kit n'a PAS pu
+    // déterminer ». Mesuré avant ce garde : `--adopt --force` les effaçait sans `.bak`.
+    if (!fs.existsSync(runPath) || (args.force && !estAdopte(args.stack))) {
       ensureDir(path.dirname(runPath));
       let contenu;
       if (estAdopte(args.stack)) {

@@ -602,3 +602,55 @@ test('adoption — la porte de consentement DIT quels fichiers vont être rééc
   assert.match(vuALaQuestion, /CLAUDE\.md/, 'et l\'autre aussi : Claude Code le lit en priorité');
   assert.match(vuALaQuestion, /marqueur/i, 'et la FRONTIÈRE (les marqueurs) : c\'est elle qui rend la promesse vérifiable');
 });
+
+// --- CORRECTION 1 : `--force` ne peut pas démentir une promesse écrite dans le fichier ---------
+
+test('adoption — `--force` ne détruit PAS les deux fichiers qui promettent le contraire', () => {
+  // ⛔ MESURÉ : l'utilisateur répond aux questions de `docs/RUN.md` et `docs/ETAT-DES-LIEUX.md`,
+  // relance `--adopt --force`, et ses réponses sont ÉCRASÉES — sans `.bak`, et avec un rapport qui
+  // affiche « ✅ » comme pour une création. Au même instant, `docs/A-FAIRE.md` est protégé
+  // (« ✅ docs/A-FAIRE.md.new (ton A-FAIRE.md est conservé) ») et `AGENTS.md` l'est aussi (fusion).
+  //
+  // L'INVERSION EST LE DÉFAUT : sous `--force`, les fichiers du kit sont ménagés et le travail
+  // écrit À LA MAIN par l'utilisateur est détruit. Ces deux fichiers-ci portent en toutes lettres
+  // « le kit ne régénère jamais ce fichier » — la promesse est neuve (tâche 6), et elle était fausse.
+  const { dir } = projetExistant('force', { pkg: '{"name":"x","scripts":{"dev":"vite"}}' });
+  const argv = ['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills'];
+  assert.equal(lancerSetup(argv).code, 0);
+
+  const REPONSES = {
+    'docs/RUN.md': '\nMA RÉPONSE : on lance avec `pnpm dev`, port 5173.\n',
+    'docs/ETAT-DES-LIEUX.md': '\nMA RÉPONSE : ce projet est un back Fastify, pas un front.\n',
+  };
+  for (const [rel, reponse] of Object.entries(REPONSES)) {
+    const p = path.join(dir, rel);
+    // La PROMESSE et le COMPORTEMENT sont vérifiés ensemble : si quelqu'un retire un jour la
+    // phrase du gabarit, ce test le dit ici plutôt que de laisser les deux diverger en silence.
+    // Les deux fichiers formulent la promesse un peu différemment (« le kit ne régénère jamais ce
+    // fichier » · « c'est ton fichier : le kit ne le régénère jamais ») : la regex vise ce qu'ils
+    // promettent, pas une tournure. Retirer la phrase de l'un des deux fait rougir ici.
+    assert.match(fs.readFileSync(p, 'utf8'), /ne (le )?régénère jamais/,
+      `${rel} : la promesse doit être écrite dans le fichier — c'est elle qui lui donne sa valeur`);
+    fs.appendFileSync(p, reponse);
+  }
+
+  assert.equal(lancerSetup([...argv, '--force']).code, 0, `--force doit rester un run valide`);
+
+  for (const [rel, reponse] of Object.entries(REPONSES)) {
+    assert.ok(fs.readFileSync(path.join(dir, rel), 'utf8').includes(reponse.trim()),
+      `${rel} : --force a détruit une réponse écrite à la main, dans un fichier qui promet l'inverse`);
+  }
+});
+
+test('adoption — sur une stack OFFERTE, `--force` garde son sens sur docs/RUN.md', () => {
+  // Contrôle symétrique : rendre `docs/RUN.md` insensible à `--force` PARTOUT changerait le
+  // parcours neuf. Sur les 4 stacks offertes, ce fichier est un rendu du kit (modèle de stack) et
+  // ne promet rien : `--force` doit continuer à le régénérer.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'forceneuf-'));
+  const argv = ['--stack', 'saas', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes'];
+  assert.equal(lancerSetup(argv).code, 0);
+  fs.appendFileSync(path.join(dir, 'docs/RUN.md'), '\nGRIBOUILLIS\n');
+  assert.equal(lancerSetup([...argv, '--force']).code, 0);
+  assert.ok(!fs.readFileSync(path.join(dir, 'docs/RUN.md'), 'utf8').includes('GRIBOUILLIS'),
+    'stack offerte : --force doit toujours régénérer docs/RUN.md depuis le modèle de stack');
+});

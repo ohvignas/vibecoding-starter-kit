@@ -16,6 +16,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { renderAgentsFile } from './agents-file.mjs';
 import { AGENTS_DIR } from './kit-owned.mjs';
+import { MARK_START_PREFIX } from './managed-section.mjs';
 
 const ASSISTANTS = ['claude-code', 'codex', 'cursor'];
 const STACKS_OFFERTES = ['saas', 'mobile', 'desktop', 'vitrine'];
@@ -148,13 +149,24 @@ test('renvois morts — le rendu des 4 stacks offertes garde ses renvois', () =>
 test('renvois morts — chaque `docs/…` cité par le bloc adopté existe VRAIMENT après --adopt', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'renvois-'));
   fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"deja-la","scripts":{"dev":"vite"}}');
+  // ⛔ UN `AGENTS.md` PRÉEXISTANT, ET C'EST TOUT LE MONTAGE. Sans lui, le fichier est CRÉÉ et le
+  // chemin de FUSION n'est jamais exercé — mesuré : la mutation « setup.mjs ne fusionne plus,
+  // retour au .new » laissait ce test VERT, alors qu'il prétendait couvrir le fichier livré. Un
+  // projet existant a presque toujours son AGENTS.md : c'est le cas nominal, pas un cas limite.
+  const PERSO = '# Mes règles à moi\n\n- **pnpm, pas npm.**\n';
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), PERSO);
   execFileSync(process.execPath, [
     path.resolve('scripts/setup.mjs'), '--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills',
   ], { stdio: 'pipe' });
 
   const livre = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
-  // On relève dans le fichier RÉELLEMENT LIVRÉ, pas dans un rendu rejoué : si la fusion perdait le
-  // bloc en route, ce test le verrait, alors qu'un `renderAgentsFile()` en mémoire ne le pourrait pas.
+  // Montage : c'est bien le fichier FUSIONNÉ qu'on relève, pas un fichier fraîchement créé. Si la
+  // méthode repartait en `.new`, `livre` ne serait que les règles perso et tout ce qui suit
+  // tomberait — c'est ce qui rend le relevé ci-dessous une mesure du fichier RÉELLEMENT livré,
+  // et pas d'un `renderAgentsFile()` rejoué en mémoire.
+  assert.ok(livre.includes('- **pnpm, pas npm.**'), 'montage : les règles perso doivent avoir survécu à la fusion');
+  assert.ok(livre.includes(MARK_START_PREFIX), 'montage : le bloc du kit doit être DANS le fichier livré, pas à côté dans un .new');
+  assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md.new')), 'montage : un .new signifie que la méthode n\'est pas installée');
   const cites = [...new Set([...livre.matchAll(/docs\/[A-Za-z0-9_./-]+/g)].map((m) => m[0].replace(/[.,;:)]+$/, '')))].sort();
   // Montage : un relevé vide rendrait le contrôle vrai à vide. Mesuré, le bloc adopté en cite 8.
   assert.ok(cites.length >= 6, `montage : seulement ${cites.length} chemins docs/ relevés — le bloc livré est vide ou tronqué`);
