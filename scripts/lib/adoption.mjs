@@ -161,3 +161,33 @@ export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assist
 
   return { assistant };
 }
+
+// ── LE GLOSSAIRE, ET POURQUOI IL A BESOIN DE SA PROPRE ADAPTATION ─────────────────────────────
+//
+// `docs/glossaire.md` est une COPIE STATIQUE (`guides/glossaire.md`, setup.mjs) : ni le rendu
+// d'AGENTS.md ni `SUBSTITUTIONS_ADOPTE` ne l'atteignent. Son entrée « Domaine » renvoyait à
+// `docs/DOMAINS.md` — que le parcours adopté ne pose plus (environment.mjs) — et au PRD, qu'il ne
+// pose pas davantage. Or ce fichier est au BOUT de la chaîne que le kit met le plus en avant :
+//   COLLE-MOI (« /help … c'est le seul à retenir ») → help.md (« un mot qui bloque ? glossaire »)
+//   → glossaire.md (« Le kit les liste dans `docs/DOMAINS.md` »)
+// Retirer le catalogue sans toucher à cette phrase échange le fichier orphelin contre son miroir —
+// la citation sans fichier — c'est-à-dire exactement le grief qui justifie de le retirer.
+//
+// Même discipline que `SUBSTITUTIONS_ADOPTE` : la phrase source est citée EN ENTIER, et son absence
+// JETTE. Une substitution qui rate en silence laisse le renvoi mort, et personne ne l'apprend.
+const GLOSSAIRE_DOMAINE_DE = 'Le kit les liste dans `docs/DOMAINS.md` et l\'IA **pioche selon le PRD**. *Ex. : PRD parle d\'« abonnement » → domaine paiement.*';
+const GLOSSAIRE_DOMAINE_VERS = 'Ton projet a déjà les siennes, et le kit n\'en pose aucun catalogue ici : c\'est `docs/ETAT-DES-LIEUX.md` qui relève ce qui tourne déjà. *Ex. : ton code encaisse des paiements → dis-le dans l\'état des lieux.*';
+
+export function adapterGlossaireAdopte(texte) {
+  if (!texte.includes(GLOSSAIRE_DOMAINE_DE)) {
+    throw new Error([
+      'guides/glossaire.md : la phrase à adapter pour un projet adopté a changé — introuvable :',
+      `  « ${GLOSSAIRE_DOMAINE_DE.slice(0, 60)}… »`,
+      '',
+      'Sans adaptation, le glossaire d\'un projet adopté renvoie à `docs/DOMAINS.md`, que le',
+      'parcours ne pose pas — et c\'est `/help` qui y mène. Mets à jour GLOSSAIRE_DOMAINE_DE',
+      '(scripts/lib/adoption.mjs).',
+    ].join('\n'));
+  }
+  return texte.replace(GLOSSAIRE_DOMAINE_DE, GLOSSAIRE_DOMAINE_VERS);
+}

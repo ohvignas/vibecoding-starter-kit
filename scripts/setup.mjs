@@ -10,7 +10,7 @@ import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
 import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook, runbookConcatene } from './lib/commands-list.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS } from './lib/matrix.mjs';
-import { estAdopte, STACK_AUCUNE, entreesDuProjet, renderInventaire, peutDemanderAdoption, erreursAdoption, erreursAdoptionNonInteractive, runAdoptWizard } from './lib/adoption.mjs';
+import { estAdopte, adapterGlossaireAdopte, STACK_AUCUNE, entreesDuProjet, renderInventaire, peutDemanderAdoption, erreursAdoption, erreursAdoptionNonInteractive, runAdoptWizard } from './lib/adoption.mjs';
 import { renderColleMoi } from './lib/colle-moi.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
@@ -304,8 +304,17 @@ async function main() {
   // `docs/A-FAIRE.md` était l'autre option, et le Lot G l'interdit à raison (parcours.test.mjs
   // G5) : renvoyer vers un fichier absent, c'est le renvoi mort qu'on vient de retirer. On crée
   // donc le fichier, et `/help` (l'entrée) y mène.
-  try { track('docs/glossaire.md (le vocabulaire, hors ligne)', copyIfAbsent(path.join(args.source, 'guides/glossaire.md'), path.join(projectDir, 'docs/glossaire.md'), opt)); }
-  catch (e) { failed.push(`docs/glossaire.md (${e.message})`); }
+  // ⛔ SUR UN PROJET ADOPTÉ, LA COPIE TELLE QUELLE POSE UN RENVOI MORT. L'entrée « Domaine »
+  // renvoie à `docs/DOMAINS.md`, que ce parcours ne pose pas (environment.mjs) — et le glossaire
+  // est justement le bout de la chaîne que `/help` met en avant. Copie statique : aucune des
+  // substitutions du rendu AGENTS.md ne l'atteint, il lui faut la sienne.
+  try {
+    const glossaire = path.join(projectDir, 'docs/glossaire.md');
+    const source = path.join(args.source, 'guides/glossaire.md');
+    track('docs/glossaire.md (le vocabulaire, hors ligne)', estAdopte(args.stack)
+      ? writeIfAbsent(glossaire, adapterGlossaireAdopte(fs.readFileSync(source, 'utf8')), opt)
+      : copyIfAbsent(source, glossaire, opt));
+  } catch (e) { failed.push(`docs/glossaire.md (${e.message})`); }
 
   if (args.assistant === 'cursor') {
     try {

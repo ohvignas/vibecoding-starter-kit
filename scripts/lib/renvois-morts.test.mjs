@@ -167,10 +167,31 @@ test('renvois morts — chaque `docs/…` cité par le bloc adopté existe VRAIM
   assert.ok(livre.includes('- **pnpm, pas npm.**'), 'montage : les règles perso doivent avoir survécu à la fusion');
   assert.ok(livre.includes(MARK_START_PREFIX), 'montage : le bloc du kit doit être DANS le fichier livré, pas à côté dans un .new');
   assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md.new')), 'montage : un .new signifie que la méthode n\'est pas installée');
-  const cites = [...new Set([...livre.matchAll(/docs\/[A-Za-z0-9_./-]+/g)].map((m) => m[0].replace(/[.,;:)]+$/, '')))].sort();
+  // ── LE PÉRIMÈTRE, ET POURQUOI IL S'ARRÊTE LÀ ────────────────────────────────────────────────
+  // Ce test ne lisait QUE le bloc d'AGENTS.md. Mesuré : `docs/glossaire.md` cite lui aussi
+  // `docs/DOMAINS.md`, et il est au bout de la chaîne que le kit met le plus en avant —
+  // COLLE-MOI (« /help … c'est le seul à retenir ») → help.md (« un mot qui bloque ? le
+  // glossaire ») → glossaire.md. Le renvoi y est resté MORT sans qu'un seul test bronche.
+  //
+  // On balaye donc la DOCUMENTATION livrée : les deux fichiers qu'on tend au lecteur pour qu'il
+  // les LISE. Les runbooks de `.claude/commands/` restent dehors, et ce n'est pas un oubli : ils
+  // cochent des fichiers qu'ils CRÉENT eux-mêmes (`docs/PRD.md`, `docs/ROADMAP.md`…). Les citer
+  // avant de les produire est leur fonctionnement normal, pas un renvoi mort — et les deux qui
+  // comptaient ici (`/build`, `/next`) sont déjà gardés ailleurs (adoption.test.mjs).
+  const SOURCES = {
+    'AGENTS.md (bloc fusionné)': livre,
+    'docs/glossaire.md': fs.readFileSync(path.join(dir, 'docs/glossaire.md'), 'utf8'),
+  };
+  const releve = (txt) => [...new Set([...txt.matchAll(/docs\/[A-Za-z0-9_./-]+/g)].map((m) => m[0].replace(/[.,;:)`]+$/, '')))];
+  const parSource = Object.fromEntries(Object.entries(SOURCES).map(([nom, txt]) => [nom, releve(txt).sort()]));
+  const cites = [...new Set(Object.values(parSource).flat())].sort();
   // Montage : un relevé vide rendrait le contrôle vrai à vide. Mesuré, le bloc adopté en cite 8.
-  assert.ok(cites.length >= 6, `montage : seulement ${cites.length} chemins docs/ relevés — le bloc livré est vide ou tronqué`);
+  assert.ok(parSource['AGENTS.md (bloc fusionné)'].length >= 6,
+    `montage : seulement ${parSource['AGENTS.md (bloc fusionné)'].length} chemins docs/ relevés — le bloc livré est vide ou tronqué`);
   assert.ok(cites.includes('docs/ETAT-DES-LIEUX.md'), 'montage : le renvoi que ce test existe pour couvrir a disparu du rendu');
+  // Montage du SECOND balayage : sans lui, supprimer le glossaire du périmètre passerait inaperçu.
+  assert.ok(parSource['docs/glossaire.md'].length >= 2,
+    `montage : ${parSource['docs/glossaire.md'].length} chemins docs/ relevés dans le glossaire — il est vide, tronqué, ou plus livré`);
 
   // LA SEULE EXCEPTION, et elle est PROUVÉE plus bas, pas décrétée : `docs/agents/crew/` n'est pas
   // un renvoi mais une LÉGENDE — la phrase de `subagents-rule.md` énumère les dossiers d'agents des
@@ -181,11 +202,13 @@ test('renvois morts — chaque `docs/…` cité par le bloc adopté existe VRAIM
     'l\'exception ne tient que tant que la légende dit vrai : si Codex change de dossier, cette ligne devient un vrai renvoi mort');
 
   const morts = cites.filter((c) => c !== LEGENDE && !fs.existsSync(path.join(dir, c)));
+  const ou = (m) => Object.entries(parSource).filter(([, l]) => l.includes(m)).map(([nom]) => nom).join(', ');
   assert.deepEqual(morts, [], [
-    'Le bloc livré dans un projet ADOPTÉ renvoie vers des fichiers que `--adopt` ne pose pas :',
-    ...morts.map((m) => `  ${m}`),
+    'La documentation livrée dans un projet ADOPTÉ renvoie vers des fichiers que `--adopt` ne pose pas :',
+    ...morts.map((m) => `  ${m}   ← cité par ${ou(m)}`),
     '',
     'Un renvoi mort est relu à CHAQUE message. Soit le parcours pose le fichier (setup.mjs), soit',
-    'la phrase est substituée (SUBSTITUTIONS_ADOPTE, agents-file.mjs) — jamais laissée en l\'état.',
+    'la phrase est substituée — SUBSTITUTIONS_ADOPTE (agents-file.mjs) pour le bloc AGENTS.md,',
+    'adapterGlossaireAdopte (adoption.mjs) pour le glossaire. Jamais laissée en l\'état.',
   ].join('\n'));
 });

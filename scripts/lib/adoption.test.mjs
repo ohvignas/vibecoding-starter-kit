@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { STACK_AUCUNE, estAdopte, estProjetExistant, entreesDuProjet, runAdoptWizard, peutDemanderAdoption, erreursAdoption } from './adoption.mjs';
+import { STACK_AUCUNE, estAdopte, adapterGlossaireAdopte, estProjetExistant, entreesDuProjet, runAdoptWizard, peutDemanderAdoption, erreursAdoption } from './adoption.mjs';
 import { renderAgentsFile, adapterAuProjetAdopte } from './agents-file.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
 import { choisirMode, needsWizard } from './wizard.mjs';
@@ -912,6 +912,76 @@ test('adoption — le saut de section est gardé par `aucune`, JAMAIS par « c\'
         .filter((l) => /^## \d+\. /.test(l)).map((l) => Number(l.match(/^## (\d+)\./)[1]));
       assert.deepEqual(nums, [1, 2, 3, 4, 5, 6],
         `${stack}/${assistant} : le parcours neuf doit garder ses 6 sections numérotées 1…6`);
+    }
+  }
+});
+
+// ── LE GLOSSAIRE : LE RENVOI MORT QUE LE RETRAIT DE `DOMAINS.md` A CRÉÉ ───────────────────────
+// ⛔ TROUVÉ EN REVUE, et c'est le motif même que ce chantier traque. Retirer `docs/DOMAINS.md`
+// supprime le fichier orphelin et le remplace par son MIROIR : la citation sans fichier. Quatre
+// fichiers livrés le citaient ; trois sont neutralisés (l'étape 0 arrête `/build` avant son point
+// 2, et les deux autres appartiennent à `/new-project`, que `/next` et `/build` interdisent). Le
+// quatrième, `docs/glossaire.md`, ne l'était par RIEN — et c'est le bout de la chaîne que le kit
+// met le plus en avant : COLLE-MOI (« /help … le seul à retenir ») → help.md → glossaire.md.
+// Mesuré : le correctif retiré, la suite COMPLÈTE restait verte (506/506).
+
+test('adoption — le glossaire livré ne renvoie plus à `docs/DOMAINS.md`, que le parcours ne pose pas', () => {
+  const { dir } = projetExistant('glossaire');
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']).code, 0);
+  const glo = path.join(dir, 'docs/glossaire.md');
+  assert.ok(fs.existsSync(glo), 'montage : le glossaire doit être livré, sinon ce test est vrai à vide');
+  const t = fs.readFileSync(glo, 'utf8');
+  assert.doesNotMatch(t, /docs\/DOMAINS\.md/,
+    '`/help` mène au glossaire, qui renvoie à un `docs/DOMAINS.md` que --adopt ne pose pas');
+  // Et il DIT ce qui remplace le catalogue, au lieu de laisser l'entrée sans suite.
+  assert.match(t, /Domaine \(capacité métier\)/, 'l\'entrée doit rester : le mot est toujours à définir');
+  assert.match(t, /docs\/ETAT-DES-LIEUX\.md/, 'et pointer ce qui, ici, relève ce qui tourne déjà');
+
+  // ── LE DISCRIMINANT ─────────────────────────────────────────────────────────────────────────
+  // Retirer la phrase de `guides/glossaire.md` pour TOUT LE MONDE passerait ce test et viderait
+  // l'entrée du parcours neuf, où `docs/DOMAINS.md` existe et est le bon renvoi.
+  const racine = fs.mkdtempSync(path.join(os.tmpdir(), 'neuf-glo-'));
+  const projet = path.join(racine, 'p');
+  assert.equal(lancerSetupGit(['--stack', 'saas', '--assistant', 'claude-code', '--project', projet, '--no-skills', '--yes']).code, 0);
+  const neuf = fs.readFileSync(path.join(projet, 'docs/glossaire.md'), 'utf8');
+  assert.match(neuf, /Le kit les liste dans `docs\/DOMAINS\.md`/,
+    'sur une stack OFFERTE, le catalogue existe — le renvoi doit rester intact');
+  assert.ok(fs.existsSync(path.join(projet, 'docs/DOMAINS.md')), 'et pointer un fichier bien présent');
+});
+
+test('adoption — si la phrase source du glossaire bouge, l\'adaptation JETTE au lieu de rater en silence', () => {
+  // Même discipline que SUBSTITUTIONS_ADOPTE. Une substitution qui ne trouve pas sa cible et se
+  // contente de rendre le texte inchangé RÉINSTALLE le renvoi mort, sans que personne l'apprenne.
+  assert.throws(() => adapterGlossaireAdopte('# Glossaire\n\n- **Domaine** — une brique.\n'),
+    /phrase à adapter/i, 'une phrase source absente doit être une erreur, pas un texte rendu tel quel');
+  try {
+    adapterGlossaireAdopte('rien à voir');
+    assert.fail('aurait dû jeter');
+  } catch (e) {
+    assert.match(e.message, /DOMAINS\.md/, 'le message doit nommer le renvoi qui redeviendrait mort');
+    assert.match(e.message, /adoption\.mjs/, 'et dire où le réparer');
+  }
+  // Le témoin : sur le fichier RÉEL, la phrase est là et l'adaptation la trouve.
+  const reel = fs.readFileSync(path.resolve('guides/glossaire.md'), 'utf8');
+  assert.doesNotMatch(adapterGlossaireAdopte(reel), /docs\/DOMAINS\.md/,
+    'montage : sur la source réelle, l\'adaptation doit bel et bien retirer le renvoi');
+});
+
+test('parité neuf — la FORME de docs/A-FAIRE.md est gardée, pas seulement son contenu', () => {
+  // ⛔ RELEVÉ EN REVUE : la parité à l'octet du parcours neuf était MESURÉE, jamais GARDÉE.
+  // Retirer le `L.push('')` de tête de `sousSection` (setup-ai.mjs) faisait bouger 24 rendus sur
+  // 48 — et laissait 506/506 verts. Le contenu était tenu (neutraliser les `if (!adopte)` fait
+  // rougir 4 tests) ; la mise en page ne l'était par rien. En Markdown, un titre non précédé
+  // d'une ligne vide ne devient pas toujours un titre : c'est une régression de RENDU, pas un
+  // détail cosmétique.
+  for (const stack of ['saas', 'mobile', 'desktop', 'vitrine']) {
+    for (const assistant of ASSISTANTS_TOUS) {
+      const lignes = afaire(stack, assistant).split('\n');
+      for (const [i, l] of lignes.entries()) {
+        if (i === 0 || !/^#{2,3} /.test(l)) continue;
+        assert.equal(lignes[i - 1], '',
+          `${stack}/${assistant} : « ${l} » n'est pas précédé d'une ligne vide — le Markdown peut ne plus le rendre comme un titre`);
+      }
     }
   }
 });
