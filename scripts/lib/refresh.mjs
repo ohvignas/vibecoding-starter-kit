@@ -33,7 +33,10 @@ export function refreshProject({ source, projectDir, manifest, dryRun = false })
     if (!fs.existsSync(dest)) { skipped.push(`${name} (absent)`); continue; }
     const existing = fs.readFileSync(dest, 'utf8');
     if (!existing.includes(MARK_START_PREFIX)) migrated.push(name); // vieux projet : bloc préfixé, ancien contenu conservé dessous
-    const merged = mergeManagedSection(existing, fresh);
+    // Le NOM est passé pour le message de refus : un projet a DEUX de ces fichiers, et
+    // `mergeManagedSection` jette sur des marqueurs dépareillés (perte de texte mesurée —
+    // managed-section.mjs). « Erreur de fusion » sans le nom envoie chercher dans les deux.
+    const merged = mergeManagedSection(existing, fresh, name);
     if (merged !== existing) { if (!dryRun) fs.writeFileSync(dest, merged); changed.push(name); }
   }
   for (const { from, to, transform, concat = [] } of kitOwnedFiles(stack, assistant)) {

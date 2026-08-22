@@ -9,7 +9,8 @@ import { renderAgentsFile, adapterAuProjetAdopte } from './agents-file.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
 import { choisirMode, needsWizard } from './wizard.mjs';
 import { resolveAssets } from './matrix.mjs';
-import { kitOwnedFiles } from './kit-owned.mjs';
+import { kitOwnedFiles, kitOwnedGenerated } from './kit-owned.mjs';
+import { MARK_START_PREFIX, MARK_END } from './managed-section.mjs';
 
 test('adoption — `aucune` est une valeur de stack légale', () => {
   assert.equal(STACK_AUCUNE, 'aucune');
@@ -328,4 +329,276 @@ test('adoption — `--adopt --backend nawak` : exit 1, et rien de persisté', ()
   assert.match(r.err, /backend/);
   assert.ok(!fs.existsSync(path.join(dir, '.vibecoding.json')), 'une valeur refusée ne doit pas atterrir dans le manifeste');
   assert.ok(!fs.existsSync(path.join(dir, 'AGENTS.md')));
+});
+
+// --- Tâche 6 : LA FUSION, ET LES DEUX FICHIERS ÉCRITS ------------------------------------------
+//
+// Tout ce qui précède rend `aucune` légale et `--adopt` atteignable. Il restait le trou qui vidait
+// le chantier de son sens : `setup.mjs` REFUSE d'écrire par-dessus un `AGENTS.md` existant et pond
+// un `AGENTS.md.new` que personne n'ouvre. Sur un projet existant — le seul cas où `--adopt` sert —
+// la méthode n'arrivait donc JAMAIS dans le fichier que l'IA relit à chaque message.
+
+// Un projet qui ressemble à ce qu'on adopte pour de vrai : du code, des règles perso, un dépôt git
+// avec un commit — sans quoi `git status` n'a rien à dire et l'assertion de non-modification est
+// vraie à vide.
+function projetExistant(nom, { agents, claude, pkg } = {}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `${nom}-`));
+  fs.writeFileSync(path.join(dir, 'package.json'), pkg ?? '{"name":"deja-la","scripts":{"dev":"vite","test":"vitest run"}}');
+  fs.mkdirSync(path.join(dir, 'src'));
+  fs.writeFileSync(path.join(dir, 'src/index.js'), 'console.log(1)\n');
+  if (agents) fs.writeFileSync(path.join(dir, 'AGENTS.md'), agents);
+  if (claude) fs.writeFileSync(path.join(dir, 'CLAUDE.md'), claude);
+  const git = (...a) => execFileSync('git', ['-C', dir, ...a], { stdio: 'pipe' });
+  git('init', '-b', 'main');
+  git('config', 'user.email', 'test@exemple.fr');
+  git('config', 'user.name', 'Test');
+  git('add', '-A');
+  git('commit', '--no-verify', '-m', 'avant le kit');
+  return { dir, git };
+}
+
+// Les règles perso, ligne à ligne. « pnpm, pas npm » est l'exemple qui compte : c'est une consigne
+// que le kit CONTREDIT (il écrit `npm run` partout) — si la fusion la perd, l'IA repart sur npm
+// dans un projet pnpm, et personne ne saura pourquoi.
+const REGLES_PERSO = [
+  '# Mes règles à moi',
+  '',
+  '- **pnpm, pas npm.** Toujours. Le lockfile est à nous.',
+  '- Les composants vont dans `src/ui/`, jamais ailleurs.',
+  '- On ne pousse jamais sur `main` directement.',
+];
+
+test('adoption — la fusion préserve les règles perso dans AGENTS.md ET CLAUDE.md', () => {
+  // Projet avec un AGENTS.md perso, SANS CLAUDE.md : les deux trous en un seul run.
+  const { dir, git } = projetExistant('fusion', { agents: REGLES_PERSO.join('\n') + '\n' });
+  const r = lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']);
+  assert.equal(r.code, 0, `--adopt doit réussir : ${r.err}`);
+
+  for (const nom of ['AGENTS.md', 'CLAUDE.md']) {
+    const p = path.join(dir, nom);
+    assert.ok(fs.existsSync(p), `${nom} doit exister — Claude Code lit CLAUDE.md en priorité, et refresh.mjs ne le crée jamais`);
+    const t = fs.readFileSync(p, 'utf8');
+    // 1. Le bloc du kit est LÀ, et il est DÉLIMITÉ : sans marqueurs, `--refresh` ne saura plus
+    //    quoi remplacer et repartira en « migration douce », c'est-à-dire en doublon.
+    assert.ok(t.includes(MARK_START_PREFIX), `${nom} : pas de marqueur d'ouverture — la méthode n'est pas installée`);
+    assert.ok(t.includes(MARK_END), `${nom} : pas de marqueur de fermeture`);
+    // 2. Et c'est bien LA MÉTHODE qui est dedans, pas une coquille : une règle nommée, pas un
+    //    comptage d'octets qu'un fichier vide entre marqueurs satisferait.
+    assert.match(t, /^## .*Règle Preuve/m, `${nom} : le bloc ne porte pas les règles standing`);
+  }
+
+  // 3. Les règles perso survivent LIGNE À LIGNE dans AGENTS.md — pas « le fichier n'est pas vide » :
+  //    la perte mesurée sur ce chemin est PARTIELLE (managed-section.test.mjs), donc un contrôle
+  //    global la rate.
+  const agents = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+  for (const ligne of REGLES_PERSO.filter(Boolean)) {
+    assert.ok(agents.includes(ligne), `AGENTS.md a perdu une ligne perso : « ${ligne} »`);
+  }
+
+  // 4. Aucun `.new` : c'était TOUT le défaut. Un `.new` posé à côté, c'est la méthode non installée.
+  for (const nom of ['AGENTS.md.new', 'CLAUDE.md.new', 'AGENTS.md.bak', 'CLAUDE.md.bak']) {
+    assert.ok(!fs.existsSync(path.join(dir, nom)), `${nom} ne doit pas exister : sur --adopt on FUSIONNE, on ne dépose pas à côté`);
+  }
+
+  // 5. `git status` : rien de ce qui appartient à l'utilisateur n'est modifié. AGENTS.md l'est —
+  //    c'est le fichier consenti, et il porte désormais le bloc. Tout le reste doit être intact.
+  const modifies = String(git('status', '--porcelain'))
+    .split('\n').filter((l) => /^.M|^M/.test(l)).map((l) => l.slice(3));
+  assert.deepEqual(modifies.sort(), ['AGENTS.md'],
+    `le kit a modifié des fichiers qui ne sont pas à lui : ${modifies.join(', ')}`);
+});
+
+test('adoption — CLAUDE.md préexistant est fusionné lui aussi, pas doublé', () => {
+  // Le cas symétrique : les deux fichiers sont là, chacun avec SES règles. Une fusion qui ne
+  // traiterait que le premier laisserait Claude Code sur un CLAUDE.md sans méthode — et c'est
+  // exactement le fichier qu'il lit en premier.
+  const { dir } = projetExistant('fusion2', {
+    agents: '# A\nRÈGLE-AGENTS\n',
+    claude: '# C\nRÈGLE-CLAUDE\n',
+  });
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']).code, 0);
+  const a = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+  const c = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+  assert.match(a, /RÈGLE-AGENTS/); assert.match(c, /RÈGLE-CLAUDE/);
+  assert.match(a, /^## .*Règle Preuve/m); assert.match(c, /^## .*Règle Preuve/m);
+  // Un seul bloc par fichier : deux marqueurs d'ouverture = deux jeux de règles relus à chaque
+  // message, dont un périmé au premier `--refresh`.
+  assert.equal(a.split(MARK_START_PREFIX).length - 1, 1, 'AGENTS.md doit porter UN seul bloc');
+  assert.equal(c.split(MARK_START_PREFIX).length - 1, 1, 'CLAUDE.md doit porter UN seul bloc');
+});
+
+test('adoption — rejouer `--adopt` ne duplique rien (le second passage est une mise à jour)', () => {
+  const { dir } = projetExistant('rejoue', { agents: REGLES_PERSO.join('\n') + '\n' });
+  const argv = ['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills'];
+  assert.equal(lancerSetup(argv).code, 0);
+  const apres1 = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+  assert.equal(lancerSetup(argv).code, 0);
+  const apres2 = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+  assert.equal(apres2, apres1, 'un second --adopt doit être un no-op sur AGENTS.md, pas un empilement');
+});
+
+test('adoption — un marqueur orphelin fait REFUSER la fusion : exit 1, fichier intact à l\'octet', () => {
+  // Le cas de la spec : « il a recopié des MORCEAUX d'un `AGENTS.md.new` ». Un morceau, c'est un
+  // marqueur d'ouverture sans sa fermeture. La fusion n'a alors aucune zone à remplacer.
+  const perso = [
+    '# Mes règles à moi',
+    '- **pnpm, pas npm.**',
+    'Collé du .new : <!-- vibecoding:start — bloc généré -->',
+    'CE PARAGRAPHE EST À MOI ET IL DOIT SURVIVRE',
+    'Et cette ligne aussi.',
+  ].join('\n') + '\n';
+  const { dir } = projetExistant('orphelin', { agents: perso });
+  const r = lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']);
+
+  // 1. Le fichier n'a pas bougé d'UN OCTET. C'est la seule assertion qui compte vraiment ici.
+  assert.equal(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8'), perso, 'un refus ne doit RIEN écrire');
+  // 2. Le refus est DIT, et il nomme le fichier — l'utilisateur en a deux, « erreur de fusion »
+  //    tout seul l'enverrait chercher dans les deux.
+  //    ⛔ ANCRÉ SUR `AGENTS.md:<ligne>`, pas sur « AGENTS.md » tout seul : le nom apparaît déjà
+  //    dans le préfixe que `setup.mjs` colle devant (`${name} — NON installé : …`), donc une
+  //    assertion sur le nom nu reste verte même si le message de fusion, lui, retombe sur son
+  //    libellé par défaut (« le fichier »). Mutation mesurée : retirer le `name` passé à
+  //    `mergeManagedSection` laissait 40/40 verts. C'est la LIGNE qui prouve que le refus sait de
+  //    quel fichier il parle.
+  const sortie = r.out + r.err;
+  assert.match(sortie, /AGENTS\.md:\d+ —/, 'le refus doit nommer le fichier ET la ligne fautive');
+  assert.match(sortie, /D[ÉE]PAREILL/i, 'et dire POURQUOI il refuse');
+  // 3. Et il sort en 1 : un refus qui sortirait en 0 se ferait enchaîner comme une réussite.
+  assert.equal(r.code, 1, 'un fichier non installé ne peut pas sortir en 0');
+  // 4. Le reste de l'installation n'est PAS annulé pour autant : le refus porte sur un fichier,
+  //    pas sur le run. CLAUDE.md, lui, n'avait pas de marqueur fautif — il doit être là.
+  assert.ok(fs.existsSync(path.join(dir, 'CLAUDE.md')), 'un fichier refusé ne doit pas emporter l\'autre');
+});
+
+test('adoption — le morceau collé À CÔTÉ d\'un vrai bloc : c\'est là que du texte se perdait', () => {
+  // ⛔ LE CAS QUI PERD, et il ne ressemble pas au précédent : le fichier a un `start` ET un `end`,
+  // dans le bon ordre. Il en a juste DEUX starts. Un garde écrit « start sans end → jeter » (la
+  // formulation du brief) reste vert dessus — mesuré, c'est ce qui a fait compter les marqueurs.
+  //
+  // La séquence est celle d'un vrai utilisateur, jouée pour de vrai : il adopte (le kit pose son
+  // bloc), puis il colle un morceau de marqueur dans SA zone au-dessus, puis il rejoue `--adopt`.
+  const { dir } = projetExistant('orphelin2', { agents: '# Mes règles\n- pnpm, pas npm.\n' });
+  const argv = ['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills'];
+  assert.equal(lancerSetup(argv).code, 0, 'le premier passage doit réussir : c\'est lui qui pose le vrai bloc');
+
+  const apres1 = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+  // Le morceau collé AU-DESSUS du vrai bloc, dans sa zone à lui.
+  const abime = `Collé du .new : <!-- vibecoding:start — bloc généré -->\nCE PARAGRAPHE EST À MOI ET IL DOIT SURVIVRE\n\n${apres1}`;
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), abime);
+
+  const r = lancerSetup(argv);
+  assert.equal(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8'), abime,
+    'sans refus, `slice` efface du marqueur collé jusqu\'au premier `end` — CE PARAGRAPHE compris');
+  assert.equal(r.code, 1);
+  assert.match(r.out + r.err, /AGENTS\.md/);
+});
+
+// --- Les deux fichiers écrits d'observation ----------------------------------------------------
+
+test('adoption — `docs/ETAT-DES-LIEUX.md` est posé : le renvoi d\'AGENTS.md n\'est plus mort', () => {
+  // ⛔ LE DÉFAUT CENTRAL DU CHANTIER. La tâche 3 fait citer `docs/ETAT-DES-LIEUX.md` par le rendu
+  // adopté (SUBSTITUTIONS_ADOPTE, entrée verifyRule : « lance l'app (voir `docs/ETAT-DES-LIEUX.md`) »)
+  // alors que le fichier n'existait NULLE PART. Mesuré avant cette tâche : `--adopt` ne le posait
+  // pas. C'est le renvoi mort que tout ce chantier existe pour supprimer, recréé par le chantier.
+  const { dir } = projetExistant('etat');
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']).code, 0);
+  const etat = path.join(dir, 'docs/ETAT-DES-LIEUX.md');
+  assert.ok(fs.existsSync(etat), 'docs/ETAT-DES-LIEUX.md : cité par AGENTS.md, il DOIT être posé');
+  const t = fs.readFileSync(etat, 'utf8');
+  // Le gabarit porte les 5 rubriques de la spec (décision 4) — dont la dernière, qui est la
+  // raison d'être du fichier : ce que l'IA n'a pas su déterminer doit avoir un endroit où être dit,
+  // sinon elle comble le trou en inventant.
+  for (const rubrique of [/technos/i, /structure/i, /lance/i, /teste/i, /pas su d[ée]terminer/i]) {
+    assert.match(t, rubrique, `le gabarit doit porter la rubrique ${rubrique}`);
+  }
+  // Semé UNE FOIS, jamais régénéré — même modèle que docs/APPRENTISSAGE.md : ce que l'IA y écrit
+  // appartient à l'utilisateur. Un `--refresh` qui l'écraserait détruirait l'état des lieux, donc
+  // il n'est NI dans `kitOwnedFiles` NI dans `kitOwnedGenerated` (les deux tables que refresh relit).
+  const regenerables = [...kitOwnedFiles('aucune', 'claude-code'), ...kitOwnedGenerated('aucune', 'claude-code', {})].map((x) => x.to);
+  assert.ok(!regenerables.includes('docs/ETAT-DES-LIEUX.md'),
+    '--refresh ne doit JAMAIS réécrire l\'état des lieux : il est rempli par l\'IA, il est à l\'utilisateur');
+  assert.ok(!regenerables.includes('docs/RUN.md'),
+    'docs/RUN.md adopté est une OBSERVATION, pas un rendu du kit : --refresh le régénérerait depuis un modèle de stack inexistant');
+  // Et il n'est pas écrasé au second passage.
+  fs.writeFileSync(etat, t + '\nMA NOTE À MOI\n');
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']).code, 0);
+  assert.match(fs.readFileSync(etat, 'utf8'), /MA NOTE À MOI/, 'un second passage ne doit pas écraser l\'état des lieux');
+});
+
+test('adoption — `docs/RUN.md` est relevé dans le package.json, pas copié d\'un modèle de stack', () => {
+  // ⛔ Mesuré par la spec (décision 4) : sur le projet réel, `templates/run/<stack>.md` produisait
+  // « Lancer l'app — SaaS (Convex + TanStack Start) · `npx convex dev` » dans un projet qui n'a ni
+  // Convex ni TanStack. Le seul fichier qu'un débutant ouvre pour lancer son app lui mentait.
+  const { dir } = projetExistant('run', { pkg: '{"name":"x","scripts":{"dev":"vite","test":"vitest run","build":"tsc -b"}}' });
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']).code, 0);
+  const t = fs.readFileSync(path.join(dir, 'docs/RUN.md'), 'utf8');
+  // Les scripts RÉELS, avec ce qu'ils lancent : le nom seul ne dit pas ce que fait `dev`.
+  for (const attendu of ['npm run dev', 'vite', 'npm run test', 'vitest run', 'npm run build', 'tsc -b']) {
+    assert.ok(t.includes(attendu), `docs/RUN.md doit relever « ${attendu} » du package.json`);
+  }
+  // Et RIEN d'une stack qu'on n'a pas prouvée.
+  for (const invente of ['convex', 'Convex', 'TanStack', 'Expo', 'Astro', 'Electron']) {
+    assert.ok(!t.includes(invente), `docs/RUN.md invente « ${invente} » : aucune stack n'est revendiquée sur un projet adopté`);
+  }
+});
+
+test('adoption — sans package.json, `docs/RUN.md` le DIT au lieu d\'inventer', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'runvide-'));
+  fs.writeFileSync(path.join(dir, 'index.html'), '<h1>site</h1>');
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'cursor', '--project', dir, '--no-skills']).code, 0);
+  const t = fs.readFileSync(path.join(dir, 'docs/RUN.md'), 'utf8');
+  assert.match(t, /package\.json/, 'le fichier doit dire CE QU\'IL A CHERCHÉ');
+  assert.match(t, /pas trouv|aucune commande|n'ai rien relev/i, 'et dire qu\'il n\'a rien trouvé');
+  // Zéro commande inventée : pas un seul `npm run <x>` sorti de nulle part.
+  assert.ok(!/`npm run \w/.test(t), 'aucune commande ne doit être inventée quand rien n\'a été relevé');
+});
+
+test('adoption — le gestionnaire de paquets suit le lockfile OBSERVÉ, pas npm par défaut', () => {
+  // « pnpm, pas npm » n'est pas qu'une règle perso : le lockfile est sur le disque, donc c'est une
+  // OBSERVATION. Écrire `npm run dev` dans un projet pnpm, c'est la première commande que
+  // l'utilisateur copie — et elle casse son lockfile.
+  const { dir } = projetExistant('pnpm', { pkg: '{"name":"x","scripts":{"dev":"vite"}}' });
+  fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n');
+  assert.equal(lancerSetup(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills']).code, 0);
+  const t = fs.readFileSync(path.join(dir, 'docs/RUN.md'), 'utf8');
+  assert.ok(t.includes('pnpm run dev'), 'le lockfile pnpm est observable : la commande doit être pnpm');
+  // ⛔ `'pnpm run dev'.includes('npm run dev')` est VRAI (« p-npm run dev ») : la première version
+  // de cette assertion rougissait sur un rendu correct. Il faut une frontière, sinon le contrôle
+  // ne peut PAS distinguer les deux commandes qu'il est censé opposer.
+  assert.doesNotMatch(t, /(?<!p)npm run dev/, 'et surtout PAS npm — c\'est la commande qui casse le lockfile');
+});
+
+// --- Le parcours NEUF ne doit pas bouger d'un octet ---------------------------------------------
+
+test('adoption — sur une stack OFFERTE, un AGENTS.md existant part toujours en .new (rien n\'a bougé)', () => {
+  // La fusion est réservée au parcours adopté. Sur les 4 stacks offertes, le contrat d'origine
+  // tient : on n'écrase pas, on dépose à côté. Ce test est le filet du « ne bouge pas d'un octet » —
+  // sans lui, élargir la fusion à tout le monde passerait inaperçu.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'neuf-'));
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), 'MES RÈGLES\n');
+  assert.equal(lancerSetup(['--stack', 'saas', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes']).code, 0);
+  assert.equal(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8'), 'MES RÈGLES\n', 'stack offerte : l\'AGENTS.md existant n\'est pas touché');
+  assert.ok(fs.existsSync(path.join(dir, 'AGENTS.md.new')), 'stack offerte : la nouvelle version part en .new');
+  // Et son docs/RUN.md vient toujours du modèle de stack, pas d'une observation.
+  assert.match(fs.readFileSync(path.join(dir, 'docs/RUN.md'), 'utf8'), /convex/i, 'saas : docs/RUN.md doit rester le modèle de la stack');
+  assert.ok(!fs.existsSync(path.join(dir, 'docs/ETAT-DES-LIEUX.md')), 'une stack offerte n\'a pas d\'état des lieux à faire');
+});
+
+test('adoption — la porte de consentement DIT quels fichiers vont être réécrits', async () => {
+  // « Montre, puis demande. » Depuis la fusion (tâche 6), répondre oui ne pose plus seulement des
+  // fichiers neufs : ça réécrit deux fichiers qui existent déjà. Consentir à « installer la
+  // méthode » sans savoir lesquels, ce n'est pas consentir à ce qui se passe.
+  const { out, texte } = capture();
+  // ⛔ L'ORDRE ne se lit PAS dans le texte capturé : la question passe par `ask`, jamais par `out`.
+  // Une première version comparait deux `indexOf` dans `texte()` — la question n'y étant pas,
+  // elle rougissait sur un ordre pourtant correct. On mesure donc l'ordre RÉEL : ce qui avait été
+  // écrit à l'instant où la question a été posée.
+  let vuALaQuestion = null;
+  const ask = async (q) => { if (/Installer/.test(q) && vuALaQuestion === null) vuALaQuestion = texte(); return 'n'; };
+  await runAdoptWizard(ask, false, out, { projectDir: '/tmp/mon-app', entrees: ['AGENTS.md', 'src'] });
+
+  assert.ok(vuALaQuestion !== null, 'montage : la question de consentement n\'a pas été posée');
+  assert.match(vuALaQuestion, /AGENTS\.md/, 'le fichier fusionné doit être NOMMÉ avant la question');
+  assert.match(vuALaQuestion, /CLAUDE\.md/, 'et l\'autre aussi : Claude Code le lit en priorité');
+  assert.match(vuALaQuestion, /marqueur/i, 'et la FRONTIÈRE (les marqueurs) : c\'est elle qui rend la promesse vérifiable');
 });

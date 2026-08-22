@@ -22,7 +22,8 @@ import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
 import { choisirMode, buildArgsFromAnswers, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
-import { renderRunDoc } from './lib/run-doc.mjs';
+import { renderRunDoc, renderRunDocObserve } from './lib/run-doc.mjs';
+import { mergeManagedSection } from './lib/managed-section.mjs';
 import { supportsColor, ok } from './lib/ui.mjs';
 
 // Racine du kit = dossier parent de scripts/ — fiable quel que soit le cwd de lancement
@@ -144,6 +145,32 @@ async function main() {
   // Jamais écraser un fichier existant : la nouvelle version part en .new, signalée dans le rapport.
   for (const name of ['AGENTS.md', 'CLAUDE.md']) {
     const dest = path.join(projectDir, name);
+    // ── PARCOURS ADOPTÉ : ON FUSIONNE, ON NE DÉPOSE PAS À CÔTÉ ────────────────────────────────
+    //
+    // ⛔ LE TROU QUI VIDAIT LE PARCOURS DE SON SENS. Sur un projet existant — le SEUL cas où
+    // `--adopt` sert — il y a presque toujours un `AGENTS.md`. La branche `.new` ci-dessous le
+    // conservait et déposait la méthode dans `AGENTS.md.new`, un fichier que rien n'ouvre et
+    // qu'aucun assistant ne lit. Le kit s'installait, le rapport disait « conservé », et la
+    // méthode n'arrivait JAMAIS dans le fichier relu à chaque message.
+    //
+    // La fusion remplace le bloc ENTRE MARQUEURS et ne touche à rien d'autre : c'est la même
+    // opération que `--refresh` fait depuis toujours, et elle tient la promesse écrite dans la
+    // question de consentement (« rien ne sera écrasé »). Un fichier ABSENT tombe dans le `else`
+    // plus bas et est CRÉÉ — c'est ce qui bouche le trou de `CLAUDE.md` (refresh.mjs le SAUTE
+    // quand il est absent, alors que Claude Code le lit en priorité).
+    //
+    // POURQUOI MÊME SOUS `--force` : sur ce parcours, la fusion est strictement moins destructrice
+    // que l'écrasement, et « rien ne sera écrasé » n'est pas une promesse à drapeau. `--force`
+    // garde son sens partout ailleurs.
+    if (estAdopte(args.stack) && fs.existsSync(dest)) {
+      try {
+        // Jette sur des marqueurs dépareillés (perte de texte mesurée — managed-section.mjs).
+        // Le refus porte sur CE fichier : l'autre continue, et le rapport sort en exit 1.
+        fs.writeFileSync(dest, mergeManagedSection(fs.readFileSync(dest, 'utf8'), agents, name));
+        done.push(`${name} (bloc du kit fusionné — ton texte hors marqueurs est intact)`);
+      } catch (e) { failed.push(`${name} — NON installé : ${e.message}`); }
+      continue;
+    }
     if (fs.existsSync(dest) && args.force) {
       // --force écrase, mais JAMAIS sans filet : l'ancien fichier (et les règles perso qu'il
       // contient) est sauvegardé à côté avant d'être remplacé.
@@ -223,6 +250,22 @@ async function main() {
   if (args.learning !== false) {
     try { trackDir('docs/', copyDirIfAbsent(path.join(args.source, 'templates/apprentissage'), path.join(projectDir, 'docs'), opt)); }
     catch (e) { failed.push(`docs/APPRENTISSAGE.md (${e.message})`); }
+  }
+
+  // L'ÉTAT DES LIEUX — la première page de la mémoire d'un projet adopté.
+  //
+  // ⛔ Il n'est pas optionnel : le rendu `AGENTS.md` d'un projet adopté le CITE (agents-file.mjs,
+  // SUBSTITUTIONS_ADOPTE, entrée verifyRule : « lance l'app (voir `docs/ETAT-DES-LIEUX.md`) »).
+  // Sans ce bloc, cette phrase est un renvoi mort relu à chaque message — mesuré, et exactement la
+  // classe de défaut que le parcours adopté existe pour supprimer.
+  //
+  // Même modèle que le carnet d'apprentissage ci-dessus : semé UNE FOIS par `copyDirIfAbsent`,
+  // NI dans `kitOwnedFiles` NI dans `kitOwnedGenerated`. Ce que l'IA y écrit (et ce que
+  // l'utilisateur y corrige) est le compte rendu de SON projet : un `--refresh` qui le régénérerait
+  // remettrait des « À DÉTERMINER » par-dessus des réponses.
+  if (estAdopte(args.stack)) {
+    try { trackDir('docs/ETAT-DES-LIEUX.md (à remplir par l\'IA, en premier)', copyDirIfAbsent(path.join(args.source, 'templates/adoption'), path.join(projectDir, 'docs'), opt)); }
+    catch (e) { failed.push(`docs/ETAT-DES-LIEUX.md (${e.message})`); }
   }
 
   // Templates que /new-project OUVRE au lieu de les recopier dans son propre texte (Lot D9) :
@@ -307,21 +350,36 @@ async function main() {
   }
   // docs/RUN.md est RENDU (modèle de la stack + notes backend/Codex) par une source unique —
   // la même que `--refresh` réutilise, sinon le refresh ne saurait pas reproduire ce qu'on écrit ici.
-  // Sur `aucune`, aucun modèle de stack à rendre : le fichier sera écrit par l'analyse (tâche 6)
-  // ou restera absent.
-  if (!estAdopte(args.stack)) {
-    try {
-      const runPath = path.join(projectDir, 'docs/RUN.md');
-      if (!fs.existsSync(runPath) || args.force) {
-        ensureDir(path.dirname(runPath));
-        fs.writeFileSync(runPath, renderRunDoc({
+  //
+  // SUR UN PROJET ADOPTÉ, IL EST ÉCRIT D'OBSERVATION — jamais d'un modèle de stack.
+  // ⛔ Mesuré (spec, décision 4) : `templates/run/<stack>.md` a produit « Lancer l'app — SaaS
+  // (Convex + TanStack Start) · `npx convex dev` » dans un projet qui n'avait ni l'un ni l'autre.
+  // Le seul fichier qu'un débutant ouvre pour lancer son app lui mentait, avec l'autorité du kit.
+  // Ce qu'on écrit ici est donc RELEVÉ dans son `package.json` (et son lockfile) ; ce qui n'a pas
+  // pu l'être est dit tel quel, jamais remplacé par une supposition (`renderRunDocObserve`).
+  // Comme l'état des lieux, il n'est PAS régénérable (kit-owned.mjs) : c'est une observation que
+  // l'utilisateur corrige, pas un rendu du kit.
+  try {
+    const runPath = path.join(projectDir, 'docs/RUN.md');
+    if (!fs.existsSync(runPath) || args.force) {
+      ensureDir(path.dirname(runPath));
+      let contenu;
+      if (estAdopte(args.stack)) {
+        // La lecture est ici (le rendu, lui, est pur) : un `package.json` illisible ou absent est
+        // un CAS, pas une panne — `renderRunDocObserve` sait le dire.
+        let pkg = null;
+        try { pkg = fs.readFileSync(path.join(projectDir, 'package.json'), 'utf8'); } catch { pkg = null; }
+        contenu = renderRunDocObserve({ pkg, fichiers: entreesDuProjet(projectDir) });
+      } else {
+        contenu = renderRunDoc({
           template: fs.readFileSync(path.join(args.source, `templates/run/${args.stack}.md`), 'utf8'),
           stack: args.stack, assistant: args.assistant, backend: args.backend,
-        }));
-        done.push('docs/RUN.md');
-      } else kept.push('docs/RUN.md');
-    } catch (e) { failed.push(`run (${e.message})`); }
-  }
+        });
+      }
+      fs.writeFileSync(runPath, contenu);
+      done.push(estAdopte(args.stack) ? 'docs/RUN.md (relevé dans ton package.json)' : 'docs/RUN.md');
+    } else kept.push('docs/RUN.md');
+  } catch (e) { failed.push(`run (${e.message})`); }
 
   // Parité : chaque assistant reçoit les 7 agents dans SON dossier natif.
   // Cursor ne comprend que name/description/model/readonly → frontmatter transformé (toCursorAgent).

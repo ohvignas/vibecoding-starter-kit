@@ -140,9 +140,15 @@ export function kitOwnedGenerated(stack, assistant, { home = os.homedir(), backe
       render: (_prev, tpl) => `${tpl.replace(/\s*$/, '\n')}${preCommitCheckLine(m.checks.preCommit)}\n`,
     },
     { to: MCP_FILE(assistant), policy: 'merge', render: (prev) => mergeMcpConfig(prev, expandMcpCommands(m.mcp, home)) },
-    {
+    // `docs/RUN.md` — SEULEMENT pour les 4 stacks offertes. Sur un projet adopté, ce fichier n'est
+    // pas un rendu du kit mais une OBSERVATION du projet (`renderRunDocObserve`, run-doc.mjs) :
+    // le kit n'a ni modèle (`templates/run/aucune.md` n'existe pas, et n'aurait aucun sens) ni le
+    // droit de réécrire ce que l'utilisateur a corrigé. Le laisser ici le faisait partir en
+    // « non régénérable » à chaque `--refresh` — silencieux, puisque `skipped` n'est affiché nulle
+    // part sur ce chemin. On ne le prétend donc pas régénérable.
+    ...(estAdopte(stack) ? [] : [{
       to: 'docs/RUN.md', from: `templates/run/${stack}.md`, policy: 'new',
       render: (_prev, tpl) => renderRunDoc({ template: tpl, stack, assistant, backend }),
-    },
+    }]),
   ];
 }

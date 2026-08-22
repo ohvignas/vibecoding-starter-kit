@@ -10,7 +10,12 @@
 // ne pose pas — et le rendu des 4 stacks OFFERTES ne doit rien perdre au passage.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { renderAgentsFile } from './agents-file.mjs';
+import { AGENTS_DIR } from './kit-owned.mjs';
 
 const ASSISTANTS = ['claude-code', 'codex', 'cursor'];
 const STACKS_OFFERTES = ['saas', 'mobile', 'desktop', 'vitrine'];
@@ -29,11 +34,12 @@ const GARDES = ['Règle Preuve', 'Règle Réalité', 'Règle de vérification', 
 //
 //  · `docs/ETAT-DES-LIEUX.md` — une substitution de la tâche 3 (SUBSTITUTIONS_ADOPTE,
 //    agents-file.mjs, entrée verifyRule) y renvoie déjà, mais le fichier n'existe qu'après
-//    `--adopt` (tâche 6 : `templates/adoption/ETAT-DES-LIEUX.md`, pas encore écrit). Mesuré : un
-//    scaffold `--stack aucune` nu ne le pose PAS. Le lister ici ferait rougir ce garde pour un
-//    renvoi qui n'est mort que sur le chemin bas niveau, jamais sur le chemin nominal (`--adopt`)
-//    — hors périmètre de cette tâche. LA TÂCHE 6 DOIT LE SAVOIR : ce garde ne couvre pas encore ce
-//    fichier ; si `--adopt` ne finit pas par le poser, rien ici ne le détectera.
+//    `--adopt` (tâche 6 : `templates/adoption/ETAT-DES-LIEUX.md`). Mesuré : un scaffold
+//    `--stack aucune` nu ne le pose PAS. Le lister ici ferait rougir ce garde pour un renvoi qui
+//    n'est mort que sur le chemin bas niveau, jamais sur le chemin nominal (`--adopt`).
+//    ✅ FERMÉ PAR LA TÂCHE 6 — mais pas ici : par le troisième test de ce fichier, qui joue un
+//    `--adopt` RÉEL et exige que chaque `docs/…` cité existe sur le disque. C'est la seule forme
+//    qui pouvait couvrir ce fichier-là, puisque son existence dépend du parcours, pas du rendu.
 //
 //  · `docs/DOMAINS.md` — mesuré PRÉSENT après un scaffold `--stack aucune` NU (scaffold réel,
 //    tmpdir, inspection du disque) : `writeStackEnvironment` (environment.mjs:76-79) l'écrit sans
@@ -126,4 +132,48 @@ test('renvois morts — le rendu des 4 stacks offertes garde ses renvois', () =>
     const t = renderAgentsFile({ source: process.cwd(), stack, assistant: 'claude-code', commandsDir: '.claude/commands', learning: true });
     assert.ok(t.includes('maquette'), `${stack} : une stack offerte DOIT garder ses renvois maquette`);
   }
+});
+
+// ── LE GARDE QUI TOUCHE LE DISQUE ─────────────────────────────────────────────────────────────
+//
+// Les deux tests ci-dessus jugent le RENDU contre une liste écrite à la main (`ABSENTS`). Ils ne
+// peuvent rien dire d'un fichier dont l'existence dépend du PARCOURS et pas du rendu — et c'est
+// exactement le cas de `docs/ETAT-DES-LIEUX.md` : cité par le bloc adopté depuis la tâche 3, posé
+// par `--adopt` seulement depuis la tâche 6. Mesuré entre les deux : renvoi mort réel, reproductible,
+// et invisible à tout contrôle qui ne regarde que des chaînes.
+//
+// Celui-ci ne lit aucune liste : il joue un `--adopt` pour de vrai, relève TOUS les `docs/…` que le
+// bloc livré cite, et va voir sur le disque. Un renvoi ajouté demain vers un fichier que le parcours
+// ne pose pas rougit ici sans que personne ait à penser à l'inscrire quelque part.
+test('renvois morts — chaque `docs/…` cité par le bloc adopté existe VRAIMENT après --adopt', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'renvois-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"deja-la","scripts":{"dev":"vite"}}');
+  execFileSync(process.execPath, [
+    path.resolve('scripts/setup.mjs'), '--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills',
+  ], { stdio: 'pipe' });
+
+  const livre = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
+  // On relève dans le fichier RÉELLEMENT LIVRÉ, pas dans un rendu rejoué : si la fusion perdait le
+  // bloc en route, ce test le verrait, alors qu'un `renderAgentsFile()` en mémoire ne le pourrait pas.
+  const cites = [...new Set([...livre.matchAll(/docs\/[A-Za-z0-9_./-]+/g)].map((m) => m[0].replace(/[.,;:)]+$/, '')))].sort();
+  // Montage : un relevé vide rendrait le contrôle vrai à vide. Mesuré, le bloc adopté en cite 8.
+  assert.ok(cites.length >= 6, `montage : seulement ${cites.length} chemins docs/ relevés — le bloc livré est vide ou tronqué`);
+  assert.ok(cites.includes('docs/ETAT-DES-LIEUX.md'), 'montage : le renvoi que ce test existe pour couvrir a disparu du rendu');
+
+  // LA SEULE EXCEPTION, et elle est PROUVÉE plus bas, pas décrétée : `docs/agents/crew/` n'est pas
+  // un renvoi mais une LÉGENDE — la phrase de `subagents-rule.md` énumère les dossiers d'agents des
+  // trois assistants (« `.cursor/agents/` · `.claude/agents/` · `docs/agents/crew/` pour Codex »).
+  // Sous claude-code, ce dossier n'existe pas — et n'a pas à exister : la phrase dit à qui il est.
+  const LEGENDE = 'docs/agents/crew/';
+  assert.equal(AGENTS_DIR.codex, 'docs/agents/crew',
+    'l\'exception ne tient que tant que la légende dit vrai : si Codex change de dossier, cette ligne devient un vrai renvoi mort');
+
+  const morts = cites.filter((c) => c !== LEGENDE && !fs.existsSync(path.join(dir, c)));
+  assert.deepEqual(morts, [], [
+    'Le bloc livré dans un projet ADOPTÉ renvoie vers des fichiers que `--adopt` ne pose pas :',
+    ...morts.map((m) => `  ${m}`),
+    '',
+    'Un renvoi mort est relu à CHAQUE message. Soit le parcours pose le fichier (setup.mjs), soit',
+    'la phrase est substituée (SUBSTITUTIONS_ADOPTE, agents-file.mjs) — jamais laissée en l\'état.',
+  ].join('\n'));
 });

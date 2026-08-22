@@ -58,6 +58,21 @@ export function renderInventaire(projectDir, entrees, on) {
   const montres = entrees.slice(0, MAX_MONTRE);
   const reste = entrees.length - montres.length;
   lignes.push(`  J'y vois : ${montres.join(', ')}${reste > 0 ? ` (+ ${reste} autre${reste > 1 ? 's' : ''})` : ''}`);
+  // CE QU'ON VA ÉCRIRE DANS SES FICHIERS, dit AVANT la question — c'est la moitié « montre » du
+  // « montre, puis demande ». Depuis la tâche 6, `--adopt` ne dépose plus la méthode dans un
+  // `AGENTS.md.new` que personne n'ouvre : il FUSIONNE dans `AGENTS.md`/`CLAUDE.md`. Consentir à
+  // « installer la méthode » sans savoir que deux fichiers existants vont être réécrits, ce n'est
+  // pas consentir à ce qui se passe.
+  //
+  // ON NOMME LE BLOC, ON NE LE DÉVERSE PAS : le rendu fait ~1 860 mots. Le dérouler dans un
+  // terminal, c'est un mur que personne ne lit — et un mur non lu n'est pas un consentement mieux
+  // éclairé qu'une phrase exacte. Ce qui rend la phrase vérifiable, c'est la FRONTIÈRE : les
+  // marqueurs sont dans le fichier, et tout ce qui est en dehors n'est jamais touché.
+  lignes.push('');
+  lignes.push('  Ce que j\'écris : la méthode du kit dans `AGENTS.md` et `CLAUDE.md`, entre deux');
+  lignes.push('  marqueurs `vibecoding`. Ces fichiers sont créés s\'ils manquent, complétés s\'ils');
+  lignes.push('  existent — et tout ce qui est HORS des marqueurs reste tel quel, à la ligne près.');
+  lignes.push('  Le reste (commandes, agents, mémoire) part dans des fichiers neufs, jamais par-dessus les tiens.');
   return lignes.join('\n');
 }
 

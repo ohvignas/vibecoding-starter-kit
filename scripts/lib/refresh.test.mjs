@@ -172,3 +172,30 @@ test('readVibecodingManifest : lit stack/assistant, jette si absent', () => {
   fs.writeFileSync(path.join(dir, '.vibecoding.json'), '{"stack":"saas","assistant":"cursor"}');
   assert.equal(readVibecodingManifest(dir).stack, 'saas');
 });
+
+// ── LE REFUS SUR MARQUEURS DÉPAREILLÉS, SUR LE CHEMIN `--refresh` ─────────────────────────────
+//
+// `mergeManagedSection` jette désormais quand les marqueurs du fichier ne forment pas UNE paire
+// (perte de texte mesurée — managed-section.test.mjs). `--refresh` traite DEUX fichiers : son
+// message doit dire lequel a été refusé, sinon l'utilisateur ouvre les deux et ne trouve rien.
+//
+// ⛔ CE TEST EXISTE PARCE QU'UNE MUTATION A SURVÉCU : retirer le `name` passé à
+// `mergeManagedSection` (refresh.mjs) laissait 53/53 verts, alors que le refus tombait sur
+// « le fichier » — le message par défaut, qui ne nomme rien.
+test('refresh : un fichier aux marqueurs dépareillés est refusé, en le NOMMANT, sans rien écrire', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'refresh-depareille-'));
+  // AGENTS.md sain, CLAUDE.md abîmé : c'est le second qui doit être nommé, pas « le fichier ».
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), `${MARK_START_PREFIX} v -->\nX\n<!-- vibecoding:end -->`);
+  const abime = `Collé du .new : ${MARK_START_PREFIX} — bloc généré -->\nÀ MOI\n\n${MARK_START_PREFIX} v -->\nY\n<!-- vibecoding:end -->`;
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), abime);
+
+  assert.throws(
+    () => refreshProject({ source: KIT, projectDir: dir, manifest: { stack: 'saas', assistant: 'cursor' }, dryRun: false }),
+    (e) => {
+      assert.match(e.message, /CLAUDE\.md/, 'le refus doit NOMMER le fichier refusé');
+      assert.doesNotMatch(e.message, /^le fichier/m, 'et pas retomber sur le libellé par défaut, qui ne nomme rien');
+      return true;
+    },
+  );
+  assert.equal(fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8'), abime, 'le fichier refusé ne doit pas avoir été touché');
+});
