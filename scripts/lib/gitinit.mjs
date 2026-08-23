@@ -23,9 +23,14 @@ const memeDossier = (a, b) => {
 // Ce n'est pas un fichier écrasé — c'est plus discret que ça, et donc pire : le fichier est
 // toujours là, intact, et il ne s'exécute plus.
 //
-// `git rev-parse --git-path hooks` plutôt que `<projet>/.git/hooks` : dans un worktree ou un
-// submodule, `.git` est un FICHIER et le vrai dossier est ailleurs. Les `*.sample` livrés par
-// `git init` ne comptent pas — ils ne s'exécutent pas, il n'y a rien à y perdre.
+// ⛔ `--git-dir` ET PAS `--git-path hooks`. Mesuré : `rev-parse --git-path hooks` HONORE
+// `core.hooksPath` — clé absente il rend `.git/hooks`, clé = `.githooks` il rend `.githooks`.
+// Au SECOND `--adopt` sur le même projet, la sonde lisait donc le dossier DU KIT et annonçait
+// « ton dépôt a déjà ses propres hooks (checks.mjs, pre-commit, pre-push) … le scan de secrets ne
+// tournera pas » : faux sur les trois points, et la question était reposée avec un défaut NON qui
+// aurait éteint ce que l'utilisateur venait d'accepter. `--git-dir` rend le VRAI dossier git
+// (worktree et submodule compris, où `.git` est un fichier), et `hooks/` s'y trouve toujours.
+// Les `*.sample` livrés par `git init` ne comptent pas : ils ne s'exécutent pas.
 // Tout échec (pas un dépôt, dossier illisible, `run` bouchonné) rend `[]` : « je n'ai rien vu à
 // protéger », qui est aussi le cas d'un dépôt tout neuf. C'est le comportement d'avant.
 // La phrase du refus — UNE phrase, qui dit ce qu'on perd et comment revenir dessus. Elle est
@@ -35,11 +40,25 @@ const REFUS_HOOKS = (projectDir) => `tu as refusé \`core.hooksPath\` — le sca
 
 export function hooksMaison(projectDir, run = defaultRun) {
   try {
-    const rel = String(run('git', ['-C', projectDir, 'rev-parse', '--git-path', 'hooks'])).trim();
+    const rel = String(run('git', ['-C', projectDir, 'rev-parse', '--git-dir'])).trim();
     if (!rel) return [];
-    const dir = path.isAbsolute(rel) ? rel : path.join(projectDir, rel);
-    return fs.readdirSync(dir).filter((n) => !n.endsWith('.sample')).sort();
+    const gitDir = path.isAbsolute(rel) ? rel : path.join(projectDir, rel);
+    return fs.readdirSync(path.join(gitDir, 'hooks')).filter((n) => !n.endsWith('.sample')).sort();
   } catch { return []; }
+}
+
+// CE QUE POSER LA CLÉ ÉTEINDRAIT VRAIMENT — la seule question qui vaille, et la SOURCE UNIQUE
+// pour l'écran d'accord comme pour la pose. Si `core.hooksPath` vaut DÉJÀ `.githooks`, la
+// décision a déjà été prise (premier run, accord donné) : poser la clé ne change rien, il n'y a
+// donc rien à demander et rien à avertir. Sans ce cas, un simple rejeu redemandait à l'utilisateur
+// s'il acceptait de perdre des hooks qui étaient déjà éteints — et son « non » par défaut
+// l'aurait convaincu que le scan qui tourne ne tourne pas.
+export function hooksAEteindre(projectDir, run = defaultRun) {
+  let actuel = null;
+  try { actuel = String(run('git', ['-C', projectDir, 'config', '--get', 'core.hooksPath'])).trim(); }
+  catch { actuel = null; } // clé absente : git config --get sort en 1
+  if (actuel === HOOKS_PATH) return [];
+  return hooksMaison(projectDir, run);
 }
 
 // 3 sorties : done (fait), skipped (non fait, non bloquant, avec la raison ET la commande pour
@@ -94,7 +113,7 @@ export function initProjectGit({ projectDir, run = defaultRun, accordHooks }) {
         return { done, failed, skipped };
       }
       // Le 3ᵉ cas : il a SES hooks, et personne ne lui a demandé s'il acceptait de les perdre.
-      const maison = hooksMaison(projectDir, run);
+      const maison = hooksAEteindre(projectDir, run);
       if (maison.length && accordHooks !== true) {
         skipped.push({
           name: 'hooks git (pre-commit)',

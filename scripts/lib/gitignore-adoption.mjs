@@ -31,16 +31,23 @@ export const REGLES_SECRETS = ['.env', '.env.*', '!.env.example'];
 export const REGLES_ARTEFACTS = ['.agents/', 'skills-lock.json'];
 export const REGLE_CURSOR = 'docs/memory/.edit-queue.log';
 
-// Chaque règle porte le CHEMIN qu'elle décide et l'effet attendu. C'est ce couple — pas le texte
-// de la règle — qui permet de répondre à « est-ce déjà couvert ? » sans ajouter de doublon : un
-// projet qui a déjà `.env*` protège déjà `.env`, et on n'a rien à écrire chez lui.
+// Chaque règle porte le ou les CHEMINS qu'elle décide, et l'effet attendu. C'est ce couple — pas
+// le texte de la règle — qui permet de répondre à « est-ce déjà couvert ? » sans ajouter de
+// doublon : un projet qui a déjà `.env*` protège déjà `.env`, et on n'a rien à écrire chez lui.
+//
+// ⛔ `.env.*` EN PORTE TROIS, ET UN SEUL NE SUFFISAIT PAS. Le module jugeait la famille sur le
+// seul `.env.local`. Mesuré : `.gitignore = ".env\n.env.local\n"` → `.env.*` était compté
+// COUVERT, donc jamais écrit, et `.env.production`/`.env.staging` restaient suivis. Le
+// commentaire du matcheur promettait « une règle de trop, jamais une d'oubliée » — c'était faux,
+// et c'était faux du côté qui laisse fuir. La couverture exige donc que TOUS les représentants
+// soient déjà dans l'état voulu ; un seul qui manque, et la règle s'écrit.
 const REGLE_CHEMIN = {
-  '.env': '.env',
-  '.env.*': '.env.local',            // un représentant de la famille suffit à juger la couverture
-  '!.env.example': '.env.example',
-  '.agents/': '.agents',
-  'skills-lock.json': 'skills-lock.json',
-  [REGLE_CURSOR]: REGLE_CURSOR,
+  '.env': ['.env'],
+  '.env.*': ['.env.local', '.env.production', '.env.staging'],
+  '!.env.example': ['.env.example'],
+  '.agents/': ['.agents'],
+  'skills-lock.json': ['skills-lock.json'],
+  [REGLE_CURSOR]: [REGLE_CURSOR],
 };
 
 export function reglesAdoption(assistant) {
@@ -131,12 +138,15 @@ export function ligneDecisive(contenu, chemin) {
 export function analyserGitignore(contenu, regles) {
   const aAjouter = [], battues = [];
   for (const regle of regles) {
-    const chemin = REGLE_CHEMIN[regle];
     const voulu = !estNegation(regle);
-    const etat = etatEffectif(contenu, chemin);
-    if (etat === voulu) continue;               // déjà obtenu : on n'écrit rien
+    // Les chemins NON encore dans l'état voulu. Vide = la règle est déjà obtenue partout.
+    const manquants = REGLE_CHEMIN[regle].filter((c) => etatEffectif(contenu, c) !== voulu);
+    if (!manquants.length) continue;            // déjà obtenu : on n'écrit rien
     aAjouter.push(regle);
-    if (etat !== null) battues.push({ ligne: ligneDecisive(contenu, chemin), regle, chemin });
+    // Une règle n'est « battue » que si une ligne EXISTANTE décide déjà l'un des chemins manquants
+    // dans l'autre sens. Le premier suffit à nommer l'intention qu'on renverserait.
+    const battu = manquants.find((c) => etatEffectif(contenu, c) !== null);
+    if (battu !== undefined) battues.push({ ligne: ligneDecisive(contenu, battu), regle, chemin: battu });
   }
   return { aAjouter, battues };
 }
@@ -155,20 +165,49 @@ export function completerGitignore(contenu, aAjouter) {
   return `${contenu}${contenu.endsWith('\n') ? '' : '\n'}${bloc}`;
 }
 
-// La phrase de l'écran d'accord. Elle NOMME les règles ajoutées, et — s'il y en a — les lignes
-// existantes que le bloc renverse. `on` porte la couleur, comme partout ailleurs dans le CLI.
-export function renderAccordGitignore({ existe, aAjouter, battues }, hint, on) {
+// ── LE PARTAGE : LA MÊME FONCTION DÉCIDE CE QU'ON ANNONCE ET CE QU'ON ÉCRIT ───────────────────
+//
+// ⛔ POURQUOI CE N'EST PAS DEUX CALCULS. Mesuré sur un projet `!.env`, hors terminal : l'écran
+// annonçait « J'ajoute à la FIN : .env, … » et « « .env » … gagnera », et `.env` n'était PAS
+// écrit — le démenti arrivait 50 lignes plus bas, dans « Sauté ». L'écran décrivait l'intention,
+// l'écriture appliquait la règle, et les deux ne se parlaient pas. Une seule fonction, donc :
+// ce que l'écran nomme est LITTÉRALEMENT ce que `appliquerGitignore` écrira.
+export function partagerGitignore({ aAjouter, battues }, accord) {
+  if (accord === false) return { ecrites: [], refusees: aAjouter };
+  const battuesSet = new Set(battues.map((b) => b.regle));
+  const ecrites = accord === true ? aAjouter : aAjouter.filter((r) => !battuesSet.has(r));
+  return { ecrites, refusees: aAjouter.filter((r) => !ecrites.includes(r)) };
+}
+
+// La phrase de l'écran d'accord. Elle NOMME ce qui sera écrit, et — s'il y a des règles battues —
+// ce qu'elles renversent. `on` porte la couleur, comme partout ailleurs dans le CLI.
+//
+// `decide` — Y A-T-IL QUELQU'UN POUR RÉPONDRE ? C'est ce qui change le SENS de l'avertissement,
+// et donc son texte :
+//   · `true`  (une question suit) → on annonce TOUT, et l'avertissement dit ce que le oui coûtera ;
+//   · `false` (personne en face)  → on annonce ce qui sera VRAIMENT écrit, et l'avertissement dit
+//     ce qu'on n'écrit PAS, et pourquoi. Annoncer un `.env` qu'on ne va pas écrire, c'est mentir
+//     à l'endroit exact où l'écran existe pour ne pas mentir.
+export function renderAccordGitignore(plan, hint, on, { decide = true } = {}) {
+  const { existe, battues } = plan;
+  const { ecrites, refusees } = partagerGitignore(plan, decide ? true : undefined);
   const L = [];
   L.push(existe
     ? '  Ton `.gitignore` existe, mais il ne protège pas tout ce que le kit dépose.'
     : '  Ce projet n\'a pas de `.gitignore` : rien n\'y protège un `.env`.');
-  L.push(`  J'ajoute ${existe ? 'à la FIN' : 'dans un fichier neuf'} : ${aAjouter.join(', ')}`);
+  if (ecrites.length) L.push(`  J'ajoute ${existe ? 'à la FIN' : 'dans un fichier neuf'} : ${ecrites.join(', ')}`);
   if (battues.length) {
     // ⛔ Le seul cas où l'ajout n'est pas neutre : la dernière règle gagne, donc celle-ci PERD.
     // La taire, c'est renverser une intention en silence dans le fichier de quelqu'un d'autre.
     L.push('');
-    L.push('  ⚠️ Attention, ça renverse une règle que tu as déjà :');
-    for (const b of battues) L.push(`     « ${b.ligne} » décide aujourd'hui de ${b.chemin} — « ${b.regle} », ajouté en fin de fichier, gagnera.`);
+    if (decide) {
+      L.push('  ⚠️ Attention, ça renverse une règle que tu as déjà :');
+      for (const b of battues) L.push(`     « ${b.ligne} » décide aujourd'hui de ${b.chemin} — « ${b.regle} », ajouté en fin de fichier, gagnera.`);
+    } else {
+      L.push(`  ⚠️ Je n'écris PAS ${refusees.join(', ')} — ça renverserait une règle que tu as écrite :`);
+      for (const b of battues) L.push(`     « ${b.ligne} » décide aujourd'hui de ${b.chemin}, et le kit ne renverse pas ça sans ton accord.`);
+      L.push(hint('  (pour trancher : relance `--adopt` dans un terminal)', on));
+    }
   }
   L.push(hint('  (l\'ajout est en fin de fichier : le reste de ton .gitignore n\'est pas touché)', on));
   return L.join('\n');
@@ -202,10 +241,7 @@ export function planGitignore(projectDir, assistant) {
 // l'en-tête de ce fichier interdit. Le partage passe donc par `battues` : ce qui n'écrase aucune
 // intention protège, ce qui en écrase une attend un accord.
 export function appliquerGitignore(plan, { accord } = {}) {
-  if (accord === false) return { ecrites: [], refusees: plan.aAjouter, motif: 'refus' };
-  const battues = new Set(plan.battues.map((b) => b.regle));
-  const ecrites = accord === true ? plan.aAjouter : plan.aAjouter.filter((r) => !battues.has(r));
-  const refusees = plan.aAjouter.filter((r) => !ecrites.includes(r));
+  const { ecrites, refusees } = partagerGitignore(plan, accord);
   if (ecrites.length) fs.writeFileSync(plan.chemin, completerGitignore(plan.contenu ?? '', ecrites));
-  return { ecrites, refusees, motif: refusees.length ? 'sans-accord' : null };
+  return { ecrites, refusees, motif: refusees.length ? (accord === false ? 'refus' : 'sans-accord') : null };
 }

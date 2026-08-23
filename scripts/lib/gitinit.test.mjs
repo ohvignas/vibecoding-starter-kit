@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { initProjectGit, hooksMaison } from './gitinit.mjs';
+import { initProjectGit, hooksMaison, hooksAEteindre } from './gitinit.mjs';
 
 test('initProjectGit : séquence complète quand pas de dépôt', () => {
   const calls = [];
@@ -207,5 +207,41 @@ test('E4 — bout en bout : le hook maison de l\'utilisateur TOURNE ENCORE aprè
   // Le vrai point : git a bien exécuté SON hook, pas celui du kit (absent, donc silencieux).
   const relance = execFileSync('sh', ['-c', `cd ${dir} && echo y > b.txt && git add -A && git commit -m deux 2>&1 || true`], { encoding: 'utf8', env });
   assert.match(relance, /MON-HOOK-MAISON/, 'son pre-commit doit toujours s\'exécuter — c\'est ce que core.hooksPath éteignait');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('E4 — AU 2ᵉ RUN, le kit ne prend pas SES hooks pour ceux de l\'utilisateur', () => {
+  // ⛔ Mesuré : `git rev-parse --git-path hooks` HONORE `core.hooksPath` — clé absente il rend
+  // `.git/hooks`, clé = `.githooks` il rend `.githooks`. La sonde lisait donc, au second
+  // `--adopt`, le dossier DU KIT, et annonçait « ton dépôt a déjà ses propres hooks (checks.mjs,
+  // pre-commit, pre-push) … le scan de secrets ne tournera pas » : faux sur les trois points. En
+  // terminal, la question était reposée avec un défaut NON qui aurait éteint ce que l'utilisateur
+  // venait d'accepter.
+  const dir = depotAvecHooks({});
+  fs.mkdirSync(path.join(dir, '.githooks'));
+  for (const n of ['pre-commit', 'pre-push', 'checks.mjs']) fs.writeFileSync(path.join(dir, '.githooks', n), '#!/bin/sh\nexit 0\n');
+  const run = (c, a) => execFileSync(c, a, { stdio: 'pipe' });
+  run('git', ['-C', dir, 'config', 'core.hooksPath', '.githooks']); // état d'après un 1er run accepté
+
+  assert.deepEqual(hooksMaison(dir, run), [],
+    'la sonde doit lire le VRAI .git/hooks (que des *.sample), jamais le dossier vers lequel la clé pointe');
+  assert.deepEqual(hooksAEteindre(dir, run), [],
+    'et quand la clé vaut déjà .githooks, poser la clé n\'éteint rien : il n\'y a RIEN à demander');
+
+  const res = initProjectGit({ projectDir: dir, run });
+  assert.deepEqual(res.skipped, [], 'aucun avertissement : rien n\'est menacé au 2ᵉ run');
+  assert.equal(res.done.length, 1, 'et le rapport dit que les hooks sont actifs — ce qui est vrai');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('E4 — un hook maison ET la clé déjà posée : plus rien à décider, on ne redemande pas', () => {
+  // Le cas mixte : il avait un hook à lui, il a dit OUI au 1er run. Reposer la question au 2ᵉ,
+  // c'est lui demander d'accepter une perte qui a déjà eu lieu — avec un défaut NON qui la défait.
+  const dir = depotAvecHooks({ 'pre-commit': '#!/bin/sh\nexit 0\n' });
+  const run = (c, a) => execFileSync(c, a, { stdio: 'pipe' });
+  assert.deepEqual(hooksAEteindre(dir, run), ['pre-commit'], 'postulat : avant la clé, il y a bien quelque chose à éteindre');
+  run('git', ['-C', dir, 'config', 'core.hooksPath', '.githooks']);
+  assert.deepEqual(hooksAEteindre(dir, run), [], 'la clé posée, la décision est prise : plus rien à demander');
+  assert.deepEqual(hooksMaison(dir, run), ['pre-commit'], '…mais le fichier est toujours là, et la sonde brute le voit encore');
   fs.rmSync(dir, { recursive: true, force: true });
 });

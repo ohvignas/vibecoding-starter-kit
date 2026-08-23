@@ -148,7 +148,9 @@ async function main() {
   // L'écran est imprimé quand même — le kit dit toujours ce qu'il écrit, même sans personne en face.
   if (estAdopte(args.stack) && !securiteAdoption) {
     securiteAdoption = sonderSecuriteProjet(projectDir, args.assistant);
-    if (securiteAdoption.gitignore.aAjouter.length) console.log('\n' + renderAccordGitignore(securiteAdoption.gitignore, hint, on));
+    // `decide: false` : personne n'est en face. L'écran annonce alors ce qui sera VRAIMENT écrit
+    // et dit ce qu'il n'écrit pas — sans ça, il promettait un `.env` que la ligne suivante refusait.
+    if (securiteAdoption.gitignore.aAjouter.length) console.log('\n' + renderAccordGitignore(securiteAdoption.gitignore, hint, on, { decide: false }));
   }
 
   const done = [], kept = [], failed = [];

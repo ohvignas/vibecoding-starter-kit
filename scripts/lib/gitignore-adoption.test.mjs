@@ -19,7 +19,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   reglesAdoption, REGLE_CURSOR, motifMatch, etatEffectif, ligneDecisive, analyserGitignore,
-  completerGitignore, renderAccordGitignore, planGitignore, appliquerGitignore, ENTETE_BLOC,
+  completerGitignore, renderAccordGitignore, planGitignore, appliquerGitignore, partagerGitignore, ENTETE_BLOC,
 } from './gitignore-adoption.mjs';
 
 const hint = (s) => s;
@@ -44,8 +44,12 @@ test('gitignore — `**` ne fait plus tomber le matcheur (MARQUE n\'était décl
   // `ReferenceError: MARQUE is not defined`. Un `.gitignore` du monde réel qui contient `**/dist`
   // — il y en a partout — faisait donc PLANTER l'analyse, et avec elle tout le parcours adopté.
   assert.equal(motifMatch('**/foo', 'a/b/foo'), true, '`**` doit franchir les /');
-  assert.equal(motifMatch('*.log', 'debug.log'), true);
-  assert.equal(motifMatch('*.log', 'a/debug.log'), true, 'un motif sans / matche le nom de base à toute profondeur');
+  // ⛔ « erreur.log » et non l'autre nom évident : A9 (`degraissage.test.mjs`) traque le chemin de
+  // l'ancien dossier de mise au point supprimé au Lot A, sur tout fichier SUIVI par git. Une donnée
+  // de test anodine y ressemblait — et A9 ne l'a vue qu'au `git add` : il lit `git ls-files`,
+  // pas le disque. Un fichier neuf lui est INVISIBLE tant qu'il n'est pas suivi.
+  assert.equal(motifMatch('*.log', 'erreur.log'), true);
+  assert.equal(motifMatch('*.log', 'a/erreur.log'), true, 'un motif sans / matche le nom de base à toute profondeur');
   assert.equal(motifMatch('/build', 'build'), true, '`/` en tête = ancré à la racine');
   assert.equal(motifMatch('node_modules/', 'node_modules'), true, '`/` en fin = dossier');
   // Le jeton du `**` est un NUL, pas un espace : un motif qui contient un espace reste littéral.
@@ -232,4 +236,68 @@ test('parcours NEUF — le `.gitignore` de la stack est toujours copié tel quel
   assert.equal(gi, fs.readFileSync(path.resolve('templates/gitignore/saas.gitignore'), 'utf8'), 'le modèle de la stack, à l\'octet près');
   assert.ok(!gi.includes(ENTETE_BLOC), 'aucun bloc d\'adoption sur un projet neuf');
   assert.equal(gitIgnore(dir, '.env'), true, '…et il protège déjà .env, c\'est pour ça qu\'il n\'y a rien à ajouter');
+});
+
+// ── LA REVUE : trois défauts trouvés APRÈS le premier commit ───────────────────────────────────
+
+test('gitignore — l\'écran n\'annonce JAMAIS une règle qu\'il ne va pas écrire', () => {
+  // ⛔ Mesuré hors terminal sur un projet `!.env` : l'écran disait « J'ajoute à la FIN : .env, … »
+  // et « « .env » … gagnera » — et `.env` n'était PAS écrit. Le démenti arrivait 50 lignes plus
+  // bas, dans « Sauté ». L'écran et l'écriture étaient deux calculs qui ne se parlaient pas.
+  const plan = { existe: true, ...analyserGitignore('node_modules/\n!.env\n', reglesAdoption('claude-code')) };
+
+  const muet = renderAccordGitignore(plan, hint, false, { decide: false });
+  const annonce = muet.split('\n').find((l) => l.includes('J\'ajoute'));
+  // `partagerGitignore` est la fonction PURE que l'écran et l'écriture lisent tous les deux :
+  // c'est elle qu'on interroge ici, pas une copie du raisonnement.
+  const { ecrites, refusees } = partagerGitignore(plan, undefined);
+  assert.ok(!annonce.includes('.env,'), `l'écran annonce « .env » alors qu'il ne l'écrira pas : ${annonce}`);
+  for (const r of ecrites) assert.ok(annonce.includes(r), `« ${r} » sera écrit mais n'est pas annoncé`);
+  for (const r of refusees) assert.match(muet, new RegExp(`Je n'écris PAS.*${r.replace('.', '\\.')}`), `« ${r} » n'est pas écrit, l'écran doit le DIRE`);
+  assert.match(muet, /!\.env/, 'et nommer la ligne qui l\'en empêche');
+
+  // Avec quelqu'un en face, l'écran annonce TOUT : la question qui suit décide, l'avertissement
+  // dit ce que le « oui » coûtera. C'est le discriminant — sans lui, on pourrait taire les battues
+  // dans les DEUX modes et ce test resterait vert.
+  const decide = renderAccordGitignore(plan, hint, false, { decide: true });
+  assert.match(decide.split('\n').find((l) => l.includes('J\'ajoute')), /\.env,/, 'en mode question, tout est annoncé');
+  assert.match(decide, /gagnera/, 'et l\'avertissement dit ce que le oui coûtera');
+});
+
+test('gitignore — bout en bout : ce que la sortie ANNONCE est exactement ce que le fichier reçoit', () => {
+  // Le garde qui ferme la classe entière : on relit la liste imprimée par le CLI et on la compare
+  // aux lignes réellement ajoutées au fichier. Aucun texte ne peut plus promettre à côté.
+  const dir = projet('adopt-annonce-');
+  ecrire(dir, 'package.json', '{"name":"x"}');
+  ecrire(dir, '.gitignore', 'node_modules/\n!.env\n');
+  gitInit(dir);
+  const sortie = String(scaffolderAdopte(dir));
+  const annonce = sortie.split('\n').find((l) => l.includes('J\'ajoute'));
+  assert.ok(annonce, `aucune ligne « J'ajoute » dans la sortie :\n${sortie.slice(0, 800)}`);
+  const annoncees = annonce.split(':').slice(1).join(':').split(',').map((x) => x.trim());
+  const bloc = fs.readFileSync(path.join(dir, '.gitignore'), 'utf8').split(ENTETE_BLOC)[1];
+  const ecrites = bloc.split('\n').map((l) => l.trim()).filter(Boolean);
+  assert.deepEqual(ecrites, annoncees, 'la liste annoncée et le bloc écrit doivent être le MÊME ensemble, dans le même ordre');
+  assert.ok(!ecrites.includes('.env'), '`.env` n\'est pas écrit ici — donc il ne doit pas être annoncé');
+});
+
+test('gitignore — `.env.*` n\'est pas jugé couvert sur un seul représentant', () => {
+  // ⛔ Mesuré : `.gitignore = ".env\n.env.local\n"` → `.env.*` était compté COUVERT (le seul
+  // représentant testé, `.env.local`, l'était), donc jamais écrit — et `.env.production` comme
+  // `.env.staging` restaient SUIVIS. Le module promettait « une règle de trop, jamais une
+  // d'oubliée » : c'était faux, et faux du côté qui laisse fuir.
+  const dir = projet('gi-famille-');
+  ecrire(dir, '.gitignore', '.env\n.env.local\n');
+  const { ecrites } = appliquerGitignore(planGitignore(dir, 'claude-code'), {});
+  assert.ok(ecrites.includes('.env.*'), '`.env.*` doit être écrit : la famille n\'est pas couverte');
+  gitInit(dir);
+  for (const f of ['.env', '.env.local', '.env.production', '.env.staging']) {
+    assert.equal(gitIgnore(dir, f), true, `${f} doit être ignoré`);
+  }
+  assert.equal(gitIgnore(dir, '.env.example'), false, 'et le modèle reste commitable');
+
+  // ── LE DISCRIMINANT : un `.env*` large couvre bien TOUTE la famille, et on n'ajoute rien.
+  const large = analyserGitignore('.env*\n.agents/\nskills-lock.json\n', reglesAdoption('claude-code'));
+  assert.ok(!large.aAjouter.includes('.env.*'), '`.env*` couvre la famille entière : ne rien réécrire');
+  assert.ok(!large.aAjouter.includes('.env'), '…ni `.env`');
 });

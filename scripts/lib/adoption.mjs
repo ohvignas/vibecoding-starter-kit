@@ -14,7 +14,7 @@ import { ASSISTANT_KEYS, validateArgs } from './args.mjs';
 import { ASSISTANTS, pickOne } from './wizard.mjs';
 import { heading, hint } from './ui.mjs';
 import { planGitignore, renderAccordGitignore } from './gitignore-adoption.mjs';
-import { hooksMaison } from './gitinit.mjs';
+import { hooksAEteindre } from './gitinit.mjs';
 
 // POURQUOI ELLE N'EST NI DANS `STACKS` NI DANS `AI_CONTEXT` : trois tests encodent l'invariant
 // « toute clé de STACKS est une stack OFFERTE au débutant » (bannière README, guide 01, question
@@ -155,7 +155,7 @@ export function erreursAdoptionNonInteractive(args, entrees, projectDir) {
 export function sonderSecuriteProjet(projectDir, assistant) {
   return {
     gitignore: planGitignore(projectDir, assistant),
-    hooks: hooksMaison(projectDir),
+    hooks: hooksAEteindre(projectDir),
     workflowSecrets: fs.existsSync(path.join(projectDir, '.github/workflows/secrets.yml')),
   };
 }
