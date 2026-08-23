@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { STACK_AUCUNE, estAdopte, adapterGlossaireAdopte, estProjetExistant, entreesDuProjet, runAdoptWizard, peutDemanderAdoption, erreursAdoption } from './adoption.mjs';
+import { STACK_AUCUNE, estAdopte, adapterGlossaireAdopte, estProjetExistant, entreesDuProjet, runAdoptWizard, peutDemanderAdoption, erreursAdoption, sonderSecuriteProjet, renderAccordHooks, renderAccordSecretsWorkflow } from './adoption.mjs';
 import { renderAgentsFile, adapterAuProjetAdopte } from './agents-file.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
 import { choisirMode, needsWizard } from './wizard.mjs';
@@ -1056,5 +1056,140 @@ test('adoption — `/new-feature` dégrade proprement sans `docs/PRD.md` au lieu
     assert.match(repli, /ETAT-DES-LIEUX\.md/, `${rel} : le repli doit dire OÙ lire le projet à la place`);
     assert.match(repli, /invente/i, `${rel} : il doit INTERDIRE d'inventer les UJ/FR, pas seulement signaler l'absence`);
     assert.doesNotMatch(repli, /lance `?\/new-project`?/, `${rel} : le repli ne doit pas renvoyer à /new-project`);
+  }
+});
+
+// ── TASK 8 — LES TROIS ÉCRITURES QUI NE S'IMPOSENT PAS ────────────────────────────────────────
+//
+// Sur un projet neuf, le kit écrit dans un dossier vide : rien ne peut être renversé. Sur un
+// projet ADOPTÉ, trois écritures changent quelque chose qui existait déjà, et aucune des trois ne
+// se voit passer :
+//   · le bloc `.gitignore` est ajouté en FIN de fichier, donc il GAGNE (git tranche par la
+//     dernière règle qui matche) — y compris contre un `!.env` tapé exprès ;
+//   · `core.hooksPath` ne s'ajoute pas à `.git/hooks/`, il le REMPLACE ;
+//   · `.github/workflows/secrets.yml` est du code qui s'exécutera sur le compte GitHub de
+//     quelqu'un d'autre, à chaque push.
+// Une sonde vide (`sonder` absent) laisse le parcours EXACTEMENT comme avant — c'est ce que
+// vérifient, sans le dire, les tests du wizard écrits plus haut.
+const SONDE_RIEN = () => ({ gitignore: { existe: true, aAjouter: [], battues: [] }, hooks: [], workflowSecrets: true });
+
+test('T8 — rien à décider : le parcours adopté ne pose AUCUNE question de sécurité', async () => {
+  // Une question dont la réponse ne change rien est du bruit — et le bruit fait taper « o » sans
+  // lire, ce qui détruit la valeur des deux autres questions. Le script ne porte que 2 réponses :
+  // une 3ᵉ question ferait échouer bruyamment (`undefined.trim()`), et c'est ce qui rend le test honnête.
+  const r = await runAdoptWizard(scripted(['o', '2']), false, NULL_OUT, {
+    projectDir: '/tmp/a', entrees: ['src'], sonder: SONDE_RIEN,
+  });
+  assert.equal(r.assistant, 'claude-code');
+  assert.deepEqual(r.accords, {}, 'aucun accord recueilli : il n\'y avait rien à demander');
+});
+
+test('T8 — le `.gitignore` : l\'écran NOMME ce qu\'il ajoute et ce qu\'il renverse, puis DEMANDE', async () => {
+  const { out, texte } = capture();
+  const sonder = () => ({
+    gitignore: { existe: true, aAjouter: ['.env', '.env.*'], battues: [{ ligne: '!.env', regle: '.env', chemin: '.env' }] },
+    hooks: [], workflowSecrets: true,
+  });
+  const r = await runAdoptWizard(scripted(['o', '2', 'n']), false, out, { projectDir: '/tmp/a', entrees: ['src'], sonder });
+  const t = texte();
+  assert.match(t, /\.env/, 'les règles ajoutées doivent être écrites AVANT la question');
+  assert.match(t, /« !\.env »/, '⛔ la règle battue doit être citée telle quelle — c\'est toute la raison de l\'écran');
+  assert.equal(r.accords.gitignore, false, 'un « n » doit remonter comme un refus, jamais être avalé');
+  assert.match(t, /n'est pas touché/, 'et le refus doit dire ce qu\'il coûte, en une phrase');
+});
+
+test('T8 — les hooks : la question NOMME ce qu\'elle éteint, et son défaut est NON', async () => {
+  // ⛔ Défaut inverse de celui du `.gitignore`, à dessein : ici, dire oui DÉTRUIT quelque chose qui
+  // tourne (ses hooks) ; là-bas, dire non laisse `.env` suivi. Le défaut suit le risque, pas l'habitude.
+  const { out, texte } = capture();
+  const sonder = () => ({ gitignore: { existe: true, aAjouter: [], battues: [] }, hooks: ['pre-commit'], workflowSecrets: true });
+  // Le libellé de la question passe par `ask`, pas par `out` : on capture donc AUSSI les questions
+  // — sans ça, un test sur le défaut annoncé ne lirait jamais le texte qui l'annonce.
+  const questions = [];
+  const reponses = ['o', '2', ''];
+  let i = 0;
+  const ask = async (q) => { questions.push(q); return reponses[i++]; };
+  const r = await runAdoptWizard(ask, false, out, { projectDir: '/tmp/a', entrees: ['src'], sonder });
+  assert.match(texte(), /pre-commit/, 'le hook qu\'on éteindrait doit être nommé');
+  assert.ok(questions.some((q) => q.includes('[o/N]')), `le défaut annoncé doit être NON — questions : ${JSON.stringify(questions)}`);
+  assert.equal(r.accords.hooks, false, 'Entrée vaut le défaut ANNONCÉ : non');
+  assert.match(texte(), /tes hooks continuent/, 'et le refus dit ce qui continue, et ce qui ne tournera pas');
+});
+
+test('T8 — le workflow GitHub : demandé s\'il manque, jamais si le sien est déjà là', async () => {
+  const { out, texte } = capture();
+  const sonder = () => ({ gitignore: { existe: true, aAjouter: [], battues: [] }, hooks: [], workflowSecrets: false });
+  const r = await runAdoptWizard(scripted(['o', '2', 'o']), false, out, { projectDir: '/tmp/a', entrees: ['src'], sonder });
+  assert.match(texte(), /chaque push/i, 'ce qui compte n\'est pas le fichier, c\'est OÙ il s\'exécute');
+  assert.match(texte(), /GitHub/);
+  assert.equal(r.accords.secrets, true);
+  // Déjà présent → pas de question (le script n'a que 2 réponses : une 3ᵉ jetterait).
+  const dejaLa = await runAdoptWizard(scripted(['o', '2']), false, NULL_OUT, { projectDir: '/tmp/a', entrees: ['src'], sonder: SONDE_RIEN });
+  assert.equal('secrets' in dejaLa.accords, false, 'un workflow déjà là ne se re-demande pas');
+});
+
+test('T8 — la sonde relève les trois, sur un vrai projet', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sonde-'));
+  execFileSync('git', ['-C', dir, 'init', '-q', '-b', 'main'], { stdio: 'pipe' });
+  fs.writeFileSync(path.join(dir, '.gitignore'), 'node_modules/\n');
+  fs.writeFileSync(path.join(dir, '.git/hooks/pre-commit'), '#!/bin/sh\nexit 0\n');
+  const s = sonderSecuriteProjet(dir, 'claude-code');
+  assert.ok(s.gitignore.aAjouter.includes('.env'), '`.env` n\'est pas protégé : il y a quelque chose à écrire');
+  assert.deepEqual(s.hooks, ['pre-commit'], 'et un hook maison à ne pas éteindre en silence');
+  assert.equal(s.workflowSecrets, false, 'et pas de workflow de scan');
+  // La règle Cursor dépend de l'assistant : c'est pour ça que la sonde en prend un.
+  assert.ok(sonderSecuriteProjet(dir, 'cursor').gitignore.aAjouter.includes('docs/memory/.edit-queue.log'));
+  assert.ok(!s.gitignore.aAjouter.includes('docs/memory/.edit-queue.log'));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('T8 — les deux écrans nomment leur enjeu, pas seulement leur fichier', () => {
+  const t = renderAccordHooks(['pre-commit', 'pre-push'], false);
+  assert.match(t, /pre-commit/); assert.match(t, /pre-push/);
+  assert.match(t, /REMPLACE|remplace/, 'dire « j\'active les hooks » sans dire qu\'on éteint les siens n\'est pas une question');
+  assert.match(renderAccordSecretsWorkflow(false), /push/i);
+});
+
+test('T8 — `.github/workflows/secrets.yml` n\'est pas posé sur un projet adopté sans accord', () => {
+  // ⛔ Mesuré : la tâche 2 avait coupé `ci.yml` sur `aucune`, pas celui-ci — il partait donc dans
+  // le dépôt de l'utilisateur, où il tourne à chaque push, sur son compte, sans qu'on lui demande.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adopt-wf-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"x"}');
+  const r = lancerSetup(['--stack', 'aucune', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes']);
+  assert.equal(r.code, 0, r.err);
+  assert.ok(!fs.existsSync(path.join(dir, '.github/workflows/secrets.yml')), 'aucun workflow ne s\'impose dans le dépôt de quelqu\'un d\'autre');
+  assert.match(r.out, /secrets\.yml/, 'le rapport doit DIRE ce qu\'il n\'a pas posé');
+  assert.match(r.out, /Sauté/, '…et le ranger là où le titre annonce cette raison-là');
+});
+
+test('T8 — le parcours NEUF pose toujours secrets.yml ET ci.yml : rien n\'a bougé de ce côté', () => {
+  const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'neuf-wf-')), 'mon-app');
+  const r = lancerSetup(['--stack', 'saas', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes', '--backend', 'local']);
+  assert.equal(r.code, 0, r.err);
+  for (const f of ['.github/workflows/secrets.yml', '.github/workflows/ci.yml']) {
+    assert.ok(fs.existsSync(path.join(dir, f)), `${f} DOIT être posé sur une stack offerte`);
+  }
+});
+
+test('T8 — `/doctor` ne compte plus comme un ✗ ce que le parcours adopté ne pose PAS', () => {
+  // ⛔ `/doctor` est le CRITÈRE OFFICIEL de fin d'installation : son verdict n'est ✅ que si les
+  // items 1 à 17 le sont tous. L'item 8 exigeait `{ci,secrets}.yml` et l'item 10 exigeait
+  // `core.hooksPath = .githooks` — trois choses qu'un projet adopté correctement installé n'a
+  // délibérément PAS (la CI depuis la tâche 2, le workflow et la clé depuis celle-ci). Un projet
+  // sain n'aurait donc jamais pu obtenir son ✅ : le kit aurait déclaré cassé ce qu'il venait de
+  // faire exprès. Gardé sur les DEUX copies — le plugin Cursor est livré tel quel.
+  for (const rel of ['templates/commands/doctor.md', 'cursor-plugin/commands/doctor.md']) {
+    const lignes = fs.readFileSync(path.resolve(rel), 'utf8').split('\n');
+    const item8 = lignes.find((l) => l.startsWith('8. '));
+    assert.ok(item8, `${rel} : item 8 introuvable`);
+    assert.match(item8, /aucune/, `${rel} : l'item 8 doit nommer le cas du projet adopté`);
+    assert.match(item8, /choix, pas un ✗/, `${rel} : l'item 8 doit dire que l'absence n'est PAS un ✗ — sinon le verdict reste bloqué`);
+    const hooks = lignes.find((l) => l.includes('core.hooksPath') && l.includes('checks.mjs'));
+    assert.ok(hooks, `${rel} : la ligne core.hooksPath de l'item 10 introuvable`);
+    assert.match(hooks, /remplace/, `${rel} : dire « pose la clé » sans dire qu'elle REMPLACE .git/hooks/ est le défaut qu'on vient de corriger`);
+    assert.match(hooks, /choix, pas un ✗/, `${rel} : une clé volontairement absente ne doit pas bloquer le verdict`);
+    // ── LE DISCRIMINANT : les deux items restent des VÉRIFICATIONS pour les 4 stacks offertes.
+    assert.match(item8, /workflows\/\{ci,secrets\}\.yml/, `${rel} : l'item 8 doit continuer d'exiger les workflows là où le kit les pose`);
+    assert.match(hooks, /git config core\.hooksPath \.githooks/, `${rel} : et la commande de rattrapage doit rester`);
   }
 });

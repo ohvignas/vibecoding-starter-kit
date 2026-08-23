@@ -10,7 +10,8 @@ import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
 import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook, runbookConcatene } from './lib/commands-list.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS } from './lib/matrix.mjs';
-import { estAdopte, adapterGlossaireAdopte, STACK_AUCUNE, entreesDuProjet, renderInventaire, peutDemanderAdoption, erreursAdoption, erreursAdoptionNonInteractive, runAdoptWizard } from './lib/adoption.mjs';
+import { estAdopte, adapterGlossaireAdopte, STACK_AUCUNE, entreesDuProjet, renderInventaire, peutDemanderAdoption, erreursAdoption, erreursAdoptionNonInteractive, runAdoptWizard, sonderSecuriteProjet } from './lib/adoption.mjs';
+import { renderAccordGitignore, appliquerGitignore } from './lib/gitignore-adoption.mjs';
 import { renderColleMoi } from './lib/colle-moi.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
@@ -24,7 +25,7 @@ import { writeStackEnvironment } from './lib/environment.mjs';
 import { choisirMode, buildArgsFromAnswers, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
 import { renderRunDoc, renderRunDocObserve } from './lib/run-doc.mjs';
 import { mergeManagedSection } from './lib/managed-section.mjs';
-import { supportsColor, ok } from './lib/ui.mjs';
+import { supportsColor, ok, hint } from './lib/ui.mjs';
 
 // Racine du kit = dossier parent de scripts/ — fiable quel que soit le cwd de lancement
 // (fini les 22 ENOENT silencieux quand on lance le script depuis un autre dossier).
@@ -70,6 +71,11 @@ async function main() {
     return;
   }
   let args;
+  // CE QUE LE PARCOURS ADOPTÉ A RELEVÉ, ET CE À QUOI L'UTILISATEUR A DIT OUI. Les deux restent
+  // `null`/`{}` sur le parcours NEUF : chaque garde plus bas les lit derrière un `estAdopte`, et
+  // `initProjectGit` reçoit alors `accordHooks: undefined` — exactement la valeur d'avant.
+  let securiteAdoption = null;
+  let accordsAdoption = {};
   // Mode --adopt : installe la MÉTHODE dans un projet qui existe déjà. Passe AVANT le wizard du
   // parcours neuf (voir `choisirMode`), qui commencerait par demander une stack — celle qu'on
   // refuse précisément de revendiquer ici. Le parcours neuf ne voit jamais ce bloc : il ne bouge pas.
@@ -94,9 +100,11 @@ async function main() {
       const readline = await import('node:readline/promises');
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       wireSigint(rl);
-      try { reponses = await runAdoptWizard((q) => rl.question(q), on, process.stdout, { projectDir, entrees, assistant: base.assistant }); }
+      try { reponses = await runAdoptWizard((q) => rl.question(q), on, process.stdout, { projectDir, entrees, assistant: base.assistant, sonder: (a) => sonderSecuriteProjet(projectDir, a) }); }
       finally { rl.close(); }
       if (!reponses) return; // refus : le parcours l'a dit, et rien n'a été touché
+      securiteAdoption = reponses.securite;
+      accordsAdoption = reponses.accords ?? {};
     } else {
       // Les réponses viennent des drapeaux — mais on MONTRE quand même ce qu'on a trouvé : c'est
       // la seule preuve que le kit vise le bon dossier, et elle ne coûte rien.
@@ -104,6 +112,8 @@ async function main() {
       const errs = erreursAdoptionNonInteractive(base, entrees, projectDir);
       if (errs.length) { console.error('\n' + errs.join('\n')); process.exit(1); }
       reponses = { assistant: base.assistant };
+      // Hors terminal, personne ne peut répondre : `accordsAdoption` reste vide, et la sonde est
+      // relevée plus bas — au même endroit que pour `--stack aucune` (voir après `buildRunPlan`).
     }
     args = { ...base, stack: STACK_AUCUNE, assistant: reponses.assistant, project: projectDir };
   } else if (mode === 'wizard') {
@@ -128,6 +138,18 @@ async function main() {
 
   const { assets, projectDir } = buildRunPlan(args, baseDir);
   if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }
+
+  // ⛔ LA SONDE SE RELÈVE POUR TOUT PROJET ADOPTÉ, PAS SEULEMENT DERRIÈRE `--adopt`. Il y a DEUX
+  // portes vers ce parcours : `--adopt` (qui questionne) et `--stack aucune` en drapeaux (qui ne
+  // questionne jamais, et c'est par là que passent les tests et les scripts). Ne protéger que la
+  // première ferait dépendre le `.gitignore` de la porte empruntée — mesuré : par la porte des
+  // drapeaux, `.env` restait suivi. Sans accord recueilli, `accordsAdoption` est vide, ce qui
+  // n'est PAS un oui : `appliquerGitignore` n'écrit alors que ce qui ne renverse rien.
+  // L'écran est imprimé quand même — le kit dit toujours ce qu'il écrit, même sans personne en face.
+  if (estAdopte(args.stack) && !securiteAdoption) {
+    securiteAdoption = sonderSecuriteProjet(projectDir, args.assistant);
+    if (securiteAdoption.gitignore.aAjouter.length) console.log('\n' + renderAccordGitignore(securiteAdoption.gitignore, hint, on));
+  }
 
   const done = [], kept = [], failed = [];
   // Les fichiers que `--force` n'a PAS écrasés parce que le kit a promis de ne jamais les
@@ -363,8 +385,25 @@ async function main() {
     try { track('.env.example', copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt)); }
     catch (e) { failed.push(`.env.example (${e.message})`); }
   }
-  try { track('scan secrets (gitleaks)', copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt)); }
-  catch (e) { failed.push(`secrets (${e.message})`); }
+  // ⛔ SUR UN PROJET ADOPTÉ, CE FICHIER NE S'IMPOSE PAS — même traitement que `ci.yml` (tâche 2),
+  // pour une raison qui lui est propre : ce n'est pas un fichier posé dans un dossier, c'est du
+  // CODE QUI S'EXÉCUTERA sur le compte GitHub de quelqu'un d'autre, à chaque push, avec ses
+  // minutes d'Actions et sa croix rouge si le scan casse. Mesuré : il était posé sur `aucune`
+  // (la tâche 2 avait traité `ci.yml`, pas celui-ci). Il attend donc un OUI explicite — et hors
+  // terminal, où personne ne peut le donner, il n'est pas posé et le rapport dit où le trouver.
+  if (!estAdopte(args.stack) || accordsAdoption.secrets === true) {
+    try { track('scan secrets (gitleaks)', copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt)); }
+    catch (e) { failed.push(`secrets (${e.message})`); }
+  } else if (securiteAdoption?.workflowSecrets) {
+    kept.push('.github/workflows/secrets.yml (le tien — jamais écrasé)');
+  } else {
+    cloneSkipped.push({
+      name: '.github/workflows/secrets.yml (scan de secrets GitHub)',
+      reason: accordsAdoption.secrets === false
+        ? 'tu as refusé — aucun workflow n\'a été posé dans ton dépôt.'
+        : 'un workflow tourne à chaque push sur TON compte GitHub : le kit ne le pose pas sans accord. Pour l\'ajouter : relance `--adopt` dans un terminal, ou copie `templates/security/secrets.yml` du kit.',
+    });
+  }
 
   // CI par stack (tous assistants). La checklist d'install, c'est docs/A-FAIRE.md — un seul fichier.
   // Pas de `templates/ci/aucune.yml` : le kit ne connaît ni le build ni les tests d'un projet adopté.
@@ -442,6 +481,26 @@ async function main() {
   if (!estAdopte(args.stack)) {
     try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
     catch (e) { failed.push(`.gitignore (${e.message})`); }
+  } else if (securiteAdoption) {
+    // ⛔ LA FUITE QUE CETTE BRANCHE FERME, MESURÉE. `copyIfAbsent` saute un fichier existant — et
+    // le cas NORMAL d'un projet existant est justement d'avoir déjà son `.gitignore`. Sur un
+    // projet dont le `.gitignore` disait `node_modules/` et rien d'autre, `git check-ignore .env`
+    // sortait en 1 APRÈS installation : le kit posait un scan de secrets, écrivait partout que les
+    // clés vont dans `.env`, et `.env` partait au premier `git add -A`. On COMPLÈTE donc, en fin
+    // de fichier (la dernière règle qui matche gagne), sans jamais réécrire une ligne existante.
+    try {
+      const { ecrites, refusees } = appliquerGitignore(securiteAdoption.gitignore, { accord: accordsAdoption.gitignore });
+      if (ecrites.length) done.push(`.gitignore ${securiteAdoption.gitignore.existe ? 'complété' : 'créé'} (${ecrites.join(', ')})`);
+      else if (!refusees.length) kept.push('.gitignore (il protégeait déjà tout ce que le kit dépose)');
+      if (refusees.length) {
+        cloneSkipped.push({
+          name: `.gitignore : ${refusees.join(', ')}`,
+          reason: accordsAdoption.gitignore === false
+            ? 'tu as refusé — rien n\'a été écrit dans ton `.gitignore`. Vérifie toi-même que `.env` y est.'
+            : `ces règles renversent une ligne que tu as écrite (${securiteAdoption.gitignore.battues.map((b) => `« ${b.ligne} » décide de ${b.chemin}`).join(' ; ')}) — le kit ne renverse pas une intention sans accord. Relance \`--adopt\` dans un terminal pour trancher.`,
+        });
+      }
+    } catch (e) { failed.push(`.gitignore (${e.message})`); }
   }
   // Fins de ligne : sur Windows, sans ça, les hooks bash du projet sont checkoutés en CRLF et
   // échouent sur « bad interpreter: ^M » — le scan de secrets ne tourne plus, sans rien dire.
@@ -484,7 +543,9 @@ async function main() {
   // Dépôt git réel : hooks pre-commit actifs immédiatement + premier point de retour arrière.
   // Ce que le kit n'a pas pu activer (dépôt parent, core.hooksPath déjà pris) part en « Sauté »,
   // avec la commande pour rattraper — jamais en ✅ silencieux.
-  const g = initProjectGit({ projectDir });
+  // `accordHooks` n'existe que sur le parcours adopté, et vaut `undefined` partout ailleurs :
+  // le parcours neuf pose sa clé exactement comme avant (voir gitinit.mjs, les trois valeurs).
+  const g = initProjectGit({ projectDir, accordHooks: accordsAdoption.hooks });
   done.push(...g.done);
   failed.push(...g.failed);
   cloneSkipped.push(...g.skipped);

@@ -5,6 +5,7 @@
 // `aucune` est donc la stack « je n'en revendique pas ».
 
 import fs from 'node:fs';
+import path from 'node:path';
 // Le menu (libellés) et le rendu d'une question à choix numérotés viennent du wizard du parcours
 // NEUF ; les CLÉS et la VALIDATION viennent d'args.mjs, comme pour toutes les autres branches du
 // CLI. Juger l'assistant contre une liste et le reste du CLI contre une autre, c'était déjà deux
@@ -12,6 +13,8 @@ import fs from 'node:fs';
 import { ASSISTANT_KEYS, validateArgs } from './args.mjs';
 import { ASSISTANTS, pickOne } from './wizard.mjs';
 import { heading, hint } from './ui.mjs';
+import { planGitignore, renderAccordGitignore } from './gitignore-adoption.mjs';
+import { hooksMaison } from './gitinit.mjs';
 
 // POURQUOI ELLE N'EST NI DANS `STACKS` NI DANS `AI_CONTEXT` : trois tests encodent l'invariant
 // « toute clé de STACKS est une stack OFFERTE au débutant » (bannière README, guide 01, question
@@ -135,9 +138,56 @@ export function erreursAdoptionNonInteractive(args, entrees, projectDir) {
   return errors;
 }
 
-// LES DEUX QUESTIONS du parcours adopté. La stack n'en fait PAS partie : elle vaut `aucune` par
+// ── LES TROIS ÉCRITURES QUI NE S'IMPOSENT PAS, ET LA SONDE QUI LES TROUVE ─────────────────────
+//
+// Un projet neuf n'a rien à perdre : le kit pose son `.gitignore`, ses hooks et ses workflows dans
+// un dossier vide. Un projet ADOPTÉ, si — et ces trois-là ne se voient pas passer :
+//   · `.gitignore`   — l'ajout est en FIN de fichier, donc il gagne (git tranche par la dernière
+//                      règle qui matche). Il bat même un `!.env` écrit exprès, et c'est justement
+//                      pour ça qu'il doit le NOMMER avant.
+//   · `core.hooksPath` — la clé ne s'ajoute pas à `.git/hooks/`, elle le REMPLACE : tout ce que
+//                      l'utilisateur y avait cesse de tourner, sans qu'un fichier bouge.
+//   · `.github/workflows/secrets.yml` — un workflow GitHub qui tourne à CHAQUE push, sur SON
+//                      compte, avec ses minutes d'Actions et sa croix rouge s'il échoue.
+//
+// La sonde est passée au parcours (et pas lue dedans) pour une raison de test : un wizard qui
+// ouvrirait le disque lui-même ne pourrait plus être exercé sans fabriquer un vrai projet.
+export function sonderSecuriteProjet(projectDir, assistant) {
+  return {
+    gitignore: planGitignore(projectDir, assistant),
+    hooks: hooksMaison(projectDir),
+    workflowSecrets: fs.existsSync(path.join(projectDir, '.github/workflows/secrets.yml')),
+  };
+}
+
+// L'écran du scan de secrets. Il nomme CE QU'ON ÉTEINT — sans ça, « j'active les hooks ? » est une
+// question à laquelle personne ne peut répondre en connaissance de cause.
+export function renderAccordHooks(hooks, on) {
+  return [
+    `  Ton dépôt a déjà ses propres hooks git : ${hooks.join(', ')}`,
+    '  Le kit active son scan de secrets par `core.hooksPath` — et cette clé ne s\'AJOUTE pas aux',
+    '  tiens : elle les REMPLACE. Les fichiers restent, ils ne tourneront plus.',
+    hint('  (non = tes hooks continuent, le scan de secrets du kit ne tourne pas — c\'est réversible en une commande)', on),
+  ].join('\n');
+}
+
+// L'écran du workflow GitHub. Ce qui compte ici n'est pas le fichier, c'est OÙ il s'exécute.
+export function renderAccordSecretsWorkflow(on) {
+  return [
+    '  Le kit peut poser `.github/workflows/secrets.yml` : un scan de secrets (gitleaks) qui',
+    '  tourne sur GitHub à CHAQUE push — sur ton compte, avec tes minutes d\'Actions.',
+    hint('  (non = rien n\'est posé ; le fichier reste disponible dans le kit, à copier quand tu veux)', on),
+  ].join('\n');
+}
+
+// LES QUESTIONS du parcours adopté. La stack n'en fait PAS partie : elle vaut `aucune` par
 // construction. Renvoie `null` si l'utilisateur refuse le dossier proposé — rien n'a été touché.
-export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assistant: fourni }) {
+//
+// `sonder` est une FONCTION de l'assistant, pas un objet : les règles `.gitignore` dépendent de
+// l'assistant (`docs/memory/.edit-queue.log` n'existe que sous Cursor), et l'assistant se décide
+// à la question précédente. Absente, aucune des trois questions de sécurité n'est posée et le
+// parcours rend exactement ce qu'il rendait avant — c'est ce qui laisse le reste du CLI immobile.
+export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assistant: fourni, sonder }) {
   out.write('\n' + heading('Vibecoding Starter Kit · projet existant', on) + '\n\n');
   out.write(renderInventaire(projectDir, entrees, on) + '\n\n');
 
@@ -159,7 +209,37 @@ export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assist
   // est masquée sous Cursor et Codex). Tâche 9 : la poser sans le run derrière serait une promesse
   // que rien ne tient, et l'ajouter ici ne coûtera aucune réécriture de ce qui précède.
 
-  return { assistant };
+  if (!sonder) return { assistant };
+
+  // ── LES ACCORDS DE SÉCURITÉ ──────────────────────────────────────────────────────────────
+  // Chacun n'est POSÉ QUE S'IL Y A QUELQUE CHOSE À DÉCIDER : un projet dont le `.gitignore`
+  // protège déjà tout, sans hook maison et avec son workflow, ne voit aucune de ces questions.
+  // Une question dont la réponse ne change rien est du bruit, et le bruit fait taper « o » sans lire.
+  const securite = sonder(assistant);
+  const accords = {};
+
+  if (securite.gitignore.aAjouter.length) {
+    out.write('\n' + renderAccordGitignore(securite.gitignore, hint, on) + '\n');
+    // Défaut OUI : ne rien faire laisse `.env` suivi, et c'est la fuite que tout le reste du kit
+    // suppose fermée (le scan de secrets, `.env.example`, chaque guide qui dit « ta clé va dans .env »).
+    accords.gitignore = await demanderOuiNon(ask, on, out, '  Je complète ton `.gitignore` ? [O/n] : ', true);
+    if (!accords.gitignore) out.write(hint('  D\'accord — ton `.gitignore` n\'est pas touché. Attention : `.env` n\'y est pas protégé.', on) + '\n');
+  }
+
+  if (securite.hooks.length) {
+    out.write('\n' + renderAccordHooks(securite.hooks, on) + '\n');
+    // Défaut NON, et c'est l'inverse du précédent À DESSEIN : ici, dire oui DÉTRUIT quelque chose
+    // qui tourne (ses hooks), alors que dire non ne fait que priver du scan — et on le dit.
+    accords.hooks = await demanderOuiNon(ask, on, out, '  J\'active quand même le scan de secrets du kit ? [o/N] : ', false);
+    if (!accords.hooks) out.write(hint('  D\'accord — tes hooks continuent de tourner, le scan de secrets du kit ne tournera pas.', on) + '\n');
+  }
+
+  if (!securite.workflowSecrets) {
+    out.write('\n' + renderAccordSecretsWorkflow(on) + '\n');
+    accords.secrets = await demanderOuiNon(ask, on, out, '  Je pose ce workflow GitHub ? [o/N] : ', false);
+  }
+
+  return { assistant, accords, securite };
 }
 
 // ── LE GLOSSAIRE, ET POURQUOI IL A BESOIN DE SA PROPRE ADAPTATION ─────────────────────────────
