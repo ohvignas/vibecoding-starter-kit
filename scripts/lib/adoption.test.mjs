@@ -185,8 +185,9 @@ test('adoption — parseArgs accepte --adopt', () => {
 
 test('adoption — le parcours adopté MONTRE ce qu\'il a trouvé, puis demande l\'assistant', async () => {
   const { out, texte } = capture();
-  const r = await runAdoptWizard(scripted(['o', '2']), false, out, { projectDir: '/tmp/mon-app', entrees: ['README.md', 'src'] });
-  assert.deepEqual(r, { assistant: 'claude-code' });
+  // 3ᵉ réponse : le scan autoskills (tâche 9), posé sous Claude Code et masqué ailleurs.
+  const r = await runAdoptWizard(scripted(['o', '2', 'n']), false, out, { projectDir: '/tmp/mon-app', entrees: ['README.md', 'src'] });
+  assert.deepEqual(r, { assistant: 'claude-code', autoskills: false });
   const t = texte();
   assert.match(t, /\/tmp\/mon-app/, 'le dossier visé doit être écrit noir sur blanc');
   assert.match(t, /README\.md/, 'MONTRER ce qu\'on a trouvé — jamais de devinette silencieuse');
@@ -293,8 +294,8 @@ test('adoption — une réponse non comprise fait REDEMANDER : « nan » n\'ouvr
 test('adoption — Entrée vaut le défaut ANNONCÉ dans le libellé, dans les deux sens', async () => {
   // La chaîne vide est un consentement explicite au défaut écrit ([O/n] ou [o/N]) — c'est le seul
   // raccourci gardé, et il ne dit jamais oui là où le libellé annonce non.
-  const surProjet = await runAdoptWizard(scripted(['', '2']), false, NULL_OUT, { projectDir: '/tmp/a', entrees: ['src'] });
-  assert.deepEqual(surProjet, { assistant: 'claude-code' }, '[O/n] + Entrée = oui');
+  const surProjet = await runAdoptWizard(scripted(['', '2', 'n']), false, NULL_OUT, { projectDir: '/tmp/a', entrees: ['src'] });
+  assert.deepEqual(surProjet, { assistant: 'claude-code', autoskills: false }, '[O/n] + Entrée = oui');
   const surVide = await runAdoptWizard(scripted(['']), false, NULL_OUT, { projectDir: '/tmp/b', entrees: [] });
   assert.equal(surVide, null, '[o/N] + Entrée = non');
 });
@@ -1075,9 +1076,10 @@ const SONDE_RIEN = () => ({ gitignore: { existe: true, aAjouter: [], battues: []
 
 test('T8 — rien à décider : le parcours adopté ne pose AUCUNE question de sécurité', async () => {
   // Une question dont la réponse ne change rien est du bruit — et le bruit fait taper « o » sans
-  // lire, ce qui détruit la valeur des deux autres questions. Le script ne porte que 2 réponses :
-  // une 3ᵉ question ferait échouer bruyamment (`undefined.trim()`), et c'est ce qui rend le test honnête.
-  const r = await runAdoptWizard(scripted(['o', '2']), false, NULL_OUT, {
+  // lire, ce qui détruit la valeur des deux autres questions. Le script ne porte que 3 réponses :
+  // une question DE SÉCURITÉ de plus ferait échouer bruyamment (`undefined.trim()`), et c'est ce
+  // qui rend le test honnête. Les 3 réponses : consentement, assistant, scan autoskills (tâche 9).
+  const r = await runAdoptWizard(scripted(['o', '2', 'n']), false, NULL_OUT, {
     projectDir: '/tmp/a', entrees: ['src'], sonder: SONDE_RIEN,
   });
   assert.equal(r.assistant, 'claude-code');
@@ -1090,7 +1092,7 @@ test('T8 — le `.gitignore` : l\'écran NOMME ce qu\'il ajoute et ce qu\'il ren
     gitignore: { existe: true, aAjouter: ['.env', '.env.*'], battues: [{ ligne: '!.env', regle: '.env', chemin: '.env' }] },
     hooks: [], workflowSecrets: true,
   });
-  const r = await runAdoptWizard(scripted(['o', '2', 'n']), false, out, { projectDir: '/tmp/a', entrees: ['src'], sonder });
+  const r = await runAdoptWizard(scripted(['o', '2', 'n', 'n']), false, out, { projectDir: '/tmp/a', entrees: ['src'], sonder });
   const t = texte();
   assert.match(t, /\.env/, 'les règles ajoutées doivent être écrites AVANT la question');
   assert.match(t, /« !\.env »/, '⛔ la règle battue doit être citée telle quelle — c\'est toute la raison de l\'écran');
@@ -1106,7 +1108,7 @@ test('T8 — les hooks : la question NOMME ce qu\'elle éteint, et son défaut e
   // Le libellé de la question passe par `ask`, pas par `out` : on capture donc AUSSI les questions
   // — sans ça, un test sur le défaut annoncé ne lirait jamais le texte qui l'annonce.
   const questions = [];
-  const reponses = ['o', '2', ''];
+  const reponses = ['o', '2', 'n', ''];
   let i = 0;
   const ask = async (q) => { questions.push(q); return reponses[i++]; };
   const r = await runAdoptWizard(ask, false, out, { projectDir: '/tmp/a', entrees: ['src'], sonder });
@@ -1119,12 +1121,12 @@ test('T8 — les hooks : la question NOMME ce qu\'elle éteint, et son défaut e
 test('T8 — le workflow GitHub : demandé s\'il manque, jamais si le sien est déjà là', async () => {
   const { out, texte } = capture();
   const sonder = () => ({ gitignore: { existe: true, aAjouter: [], battues: [] }, hooks: [], workflowSecrets: false });
-  const r = await runAdoptWizard(scripted(['o', '2', 'o']), false, out, { projectDir: '/tmp/a', entrees: ['src'], sonder });
+  const r = await runAdoptWizard(scripted(['o', '2', 'n', 'o']), false, out, { projectDir: '/tmp/a', entrees: ['src'], sonder });
   assert.match(texte(), /chaque push/i, 'ce qui compte n\'est pas le fichier, c\'est OÙ il s\'exécute');
   assert.match(texte(), /GitHub/);
   assert.equal(r.accords.secrets, true);
-  // Déjà présent → pas de question (le script n'a que 2 réponses : une 3ᵉ jetterait).
-  const dejaLa = await runAdoptWizard(scripted(['o', '2']), false, NULL_OUT, { projectDir: '/tmp/a', entrees: ['src'], sonder: SONDE_RIEN });
+  // Déjà présent → pas de question (le script n'a que 3 réponses : une 4ᵉ jetterait).
+  const dejaLa = await runAdoptWizard(scripted(['o', '2', 'n']), false, NULL_OUT, { projectDir: '/tmp/a', entrees: ['src'], sonder: SONDE_RIEN });
   assert.equal('secrets' in dejaLa.accords, false, 'un workflow déjà là ne se re-demande pas');
 });
 

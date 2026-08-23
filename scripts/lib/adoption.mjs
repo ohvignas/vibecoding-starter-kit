@@ -15,6 +15,7 @@ import { ASSISTANTS, pickOne } from './wizard.mjs';
 import { heading, hint } from './ui.mjs';
 import { planGitignore, renderAccordGitignore } from './gitignore-adoption.mjs';
 import { hooksAEteindre } from './gitinit.mjs';
+import { supporteAutoskills, renderProposeAutoskills } from './autoskills.mjs';
 
 // POURQUOI ELLE N'EST NI DANS `STACKS` NI DANS `AI_CONTEXT` : trois tests encodent l'invariant
 // « toute clé de STACKS est une stack OFFERTE au débutant » (bannière README, guide 01, question
@@ -187,7 +188,10 @@ export function renderAccordSecretsWorkflow(on) {
 // l'assistant (`docs/memory/.edit-queue.log` n'existe que sous Cursor), et l'assistant se décide
 // à la question précédente. Absente, aucune des trois questions de sécurité n'est posée et le
 // parcours rend exactement ce qu'il rendait avant — c'est ce qui laisse le reste du CLI immobile.
-export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assistant: fourni, sonder }) {
+// `skills` — LE DRAPEAU `--no-skills`, ET POURQUOI IL DOIT ARRIVER JUSQU'ICI. La question 2/2
+// débouche sur une installation de skills ; sous `--no-skills`, elle serait une question dont la
+// réponse ne peut rien produire. Le kit ne pose pas de question qu'il n'honorera pas.
+export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assistant: fourni, sonder, skills = true }) {
   out.write('\n' + heading('Vibecoding Starter Kit · projet existant', on) + '\n\n');
   out.write(renderInventaire(projectDir, entrees, on) + '\n\n');
 
@@ -205,11 +209,19 @@ export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assist
   // ci-dessus, lui, n'est jamais sauté par un drapeau — c'est deux choses différentes.
   const assistant = fourni ?? await pickOne(ask, on, out, 'Quel assistant IA utilises-tu ?', ASSISTANTS);
 
-  // Question 2/2 — LE SCAN AUTOSKILLS. Sa place est ICI, après l'assistant dont elle dépend (elle
-  // est masquée sous Cursor et Codex). Tâche 9 : la poser sans le run derrière serait une promesse
-  // que rien ne tient, et l'ajouter ici ne coûtera aucune réécriture de ce qui précède.
+  // Question 2/2 — LE SCAN AUTOSKILLS. Sa place est ICI, après l'assistant dont elle dépend : elle
+  // est MASQUÉE sous Cursor et Codex, parce que l'`AGENT_FOLDER_MAP` d'autoskills ne les connaît
+  // pas et qu'aucun lien n'y serait créé (voir autoskills.mjs). Défaut NON : c'est du code TIERS,
+  // sous une licence que le kit n'a pas, et dire non ne prive de rien qui vienne du kit.
+  // La CLÉ n'existe que si la question a été posée — `'autoskills' in reponses` distingue donc
+  // « refusé » de « jamais proposé », et le run n'a lieu que sur un `true` explicite.
+  const autoskills = {};
+  if (skills && supporteAutoskills(assistant)) {
+    out.write('\n' + renderProposeAutoskills(on) + '\n');
+    autoskills.autoskills = await demanderOuiNon(ask, on, out, '  Je lance ce scan ? [o/N] : ', false);
+  }
 
-  if (!sonder) return { assistant };
+  if (!sonder) return { assistant, ...autoskills };
 
   // ── LES ACCORDS DE SÉCURITÉ ──────────────────────────────────────────────────────────────
   // Chacun n'est POSÉ QUE S'IL Y A QUELQUE CHOSE À DÉCIDER : un projet dont le `.gitignore`
@@ -239,7 +251,7 @@ export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assist
     accords.secrets = await demanderOuiNon(ask, on, out, '  Je pose ce workflow GitHub ? [o/N] : ', false);
   }
 
-  return { assistant, accords, securite };
+  return { assistant, ...autoskills, accords, securite };
 }
 
 // ── LE GLOSSAIRE, ET POURQUOI IL A BESOIN DE SA PROPRE ADAPTATION ─────────────────────────────

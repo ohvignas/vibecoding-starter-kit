@@ -18,6 +18,7 @@ import { toCursorAgent } from './lib/agent-frontmatter.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent, writeIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, summarizeClone, installCaveman, installSkills } from './lib/external.mjs';
+import { AUTOSKILLS, DOSSIER_ABRI, lancerAutoskills } from './lib/autoskills.mjs';
 import { initProjectGit } from './lib/gitinit.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
@@ -76,6 +77,9 @@ async function main() {
   // `initProjectGit` reçoit alors `accordHooks: undefined` — exactement la valeur d'avant.
   let securiteAdoption = null;
   let accordsAdoption = {};
+  // Le scan `autoskills` : `false` partout ailleurs, y compris sur le parcours NEUF, qui ne le voit
+  // jamais. Il n'est vrai que sur un `--adopt` interactif où l'utilisateur a lu l'écran et dit oui.
+  let accordAutoskills = false;
   // Mode --adopt : installe la MÉTHODE dans un projet qui existe déjà. Passe AVANT le wizard du
   // parcours neuf (voir `choisirMode`), qui commencerait par demander une stack — celle qu'on
   // refuse précisément de revendiquer ici. Le parcours neuf ne voit jamais ce bloc : il ne bouge pas.
@@ -100,11 +104,16 @@ async function main() {
       const readline = await import('node:readline/promises');
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       wireSigint(rl);
-      try { reponses = await runAdoptWizard((q) => rl.question(q), on, process.stdout, { projectDir, entrees, assistant: base.assistant, sonder: (a) => sonderSecuriteProjet(projectDir, a) }); }
+      // `skills` : sous `--no-skills`, la question autoskills n'est pas posée — elle débouche sur
+      // une installation de skills, et le kit ne pose pas de question qu'il n'honorera pas.
+      try { reponses = await runAdoptWizard((q) => rl.question(q), on, process.stdout, { projectDir, entrees, assistant: base.assistant, sonder: (a) => sonderSecuriteProjet(projectDir, a), skills: !base.noSkills }); }
       finally { rl.close(); }
       if (!reponses) return; // refus : le parcours l'a dit, et rien n'a été touché
       securiteAdoption = reponses.securite;
       accordsAdoption = reponses.accords ?? {};
+      // Le scan tiers n'est pas un « accord de sécurité » : il vit à côté, et la clé n'existe que si
+      // la question a été posée. Absente = jamais proposée ; `false` = refusé. Ni l'une ni l'autre ne lance.
+      accordAutoskills = reponses.autoskills === true;
     } else {
       // Les réponses viennent des drapeaux — mais on MONTRE quand même ce qu'on a trouvé : c'est
       // la seule preuve que le kit vise le bon dossier, et elle ne coûte rien.
@@ -574,6 +583,26 @@ async function main() {
         failed.push(...skl.failed.map((f) => `skill stack : ${f}`));
       }
     } catch (e) { failed.push(`skills stack (${e.message})`); }
+
+    // ── LE SCAN TIERS, EN DERNIER ET SOUS ACCORD EXPLICITE ────────────────────────────────────
+    // En dernier parce qu'il n'a de sens qu'une fois les skills du kit posés : c'est CE disque-là
+    // qu'`autoskills` écraserait, et c'est celui que `lancerAutoskills` écarte le temps du run.
+    // Dans ce bloc, donc jamais sous `--no-skills` — le drapeau vaut aussi pour les skills tiers.
+    if (accordAutoskills) {
+      console.log(`\nScan ${AUTOSKILLS.commande} (outil tiers de ${AUTOSKILLS.auteur}, licence ${AUTOSKILLS.licence}) — dry-run d'abord…`);
+      const a = lancerAutoskills({ projectDir, assistant: args.assistant });
+      // Le rapport re-nomme l'auteur et la licence : la ligne ✅ est la trace qui restera à
+      // l'écran, et elle ne doit pas laisser croire que ces skills viennent du kit.
+      // « remis en place » n'est écrit que s'il y avait quelque chose à remettre : sur un run où
+      // `npx skills add` a échoué, le kit n'avait AUCUN skill design sur disque, et le dire quand
+      // même serait rassurer sur une protection qui n'a rien eu à protéger.
+      if (a.lance) done.push(`skills tiers : ${AUTOSKILLS.commande} (${AUTOSKILLS.auteur}, ${AUTOSKILLS.licence}) — NON relus par le kit${a.proteges.length ? ` ; tes ${a.proteges.length} skills design du kit ont été remis en place` : ''}`);
+      else cloneSkipped.push({ name: `skills tiers : ${AUTOSKILLS.commande}`, reason: `non lancé (${a.echec}) — optionnel, rien n'a été installé et tes skills design sont intacts` });
+      // Un skill du kit que la restauration n'a pas pu remettre n'existe plus qu'à l'abri : il est
+      // toujours là, mais pas à sa place. Le taire laisserait `/doctor` item 11 le déclarer absent
+      // sans que personne sache où il est passé — donc ❌, avec le chemin, pas un silence.
+      if (a.perdus?.length) failed.push(`skills design NON remis en place : ${a.perdus.join(', ')} — ils sont dans \`${DOSSIER_ABRI}/\`, déplace-les à la main`);
+    }
   }
 
   console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, promesse, inAssistant: assets.inAssistant, skipped: cloneSkipped, failed }));
