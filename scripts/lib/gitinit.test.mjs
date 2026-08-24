@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { initProjectGit, hooksMaison, hooksAEteindre } from './gitinit.mjs';
+import { initProjectGit, hooksMaison, hooksAEteindre, memeDossier } from './gitinit.mjs';
 
 test('initProjectGit : séquence complète quand pas de dépôt', () => {
   const calls = [];
@@ -244,4 +244,52 @@ test('E4 — un hook maison ET la clé déjà posée : plus rien à décider, on
   assert.deepEqual(hooksAEteindre(dir, run), [], 'la clé posée, la décision est prise : plus rien à demander');
   assert.deepEqual(hooksMaison(dir, run), ['pre-commit'], '…mais le fichier est toujours là, et la sonde brute le voit encore');
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// E9 — LA COMPARAISON QUI DÉCIDE SI LE KIT A LE DROIT D'ÉCRIRE DANS UNE CONFIG GIT.
+//
+// `memeDossier` répond à « ce dossier est-il la RACINE de son dépôt ? ». Se tromper coûte cher
+// dans les DEUX sens, et les deux sont gardés ici :
+//  · dire « parent » à tort → le kit saute la pose de `core.hooksPath`, et le scan de secrets
+//    ne tourne pas. Mesuré sur windows-latest : 6 tests E4 rouges, verts sur ubuntu et macOS,
+//    parce que `os.tmpdir()` rend la forme courte 8.3 là où git rend la forme longue.
+//  · dire « même dossier » à tort → le kit écrit dans la config d'un dépôt QUI N'EST PAS LE SIEN.
+//    C'est le sens dangereux, et c'est le contrôle négatif ci-dessous.
+test('E9 — deux écritures du MÊME dossier sont reconnues (lien, séparateur, casse selon la plateforme)', () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'meme-'));
+  const reel = fs.realpathSync(base);
+
+  assert.equal(memeDossier(base, base), true, 'un dossier est lui-même');
+  // os.tmpdir() passe par un lien sur macOS (/tmp → /private/tmp) : les deux écritures du même
+  // dossier doivent se rejoindre, sinon le kit croirait le projet dans un dépôt parent.
+  assert.equal(memeDossier(base, reel), true, 'le chemin brut et son realpath désignent le même dossier');
+  // git rend ses chemins en '/', Node en séparateur natif.
+  assert.equal(memeDossier(reel, reel.split(path.sep).join('/')), true, 'le séparateur ne change pas le dossier');
+
+  fs.rmSync(base, { recursive: true, force: true });
+});
+
+test('E9 — CONTRÔLE NÉGATIF : un sous-dossier n\'est PAS sa racine', () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'meme-neg-'));
+  const sous = path.join(base, 'paquets', 'app');
+  fs.mkdirSync(sous, { recursive: true });
+
+  assert.equal(memeDossier(base, sous), false, 'un sous-dossier n\'est pas la racine : sinon le kit écrit dans la config du dépôt parent');
+  assert.equal(memeDossier(sous, base), false, 'et la réponse ne dépend pas de l\'ordre des arguments');
+
+  // La casse ne se plie QUE sur win32. Sur un système sensible à la casse, « Projet » et
+  // « projet » sont deux dossiers différents : les confondre ferait écrire le kit dans la config
+  // d'un dépôt qui n'est pas le sien. Deux chemins INEXISTANTS suffisent — `memeDossier` retombe
+  // alors sur `path.resolve`, ce qui isole la règle de casse du système de fichiers de la machine
+  // (macOS est insensible à la casse : on ne pourrait pas créer les deux dossiers pour le mesurer).
+  const attendu = process.platform === 'win32';
+  assert.equal(memeDossier('/x/Projet/app', '/x/projet/app'), attendu,
+    attendu ? 'sur win32 la casse ne distingue pas deux dossiers'
+            : 'hors win32 la casse DISTINGUE : plier partout ferait écrire dans le mauvais dépôt');
+
+  const voisin = fs.mkdtempSync(path.join(os.tmpdir(), 'meme-voisin-'));
+  assert.equal(memeDossier(base, voisin), false, 'deux dossiers distincts restent distincts');
+
+  fs.rmSync(base, { recursive: true, force: true });
+  fs.rmSync(voisin, { recursive: true, force: true });
 });

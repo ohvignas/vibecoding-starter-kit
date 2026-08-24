@@ -8,8 +8,27 @@ const defaultRun = (cmd, args) => execFileSync(cmd, args, { stdio: 'pipe' });
 const HOOKS_PATH = '.githooks';
 // Deux chemins peuvent désigner le même dossier (sur macOS, /tmp est un symlink vers /private/tmp) :
 // comparer les chaînes brutes ferait passer le projet pour un sous-dossier de son propre dépôt.
-const memeDossier = (a, b) => {
-  const vrai = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
+// Le dossier du projet est-il la RACINE de son dépôt, ou un sous-dossier d'un dépôt parent ?
+// Cette question décide si le kit a le droit de toucher `core.hooksPath` — répondre « parent »
+// à tort, c'est sauter la pose et laisser le scan de secrets débranché sans que rien ne le dise.
+//
+// ⛔ TROIS FAÇONS DE SE TROMPER, toutes vécues sur Windows (mesuré : 6 tests E4 rouges sur
+// windows-latest, verts sur ubuntu et macOS) :
+//  1. git rend ses chemins en `/`, Node en `\` → `path.resolve` normalise ;
+//  2. `os.tmpdir()` peut rendre la forme COURTE 8.3 (`RUNNER~1`) là où git rend la forme
+//     longue → `realpathSync.native` résout les deux vers la même forme, ce que le
+//     `realpathSync` JS ne garantit pas ;
+//  3. NTFS est insensible à la casse (`C:\` vs `c:\`) → on compare en minuscules, mais SEULEMENT
+//     sur win32 : plier la casse sous Linux ferait passer deux dossiers réellement distincts
+//     pour le même, et le kit écrirait dans la config d'un dépôt qui n'est pas le sien.
+export const memeDossier = (a, b) => {
+  const vrai = (p) => {
+    let r;
+    try { r = fs.realpathSync.native(p); }
+    catch { try { r = fs.realpathSync(p); } catch { r = p; } }
+    r = path.resolve(r);
+    return process.platform === 'win32' ? r.toLowerCase() : r;
+  };
   return vrai(a) === vrai(b);
 };
 
