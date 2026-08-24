@@ -29,32 +29,34 @@ const STACKS_OFFERTES = ['saas', 'mobile', 'desktop', 'vitrine'];
 const GARDES = ['Règle Preuve', 'Règle Réalité', 'Règle de vérification', 'Boucle d\'itération', 'Règle sous-agents', 'Mémoire du projet', 'Règle secrets', 'Mode apprentissage'];
 
 // Ce qu'un projet ADOPTÉ n'a pas. Liste dérivée des décisions 1, 2, 4 et 8 de la spec
-// (docs/superpowers/specs/2026-08-21-projets-existants-design.md).
+// (docs/superpowers/specs/2026-08-21-projets-existants-design.md, « La liste que ce garde doit
+// connaître », :344-347).
 //
-// DEUX ENTRÉES DE LA LISTE SOURCE (plan, tâche 4) NE SONT VOLONTAIREMENT PAS ICI :
+// UNE SEULE ENTRÉE DE CETTE LISTE SOURCE N'EST VOLONTAIREMENT PAS ICI :
 //
 //  · `docs/ETAT-DES-LIEUX.md` — une substitution de la tâche 3 (SUBSTITUTIONS_ADOPTE,
-//    agents-file.mjs, entrée verifyRule) y renvoie déjà, mais le fichier n'existe qu'après
-//    `--adopt` (tâche 6 : `templates/adoption/ETAT-DES-LIEUX.md`). Mesuré : un scaffold
-//    `--stack aucune` nu ne le pose PAS. Le lister ici ferait rougir ce garde pour un renvoi qui
-//    n'est mort que sur le chemin bas niveau, jamais sur le chemin nominal (`--adopt`).
-//    ✅ FERMÉ PAR LA TÂCHE 6 — mais pas ici : par le troisième test de ce fichier, qui joue un
-//    `--adopt` RÉEL et exige que chaque `docs/…` cité existe sur le disque. C'est la seule forme
-//    qui pouvait couvrir ce fichier-là, puisque son existence dépend du parcours, pas du rendu.
+//    agents-file.mjs, entrée verifyRule) y renvoie, et le parcours adopté le POSE : setup.mjs
+//    (`if (estAdopte(args.stack))`, copie de `templates/adoption/`). Re-mesuré, scaffold réel :
+//    après `--stack aucune` NU, `docs/ETAT-DES-LIEUX.md` existe sur le disque. L'inscrire ici
+//    serait donc FAUX — le fichier que la phrase cite est réellement là, ce n'est pas un renvoi
+//    mort. (Une version antérieure de ce commentaire affirmait l'inverse, « mesuré : un scaffold
+//    `--stack aucune` nu ne le pose PAS » : périmé, la pose n'est plus conditionnée à `--adopt`.)
+//    Son garde n'est de toute façon pas une liste de chaînes, et ne pouvait pas l'être : c'est le
+//    troisième test de ce fichier, qui joue un `--adopt` RÉEL et exige que chaque `docs/…` cité
+//    existe sur le disque — la seule forme qui couvre un fichier dont l'existence dépend du
+//    PARCOURS et non du rendu.
 //
-//  · `docs/DOMAINS.md` — mesuré PRÉSENT après un scaffold `--stack aucune` NU (scaffold réel,
-//    tmpdir, inspection du disque) : `writeStackEnvironment` (environment.mjs:76-79) l'écrit sans
-//    condition, même avec `manifest.domains = {}` (le cas `aucune`, matrix.mjs:261). Le rendu
-//    actuel ne le cite nulle part (la section qui le citait, « Docs du projet », est retirée en
-//    bloc pour `aucune`), donc son absence de cette liste est neutre AUJOURD'HUI — mais l'y mettre
-//    serait FAUX : le fichier qu'une phrase citerait existe réellement, ce ne serait pas un renvoi
-//    mort. Le plan (tâche 7, étape 7.3 : « docs/DOMAINS.md vide : non posé ») confirme que c'est
-//    l'ABSENCE de ce fichier qui est l'état futur, pas sa présence actuelle. LA TÂCHE 7 DOIT LE
-//    SAVOIR : si une règle gardée se met à citer `docs/DOMAINS.md` avant que cette étape ne ferme
-//    le trou, ce garde ne le verra pas.
+// `docs/DOMAINS.md`, LUI, EST BIEN DANS LA LISTE, ET C'EST UN CHANGEMENT. Il en était exclu au
+// motif qu'il était « mesuré PRÉSENT après un scaffold `--stack aucune` NU », `writeStackEnvironment`
+// l'écrivant sans condition. Ce motif est mort : ce bloc porte maintenant un garde
+// `if (!estAdopte(stack))` (environment.mjs:84) — un projet adopté ne déclare aucun domaine, et le
+// catalogue de 0 capacité qu'on lui posait n'était cité par rien. Re-mesuré, scaffold réel :
+// après `node scripts/setup.mjs --stack aucune --assistant claude-code --project <dir> --no-skills`,
+// `docs/DOMAINS.md` N'EXISTE PAS. Une phrase gardée qui le citerait serait donc un renvoi mort,
+// exactement ce que cette liste est là pour attraper.
 const ABSENTS = [
   'maquette/', 'docs/design.md', 'docs/PRD.md', 'docs/ROADMAP.md', 'docs/ARCHITECTURE.md',
-  'AGENTS-stack.md', 'ai-context/', '.env.example',
+  'docs/DOMAINS.md', 'AGENTS-stack.md', 'ai-context/', '.env.example',
 ];
 
 // Ce qu'il A, donc autorisé — et dont la présence RÉELLE dans le rendu est vérifiée ci-dessous,
