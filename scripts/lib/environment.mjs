@@ -7,6 +7,7 @@ import { extendCursorHooks, claudeSettings, prePushScript, preCommitCheckLine } 
 import { renderSetupAi } from './setup-ai.mjs';
 import { renderDomains, secretsBlock, MARQUE_SECRETS, SHARED_DOMAINS, DOMAIN_TRIGGERS } from './domains.mjs';
 import { ensureDir } from './fsops.mjs';
+import { estAdopte } from './adoption.mjs';
 
 // Écrit l'environnement IA d'une stack dans un projet (déclaratif, additif, non destructif).
 export function writeStackEnvironment({ projectDir, source, stack, assistant, skillsInstalled = true }) {
@@ -73,11 +74,20 @@ export function writeStackEnvironment({ projectDir, source, stack, assistant, sk
   // 6b. DOMAINS.md (catalogue métier de la stack) — même protection : `/new-project` l'enrichit.
   // Les déclencheurs (DOMAIN_TRIGGERS) sont RENDUS dans le catalogue, et appliqués au PRD s'il
   // existe déjà (`selectDomains`) : la table pilotait jusqu'ici du vide.
-  try {
-    const rendered = renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS, triggers: DOMAIN_TRIGGERS, prd: read('docs/PRD.md') ?? '' });
-    if (read('docs/DOMAINS.md') === null) { write('docs/DOMAINS.md', rendered); done.push('docs/DOMAINS.md'); }
-    else { write('docs/DOMAINS.md.new', rendered); done.push('docs/DOMAINS.md.new (ton DOMAINS.md est conservé)'); }
-  } catch (e) { failed.push(`DOMAINS (${e.message})`); }
+  //
+  // ⛔ PAS SUR UN PROJET ADOPTÉ. `aucune` ne déclare aucun domaine (matrix.mjs) : le rendu était
+  // un catalogue de 0 capacité (692 octets, 114 mots, mesuré), titré « Capacités métier — stack
+  // aucune », que RIEN dans le projet ne cite — la section « Docs du projet » qui le nommait est
+  // retirée en bloc du bloc adopté (templates.mjs, tâche 3). Un fichier orphelin dont le contenu
+  // est un catalogue vide n'apprend rien à l'IA et suggère au débutant que le kit a échoué.
+  // Ce que le projet a À LA PLACE, et qui n'est pas vide : `docs/ETAT-DES-LIEUX.md`.
+  if (!estAdopte(stack)) {
+    try {
+      const rendered = renderDomains({ stack, domains: manifest.domains, shared: SHARED_DOMAINS, triggers: DOMAIN_TRIGGERS, prd: read('docs/PRD.md') ?? '' });
+      if (read('docs/DOMAINS.md') === null) { write('docs/DOMAINS.md', rendered); done.push('docs/DOMAINS.md'); }
+      else { write('docs/DOMAINS.md.new', rendered); done.push('docs/DOMAINS.md.new (ton DOMAINS.md est conservé)'); }
+    } catch (e) { failed.push(`DOMAINS (${e.message})`); }
+  }
 
   // 6b-bis. Les secrets que ces domaines DÉCLARENT, ajoutés au `.env.example` du projet.
   // Ils étaient déclarés dans matrix.mjs et n'atterrissaient nulle part : l'utilisateur

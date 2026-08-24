@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard, wireSigint, renderNonTtyHelp } from './wizard.mjs';
+import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard, wireSigint, renderNonTtyHelp, ASSISTANTS, choisirMode } from './wizard.mjs';
+import { ASSISTANT_KEYS } from './args.mjs';
 
 const NULL_OUT = { write() {} };
 const scripted = (answers) => { let i = 0; return async () => answers[i++]; };
@@ -84,4 +85,24 @@ test('renderNonTtyHelp : mentionne les drapeaux, PowerShell et Git Bash', () => 
   assert.match(h, /--project/);
   assert.match(h, /PowerShell/);
   assert.match(h, /Git Bash/);
+});
+
+test('une seule liste d\'assistants : le menu accroche ses libellés aux clés d\'args.mjs', () => {
+  // Elles vivaient en double — les clés dans `args.mjs` (que `validateArgs` exige), la liste
+  // complète ici — et le parcours adopté jugeait contre CELLE-CI pendant que les autres branches
+  // jugeaient contre l'autre. Deux vérités pour la même chose : le menu DÉRIVE désormais des clés.
+  assert.deepEqual(ASSISTANTS.map((a) => a.key), ASSISTANT_KEYS);
+  for (const a of ASSISTANTS) {
+    assert.ok(a.label && a.label !== a.key, `assistant « ${a.key} » : libellé manquant dans le menu`);
+  }
+});
+
+test('choisirMode : l\'ordre des modes du CLI, asserté sans TTY réel', () => {
+  // `needsWizard` sort à la première ligne hors TTY : un test qui lance le CLI par un pipe ne
+  // mesure jamais l'ordre. Ici il est pur, donc mesurable.
+  assert.equal(choisirMode(['--refresh'], true), 'refresh');
+  assert.equal(choisirMode(['--adopt'], true), 'adopt');
+  assert.equal(choisirMode([], true), 'wizard');
+  assert.equal(choisirMode([], false), 'drapeaux');
+  assert.equal(choisirMode(['--yes'], true), 'drapeaux', '--yes = jamais de questions, même en TTY');
 });

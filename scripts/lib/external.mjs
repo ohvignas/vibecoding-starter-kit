@@ -13,7 +13,9 @@ export function buildRunCommand(cmd, platform = process.platform) {
   return { cmd, options: {} };
 }
 
-const defaultRun = (cmd, args, opts = {}) => {
+// Exporté depuis que `autoskills.mjs` lance lui aussi un `npx` : deux runners par défaut, c'était
+// deux fois la correction Windows ci-dessus — et la seconde copie ne l'aurait pas eue.
+export const defaultRun = (cmd, args, opts = {}) => {
   const rc = buildRunCommand(cmd);
   return execFileSync(rc.cmd, args, { stdio: 'inherit', ...rc.options, ...opts });
 };

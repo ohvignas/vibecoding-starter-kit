@@ -172,3 +172,69 @@ test('readVibecodingManifest : lit stack/assistant, jette si absent', () => {
   fs.writeFileSync(path.join(dir, '.vibecoding.json'), '{"stack":"saas","assistant":"cursor"}');
   assert.equal(readVibecodingManifest(dir).stack, 'saas');
 });
+
+// ── LE REFUS SUR MARQUEURS DÉPAREILLÉS, SUR LE CHEMIN `--refresh` ─────────────────────────────
+//
+// `mergeManagedSection` jette désormais quand les marqueurs du fichier ne forment pas UNE paire
+// (perte de texte mesurée — managed-section.test.mjs). `--refresh` traite DEUX fichiers : son
+// message doit dire lequel a été refusé, sinon l'utilisateur ouvre les deux et ne trouve rien.
+//
+// ⛔ CE TEST EXISTE PARCE QU'UNE MUTATION A SURVÉCU : retirer le `name` passé à
+// `mergeManagedSection` (refresh.mjs) laissait 53/53 verts, alors que le refus tombait sur
+// « le fichier » — le message par défaut, qui ne nomme rien.
+test('refresh : un fichier aux marqueurs dépareillés est refusé, en le NOMMANT, sans rien écrire', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'refresh-depareille-'));
+  // AGENTS.md sain, CLAUDE.md abîmé : c'est le second qui doit être nommé, pas « le fichier ».
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), `${MARK_START_PREFIX} v -->\nX\n<!-- vibecoding:end -->`);
+  const abime = `Collé du .new : ${MARK_START_PREFIX} — bloc généré -->\nÀ MOI\n\n${MARK_START_PREFIX} v -->\nY\n<!-- vibecoding:end -->`;
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), abime);
+
+  assert.throws(
+    () => refreshProject({ source: KIT, projectDir: dir, manifest: { stack: 'saas', assistant: 'cursor' }, dryRun: false }),
+    (e) => {
+      assert.match(e.message, /CLAUDE\.md/, 'le refus doit NOMMER le fichier refusé');
+      assert.doesNotMatch(e.message, /^le fichier/m, 'et pas retomber sur le libellé par défaut, qui ne nomme rien');
+      return true;
+    },
+  );
+  assert.equal(fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8'), abime, 'le fichier refusé ne doit pas avoir été touché');
+});
+
+// ── CORRECTION 2 : LE REFUS VALIDE AVANT D'ÉCRIRE, PAS AU MILIEU ──────────────────────────────
+//
+// ⛔ MESURÉ : `refreshProject` traite `AGENTS.md` PUIS `CLAUDE.md`. Avec un `AGENTS.md` périmé
+// (marqueurs sains) et un `CLAUDE.md` aux marqueurs dépareillés, il ÉCRIVAIT AGENTS.md, puis
+// jetait sur CLAUDE.md. Le `throw` emporte `changed` : l'utilisateur lit « Rien n'a été écrit »
+// et un exit 1, puis trouve `AGENTS.md` modifié dans son `git status`.
+//
+// Rien n'est PERDU (cette écriture est un refresh légitime et idempotent), mais l'opération est
+// non atomique et SOUS-RAPPORTÉE — dans un outil dont la règle affichée est « dis ce que tu as
+// fait ». Le `throw` reste (le `skipped` n'est destructuré nulle part : y ranger le refus le
+// rendrait invisible) ; c'est la VALIDATION qui remonte avant la première écriture.
+//
+// Le test précédent ne pouvait pas voir ce cas : il n'assert que sur le fichier REFUSÉ.
+test('refresh : un refus ne laisse AUCUNE écriture derrière lui, pas même sur l\'autre fichier', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'refresh-atomique-'));
+  // AGENTS.md sain MAIS PÉRIMÉ : sans le « périmé », le refresh ne l'écrirait pas de toute façon
+  // (`merged !== existing`), et le test serait vert sans rien prouver.
+  const agentsAvant = `${MARK_START_PREFIX} vieux -->\nCONTENU PÉRIMÉ\n<!-- vibecoding:end -->\n\n## Perso\nGARDE-MOI`;
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), agentsAvant);
+  const claudeAvant = `Collé du .new : ${MARK_START_PREFIX} — bloc généré -->\nÀ MOI\n\n${MARK_START_PREFIX} v -->\nY\n<!-- vibecoding:end -->`;
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), claudeAvant);
+
+  assert.throws(
+    () => refreshProject({ source: KIT, projectDir: dir, manifest: { stack: 'saas', assistant: 'cursor' }, dryRun: false }),
+    /CLAUDE\.md/,
+  );
+  // LE POINT DU TEST : l'autre fichier n'a pas été touché non plus.
+  assert.equal(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8'), agentsAvant,
+    'AGENTS.md a été réécrit avant que le refus ne tombe : le refresh annonce un échec total et laisse une modification');
+  assert.equal(fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8'), claudeAvant);
+
+  // Montage : sans le refus, AGENTS.md SERAIT bien réécrit — sinon l'assertion ci-dessus serait
+  // vraie à vide. On le prouve en réparant CLAUDE.md et en rejouant.
+  fs.writeFileSync(path.join(dir, 'CLAUDE.md'), `${MARK_START_PREFIX} v -->\nY\n<!-- vibecoding:end -->`);
+  const r = refreshProject({ source: KIT, projectDir: dir, manifest: { stack: 'saas', assistant: 'cursor' }, dryRun: false });
+  assert.ok(r.changed.includes('AGENTS.md'), 'montage : AGENTS.md doit bien être un fichier que ce refresh RÉÉCRIT');
+  assert.notEqual(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8'), agentsAvant);
+});

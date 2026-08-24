@@ -1,6 +1,7 @@
 // Dossier de commandes par assistant : source unique dans commands-list.mjs (il était recopié
 // ici sous le nom `TARGET` et dans kit-owned.mjs sous le nom `CMD_DIR`).
 import { COMMANDS_DIR } from './commands-list.mjs';
+import { estAdopte } from './adoption.mjs';
 
 export const SUPERPOWERS = {
   cursor: '/add-plugin superpowers',
@@ -41,21 +42,23 @@ export function resolveAssets(stack, assistant) {
   if (!COMMANDS_DIR[assistant]) throw new Error(`Assistant inconnu : ${assistant} (attendu: ${Object.keys(COMMANDS_DIR).join('|')})`);
   // Garde d'entrée : sans elle, une stack mal orthographiée partait avec ZÉRO contexte IA, en
   // silence — le scaffold réussissait, le projet naissait aveugle.
-  if (!AI_CONTEXT[stack]) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(AI_CONTEXT).join('|')})`);
+  if (!estAdopte(stack) && !AI_CONTEXT[stack]) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(AI_CONTEXT).join('|')}|aucune)`);
   // `skipped` a disparu : il était toujours vide (plus rien n'y était poussé depuis le retrait
   // d'awesome-cursorrules) et le rapport le concaténait avec les vrais « sautés » du scaffold.
   const copies = [], clones = [], inAssistant = [];
   const isCursor = assistant === 'cursor';
   const isClaude = assistant === 'claude-code';
 
-  if (isCursor) {
-    copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `.cursor/rules/stack-${stack}.mdc`, transform: 'mdc', description: `Règles complètes de la stack ${stack} (charge quand pertinent)`, alwaysApply: false });
-  } else {
-    copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `AGENTS-stack.md`, transform: 'raw' });
-    if (isClaude) copies.push({ from: `.claude/skills/stack-${stack}`, to: `.claude/skills/stack-${stack}`, transform: 'dir' });
+  if (!estAdopte(stack)) {
+    if (isCursor) {
+      copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `.cursor/rules/stack-${stack}.mdc`, transform: 'mdc', description: `Règles complètes de la stack ${stack} (charge quand pertinent)`, alwaysApply: false });
+    } else {
+      copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `AGENTS-stack.md`, transform: 'raw' });
+      if (isClaude) copies.push({ from: `.claude/skills/stack-${stack}`, to: `.claude/skills/stack-${stack}`, transform: 'dir' });
+    }
+    copies.push({ from: 'ai-context/README.md', to: 'ai-context/README.md', transform: 'raw' });
+    for (const d of AI_CONTEXT[stack]) copies.push({ from: `ai-context/${d}`, to: `ai-context/${d}`, transform: 'dir' });
   }
-  copies.push({ from: 'ai-context/README.md', to: 'ai-context/README.md', transform: 'raw' });
-  for (const d of AI_CONTEXT[stack]) copies.push({ from: `ai-context/${d}`, to: `ai-context/${d}`, transform: 'dir' });
 
   clones.push({
     repo: KARPATHY_REPO,
@@ -242,6 +245,21 @@ export const STACKS = {
 };
 
 export function resolveStackManifest(stack, assistant) {
+  // Projet adopté : aucun script injecté (décision 7 — c'est SON fichier de build), aucun MCP de
+  // stack, aucun plugin. Mesuré : avec `scripts: {}`, `package.json` ressort octet pour octet
+  // identique — `environment.mjs:109` n'ajoute rien, `changed` reste false, `:110` n'écrit jamais.
+  // La fonction EST appelée normalement : elle pose aussi docs/agents/JOURNAL.md et state.yaml,
+  // cités par verify-rule.md:14 et subagents-rule.md:12, deux règles GARDÉES.
+  //
+  // Forme complète, pas seulement `scripts`/`mcp`/`checks.prePush` : `environment.mjs` lit aussi
+  // `checks.onEdit` et `checks.preCommit` sans garde (`RUN(ids).join(...)` plante sur `undefined`,
+  // et `checks.onEdit` est lu INCONDITIONNELLEMENT pour cursor/claude-code) ; `setup-ai.mjs` lit
+  // `plugins` déjà résolu pour CET assistant — un tableau, jamais un objet par assistant — et
+  // `skills.length`. Toutes vides, jamais absentes : un champ manquant fait planter le consommateur
+  // ailleurs, exactement ce que cette étape doit éviter.
+  if (estAdopte(stack)) {
+    return { plugins: [], mcp: {}, skills: [], checks: { onEdit: [], preCommit: [], prePush: [] }, scripts: {}, rules: [], domains: {} };
+  }
   const s = STACKS[stack];
   if (!s) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(STACKS).join('|')})`);
   return {
@@ -270,6 +288,15 @@ export const AGENT_SKILL_SPECS = [
   { label: 'revue de code (Sentry)', repo: 'github.com/getsentry/skills', skills: ['code-review', 'find-bugs'] },
   { label: 'sécurité (OpenAI)', repo: 'github.com/openai/skills', skills: ['security-best-practices', 'security-threat-model'] },
 ];
+
+// ⛔ TOUT CE QUE LE KIT POSE, ET POURQUOI CETTE LISTE N'EST PAS `DESIGN_SKILL_NAMES`. Un outil tiers
+// qui installe des skills supprime PAR NOM (`rmSync(<dossier>/<nom>)`, installer.ts) : ce qu'il faut
+// mettre à l'abri le temps de son passage, c'est TOUT ce que le kit a posé, pas seulement les 4 que
+// la Règle design fait charger. Les deux ensembles n'ont aucune raison de coïncider — et ils ne
+// coïncident pas : 9 skills posés, 4 « design ». Mesuré : un 6ᵉ skill ajouté ici passait hors de
+// l'abri sans qu'un seul garde rougisse. `DESIGN_SKILL_NAMES` garde son rôle — la documentation de
+// la Règle design ; celle-ci est DÉRIVÉE des specs, donc elle grandit avec elles, toute seule.
+export const SKILLS_INSTALLES_PAR_LE_KIT = [...new Set([...DESIGN_SKILL_SPECS, ...AGENT_SKILL_SPECS].flatMap((s) => s.skills))];
 
 // « ajouté à components.json au scaffold » était FAUX : le scaffold du kit ne crée aucun
 // `components.json` — il n'y a même pas encore de projet à ce stade. C'est `/new-project`

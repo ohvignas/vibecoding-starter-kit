@@ -1,4 +1,4 @@
-import { validateArgs, isValidProjectName } from './args.mjs';
+import { validateArgs, isValidProjectName, ASSISTANT_KEYS } from './args.mjs';
 import { heading, menu, ok, hint } from './ui.mjs';
 
 const STACKS = [
@@ -7,11 +7,10 @@ const STACKS = [
   { key: 'desktop', label: 'Desktop', hint: 'Electron' },
   { key: 'vitrine', label: 'Site vitrine / blog', hint: 'Astro + shadcn/ui + Keystatic (CMS) — SEO/GEO' },
 ];
-const ASSISTANTS = [
-  { key: 'cursor', label: 'Cursor' },
-  { key: 'claude-code', label: 'Claude Code' },
-  { key: 'codex', label: 'Codex' },
-];
+// Les CLÉS viennent d'args.mjs (source unique : c'est contre elle que `validateArgs` juge) ; ce
+// fichier n'ajoute que le LIBELLÉ affiché. EXPORTÉE : le parcours adopté pose la même question.
+const LIBELLES = { cursor: 'Cursor', 'claude-code': 'Claude Code', codex: 'Codex' };
+export const ASSISTANTS = ASSISTANT_KEYS.map((key) => ({ key, label: LIBELLES[key] ?? key }));
 const BACKENDS = [
   { key: 'cloud', label: 'Cloud Convex', hint: 'compte gratuit, en ligne' },
   { key: 'local', label: 'Local', hint: 'zéro Docker, zéro compte, données dans .convex/' },
@@ -23,6 +22,19 @@ export function needsWizard(argv, isTTY) {
   if (isTTY !== true) return false;
   if (argv.includes('--yes')) return false;
   return !['--stack', '--assistant', '--project'].every((f) => argv.includes(f));
+}
+
+// L'ORDRE DES MODES DU CLI, en fonction PURE — et c'est la seule façon de l'asserter. Hors TTY,
+// `needsWizard` sort à sa première ligne sans regarder les drapeaux : un test qui lance le CLI par
+// un pipe ne mesure donc JAMAIS cet ordre-là (mutation jouée : « --adopt ne sort plus avant
+// needsWizard » laissait la suite entièrement verte).
+// Ce que l'ordre évite, mesuré : `needsWizard(['--adopt'], true) === true` (il exige --stack ET
+// --assistant ET --project). Sans lui, un projet de deux ans se voyait demander « Que veux-tu
+// construire ? » puis un nom de dossier à créer À CÔTÉ du kit.
+export function choisirMode(argv, isTTY) {
+  if (argv.includes('--refresh')) return 'refresh'; // met à jour un projet déjà généré
+  if (argv.includes('--adopt')) return 'adopt';     // installe la méthode dans un projet existant
+  return needsWizard(argv, isTTY) ? 'wizard' : 'drapeaux';
 }
 
 // base = drapeaux déjà passés en CLI (--source, --force, --no-skills, --caveman…) : conservés.
@@ -71,7 +83,8 @@ export function renderBackendNote(stack, backend) {
 }
 
 // Question à choix numérotés : redemande jusqu'à un choix valide, renvoie la clé.
-async function pickOne(ask, on, out, question, options) {
+// EXPORTÉE pour la même raison qu'ASSISTANTS : un second rendu de menu divergerait du premier.
+export async function pickOne(ask, on, out, question, options) {
   for (;;) {
     out.write(menu(question, options, on) + '\n');
     const idx = Number.parseInt((await ask('  › ')).trim(), 10);

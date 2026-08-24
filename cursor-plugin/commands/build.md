@@ -8,6 +8,7 @@ Argument : `$ARGUMENTS` = l'option éventuelle (`--all`).
 Tu exécutes `docs/ROADMAP.md` **une tranche à la fois**, en montrant un résultat **visuel** à chaque étape. Réutilise la boucle du kit (`superpowers:subagent-driven-development` ; cadre de délégation : **« Règle sous-agents »** dans `AGENTS.md`). En français.
 
 ## Un tour = un jalon
+0. **Pas de `docs/ROADMAP.md` ? Tu t'arrêtes ici.** C'est le cas d'un projet **existant** que le kit a adopté (`npx create-vibecoding-kit@latest --adopt`) : il a déjà son code, et le kit n'y pose ni PRD, ni roadmap, ni jalons. **Ne scaffolde rien, ne crée aucun fichier de fondation, n'invente aucun jalon** — tu écraserais un projet qui tourne. Dis-le en une phrase, puis renvoie à **`/next`** : c'est lui qui lit `docs/ETAT-DES-LIEUX.md` et propose la prochaine action sur CE projet-là. Tout ce qui suit — **« Jalon 0 » compris** — suppose une roadmap, et ne s'applique donc pas.
 1. **Lis `docs/ROADMAP.md`** → prends le **1er jalon non coché** dont les dépendances sont cochées. (Rien n'est en mémoire volatile : la roadmap est la source de vérité, relue à chaque tour.)
 2. **Plan** : si `docs/superpowers/plans/NN-*.md` du jalon n'existe pas → crée-le avec `superpowers:writing-plans` (dérivé du PRD + `docs/design.md` + la **maquette** `maquette/` (l'écran cible du jalon) + `docs/DOMAINS.md` pour les domaines).
 3. **Exécute** le plan avec `superpowers:subagent-driven-development` (TDD + review + fix). C'est la **boucle** du projet.

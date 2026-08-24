@@ -10,19 +10,23 @@ import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
 import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
 import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook, runbookConcatene } from './lib/commands-list.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS } from './lib/matrix.mjs';
+import { estAdopte, adapterGlossaireAdopte, STACK_AUCUNE, entreesDuProjet, renderInventaire, peutDemanderAdoption, erreursAdoption, erreursAdoptionNonInteractive, runAdoptWizard, sonderSecuriteProjet } from './lib/adoption.mjs';
+import { renderAccordGitignore, appliquerGitignore } from './lib/gitignore-adoption.mjs';
 import { renderColleMoi } from './lib/colle-moi.mjs';
 import { toCursorMdc } from './lib/templates.mjs';
 import { toCursorAgent } from './lib/agent-frontmatter.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent, writeIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, summarizeClone, installCaveman, installSkills } from './lib/external.mjs';
+import { AUTOSKILLS, lancerAutoskills, rapportAutoskills } from './lib/autoskills.mjs';
 import { initProjectGit } from './lib/gitinit.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
 import { writeStackEnvironment } from './lib/environment.mjs';
-import { needsWizard, buildArgsFromAnswers, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
-import { renderRunDoc } from './lib/run-doc.mjs';
-import { supportsColor, ok } from './lib/ui.mjs';
+import { choisirMode, buildArgsFromAnswers, runWizard, wireSigint, renderNonTtyHelp } from './lib/wizard.mjs';
+import { renderRunDoc, renderRunDocObserve } from './lib/run-doc.mjs';
+import { mergeManagedSection } from './lib/managed-section.mjs';
+import { supportsColor, ok, hint } from './lib/ui.mjs';
 
 // Racine du kit = dossier parent de scripts/ — fiable quel que soit le cwd de lancement
 // (fini les 22 ENOENT silencieux quand on lance le script depuis un autre dossier).
@@ -46,9 +50,14 @@ async function main() {
   const isTTY = Boolean(process.stdin.isTTY);
   const kitRoot = kitRootFromModuleUrl(import.meta.url);
 
+  // Quel mode ? L'ORDRE est dans `choisirMode` (wizard.mjs), pur et donc assertable : --refresh,
+  // puis --adopt, puis seulement le wizard du parcours neuf. Hors TTY, `needsWizard` sort à sa
+  // première ligne — un test qui lance le CLI par un pipe ne mesure jamais cet ordre-là.
+  const mode = choisirMode(argv, isTTY);
+
   // Mode --refresh : met à jour un projet DÉJÀ généré (règles + fichiers 100% kit), sans scaffolder.
   // Early return AVANT toute la logique wizard/validate/scaffold → le scaffold par défaut est inchangé.
-  if (argv.includes('--refresh')) {
+  if (mode === 'refresh') {
     const a = parseArgs(argv);
     a.source = a.source ?? kitRoot;
     const baseDir = projectBaseDir(kitRoot, process.cwd());
@@ -63,7 +72,60 @@ async function main() {
     return;
   }
   let args;
-  if (needsWizard(argv, isTTY)) {
+  // CE QUE LE PARCOURS ADOPTÉ A RELEVÉ, ET CE À QUOI L'UTILISATEUR A DIT OUI. Les deux restent
+  // `null`/`{}` sur le parcours NEUF : chaque garde plus bas les lit derrière un `estAdopte`, et
+  // `initProjectGit` reçoit alors `accordHooks: undefined` — exactement la valeur d'avant.
+  let securiteAdoption = null;
+  let accordsAdoption = {};
+  // Le scan `autoskills` : `false` partout ailleurs, y compris sur le parcours NEUF, qui ne le voit
+  // jamais. Il n'est vrai que sur un `--adopt` interactif où l'utilisateur a lu l'écran et dit oui.
+  let accordAutoskills = false;
+  // Mode --adopt : installe la MÉTHODE dans un projet qui existe déjà. Passe AVANT le wizard du
+  // parcours neuf (voir `choisirMode`), qui commencerait par demander une stack — celle qu'on
+  // refuse précisément de revendiquer ici. Le parcours neuf ne voit jamais ce bloc : il ne bouge pas.
+  if (mode === 'adopt') {
+    const base = parseArgs(argv); // drapeaux partiels (--no-skills, --source, --force…) conservés
+    // `--adopt --stack saas` est une contradiction, pas un défaut à corriger en silence.
+    if (base.stack && !estAdopte(base.stack)) {
+      console.error(`--adopt installe la méthode dans un projet qui existe déjà : sa stack est « ${STACK_AUCUNE} », il n'y a pas de --stack à choisir (reçu : ${base.stack}).`);
+      process.exit(1);
+    }
+    // Les drapeaux sont jugés par la MÊME fonction que le parcours neuf, et AVANT la moindre
+    // question : échouer sur `--backend nawak` après avoir fait répondre l'utilisateur lui ferait
+    // perdre ses réponses. Après les questions, la seule valeur neuve est l'assistant — sortie de
+    // `pickOne`, donc valide par construction : ce contrôle-ci est complet.
+    const errsDrapeaux = erreursAdoption(base);
+    if (errsDrapeaux.length) { console.error(errsDrapeaux.join('\n')); process.exit(1); }
+    // Par défaut, le dossier COURANT : `--adopt` se lance depuis le projet à adopter.
+    const projectDir = resolveProjectDir(expandHome(base.project ?? '.', os.homedir()), projectBaseDir(kitRoot, process.cwd()));
+    const entrees = entreesDuProjet(projectDir);
+    let reponses;
+    if (peutDemanderAdoption(isTTY, argv)) {
+      const readline = await import('node:readline/promises');
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      wireSigint(rl);
+      // `skills` : sous `--no-skills`, la question autoskills n'est pas posée — elle débouche sur
+      // une installation de skills, et le kit ne pose pas de question qu'il n'honorera pas.
+      try { reponses = await runAdoptWizard((q) => rl.question(q), on, process.stdout, { projectDir, entrees, assistant: base.assistant, sonder: (a) => sonderSecuriteProjet(projectDir, a), skills: !base.noSkills }); }
+      finally { rl.close(); }
+      if (!reponses) return; // refus : le parcours l'a dit, et rien n'a été touché
+      securiteAdoption = reponses.securite;
+      accordsAdoption = reponses.accords ?? {};
+      // Le scan tiers n'est pas un « accord de sécurité » : il vit à côté, et la clé n'existe que si
+      // la question a été posée. Absente = jamais proposée ; `false` = refusé. Ni l'une ni l'autre ne lance.
+      accordAutoskills = reponses.autoskills === true;
+    } else {
+      // Les réponses viennent des drapeaux — mais on MONTRE quand même ce qu'on a trouvé : c'est
+      // la seule preuve que le kit vise le bon dossier, et elle ne coûte rien.
+      console.log(renderInventaire(projectDir, entrees, on));
+      const errs = erreursAdoptionNonInteractive(base, entrees, projectDir);
+      if (errs.length) { console.error('\n' + errs.join('\n')); process.exit(1); }
+      reponses = { assistant: base.assistant };
+      // Hors terminal, personne ne peut répondre : `accordsAdoption` reste vide, et la sonde est
+      // relevée plus bas — au même endroit que pour `--stack aucune` (voir après `buildRunPlan`).
+    }
+    args = { ...base, stack: STACK_AUCUNE, assistant: reponses.assistant, project: projectDir };
+  } else if (mode === 'wizard') {
     const base = parseArgs(argv); // drapeaux partiels (--no-skills, --source…) conservés
     const readline = await import('node:readline/promises'); // dynamique : le check Node ci-dessus tourne même sur Node 16
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -86,7 +148,24 @@ async function main() {
   const { assets, projectDir } = buildRunPlan(args, baseDir);
   if (args.dryRun) { console.log(JSON.stringify({ projectDir, caveman: args.caveman, ...assets }, null, 2)); return; }
 
+  // ⛔ LA SONDE SE RELÈVE POUR TOUT PROJET ADOPTÉ, PAS SEULEMENT DERRIÈRE `--adopt`. Il y a DEUX
+  // portes vers ce parcours : `--adopt` (qui questionne) et `--stack aucune` en drapeaux (qui ne
+  // questionne jamais, et c'est par là que passent les tests et les scripts). Ne protéger que la
+  // première ferait dépendre le `.gitignore` de la porte empruntée — mesuré : par la porte des
+  // drapeaux, `.env` restait suivi. Sans accord recueilli, `accordsAdoption` est vide, ce qui
+  // n'est PAS un oui : `appliquerGitignore` n'écrit alors que ce qui ne renverse rien.
+  // L'écran est imprimé quand même — le kit dit toujours ce qu'il écrit, même sans personne en face.
+  if (estAdopte(args.stack) && !securiteAdoption) {
+    securiteAdoption = sonderSecuriteProjet(projectDir, args.assistant);
+    // `decide: false` : personne n'est en face. L'écran annonce alors ce qui sera VRAIMENT écrit
+    // et dit ce qu'il n'écrit pas — sans ça, il promettait un `.env` que la ligne suivante refusait.
+    if (securiteAdoption.gitignore.aAjouter.length) console.log('\n' + renderAccordGitignore(securiteAdoption.gitignore, hint, on, { decide: false }));
+  }
+
   const done = [], kept = [], failed = [];
+  // Les fichiers que `--force` n'a PAS écrasés parce que le kit a promis de ne jamais les
+  // régénérer. Bac séparé : leur raison de survivre n'est pas « déjà présent » (voir report.mjs).
+  const promesse = [];
   const opt = { force: args.force };
   // 3 états honnêtes : créé (done) / conservé (kept, déjà présent, jamais écrasé) / échec (failed).
   const track = (label, res) => { (res.status === 'copied' ? done : kept).push(label); };
@@ -102,6 +181,32 @@ async function main() {
   // Jamais écraser un fichier existant : la nouvelle version part en .new, signalée dans le rapport.
   for (const name of ['AGENTS.md', 'CLAUDE.md']) {
     const dest = path.join(projectDir, name);
+    // ── PARCOURS ADOPTÉ : ON FUSIONNE, ON NE DÉPOSE PAS À CÔTÉ ────────────────────────────────
+    //
+    // ⛔ LE TROU QUI VIDAIT LE PARCOURS DE SON SENS. Sur un projet existant — le SEUL cas où
+    // `--adopt` sert — il y a presque toujours un `AGENTS.md`. La branche `.new` ci-dessous le
+    // conservait et déposait la méthode dans `AGENTS.md.new`, un fichier que rien n'ouvre et
+    // qu'aucun assistant ne lit. Le kit s'installait, le rapport disait « conservé », et la
+    // méthode n'arrivait JAMAIS dans le fichier relu à chaque message.
+    //
+    // La fusion remplace le bloc ENTRE MARQUEURS et ne touche à rien d'autre : c'est la même
+    // opération que `--refresh` fait depuis toujours, et elle tient la promesse écrite dans la
+    // question de consentement (« rien ne sera écrasé »). Un fichier ABSENT tombe dans le `else`
+    // plus bas et est CRÉÉ — c'est ce qui bouche le trou de `CLAUDE.md` (refresh.mjs le SAUTE
+    // quand il est absent, alors que Claude Code le lit en priorité).
+    //
+    // POURQUOI MÊME SOUS `--force` : sur ce parcours, la fusion est strictement moins destructrice
+    // que l'écrasement, et « rien ne sera écrasé » n'est pas une promesse à drapeau. `--force`
+    // garde son sens partout ailleurs.
+    if (estAdopte(args.stack) && fs.existsSync(dest)) {
+      try {
+        // Jette sur des marqueurs dépareillés (perte de texte mesurée — managed-section.mjs).
+        // Le refus porte sur CE fichier : l'autre continue, et le rapport sort en exit 1.
+        fs.writeFileSync(dest, mergeManagedSection(fs.readFileSync(dest, 'utf8'), agents, name));
+        done.push(`${name} (bloc du kit fusionné — ton texte hors marqueurs est intact)`);
+      } catch (e) { failed.push(`${name} — NON installé : ${e.message}`); }
+      continue;
+    }
     if (fs.existsSync(dest) && args.force) {
       // --force écrase, mais JAMAIS sans filet : l'ancien fichier (et les règles perso qu'il
       // contient) est sauvegardé à côté avant d'être remplacé.
@@ -116,7 +221,8 @@ async function main() {
       done.push(name);
     }
   }
-  ensureDir(path.join(projectDir, 'maquette'));
+  // Un `maquette/` vide, sur un projet adopté, ferait croire à l'IA qu'une maquette existe.
+  if (!estAdopte(args.stack)) ensureDir(path.join(projectDir, 'maquette'));
 
   for (const c of assets.copies) {
     try {
@@ -182,6 +288,40 @@ async function main() {
     catch (e) { failed.push(`docs/APPRENTISSAGE.md (${e.message})`); }
   }
 
+  // L'ÉTAT DES LIEUX — la première page de la mémoire d'un projet adopté.
+  //
+  // ⛔ Il n'est pas optionnel : le rendu `AGENTS.md` d'un projet adopté le CITE (agents-file.mjs,
+  // SUBSTITUTIONS_ADOPTE, entrée verifyRule : « lance l'app (voir `docs/ETAT-DES-LIEUX.md`) »).
+  // Sans ce bloc, cette phrase est un renvoi mort relu à chaque message — mesuré, et exactement la
+  // classe de défaut que le parcours adopté existe pour supprimer.
+  //
+  // Même modèle que le carnet d'apprentissage ci-dessus : semé UNE FOIS par `copyDirIfAbsent`,
+  // NI dans `kitOwnedFiles` NI dans `kitOwnedGenerated`. Ce que l'IA y écrit (et ce que
+  // l'utilisateur y corrige) est le compte rendu de SON projet : un `--refresh` qui le régénérerait
+  // remettrait des « À DÉTERMINER » par-dessus des réponses.
+  //
+  // ⛔ INSENSIBLE À `--force` — ET C'EST LA PROMESSE ELLE-MÊME QUI L'EXIGE. Le gabarit écrit noir
+  // sur blanc « le kit ne régénère jamais ce fichier ». Mesuré avant ce garde : l'utilisateur
+  // répondait aux « À DÉTERMINER », relançait `--adopt --force`, et ses réponses étaient écrasées —
+  // sans `.bak`, avec un « ✅ » au rapport, PENDANT que `docs/A-FAIRE.md` était protégé par un
+  // `.new` au même instant. L'inversion était le défaut : sous `--force`, les fichiers du KIT
+  // étaient ménagés et le travail écrit À LA MAIN était détruit.
+  // On passe donc `{}` et non `opt` : `--force` ne gouverne pas ce fichier. Qui veut repartir du
+  // gabarit le supprime — c'est un geste, pas un effet de bord.
+  if (estAdopte(args.stack)) {
+    // TROIS ISSUES, TROIS PHRASES VRAIES — le rapport ne donne jamais la raison d'une autre :
+    //   · posé maintenant  → « à remplir par l'IA » (il est vide, il n'y a rien dedans à protéger) ;
+    //   · déjà là, sans `--force` → « déjà présent », la raison ordinaire, et elle est exacte ;
+    //   · déjà là, AVEC `--force` → le drapeau a été écarté, et c'est une autre raison : bac à part.
+    try {
+      const res = copyDirIfAbsent(path.join(args.source, 'templates/adoption'), path.join(projectDir, 'docs'), {});
+      if (res.some((r) => r.status === 'copied')) done.push('docs/ETAT-DES-LIEUX.md (à remplir par l\'IA, en premier)');
+      else if (args.force) promesse.push('docs/ETAT-DES-LIEUX.md — tes réponses aux « À DÉTERMINER » sont dedans');
+      else kept.push('docs/ETAT-DES-LIEUX.md (à remplir par l\'IA, en premier)');
+    }
+    catch (e) { failed.push(`docs/ETAT-DES-LIEUX.md (${e.message})`); }
+  }
+
   // Templates que /new-project OUVRE au lieu de les recopier dans son propre texte (Lot D9) :
   // le runbook les cite par ces chemins-là, ils doivent donc exister dans le projet généré.
   try {
@@ -197,8 +337,17 @@ async function main() {
   // `docs/A-FAIRE.md` était l'autre option, et le Lot G l'interdit à raison (parcours.test.mjs
   // G5) : renvoyer vers un fichier absent, c'est le renvoi mort qu'on vient de retirer. On crée
   // donc le fichier, et `/help` (l'entrée) y mène.
-  try { track('docs/glossaire.md (le vocabulaire, hors ligne)', copyIfAbsent(path.join(args.source, 'guides/glossaire.md'), path.join(projectDir, 'docs/glossaire.md'), opt)); }
-  catch (e) { failed.push(`docs/glossaire.md (${e.message})`); }
+  // ⛔ SUR UN PROJET ADOPTÉ, LA COPIE TELLE QUELLE POSE UN RENVOI MORT. L'entrée « Domaine »
+  // renvoie à `docs/DOMAINS.md`, que ce parcours ne pose pas (environment.mjs) — et le glossaire
+  // est justement le bout de la chaîne que `/help` met en avant. Copie statique : aucune des
+  // substitutions du rendu AGENTS.md ne l'atteint, il lui faut la sienne.
+  try {
+    const glossaire = path.join(projectDir, 'docs/glossaire.md');
+    const source = path.join(args.source, 'guides/glossaire.md');
+    track('docs/glossaire.md (le vocabulaire, hors ligne)', estAdopte(args.stack)
+      ? writeIfAbsent(glossaire, adapterGlossaireAdopte(fs.readFileSync(source, 'utf8')), opt)
+      : copyIfAbsent(source, glossaire, opt));
+  } catch (e) { failed.push(`docs/glossaire.md (${e.message})`); }
 
   if (args.assistant === 'cursor') {
     try {
@@ -207,14 +356,25 @@ async function main() {
         ...copyDirIfAbsent(path.join(args.source, 'templates/cursor/hooks'), path.join(projectDir, '.cursor/hooks'), opt),
         copyIfAbsent(path.join(args.source, 'templates/cursor/cursorignore'), path.join(projectDir, '.cursorignore'), opt),
       ]);
+      // Les deux premiers fichiers sont génériques (toute stack, y compris `aucune`) ; le dossier
+      // de règles TYPÉES par framework (`templates/cursor/rules/${stack}`) n'existe que pour les
+      // 4 stacks offertes — pas de variante `aucune` (même logique que les 6 chemins ci-dessus,
+      // trouvée en exerçant `--assistant cursor` : `scandir` ENOENT sinon).
       trackDir('.cursor/rules/ (00-project + règles typées par framework)', [
         copyIfAbsent(path.join(args.source, 'templates/cursor/rules/00-project.mdc'), path.join(projectDir, '.cursor/rules/00-project.mdc'), opt),
-        copyIfAbsent(path.join(args.source, 'templates/cursor/rules/10-css-maquette.mdc'), path.join(projectDir, '.cursor/rules/10-css-maquette.mdc'), opt),
-        ...copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt),
+        // `10-css-maquette.mdc` traduit `css-maquette-rule.md` pour Cursor. Sur un projet adopté,
+        // cette règle est RETIRÉE d'AGENTS.md (aucune `maquette/` livrée) : la copier quand même
+        // laissait la version Cursor seule à porter une consigne que les deux autres assistants ne
+        // reçoivent plus — l'asymétrie exacte que `promesses-livrees.test.mjs` interdit entre une
+        // règle source et sa traduction.
+        ...(estAdopte(args.stack) ? [] : [copyIfAbsent(path.join(args.source, 'templates/cursor/rules/10-css-maquette.mdc'), path.join(projectDir, '.cursor/rules/10-css-maquette.mdc'), opt)]),
+        ...(estAdopte(args.stack) ? [] : copyDirIfAbsent(path.join(args.source, `templates/cursor/rules/${args.stack}`), path.join(projectDir, '.cursor/rules'), opt)),
       ]);
+      // Même chose pour `.cursor/environment.json` : `templates/cursor/environment/${stack}.json`
+      // n'a pas de variante `aucune` — BUGBOT.md et cursorindexingignore restent génériques.
       trackDir('.cursor/BUGBOT.md + .cursor/environment.json + .cursorindexingignore', [
         copyIfAbsent(path.join(args.source, 'templates/cursor/BUGBOT.md'), path.join(projectDir, '.cursor/BUGBOT.md'), opt),
-        copyIfAbsent(path.join(args.source, `templates/cursor/environment/${args.stack}.json`), path.join(projectDir, '.cursor/environment.json'), opt),
+        ...(estAdopte(args.stack) ? [] : [copyIfAbsent(path.join(args.source, `templates/cursor/environment/${args.stack}.json`), path.join(projectDir, '.cursor/environment.json'), opt)]),
         copyIfAbsent(path.join(args.source, 'templates/cursor/cursorindexingignore'), path.join(projectDir, '.cursorindexingignore'), opt),
       ]);
     } catch (e) { failed.push(`cursor extras (${e.message})`); }
@@ -230,29 +390,80 @@ async function main() {
   }
 
   // Sécurité (tous assistants) : .env.example par stack + scan de secrets gitleaks.
-  try { track('.env.example', copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt)); }
-  catch (e) { failed.push(`.env.example (${e.message})`); }
-  try { track('scan secrets (gitleaks)', copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt)); }
-  catch (e) { failed.push(`secrets (${e.message})`); }
+  // Sur `aucune`, aucun modèle `templates/env/aucune.env.example` n'existe — et n'en aurait pas
+  // le sens : un projet adopté a déjà (ou pas) son .env, ce n'est pas au kit de le poser.
+  if (!estAdopte(args.stack)) {
+    try { track('.env.example', copyIfAbsent(path.join(args.source, `templates/env/${args.stack}.env.example`), path.join(projectDir, '.env.example'), opt)); }
+    catch (e) { failed.push(`.env.example (${e.message})`); }
+  }
+  // ⛔ SUR UN PROJET ADOPTÉ, CE FICHIER NE S'IMPOSE PAS — même traitement que `ci.yml` (tâche 2),
+  // pour une raison qui lui est propre : ce n'est pas un fichier posé dans un dossier, c'est du
+  // CODE QUI S'EXÉCUTERA sur le compte GitHub de quelqu'un d'autre, à chaque push, avec ses
+  // minutes d'Actions et sa croix rouge si le scan casse. Mesuré : il était posé sur `aucune`
+  // (la tâche 2 avait traité `ci.yml`, pas celui-ci). Il attend donc un OUI explicite — et hors
+  // terminal, où personne ne peut le donner, il n'est pas posé et le rapport dit où le trouver.
+  if (!estAdopte(args.stack) || accordsAdoption.secrets === true) {
+    try { track('scan secrets (gitleaks)', copyIfAbsent(path.join(args.source, 'templates/security/secrets.yml'), path.join(projectDir, '.github/workflows/secrets.yml'), opt)); }
+    catch (e) { failed.push(`secrets (${e.message})`); }
+  } else if (securiteAdoption?.workflowSecrets) {
+    kept.push('.github/workflows/secrets.yml (le tien — jamais écrasé)');
+  } else {
+    cloneSkipped.push({
+      name: '.github/workflows/secrets.yml (scan de secrets GitHub)',
+      reason: accordsAdoption.secrets === false
+        ? 'tu as refusé — aucun workflow n\'a été posé dans ton dépôt.'
+        : 'un workflow tourne à chaque push sur TON compte GitHub : le kit ne le pose pas sans accord. Pour l\'ajouter : relance `--adopt` dans un terminal, ou copie `templates/security/secrets.yml` du kit.',
+    });
+  }
 
   // CI par stack (tous assistants). La checklist d'install, c'est docs/A-FAIRE.md — un seul fichier.
-  try { track('.github/workflows/ci.yml', copyIfAbsent(path.join(args.source, `templates/ci/${args.stack}.yml`), path.join(projectDir, '.github/workflows/ci.yml'), opt)); }
-  catch (e) { failed.push(`ci (${e.message})`); }
+  // Pas de `templates/ci/aucune.yml` : le kit ne connaît ni le build ni les tests d'un projet adopté.
+  if (!estAdopte(args.stack)) {
+    try { track('.github/workflows/ci.yml', copyIfAbsent(path.join(args.source, `templates/ci/${args.stack}.yml`), path.join(projectDir, '.github/workflows/ci.yml'), opt)); }
+    catch (e) { failed.push(`ci (${e.message})`); }
+  }
 
-  try { track('docs/ROADMAP.md (squelette)', copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt)); }
-  catch (e) { failed.push(`roadmap (${e.message})`); }
+  // Squelette de plan — jamais sur `aucune` : `/build` l'exécuterait comme un vrai plan.
+  if (!estAdopte(args.stack)) {
+    try { track('docs/ROADMAP.md (squelette)', copyIfAbsent(path.join(args.source, 'templates/roadmap/ROADMAP.md'), path.join(projectDir, 'docs/ROADMAP.md'), opt)); }
+    catch (e) { failed.push(`roadmap (${e.message})`); }
+  }
   // docs/RUN.md est RENDU (modèle de la stack + notes backend/Codex) par une source unique —
   // la même que `--refresh` réutilise, sinon le refresh ne saurait pas reproduire ce qu'on écrit ici.
+  //
+  // SUR UN PROJET ADOPTÉ, IL EST ÉCRIT D'OBSERVATION — jamais d'un modèle de stack.
+  // ⛔ Mesuré (spec, décision 4) : `templates/run/<stack>.md` a produit « Lancer l'app — SaaS
+  // (Convex + TanStack Start) · `npx convex dev` » dans un projet qui n'avait ni l'un ni l'autre.
+  // Le seul fichier qu'un débutant ouvre pour lancer son app lui mentait, avec l'autorité du kit.
+  // Ce qu'on écrit ici est donc RELEVÉ dans son `package.json` (et son lockfile) ; ce qui n'a pas
+  // pu l'être est dit tel quel, jamais remplacé par une supposition (`renderRunDocObserve`).
+  // Comme l'état des lieux, il n'est PAS régénérable (kit-owned.mjs) : c'est une observation que
+  // l'utilisateur corrige, pas un rendu du kit.
   try {
     const runPath = path.join(projectDir, 'docs/RUN.md');
-    if (!fs.existsSync(runPath) || args.force) {
+    // `--force` régénère ce fichier SUR LES 4 STACKS OFFERTES (c'est un rendu du kit, il ne promet
+    // rien), mais JAMAIS sur un projet adopté : là, il porte « c'est ton fichier : le kit ne le
+    // régénère jamais » et les réponses que l'utilisateur a écrites sous « ce que le kit n'a PAS pu
+    // déterminer ». Mesuré avant ce garde : `--adopt --force` les effaçait sans `.bak`.
+    if (!fs.existsSync(runPath) || (args.force && !estAdopte(args.stack))) {
       ensureDir(path.dirname(runPath));
-      fs.writeFileSync(runPath, renderRunDoc({
-        template: fs.readFileSync(path.join(args.source, `templates/run/${args.stack}.md`), 'utf8'),
-        stack: args.stack, assistant: args.assistant, backend: args.backend,
-      }));
-      done.push('docs/RUN.md');
-    } else kept.push('docs/RUN.md');
+      let contenu;
+      if (estAdopte(args.stack)) {
+        // La lecture est ici (le rendu, lui, est pur) : un `package.json` illisible ou absent est
+        // un CAS, pas une panne — `renderRunDocObserve` sait le dire.
+        let pkg = null;
+        try { pkg = fs.readFileSync(path.join(projectDir, 'package.json'), 'utf8'); } catch { pkg = null; }
+        contenu = renderRunDocObserve({ pkg, fichiers: entreesDuProjet(projectDir) });
+      } else {
+        contenu = renderRunDoc({
+          template: fs.readFileSync(path.join(args.source, `templates/run/${args.stack}.md`), 'utf8'),
+          stack: args.stack, assistant: args.assistant, backend: args.backend,
+        });
+      }
+      fs.writeFileSync(runPath, contenu);
+      done.push(estAdopte(args.stack) ? 'docs/RUN.md (relevé dans ton package.json)' : 'docs/RUN.md');
+    } else if (args.force && estAdopte(args.stack)) promesse.push('docs/RUN.md — tes corrections aux commandes relevées sont dedans');
+    else kept.push('docs/RUN.md');
   } catch (e) { failed.push(`run (${e.message})`); }
 
   // Parité : chaque assistant reçoit les 7 agents dans SON dossier natif.
@@ -276,8 +487,32 @@ async function main() {
     }
     trackDir(`${agentsDir}/ (agents du crew (${CREW.length}))`, results);
   } catch (e) { failed.push(`agents (${e.message})`); }
-  try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
-  catch (e) { failed.push(`.gitignore (${e.message})`); }
+  // Pas de `templates/gitignore/aucune.gitignore` : un projet adopté a déjà le sien (ou pas),
+  // ce n'est pas au kit de lui en imposer un générique par stack.
+  if (!estAdopte(args.stack)) {
+    try { track('.gitignore', copyIfAbsent(path.join(args.source, `templates/gitignore/${args.stack}.gitignore`), path.join(projectDir, '.gitignore'), opt)); }
+    catch (e) { failed.push(`.gitignore (${e.message})`); }
+  } else if (securiteAdoption) {
+    // ⛔ LA FUITE QUE CETTE BRANCHE FERME, MESURÉE. `copyIfAbsent` saute un fichier existant — et
+    // le cas NORMAL d'un projet existant est justement d'avoir déjà son `.gitignore`. Sur un
+    // projet dont le `.gitignore` disait `node_modules/` et rien d'autre, `git check-ignore .env`
+    // sortait en 1 APRÈS installation : le kit posait un scan de secrets, écrivait partout que les
+    // clés vont dans `.env`, et `.env` partait au premier `git add -A`. On COMPLÈTE donc, en fin
+    // de fichier (la dernière règle qui matche gagne), sans jamais réécrire une ligne existante.
+    try {
+      const { ecrites, refusees } = appliquerGitignore(securiteAdoption.gitignore, { accord: accordsAdoption.gitignore });
+      if (ecrites.length) done.push(`.gitignore ${securiteAdoption.gitignore.existe ? 'complété' : 'créé'} (${ecrites.join(', ')})`);
+      else if (!refusees.length) kept.push('.gitignore (il protégeait déjà tout ce que le kit dépose)');
+      if (refusees.length) {
+        cloneSkipped.push({
+          name: `.gitignore : ${refusees.join(', ')}`,
+          reason: accordsAdoption.gitignore === false
+            ? 'tu as refusé — rien n\'a été écrit dans ton `.gitignore`. Vérifie toi-même que `.env` y est.'
+            : `ces règles renversent une ligne que tu as écrite (${securiteAdoption.gitignore.battues.map((b) => `« ${b.ligne} » décide de ${b.chemin}`).join(' ; ')}) — le kit ne renverse pas une intention sans accord. Relance \`--adopt\` dans un terminal pour trancher.`,
+        });
+      }
+    } catch (e) { failed.push(`.gitignore (${e.message})`); }
+  }
   // Fins de ligne : sur Windows, sans ça, les hooks bash du projet sont checkoutés en CRLF et
   // échouent sur « bad interpreter: ^M » — le scan de secrets ne tourne plus, sans rien dire.
   try { track('.gitattributes', copyIfAbsent(path.join(args.source, 'templates/gitattributes'), path.join(projectDir, '.gitattributes'), opt)); }
@@ -294,8 +529,11 @@ async function main() {
     failed.push(...env.failed);
   } catch (e) { failed.push(`environnement (${e.message})`); }
 
-  try { track('docs/examples/feature-exemple.md', copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt)); }
-  catch (e) { failed.push(`exemple (${e.message})`); }
+  // Pas de `templates/examples/aucune.md` : l'exemple de feature est écrit pour une stack connue.
+  if (!estAdopte(args.stack)) {
+    try { track('docs/examples/feature-exemple.md', copyIfAbsent(path.join(args.source, `templates/examples/${args.stack}.md`), path.join(projectDir, 'docs/examples/feature-exemple.md'), opt)); }
+    catch (e) { failed.push(`exemple (${e.message})`); }
+  }
 
   // Manifeste : mémorise stack+assistant (+ version du kit) pour que `scripts/update.mjs` puisse récupérer les nouveaux fichiers du kit.
   // `learning` et `backend` y sont AUSSI : ce sont deux choix de l'utilisateur, et `--refresh`
@@ -316,7 +554,9 @@ async function main() {
   // Dépôt git réel : hooks pre-commit actifs immédiatement + premier point de retour arrière.
   // Ce que le kit n'a pas pu activer (dépôt parent, core.hooksPath déjà pris) part en « Sauté »,
   // avec la commande pour rattraper — jamais en ✅ silencieux.
-  const g = initProjectGit({ projectDir });
+  // `accordHooks` n'existe que sur le parcours adopté, et vaut `undefined` partout ailleurs :
+  // le parcours neuf pose sa clé exactement comme avant (voir gitinit.mjs, les trois valeurs).
+  const g = initProjectGit({ projectDir, accordHooks: accordsAdoption.hooks });
   done.push(...g.done);
   failed.push(...g.failed);
   cloneSkipped.push(...g.skipped);
@@ -343,12 +583,32 @@ async function main() {
         failed.push(...skl.failed.map((f) => `skill stack : ${f}`));
       }
     } catch (e) { failed.push(`skills stack (${e.message})`); }
+
+    // ── LE SCAN TIERS, EN DERNIER ET SOUS ACCORD EXPLICITE ────────────────────────────────────
+    // En dernier parce qu'il n'a de sens qu'une fois les skills du kit posés : c'est CE disque-là
+    // qu'`autoskills` écraserait, et c'est celui que `lancerAutoskills` écarte le temps du run.
+    // Dans ce bloc, donc jamais sous `--no-skills` — le drapeau vaut aussi pour les skills tiers.
+    if (accordAutoskills) {
+      console.log(`\nScan ${AUTOSKILLS.commande} (outil tiers de ${AUTOSKILLS.auteur}, licence ${AUTOSKILLS.licence}) — dry-run d'abord…`);
+      // Les trois lignes du rapport vivent dans `autoskills.mjs` : cette branche n'est atteinte que
+      // par un `--adopt` INTERACTIF où l'utilisateur a dit oui, donc aucun garde ne pouvait les
+      // lire ici — et c'est là que le ✅ s'est mis à contredire le ❌ imprimé deux lignes plus bas.
+      const rap = rapportAutoskills(lancerAutoskills({ projectDir, assistant: args.assistant }), projectDir);
+      done.push(...rap.done);
+      cloneSkipped.push(...rap.skipped);
+      failed.push(...rap.failed);
+    }
   }
 
-  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, inAssistant: assets.inAssistant, skipped: cloneSkipped, failed }));
+  console.log(formatReport({ project: projectDir, stack: args.stack, assistant: args.assistant, done, kept, promesse, inAssistant: assets.inAssistant, skipped: cloneSkipped, failed }));
   if (failed.length) process.exitCode = 1; // rapport honnête : l'échec est visible aussi dans le code de sortie
-  console.log('\n' + ok(`Config prête. Projet créé dans : ${projectDir}`, on));
-  const promptLines = renderColleMoi({ assistant: args.assistant, skillsInstalled: !args.noSkills });
+  // ⛔ « Projet créé dans : … » était la DERNIÈRE phrase du rapport, imprimée sur un dépôt qui a
+  // parfois deux ans d'historique. Le kit n'a rien créé là : il a posé son environnement à côté du
+  // code existant, sans écraser un seul fichier — et c'est exactement ce que la ligne doit dire.
+  console.log('\n' + ok(estAdopte(args.stack)
+    ? `Config prête. Environnement installé dans un projet existant : ${projectDir}`
+    : `Config prête. Projet créé dans : ${projectDir}`, on));
+  const promptLines = renderColleMoi({ assistant: args.assistant, stack: args.stack, skillsInstalled: !args.noSkills });
   // Le prompt survit au terminal : écrit à la racine du projet, dans tous les modes.
   fs.writeFileSync(path.join(projectDir, 'COLLE-MOI-DANS-L-IA.md'), ['# À coller dans ton assistant IA', '', ...promptLines, ''].join('\n'));
   console.log('\n— Colle ce prompt dans ton assistant (aussi sauvé dans COLLE-MOI-DANS-L-IA.md) —\n');

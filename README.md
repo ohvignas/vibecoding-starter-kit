@@ -73,6 +73,7 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 | 📓 | **Journal du crew** | trois fichiers partagés dans `docs/agents/` : **`JOURNAL.md`** (append-only — une ligne par mission, avec sa preuve), **`state.yaml`** (l'état courant : jalon, tâche, tentatives de réparation, motif de blocage — **un seul écrivain**, le juge), **`inventaire.md`** (le contrat de couverture : tout ce que la maquette et le PRD promettent, ligne par ligne). Chaque agent les lit **avant** de commencer |
 | 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
 | 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : **régénère** les règles (`AGENTS.md`, entre marqueurs) + runbooks **et leurs étapes** + agents + glossaire + les **docs officielles** de ta stack (`ai-context/`, les `llms.txt` que l'IA lit pour ne pas inventer d'API périmée) — ta zone perso, `src/` et **ce que tu as écrit** dans `docs/` (PRD, design, roadmap, mémoire) **jamais touchés** (`--dry-run` pour prévisualiser) |
+| 🧬 | **Projet existant (`--adopt`)** | `npx create-vibecoding-kit@latest --adopt`, lancé **depuis** ton projet : la méthode arrive **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs — tout ce qui est en dehors reste **à la ligne près**. Le kit ne **revendique aucune techno** (pas de règle Convex dans un projet Prisma) : ni stack, ni scaffold, ni CI, ni `maquette/`. Aucun de tes fichiers n'est écrasé, ton `.gitignore` est complété pour que `.env` cesse de partir au commit, et les trois écritures qui s'imposeraient (hooks git, workflow de scan de secrets, `.gitignore`) sont **demandées** à l'écran |
 | 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt du site, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
@@ -86,6 +87,16 @@ npm create vibecoding-kit@latest
 > **Prérequis : Node.js ≥ 20.12 + git.** Le wizard demande stack/assistant/nom (+ Convex cloud/local pour le SaaS, + **mode apprentissage**) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack). Aucun compte, aucune clé, aucun code : quatre à cinq questions et c'est fini.
 >
 > **Stack vitrine** : Astro 7 exige **Node ≥ 22.12** (il refuse de démarrer en dessous). Le wizard, lui, tourne dès 20.12.
+
+**Tu as déjà un projet ?** Ne scaffolde rien par-dessus — **adopte-le**, depuis son dossier :
+
+```bash
+npx create-vibecoding-kit@latest --adopt
+```
+
+> Même méthode (les 10 commandes, les agents, la mémoire, les règles), **sans revendiquer ta techno** : pas de stack, pas de scaffold, pas de CI, pas de `maquette/`. Les règles sont fusionnées **dans** ton `AGENTS.md` et ton `CLAUDE.md` entre deux marqueurs — le reste de ces fichiers n'est pas touché, et aucun fichier à toi n'est écrasé. Le kit **demande** avant les trois écritures qui s'imposeraient : hooks git, workflow de scan de secrets, `.gitignore`.
+>
+> Et ensuite, ce n'est **pas** `/new-project` — il fonderait un PRD, une roadmap et un scaffold par-dessus un code qui existe déjà. C'est **`docs/ETAT-DES-LIEUX.md`** : ouvre-le, fais-le remplir par ton IA qui lit **ton** code, et tout part de là.
 
 **2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
 

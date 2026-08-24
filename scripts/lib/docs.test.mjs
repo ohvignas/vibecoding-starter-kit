@@ -20,6 +20,7 @@ import { COMMANDS, fichiersDuRunbook } from './commands-list.mjs';
 import { STACKS, PINS, DESIGN_SKILL_NAMES, AGENT_SKILL_SPECS, SUPERPOWERS, MCP_CONNECT, resolveAssets, resolveStackManifest } from './matrix.mjs';
 import { CREW, kitOwnedFiles } from './kit-owned.mjs';
 import { runWizard } from './wizard.mjs';
+import { parseArgs } from './args.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SETUP = path.join(ROOT, 'scripts', 'setup.mjs');
@@ -245,6 +246,55 @@ test('H4bis — `npx <paquet> --refresh` est documenté ET JOUÉ (bin symlinké,
     assert.equal(fs.readFileSync(path.join(proj, 'docs/PRD.md'), 'utf8'), AMOI, 'le refresh a écrasé docs/PRD.md — le README promet le contraire');
     assert.match(fs.readFileSync(path.join(proj, 'docs/A-FAIRE.md'), 'utf8'), /coché par moi/, 'le refresh a écrasé docs/A-FAIRE.md — le README promet le contraire');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// H4quater — le parcours « projet existant ». Le CLI l'accepte depuis le lot adoption ; le README
+// est le SEUL endroit où quelqu'un peut apprendre qu'il existe (`--adopt` ne s'écrit pas au
+// hasard). Un parcours livré et jamais documenté, c'est du code mort du point de vue de
+// l'utilisateur — et le README envoyait tout le monde sur `npm create` dans un dossier VIDE.
+// ─────────────────────────────────────────────────────────────────────────────
+test('H4quater — le README documente `--adopt`, dit ce qu\'il ne touche pas, et n\'y envoie pas sur `/new-project`', () => {
+  const readme = read('README.md');
+  const pkg = JSON.parse(read('package.json'));
+  // Le drapeau est LU dans le CLI : documenter une commande que `parseArgs` refuse serait la
+  // promesse morte que ce lot passe son temps à fermer.
+  assert.equal(parseArgs(['--adopt']).adopt, true, 'montage : `--adopt` est bien le drapeau du parcours « projet existant »');
+  assert.ok(readme.includes(`npx ${pkg.name}@latest --adopt`), `README : \`npx ${pkg.name}@latest --adopt\` n'est écrit nulle part — le parcours existe et personne ne peut le trouver`);
+
+  // DEUX endroits, parce qu'on cherche à deux endroits : le tableau (« est-ce que ce kit sait
+  // faire ça ? ») et le démarrage (« comment je le lance ? »). Une seule des deux ne suffit pas.
+  const iTable = readme.indexOf('## ✨ Fonctionnalités');
+  const iDemarrage = readme.indexOf('## ⚡ Démarrage rapide');
+  const iApres = readme.indexOf('## ✅ Après l\'install');
+  assert.ok(iTable > 0 && iDemarrage > iTable && iApres > iDemarrage, 'montage : les trois sections du README sont dans cet ordre');
+  const table = readme.slice(iTable, iDemarrage);
+  assert.ok(table.split('\n').some((l) => l.startsWith('|') && l.includes('--adopt')), 'README : le tableau des fonctionnalités ne porte aucune ligne `--adopt`');
+
+  // ── LE BLOC DU DÉMARRAGE RAPIDE, isolé : sans ça, un renvoi correct ailleurs dans le README
+  // ferait passer les contrôles ci-dessous pendant que CE bloc raconte autre chose.
+  const demarrage = readme.slice(iDemarrage, iApres).split('\n');
+  const d = demarrage.findIndex((l) => l.includes('--adopt'));
+  assert.ok(d >= 0, 'README : « Démarrage rapide » ne dit pas quoi faire quand le projet existe déjà');
+  const f = demarrage.findIndex((l, k) => k > d && /^\*\*\d\./.test(l));
+  const bloc = demarrage.slice(Math.max(0, d - 2), f === -1 ? demarrage.length : f).join('\n');
+
+  // Ce que le lot entier a construit, et qui décide qu'on ose lancer ça sur un projet de deux ans.
+  for (const [motif, quoi] of [
+    [/AGENTS\.md/, 'les règles arrivent DANS `AGENTS.md`'],
+    [/CLAUDE\.md/, '…et dans `CLAUDE.md`'],
+    [/écras/i, 'la promesse de non-écrasement — c\'est la question n°1 de quelqu\'un qui a du code'],
+  ]) assert.match(bloc, motif, `README, bloc \`--adopt\` : ${quoi} — jamais dit`);
+
+  // LA SUITE. Sur un projet adopté, `/new-project` fonderait un PRD par-dessus le code existant :
+  // `/next`, `/build` et le verdict de `/doctor` l'interdisent tous les trois (adoption.test.mjs).
+  // Le README ne peut pas être le seul document qui l'y renvoie encore.
+  assert.match(bloc, /ETAT-DES-LIEUX\.md/, 'README, bloc `--adopt` : la suite, sur un projet adopté, c\'est `docs/ETAT-DES-LIEUX.md` — jamais dit');
+  for (const l of bloc.split('\n').filter((x) => x.includes('/new-project'))) {
+    assert.match(l, /\bpas\b|jamais/i, `README, bloc \`--adopt\` : « ${l.trim().slice(0, 90)}… » cite \`/new-project\` sans l'exclure`);
+  }
+  // LE DISCRIMINANT : le parcours NEUF n'a pas bougé.
+  assert.match(readme.slice(iDemarrage, iApres), /npm create vibecoding-kit@latest/, 'README : le parcours d\'un projet NEUF a disparu du démarrage rapide');
 });
 
 test('H4ter — le README documente le journal du crew et les deux règles canoniques', () => {

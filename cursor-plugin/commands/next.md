@@ -10,7 +10,10 @@ L'utilisateur est perdu ou reprend après une pause. Ne modifie RIEN. Lis, puis 
 Réponds en **3 lignes maximum**, en français simple :
 - **Où tu en es** : le dernier jalon terminé (ou « tu démarres », ou « bloqué sur … »).
 - **Ta prochaine action** : le prochain jalon en une phrase concrète — ou, si l'état est bloqué, ce qu'il faut débloquer d'abord.
-- **La commande à taper** : `/build` (continuer la roadmap), `/new-project` (rien n'existe encore), ou `/sos` (bloqué ou cassé).
+- **La commande à taper** : `/build` (continuer la roadmap), `/new-project` (rien n'existe encore — **jamais** sur un projet adopté, voir ci-dessous), ou `/sos` (bloqué ou cassé).
 
-Si rien n'existe encore (`docs/ROADMAP.md` absent) : dis-le et propose `/new-project`.
+**`docs/ROADMAP.md` absent ? Deux cas, et tu regardes le disque avant de répondre :**
+- **`docs/ETAT-DES-LIEUX.md` existe** → projet **existant**, adopté par le kit (`--adopt`) : il a déjà son code. Ne propose **jamais** `/new-project` (il fonderait un projet par-dessus le sien) et ne scaffolde rien. Lis l'état des lieux, dis où en est le projet, et propose la prochaine action concrète sur CE code — s'il est encore vide (le kit le pose vide, exprès), la 1re action est de le **remplir en lisant le projet**, pas de deviner.
+- **sinon** → rien n'existe encore : dis-le et propose `/new-project`.
+
 Ne récite pas le catalogue des commandes ici — c'est le rôle de `/help`, renvoie-y en une ligne si besoin.

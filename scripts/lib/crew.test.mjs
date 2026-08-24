@@ -492,7 +492,12 @@ const LIGNES_APPROUVEES = [
   // Le numéro d'item est celui de `/doctor` : il a glissé de 15/16 à 16/17 quand l'item
   // « Étapes des runbooks découpés » s'est inséré après l'item 6. Le TEXTE, lui, est inchangé.
   "16. **Agents du crew (7)** présents dans le dossier de ton assistant : `.cursor/agents/` (Cursor) · `.claude/agents/` (Claude Code) · `docs/agents/crew/` (Codex). Attendus : `verificateur`, `test-runner`, `code-reviewer`, `security-reviewer`, `critique-produit`, `critique-donnees`, `critique-ux`. Manquants → `npx create-vibecoding-kit --refresh`.",
-  "17. **MCP de test branché** : `playwright` (saas, vitrine) · `maestro` (mobile) · `chrome-devtools` (desktop). Sans lui, le sous-agent `test-runner` ne peut rien prouver et répondra `BLOQUÉ`.",
+  // L'exception du projet adopté (tâche 10) s'AJOUTE derrière la phrase d'origine, qui ne bouge
+  // pas d'un mot. Relu avant recopie, comme l'exige l'avertissement en tête de cet inventaire :
+  // l'attribution est inchangée — `test-runner` rend un statut sur SA mission (proof-rule,
+  // « jamais d'auto-PROUVÉ »), et `BLOQUÉ` est justement le statut d'une mission qu'il ne peut pas
+  // jouer faute d'outil. Rien ici ne lui donne un verdict de jalon, qui reste au `verificateur`.
+  "17. **MCP de test branché** : `playwright` (saas, vitrine) · `maestro` (mobile) · `chrome-devtools` (desktop). Sans lui, le sous-agent `test-runner` ne peut rien prouver et répondra `BLOQUÉ`. **Sauf sur un projet adopté** (`.vibecoding.json` porte `\"stack\": \"aucune\"`) : lequel brancher dépend de la techno, et le kit n'en revendique aucune — il ne le pose donc pas. Son absence est un **choix, pas un ✗** : dis-le en une ligne, dis ce qu'on y perd (`test-runner` répondra `BLOQUÉ` sur tout test de parcours), et passe.",
   "- **critique-produit** (Vera) — « qu'est-ce qu'on a oublié ? » features, écrans, parcours.",
   "- **critique-donnees** (Marc) — « d'où vient cette donnée ? » modèle, câblage réel, zéro mock.",
   "- **critique-ux** (Lina) — « et quand ça se passe mal ? » états vide/erreur, responsive, accessibilité.",

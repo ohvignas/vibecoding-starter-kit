@@ -1,14 +1,20 @@
 import path from 'node:path';
 
-const STACKS = ['saas', 'mobile', 'desktop', 'vitrine'];
-const ASSISTANTS = ['cursor', 'claude-code', 'codex'];
+// `aucune` = parcours « projet existant » (voir adoption.mjs). Elle est LÉGALE en argument mais
+// n'est PAS une stack offerte : le wizard ne la propose pas, la doc ne la liste pas.
+const STACKS = ['saas', 'mobile', 'desktop', 'vitrine', 'aucune'];
+// SOURCE UNIQUE des assistants. `validateArgs` juge contre elle, le wizard du parcours neuf y
+// accroche ses libellés (wizard.mjs) et le parcours adopté juge contre elle aussi. Elle vivait en
+// double — ici les clés, là-bas la liste complète — et les deux parcours ne jugeaient déjà plus
+// contre la même chose.
+export const ASSISTANT_KEYS = ['cursor', 'claude-code', 'codex'];
 
 export function parseArgs(argv) {
   // source: null = « non fourni » → setup.mjs y mettra la racine du kit (dérivée de import.meta.url).
   // `--mockup` (jamais lu par personne) et `args.yes` (le mode non interactif se décide sur `argv`,
   // dans needsWizard) ont été retirés : deux champs que le wizard recopiait consciencieusement
   // d'un objet à l'autre, et que rien n'a jamais consommé.
-  const args = { stack: null, assistant: null, project: null, source: null, dryRun: false, force: false, caveman: false, learning: true, refresh: false };
+  const args = { stack: null, assistant: null, project: null, source: null, dryRun: false, force: false, caveman: false, learning: true, refresh: false, adopt: false };
   // Une option à valeur ne doit JAMAIS avaler le drapeau suivant : `--project --no-skills` donnait
   // un projet nommé « --no-skills » ET perdait silencieusement --no-skills.
   const valueOf = (flag, i) => {
@@ -25,6 +31,9 @@ export function parseArgs(argv) {
       case '--source': args.source = valueOf(a, i); i++; break;
       case '--dry-run': args.dryRun = true; break;
       case '--refresh': args.refresh = true; break;
+      // Parcours « projet existant » : la stack vaut `aucune`, le projet est le dossier courant.
+      // Le drapeau est lu dans `argv` par setup.mjs (comme --refresh), le champ sert au reste.
+      case '--adopt': args.adopt = true; break;
       case '--force': args.force = true; break;
       case '--caveman': args.caveman = true; break;
       case '--backend': args.backend = valueOf(a, i); i++; break;
@@ -54,7 +63,7 @@ export function isValidProjectName(project) {
 export function validateArgs(args) {
   const errors = [];
   if (!STACKS.includes(args.stack)) errors.push(`--stack doit valoir ${STACKS.join('|')}`);
-  if (!ASSISTANTS.includes(args.assistant)) errors.push(`--assistant doit valoir ${ASSISTANTS.join('|')}`);
+  if (!ASSISTANT_KEYS.includes(args.assistant)) errors.push(`--assistant doit valoir ${ASSISTANT_KEYS.join('|')}`);
   if (!isValidProjectName(args.project)) errors.push('--project : nom invalide');
   if (args.backend !== undefined && !['cloud', 'local'].includes(args.backend)) errors.push('--backend doit valoir cloud|local');
   return errors;

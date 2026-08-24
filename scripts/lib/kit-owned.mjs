@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { estAdopte } from './adoption.mjs';
 import { COMMANDS, COMMANDS_DIR, cheminRunbook, cheminEtape, etapesDuRunbook } from './commands-list.mjs';
 import { resolveStackManifest, AI_CONTEXT } from './matrix.mjs';
 import { prePushScript, preCommitCheckLine } from './hooks.mjs';
@@ -68,7 +69,12 @@ export function kitOwnedFiles(stack, assistant) {
   // Le glossaire embarqué (Lot H7) : 100 % kit lui aussi, et le seul fichier du projet qui vienne
   // de `guides/` plutôt que de `templates/`. Sans cette ligne, un projet créé aujourd'hui garderait
   // à jamais le vocabulaire d'aujourd'hui — un glossaire périmé est pire que pas de glossaire.
-  pairs.push({ from: 'guides/glossaire.md', to: 'docs/glossaire.md' });
+  // ⛔ ET SUR UN PROJET ADOPTÉ, IL S'ADAPTE — le scaffold le fait déjà (setup.mjs,
+  // `adapterGlossaireAdopte`) parce que l'entrée « Domaine » renvoie à `docs/DOMAINS.md`, que ce
+  // parcours ne pose pas. Sans le transform ici, le PREMIER `--refresh` recopiait la source
+  // brute et ramenait le renvoi mort — mesuré sur un vrai projet adopté. Et il revenait au
+  // moment où personne ne regarde : pas à l'installation, mais deux semaines plus tard.
+  pairs.push({ from: 'guides/glossaire.md', to: 'docs/glossaire.md', ...(estAdopte(stack) ? { transform: 'glossaire-adopte' } : {}) });
 
   // `ai-context/` — les `llms.txt` officiels des technos de la stack, recopiés VERBATIM depuis la
   // doc amont. 100 % kit : l'utilisateur n'y écrit jamais.
@@ -78,9 +84,16 @@ export function kitOwnedFiles(stack, assistant) {
   // moyen de rafraîchir qu'il indiquait, `scripts/download-ai-context.sh`, n'est PAS livré dans le
   // projet : la commande était morte chez l'utilisateur, et rien d'autre ne prenait le relais.
   // Fichier par fichier, jamais le dossier : `refresh.mjs` lit chaque `from` avec `readFileSync`.
-  pairs.push({ from: 'ai-context/README.md', to: 'ai-context/README.md' });
-  for (const d of AI_CONTEXT[stack] ?? []) {
-    for (const f of listKitFiles(`ai-context/${d}`)) pairs.push({ from: `ai-context/${d}/${f}`, to: `ai-context/${d}/${f}` });
+  // ⛔ RIEN DE TOUT ÇA SUR UN PROJET ADOPTÉ. `AI_CONTEXT` n'a pas d'entrée `aucune` — le kit ne
+  // revendique pas la techno de ce projet, il n'a donc aucun `llms.txt` à lui donner, et le
+  // scaffold ne pose pas le dossier. Le README poussé seul créait `ai-context/` au premier
+  // `--refresh` : un dossier de plus dans le dépôt de quelqu'un d'autre, ne contenant QUE la
+  // page qui annonce « les fichiers officiels qui apprennent à ton IA chaque techno ». Mesuré.
+  if (!estAdopte(stack)) {
+    pairs.push({ from: 'ai-context/README.md', to: 'ai-context/README.md' });
+    for (const d of AI_CONTEXT[stack] ?? []) {
+      for (const f of listKitFiles(`ai-context/${d}`)) pairs.push({ from: `ai-context/${d}/${f}`, to: `ai-context/${d}/${f}` });
+    }
   }
 
   // Les 7 agents du crew, dans le dossier natif de l'assistant. Cursor ne comprend pas le
@@ -107,7 +120,9 @@ export function kitOwnedFiles(stack, assistant) {
 
   if (assistant === 'cursor') {
     pairs.push({ from: 'templates/cursor/rules/00-project.mdc', to: '.cursor/rules/00-project.mdc' });
-    pairs.push({ from: 'templates/cursor/rules/10-css-maquette.mdc', to: '.cursor/rules/10-css-maquette.mdc' });
+    // Pas sur un projet adopté : le scaffold ne la pose plus (setup.mjs), et un `--refresh` qui
+    // la recréerait ramènerait l'asymétrie par la porte de derrière.
+    if (!estAdopte(stack)) pairs.push({ from: 'templates/cursor/rules/10-css-maquette.mdc', to: '.cursor/rules/10-css-maquette.mdc' });
     // Règles typées par framework : copiées À PLAT (c'est ce que fait le scaffold, setup.mjs:179).
     for (const f of listKit(`templates/cursor/rules/${stack}`, '.mdc')) {
       pairs.push({ from: `templates/cursor/rules/${stack}/${f}`, to: `.cursor/rules/${f}` });
@@ -137,9 +152,15 @@ export function kitOwnedGenerated(stack, assistant, { home = os.homedir(), backe
       render: (_prev, tpl) => `${tpl.replace(/\s*$/, '\n')}${preCommitCheckLine(m.checks.preCommit)}\n`,
     },
     { to: MCP_FILE(assistant), policy: 'merge', render: (prev) => mergeMcpConfig(prev, expandMcpCommands(m.mcp, home)) },
-    {
+    // `docs/RUN.md` — SEULEMENT pour les 4 stacks offertes. Sur un projet adopté, ce fichier n'est
+    // pas un rendu du kit mais une OBSERVATION du projet (`renderRunDocObserve`, run-doc.mjs) :
+    // le kit n'a ni modèle (`templates/run/aucune.md` n'existe pas, et n'aurait aucun sens) ni le
+    // droit de réécrire ce que l'utilisateur a corrigé. Le laisser ici le faisait partir en
+    // « non régénérable » à chaque `--refresh` — silencieux, puisque `skipped` n'est affiché nulle
+    // part sur ce chemin. On ne le prétend donc pas régénérable.
+    ...(estAdopte(stack) ? [] : [{
       to: 'docs/RUN.md', from: `templates/run/${stack}.md`, policy: 'new',
       render: (_prev, tpl) => renderRunDoc({ template: tpl, stack, assistant, backend }),
-    },
+    }]),
   ];
 }
