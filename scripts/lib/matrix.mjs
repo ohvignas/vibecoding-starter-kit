@@ -289,6 +289,15 @@ export const AGENT_SKILL_SPECS = [
   { label: 'sécurité (OpenAI)', repo: 'github.com/openai/skills', skills: ['security-best-practices', 'security-threat-model'] },
 ];
 
+// ⛔ TOUT CE QUE LE KIT POSE, ET POURQUOI CETTE LISTE N'EST PAS `DESIGN_SKILL_NAMES`. Un outil tiers
+// qui installe des skills supprime PAR NOM (`rmSync(<dossier>/<nom>)`, installer.ts) : ce qu'il faut
+// mettre à l'abri le temps de son passage, c'est TOUT ce que le kit a posé, pas seulement les 4 que
+// la Règle design fait charger. Les deux ensembles n'ont aucune raison de coïncider — et ils ne
+// coïncident pas : 9 skills posés, 4 « design ». Mesuré : un 6ᵉ skill ajouté ici passait hors de
+// l'abri sans qu'un seul garde rougisse. `DESIGN_SKILL_NAMES` garde son rôle — la documentation de
+// la Règle design ; celle-ci est DÉRIVÉE des specs, donc elle grandit avec elles, toute seule.
+export const SKILLS_INSTALLES_PAR_LE_KIT = [...new Set([...DESIGN_SKILL_SPECS, ...AGENT_SKILL_SPECS].flatMap((s) => s.skills))];
+
 // « ajouté à components.json au scaffold » était FAUX : le scaffold du kit ne crée aucun
 // `components.json` — il n'y a même pas encore de projet à ce stade. C'est `/new-project`
 // qui, à son étape `07-scaffold.md` et après `shadcn init`, y déclare le registry. Promettre

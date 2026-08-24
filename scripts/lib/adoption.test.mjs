@@ -1412,12 +1412,19 @@ test('T10 — `--refresh` sur un projet adopté : glossaire adapté, et aucun `a
 // dans `SANS_LIGNE` avec son motif. Un 8ᵉ champ ajouté à `STACKS` fera échouer ce test tant que
 // personne n'aura tranché — c'est ça, compter.
 //
-// CE QU'IL NE GARANTIT PAS, mesuré en mutation : il juge la PRÉSENCE de deux marques (la condition
-// dans l'item, « choix, pas un ✗ » sur la ligne), pas le sens de la phrase autour. Réécrire
-// « **Sauf sur un projet adopté** » en « **Sur les 4 stacks** » en gardant les deux marques passe —
-// la ligne devient incohérente et le test reste vert. Aucun ensemble fermé de motifs ne caractérise
-// « cette phrase française scope correctement une exception » : c'est le plafond d'un garde sur de
-// la prose, pas un correctif oublié. La relecture reste le filet sur ce cas-là.
+// CE QU'IL NE GARANTIT PAS, mesuré en mutation : il juge la PRÉSENCE de TROIS marques (la condition
+// dans l'item, « projet adopté » et « choix, pas un ✗ » sur la ligne), pas le sens de la phrase
+// autour. Le plafond est donc d'INVERSER ce sens en gardant les trois — « sur un projet adopté, ces
+// scripts sont EXIGÉS, leur absence est un choix, pas un ✗ » passerait. Aucun ensemble fermé de
+// motifs ne caractérise « cette phrase française scope correctement une exception » ; la relecture
+// reste le filet sur ce cas-là.
+//
+// ⛔ CE QU'IL GARANTIT MAINTENANT, ET QUI ÉTAIT DÉCLARÉ IMPOSSIBLE À TORT. La version d'avant
+// annonçait ce plafond un cran trop bas : « réécrire **Sauf sur un projet adopté** en **Sur les 4
+// stacks** en gardant les deux marques passe ». C'était vrai avec deux marques — et ça a AUTORISÉ
+// la régression, au nom d'une impossibilité qui n'en était pas une : les trois lignes de
+// `CONTROLE_PAR` portent toutes le littéral « projet adopté », donc l'exiger est gratuit et ferme
+// exactement cette mutation-là. Un commentaire qui déclare un garde impossible est une permission.
 test('T11 — les 7 champs du manifeste de stack sont comptés : chacun a sa ligne de /doctor exemptée, ou son motif', () => {
   const manifeste = resolveStackManifest(STACK_AUCUNE, 'claude-code');
   const vide = (v) => (Array.isArray(v) ? v.length === 0
@@ -1475,6 +1482,7 @@ test('T11 — les 7 champs du manifeste de stack sont comptés : chacun a sa lig
       const bloc = blocDeLItem(n);
       assert.ok(bloc.includes('.vibecoding.json') && bloc.includes('"stack": "aucune"'),
         `${rel} : item ${n} — rien n'y dit COMMENT reconnaître un projet adopté (\`.vibecoding.json\` porte \`"stack": "aucune"\`), et il exige « ${champ} », qui y est vide`);
+      assert.match(ligne, /projet adopté/, `${rel} : item ${n} — la ligne de « ${champ} » ne dit plus À QUI s'applique l'exception : « ${ligne.trim().slice(0, 100)}… »`);
       assert.match(ligne, /choix, pas un ✗/,
         `${rel} : item ${n} — « ${champ} » est VIDE sur \`aucune\` (resolveStackManifest) et cette ligne l'exige quand même sans exception : le ✅ est inatteignable. « ${ligne.trim().slice(0, 100)}… »`);
     }

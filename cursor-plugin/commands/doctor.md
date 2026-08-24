@@ -6,7 +6,13 @@ Vérifie que le projet est bien configuré et rends un rapport clair (✓ / ✗ 
 2. **docs/memory/index.md** présent (+ gotchas/conventions/decisions/archive).
 3. **MCP** : `.mcp.json` (Claude Code/Codex) ou `.cursor/mcp.json` (Cursor) présent (toutes les stacks ont des MCP — détail par stack à l'item 10).
 4. **Secrets non commités** : `git ls-files | grep -E '(^|/)\.env$'` doit être VIDE. Sinon → alerte : retire le fichier du suivi (`git rm --cached <fichier>`) et vérifie `.gitignore`.
-5. **.gitignore** ignore bien `.env`.
+5. **.gitignore** ignore bien `.env`. Vérifie-le pour de vrai : `git check-ignore -q .env && echo ignoré`. Sinon → ajoute ces trois lignes à la FIN de ton `.gitignore` (elles ne touchent à rien au-dessus) :
+   ```
+   .env
+   .env.*
+   !.env.example
+   ```
+   puis re-vérifie avec la même commande. Si `.env` est DÉJÀ suivi par git, l'ignorer ne suffit pas : c'est l'item 4 qui dit comment le retirer du suivi.
 6. **Commandes (les 10)** installées dans le dossier de ton assistant — `.cursor/commands/` (Cursor) · `.claude/commands/` (Claude Code) · `docs/commands/` (Codex) : `/init-vibecoding`, `/help`, `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/next`, `/sos`, `/doctor`, `/deploy`. Manquantes → `npx create-vibecoding-kit --refresh`.
 7. **Étapes des runbooks découpés** : un runbook long n'est pas UN fichier — son entrée est une **checklist** dont chaque case `- [ ]` cite un fichier `<commande>/NN-nom.md`, posé dans un **sous-dossier à côté d'elle** (mêmes dossiers qu'à l'item 6). Ne devine aucun nom : pour chacune des 10 commandes, ouvre l'entrée, relève les chemins cités en case, **liste le sous-dossier**, **compare les deux listes**. Aucune case de ce genre = runbook non découpé, rien à vérifier pour lui. Un chemin cité sans fichier en face est un ✗ — **nomme-le tel quel** : la commande démarrerait, puis renverrait dans le vide dès sa première case. Manquantes → `npx create-vibecoding-kit --refresh`.
 8. **Workflows** : `.github/workflows/{ci,secrets}.yml` présents. **Sauf sur un projet adopté** (`.vibecoding.json` porte `"stack": "aucune"`) : le kit n'y pose pas de CI (il ne connaît ni le build ni les tests de ce projet), et il ne pose le scan de secrets GitHub **qu'avec ton accord** — un workflow tourne à chaque push sur ton compte. Leur absence est alors un **choix, pas un ✗** : dis-le en une ligne et passe.

@@ -12,7 +12,7 @@
 // il compose une commande `npx`, et il NOMME l'outil, son auteur et sa licence avant de demander.
 import fs from 'node:fs';
 import path from 'node:path';
-import { DESIGN_SKILL_NAMES } from './matrix.mjs';
+import { DESIGN_SKILL_NAMES, SKILLS_INSTALLES_PAR_LE_KIT } from './matrix.mjs';
 import { defaultRun } from './external.mjs';
 import { hint } from './ui.mjs';
 
@@ -61,7 +61,7 @@ export const ETAPES_AUTOSKILLS = [
 
 // ── LA COLLISION, ET POURQUOI « PROPOSER APRÈS » LA GARANTIT AU LIEU DE L'ÉVITER ──────────────
 //
-// `frontend-design` est dans le registre autoskills **et** dans `DESIGN_SKILL_NAMES`
+// `frontend-design` est dans le registre autoskills **et** dans les skills que le kit pose
 // (`matrix.mjs`). Son `installer.ts` fait `rmSync(.claude/skills/<nom>, {recursive:true,
 // force:true})` AVANT de lier. Donc : le skill du kit est sur disque en premier, c'est lui que le
 // `rmSync` emporte, et `/doctor` item 11 continue de dire ✅ (il vérifie la présence, pas le
@@ -71,8 +71,22 @@ export const ETAPES_AUTOSKILLS = [
 // ⛔ ON EMPÊCHE, ON NE RACONTE PAS. Un `--dry-run` et un écran qui « nomme les skills remplacés »
 // sont de la divulgation après coup. La seule prévention qui soit ENTIÈREMENT dans nos mains — on
 // ne contrôle pas la surface de drapeaux d'un CLI tiers, et inventer un `--exclude` qui n'existe
-// pas ne protégerait rien en silence — c'est d'ÉCARTER les 4 skills du kit du disque le temps du
-// run, puis de les remettre. autoskills ne voit alors rien à supprimer, installe sa propre
+// pas ne protégerait rien en silence — c'est d'ÉCARTER du disque TOUT ce que le kit a posé, le
+// temps du run, puis de le remettre.
+//
+// ⛔ TOUT, ET PAS « LES 4 SKILLS DESIGN ». Ce module a d'abord réutilisé `DESIGN_SKILL_NAMES` comme
+// jeu de protection : c'est une liste de DOCUMENTATION (la Règle design en cite 4), pas l'inventaire
+// de ce qui est sur le disque. Le kit en pose NEUF. Mesuré avec un faux autoskills qui reproduit le
+// `rmSync` puis pose sa version : 4 survivaient, 5 étaient écrasés — `webapp-testing`,
+// `code-review`, `find-bugs`, `security-best-practices`, `security-threat-model` —, et
+// `lancerAutoskills` rendait `perdus: []`, `echec: null` : pas un mot au rapport. Le jeu est donc
+// DÉRIVÉ de ce que le kit installe (`SKILLS_INSTALLES_PAR_LE_KIT`), et un garde exige
+// « installés ⊆ abrités » — sinon l'écart se rouvrirait au prochain skill ajouté.
+//
+// Ce qu'on ne sait PAS, et qui est la raison de tout protéger : le registre d'autoskills n'est
+// lisible qu'en le lançant, ce que ce module ne fait jamais. La collision est PROUVÉE pour
+// `frontend-design` et INCONNUE pour les autres. Ne protéger que le prouvé, c'est parier sur un
+// registre tiers qu'on a décidé de ne pas lire. autoskills ne voit alors rien à supprimer, installe sa propre
 // version, et la restauration la remplace par celle que le kit a relue. Net : le kit gagne, à
 // l'octet près.
 //
@@ -97,7 +111,7 @@ const existe = (p) => { try { fs.lstatSync(p); return true; } catch { return fal
 export const DOSSIER_ABRI = '.vibecoding-autoskills-abri';
 
 // ⛔ LE PLAN, ET POURQUOI IL EXISTE. Pendant les deux passes `npx` — que ce module chiffre lui-même
-// à « 1-2 minutes de téléchargement » —, l'abri est le SEUL endroit où vivent les 4 skills design.
+// à « 1-2 minutes de téléchargement » —, l'abri est le SEUL endroit où vivent les 9 skills du kit.
 // Un Ctrl-C là-dedans est le cas ORDINAIRE (un débutant qui annule un téléchargement tiers lent),
 // et `wireSigint` est déjà mort à cet instant (`rl.close()` en `finally`, setup.mjs) : personne ne
 // nettoie. La version d'avant ouvrait son écart par un `rmSync(abri)` « reste d'un run interrompu :
@@ -158,7 +172,7 @@ function cheminReel(p) {
 //   · pas d'abri            → rien à faire, le run peut partir ;
 //   · abri + plan lisible   → on REMET tout, l'abri disparaît, le run peut partir ;
 //   · abri illisible, ou une remise qui échoue, ou un reste hors plan → REFUS, l'abri est INTACT.
-export function reprendreAbri(projectDir, noms = DESIGN_SKILL_NAMES) {
+export function reprendreAbri(projectDir, noms = SKILLS_INSTALLES_PAR_LE_KIT) {
   const abri = path.join(projectDir, DOSSIER_ABRI);
   if (!existe(abri)) return { repris: [], refus: null };
   // ⛔ CE QU'UN PLAN A LE DROIT DE NOMMER. La reprise OBÉIT à un fichier trouvé sur le disque, et
@@ -198,7 +212,7 @@ export function reprendreAbri(projectDir, noms = DESIGN_SKILL_NAMES) {
     return {
       repris,
       restant,
-      refus: `${DOSSIER_ABRI}/ : ${raison}. Tes skills design du kit y sont peut-être encore — le kit n'y touche pas : ${restant.join(', ') || '(vide)'}`,
+      refus: `${DOSSIER_ABRI}/ : ${raison}. Tes skills du kit y sont peut-être encore — le kit n'y touche pas : ${restant.join(', ') || '(vide)'}`,
     };
   };
   if (!ecartes) return refuser([], `un run précédent a été interrompu et son \`${FICHIER_PLAN}\` est absent, illisible, ou nomme des chemins que ce module n'écrit pas`);
@@ -212,7 +226,7 @@ export function reprendreAbri(projectDir, noms = DESIGN_SKILL_NAMES) {
   return { repris, restant: [], refus: null };
 }
 
-export function ecarterSkillsDesign(projectDir, noms = DESIGN_SKILL_NAMES) {
+export function ecarterSkillsDesign(projectDir, noms = SKILLS_INSTALLES_PAR_LE_KIT) {
   const abri = path.join(projectDir, DOSSIER_ABRI);
   // ⛔ ON NE SUPPRIME PLUS UN ABRI TROUVÉ : on le REPREND, ou on refuse de partir. Voir ci-dessus.
   const reprise = reprendreAbri(projectDir, noms);
@@ -286,9 +300,9 @@ export function renderProposeAutoskills(on) {
     '  `skills-lock.json` — le même fichier que le kit : ce lock devient à provenance mixte.',
     '  ⚠️ Ces skills NE VIENNENT PAS du kit et n\'ont pas été relus par lui.',
     `  Le kit lance d'abord un \`--dry-run\` (il annonce, il n'installe rien), puis le vrai scan.`,
-    '  Tes skills design du kit sont ÉCARTÉS le temps du scan et remis après — autoskills en a',
+    '  Tes skills du kit sont ÉCARTÉS le temps du scan et remis après — autoskills en a',
     '  d\'autres versions et remplacerait les tiennes sans le dire :',
-    `    ${DESIGN_SKILL_NAMES.join(', ')}`,
+    `    ${SKILLS_INSTALLES_PAR_LE_KIT.join(', ')}`,
     hint('  (non = rien n\'est lancé, rien n\'est téléchargé)', on),
   ].join('\n');
 }
@@ -302,7 +316,11 @@ export function lancerAutoskills({ projectDir, assistant, run = defaultRun, noms
     // Rien n'est écarté non plus : on sort AVANT `ecarterSkillsDesign`, donc pas un fichier ne bouge.
     return { lance: false, etapes: [], proteges: [], remis: [], perdus: [], repris: [], echec: `${assistant} n'est pas dans l'AGENT_FOLDER_MAP d'${AUTOSKILLS.commande}` };
   }
-  const abri = ecarterSkillsDesign(projectDir, noms ?? DESIGN_SKILL_NAMES);
+  // ⛔ AUCUN DÉFAUT ICI. Un `noms ?? SKILLS_INSTALLES_PAR_LE_KIT` en doublait un autre :
+  // `ecarterSkillsDesign` porte déjà le sien, et deux défauts pour un seul choix, c'est un endroit
+  // où ils peuvent diverger. Mesuré : re-figer le défaut d'`ecarterSkillsDesign` sur les 4 laissait
+  // le garde de survie VERT, parce que cette ligne-ci réinjectait la bonne liste par-dessus.
+  const abri = ecarterSkillsDesign(projectDir, noms);
   // Un abri qu'on n'a pas su reprendre : on ne lance RIEN. Relancer par-dessus écarterait une
   // seconde fois des skills déjà absents et empilerait deux restes l'un sur l'autre.
   if (abri.refus) return { lance: false, etapes: [], proteges: [], remis: [], perdus: [], repris: abri.repris, abriEnAttente: abri.restant, echec: abri.refus };
@@ -349,11 +367,11 @@ export function rapportAutoskills(a, projectDir) {
   // écartés faisait imprimer « tes 4 skills design ont été remis en place » juste au-dessus du ❌
   // qui disait le contraire — la classe de bug du commit 0a19a4f, où le rapport donnait « déjà
   // présent » comme raison d'un `--force` écarté.
-  if (a.lance) done.push(`skills tiers : ${AUTOSKILLS.commande} (${AUTOSKILLS.auteur}, ${AUTOSKILLS.licence}) — NON relus par le kit${a.remis.length ? ` ; tes ${a.remis.length} skills design du kit ont été remis en place` : ''}`);
+  if (a.lance) done.push(`skills tiers : ${AUTOSKILLS.commande} (${AUTOSKILLS.auteur}, ${AUTOSKILLS.licence}) — NON relus par le kit${a.remis.length ? ` ; tes ${a.remis.length} skills du kit ont été remis en place` : ''}`);
   else skipped.push({ name: `skills tiers : ${AUTOSKILLS.commande}`, reason: `non lancé (${a.echec}) — optionnel, rien n'a été installé` });
   // Un run précédent interrompu laisse ses skills à l'abri ; celui-ci les a récupérés. Le dire,
   // parce que l'utilisateur les avait peut-être vus disparaître de `.claude/skills/`.
-  if (a.repris?.length) done.push(`skills design récupérés d'un run interrompu : ${[...new Set(a.repris)].join(', ')}`);
+  if (a.repris?.length) done.push(`skills du kit récupérés d'un run interrompu : ${[...new Set(a.repris)].join(', ')}`);
   // ⛔ UN ABRI COINCÉ EST UN ÉCHEC, PAS UN « SAUTÉ ». Le refus protège — mais il laisse les skills
   // design du kit HORS de leur place, et « Sauté » sort en code 0 : l'écran disait « tout va bien »
   // sur un projet où 4 skills manquent. Ils sont ici, avec leurs deux destinations — et avec la
@@ -361,7 +379,7 @@ export function rapportAutoskills(a, projectDir) {
   // relancer refusera encore, c'est le sens même du refus.
   if (a.abriEnAttente?.length) {
     failed.push([
-      `skills design coincés dans \`${DOSSIER_ABRI}/\` — un run précédent a été interrompu : ${a.abriEnAttente.map((p) => path.relative(projectDir, p)).join(', ')}.`,
+      `skills du kit coincés dans \`${DOSSIER_ABRI}/\` — un run précédent a été interrompu : ${a.abriEnAttente.map((p) => path.relative(projectDir, p)).join(', ')}.`,
       'NE relance PAS pour ça (le kit refusera encore, exprès) : remets chaque `<i>/<nom>` dans `.claude/skills/<nom>` ET `.agents/skills/<nom>` (il y a une entrée pour chacun des deux), puis supprime le dossier.',
     ].join(' '));
   }
@@ -370,6 +388,6 @@ export function rapportAutoskills(a, projectDir) {
   // que personne sache où il est passé — donc ❌. Et le message doit être ACTIONNABLE : l'abri est
   // `<i>/<nom>` avec `<i>` un compteur, donc « il est dans l'abri » ne suffit pas — pour
   // `frontend-design` il y a DEUX entrées, et rien dans leur nom ne dit laquelle va où.
-  if (a.perdus?.length) failed.push(`skills design NON remis en place — déplace-les à la main : ${a.perdus.map((e) => `${path.relative(projectDir, e.abri)} → ${path.relative(projectDir, e.origine)}`).join(' ; ')}`);
+  if (a.perdus?.length) failed.push(`skills du kit NON remis en place — déplace-les à la main : ${a.perdus.map((e) => `${path.relative(projectDir, e.abri)} → ${path.relative(projectDir, e.origine)}`).join(' ; ')}`);
   return { done, skipped, failed };
 }

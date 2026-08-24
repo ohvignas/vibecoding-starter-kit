@@ -30,8 +30,14 @@ import {
   supporteAutoskills, renderProposeAutoskills, cheminsSkill, contenuAbri,
   ecarterSkillsDesign, restaurerSkillsDesign, lancerAutoskills, rapportAutoskills,
 } from './autoskills.mjs';
-import { runAdoptWizard } from './adoption.mjs';
-import { DESIGN_SKILL_NAMES } from './matrix.mjs';
+import { runAdoptWizard, STACK_AUCUNE } from './adoption.mjs';
+import { DESIGN_SKILL_NAMES, SKILLS_INSTALLES_PAR_LE_KIT, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, resolveStackManifest } from './matrix.mjs';
+
+// ⛔ CE QUE CE FICHIER MESURE MAINTENANT : les skills que le kit POSE (9), pas les 4 que la Règle
+// design fait charger. Confondre les deux était le trou — 5 skills sortaient du run écrasés, et le
+// rapport n'en disait pas un mot. `DESIGN_SKILL_NAMES` n'est plus lu ici que par le garde qui
+// prouve justement que les deux listes NE coïncident PAS.
+const ABRITES = SKILLS_INSTALLES_PAR_LE_KIT;
 import { reglesAdoption, REGLES_ARTEFACTS } from './gitignore-adoption.mjs';
 
 const NULL_OUT = { write() {} };
@@ -68,7 +74,7 @@ function projetAvecSkillsDuKit() {
   const dir = tmp('t9-skills-');
   fs.mkdirSync(path.join(dir, '.agents/skills'), { recursive: true });
   fs.mkdirSync(path.join(dir, '.claude/skills'), { recursive: true });
-  for (const nom of DESIGN_SKILL_NAMES) {
+  for (const nom of ABRITES) {
     fs.mkdirSync(path.join(dir, '.agents/skills', nom), { recursive: true });
     fs.writeFileSync(path.join(dir, '.agents/skills', nom, 'SKILL.md'), `KIT:${nom}`);
     if (nom === 'frontend-design') fs.symlinkSync(path.join('..', '..', '.agents', 'skills', nom), path.join(dir, '.claude/skills', nom));
@@ -143,14 +149,63 @@ test('T9 — l\'écran NOMME l\'outil, son auteur et sa licence, et dit que ces 
   assert.match(t, /pas été relus/i, 'ces skills ne viennent pas du kit');
   assert.match(t, /--dry-run/, 'et le dry-run est annoncé AVANT, pas découvert après');
   assert.match(t, /skills-lock\.json/, 'le lock devient à provenance mixte : on le dit');
-  for (const nom of DESIGN_SKILL_NAMES) assert.ok(t.includes(nom), `le skill protégé « ${nom} » doit être nommé`);
+  for (const nom of ABRITES) assert.ok(t.includes(nom), `le skill protégé « ${nom} » doit être nommé`);
 });
 
-// ── GARDE 2 — LES 4 SKILLS DESIGN DU KIT SURVIVENT AU RUN ─────────────────────────────────────
+// ── GARDE 2 — TOUT CE QUE LE KIT POSE SURVIT AU RUN ───────────────────────────────────────────
+
+test('T9 — le jeu ABRITÉ est celui des skills POSÉS, pas la liste de doc des 4 « design »', () => {
+  // ⛔ LE TROU, ET SA CAUSE — la classe qu'on traque depuis le début du chantier : une liste au rôle
+  // DOCUMENTÉ réutilisée pour un autre travail. `DESIGN_SKILL_NAMES` dit ce que la Règle design fait
+  // charger (4). Elle a servi de jeu de PROTECTION contre un outil tiers qui supprime PAR NOM. Les
+  // deux ensembles n'ont aucune raison de coïncider — et ils ne coïncident pas : le kit POSE 9
+  // skills, 5 sortaient du run écrasés, et `lancerAutoskills` rendait `perdus: []`, `echec: null`.
+  //
+  // ⛔ CE GARDE INTERROGE LE DÉFAUT DU MODULE, pas une liste que le test lui tend : c'est la seule
+  // forme qui voit un jeu re-figé à la main. MUTATION QUI LE FAIT ROUGIR : `ecarterSkillsDesign(
+  // projectDir, noms = DESIGN_SKILL_NAMES)` — l'état d'avant, 4 abrités sur 9 posés.
+  const poses = [...DESIGN_SKILL_SPECS, ...AGENT_SKILL_SPECS].flatMap((sp) => sp.skills);
+  const dir = projetAvecSkillsDuKit();
+  const abri = ecarterSkillsDesign(dir); // ← DÉFAUT du module, aucun `noms` passé par le test
+  const horsAbri = poses.filter((n) => !abri.noms.includes(n));
+  assert.deepEqual(horsAbri, [], `⛔ le kit POSE ces skills et ne les met PAS à l'abri : ${horsAbri.join(', ')} — un tiers qui installe le même nom les écrase, et le rapport n'en dit pas un mot`);
+  fs.rmSync(dir, { recursive: true, force: true });
+
+  // La stack d'un projet adopté n'ajoute AUCUN skill : sinon ils échapperaient au jeu ci-dessus,
+  // qui ne dérive que des deux specs. Le jour où « aucune » en pose un, ce garde le dira.
+  assert.deepEqual(resolveStackManifest(STACK_AUCUNE, 'claude-code').skills, [],
+    'la stack `aucune` pose maintenant des skills : ils doivent entrer dans SKILLS_INSTALLES_PAR_LE_KIT');
+  // Et le fait qui rend la confusion coûteuse : les deux listes ne coïncident PAS.
+  assert.ok(ABRITES.length > DESIGN_SKILL_NAMES.length,
+    'montage : si les deux listes coïncidaient, ce garde ne mesurerait rien — et le trou serait invisible');
+  for (const nom of DESIGN_SKILL_NAMES) assert.ok(ABRITES.includes(nom), `${nom} : la Règle design le fait charger, il doit être abrité aussi`);
+});
+
+test('T9 — les 9 skills du kit survivent au run, et le contrôle négatif en perd 9', () => {
+  // ⛔ CALIBRÉ DANS LES DEUX SENS. Un faux autoskills inerte laisserait ce garde vert sans une seule
+  // ligne de protection : le contrôle négatif rejoue le MÊME faux run avec l'abri DÉSACTIVÉ
+  // (`noms: []`) et exige qu'il détruise tout. Sans lui, « ça survit » ne prouve rien.
+  // MUTATION QUI LE FAIT ROUGIR : le défaut re-figé sur les 4 → les 5 autres portent la marque tierce.
+  const kit = (dir, nom) => cheminsSkill(dir, nom).every((c) => { try { return fs.readFileSync(path.join(c, 'SKILL.md'), 'utf8') === `KIT:${nom}`; } catch { return false; } });
+  const tiers = (dir, nom) => cheminsSkill(dir, nom).some((c) => { try { return fs.readFileSync(path.join(c, 'SKILL.md'), 'utf8') === MARQUE_TIERS; } catch { return false; } });
+
+  const dir = projetAvecSkillsDuKit();
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, ABRITES) });
+  assert.equal(r.lance, true, `le run doit aboutir : ${r.echec}`);
+  assert.deepEqual(ABRITES.filter((n) => !kit(dir, n)), [], '⛔ un skill POSÉ par le kit a été écrasé par le registre tiers');
+  assert.deepEqual([...r.remis].sort(), [...ABRITES].sort(), 'et le rapport les compte tous comme revenus');
+  fs.rmSync(dir, { recursive: true, force: true });
+
+  const nu = projetAvecSkillsDuKit();
+  lancerAutoskills({ projectDir: nu, assistant: 'claude-code', noms: [], run: fauxAutoskills(nu, ABRITES) });
+  assert.deepEqual(ABRITES.filter((n) => !tiers(nu, n)), [],
+    'contrôle négatif : abri désactivé, le faux autoskills doit TOUS les écraser — sinon il ne détruit rien et le garde ci-dessus est creux');
+  fs.rmSync(nu, { recursive: true, force: true });
+});
 
 test('T9 — les 4 skills design du kit survivent à un run autoskills', () => {
   // ⛔ LA COLLISION, PROUVÉE. `frontend-design` est dans le registre autoskills ET dans
-  // `DESIGN_SKILL_NAMES`. « Proposer APRÈS l'installation » ne l'empêche pas : ça le GARANTIT —
+  // `ABRITES`. « Proposer APRÈS l'installation » ne l'empêche pas : ça le GARANTIT —
   // le skill du kit est sur disque en premier, donc c'est lui que le `rmSync` emporte.
   // MUTATION QUI LE FAIT ROUGIR : retirer l'appel à `ecarterSkillsDesign`/`restaurerSkillsDesign`
   // dans `lancerAutoskills` → les 4 fichiers portent `CONTENU-AUTOSKILLS-REGISTRE`.
@@ -158,12 +213,12 @@ test('T9 — les 4 skills design du kit survivent à un run autoskills', () => {
   const journal = [];
   const r = lancerAutoskills({
     projectDir: dir, assistant: 'claude-code',
-    run: fauxAutoskills(dir, [...DESIGN_SKILL_NAMES, 'astro-dev'], journal),
+    run: fauxAutoskills(dir, [...ABRITES, 'astro-dev'], journal),
   });
   assert.equal(r.lance, true, `le run doit aboutir : ${r.echec}`);
   assert.deepEqual(r.perdus, [], 'aucun skill du kit ne doit rester coincé à l\'abri');
 
-  for (const nom of DESIGN_SKILL_NAMES) {
+  for (const nom of ABRITES) {
     for (const chemin of cheminsSkill(dir, nom)) {
       const skill = fs.readFileSync(path.join(chemin, 'SKILL.md'), 'utf8');
       assert.equal(skill, `KIT:${nom}`, `⛔ ${chemin} : le skill du kit a été remplacé par celui d'autoskills`);
@@ -177,11 +232,11 @@ test('T9 — les 4 skills design du kit survivent à un run autoskills', () => {
   // autoskills vient de le remplacer : sa version doit RESTER. Sans cette assertion, une
   // « protection » qui écarterait tout ce qu'elle trouve — donc qui saboterait le scan que
   // l'utilisateur vient d'accepter — passerait pour correcte.
-  // MUTATION QUI LA FAIT ROUGIR : `ecarterSkillsDesign(projectDir, [...DESIGN_SKILL_NAMES, 'astro-dev'])`.
+  // MUTATION QUI LA FAIT ROUGIR : `ecarterSkillsDesign(projectDir, [...ABRITES, 'astro-dev'])`.
   assert.equal(fs.readFileSync(path.join(dir, '.claude/skills/astro-dev/SKILL.md'), 'utf8'), MARQUE_TIERS,
     'le travail d\'autoskills hors collision doit survivre — sinon le scan ne sert à rien');
   assert.ok(!fs.existsSync(path.join(dir, DOSSIER_ABRI)), 'l\'abri ne doit pas rester dans le dépôt de l\'utilisateur');
-  assert.deepEqual([...r.proteges].sort(), [...DESIGN_SKILL_NAMES].sort());
+  assert.deepEqual([...r.proteges].sort(), [...ABRITES].sort());
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
@@ -192,7 +247,7 @@ test('T9 — un skill du kit ABSENT du disque n\'invente pas d\'abri, et le rest
   const dir = projetAvecSkillsDuKit();
   fs.rmSync(path.join(dir, '.claude/skills/ui-ux-pro-max'), { recursive: true, force: true });
   fs.rmSync(path.join(dir, '.agents/skills/ui-ux-pro-max'), { recursive: true, force: true });
-  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, DESIGN_SKILL_NAMES) });
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, ABRITES) });
   assert.equal(r.lance, true, `le run doit aboutir : ${r.echec}`);
   assert.ok(!r.proteges.includes('ui-ux-pro-max'), 'on ne protège pas ce qu\'on n\'a pas');
   assert.equal(fs.readFileSync(path.join(dir, '.claude/skills/brand-guidelines/SKILL.md'), 'utf8'), 'KIT:brand-guidelines',
@@ -227,16 +282,16 @@ test('T9 — écarter puis restaurer rend le disque à l\'octet, y compris pour 
   // chemins existent encore pendant le run, et la 2ᵉ assertion tombe.
   const dir = projetAvecSkillsDuKit();
   const abri = ecarterSkillsDesign(dir);
-  assert.equal(abri.ecartes.length, DESIGN_SKILL_NAMES.length * 2, 'les DEUX chemins de chaque skill : le lien natif ET le magasin `.agents/`');
-  for (const nom of DESIGN_SKILL_NAMES) {
+  assert.equal(abri.ecartes.length, ABRITES.length * 2, 'les DEUX chemins de chaque skill : le lien natif ET le magasin `.agents/`');
+  for (const nom of ABRITES) {
     for (const chemin of cheminsSkill(dir, nom)) {
       assert.ok(!fs.existsSync(chemin), `${chemin} doit être HORS de portée pendant le run`);
     }
   }
   const { remis, perdus } = restaurerSkillsDesign(abri);
   assert.deepEqual(perdus, []);
-  assert.equal(remis.length, DESIGN_SKILL_NAMES.length * 2);
-  for (const nom of DESIGN_SKILL_NAMES) {
+  assert.equal(remis.length, ABRITES.length * 2);
+  for (const nom of ABRITES) {
     assert.equal(fs.readFileSync(path.join(dir, '.agents/skills', nom, 'SKILL.md'), 'utf8'), `KIT:${nom}`);
   }
   assert.ok(fs.lstatSync(path.join(dir, '.claude/skills/frontend-design')).isSymbolicLink());
@@ -277,7 +332,7 @@ test('T9 — un dry-run qui échoue n\'installe RIEN, et rend ses skills au kit'
   assert.equal(journal.length, 1, 'la vraie passe ne doit JAMAIS suivre un dry-run en échec');
   assert.deepEqual(r.etapes, [], 'aucune étape menée à terme');
   assert.match(r.echec, /dry-run/);
-  for (const nom of DESIGN_SKILL_NAMES) {
+  for (const nom of ABRITES) {
     assert.equal(fs.readFileSync(path.join(dir, '.agents/skills', nom, 'SKILL.md'), 'utf8'), `KIT:${nom}`, 'un échec ne doit pas laisser les skills du kit à l\'abri');
   }
   assert.ok(!fs.existsSync(path.join(dir, DOSSIER_ABRI)));
@@ -318,13 +373,13 @@ test('T9 — un run interrompu laisse ses skills à l\'abri : le suivant les REP
   const dir = projetAvecSkillsDuKit();
   runInterrompu(dir);
   // Montage : après l'interruption, plus RIEN à sa place. C'est ce qui rend l'abri irremplaçable.
-  for (const nom of DESIGN_SKILL_NAMES) for (const c of cheminsSkill(dir, nom)) assert.ok(!laBas(c), `montage : ${c} doit être vide après l'interruption`);
-  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, DESIGN_SKILL_NAMES.length * 2, 'montage : les 8 chemins sont à l\'abri');
+  for (const nom of ABRITES) for (const c of cheminsSkill(dir, nom)) assert.ok(!laBas(c), `montage : ${c} doit être vide après l'interruption`);
+  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, ABRITES.length * 2, `montage : les ${ABRITES.length * 2} chemins sont à l'abri`);
 
-  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, DESIGN_SKILL_NAMES) });
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, ABRITES) });
   assert.equal(r.lance, true, `le run doit aboutir : ${r.echec}`);
-  assert.deepEqual([...r.repris].sort(), [...DESIGN_SKILL_NAMES].sort(), 'et le rapport doit NOMMER ce qu\'il a récupéré : l\'utilisateur les a vus disparaître');
-  for (const nom of DESIGN_SKILL_NAMES) {
+  assert.deepEqual([...r.repris].sort(), [...ABRITES].sort(), 'et le rapport doit NOMMER ce qu\'il a récupéré : l\'utilisateur les a vus disparaître');
+  for (const nom of ABRITES) {
     for (const c of cheminsSkill(dir, nom)) {
       assert.equal(fs.readFileSync(path.join(c, 'SKILL.md'), 'utf8'), `KIT:${nom}`, `⛔ ${c} : le skill du kit a été perdu à la reprise`);
     }
@@ -346,10 +401,10 @@ test('T9 — un abri qu\'on ne sait pas LIRE fait REFUSER le run, se nomme, et r
   const abri = path.join(dir, DOSSIER_ABRI);
   fs.rmSync(path.join(abri, FICHIER_PLAN));
   const avant = contenuAbri(abri);
-  assert.equal(avant.length, DESIGN_SKILL_NAMES.length * 2, 'montage');
+  assert.equal(avant.length, ABRITES.length * 2, 'montage');
 
   const journal = [];
-  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, DESIGN_SKILL_NAMES, journal) });
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, ABRITES, journal) });
   assert.equal(r.lance, false, 'on ne lance RIEN par-dessus un abri qu\'on ne comprend pas');
   assert.deepEqual(journal, [], 'pas une seule passe npx : elle écarterait une seconde fois des skills déjà absents');
   assert.ok(r.echec.includes(DOSSIER_ABRI), 'le refus NOMME le dossier — sinon l\'utilisateur ne sait pas où chercher');
@@ -357,7 +412,7 @@ test('T9 — un abri qu\'on ne sait pas LIRE fait REFUSER le run, se nomme, et r
   assert.deepEqual(contenuAbri(abri), avant, '⛔ l\'abri est INTACT : c\'est le seul exemplaire de ces skills');
   const uneEntree = avant.find((p) => p.endsWith('brand-guidelines'));
   assert.equal(fs.readFileSync(path.join(uneEntree, 'SKILL.md'), 'utf8'), 'KIT:brand-guidelines', 'et son contenu n\'a pas bougé d\'un octet');
-  for (const nom of DESIGN_SKILL_NAMES) for (const c of cheminsSkill(dir, nom)) assert.ok(!laBas(c), `${c} : rien n'a été réécrit à leur place non plus`);
+  for (const nom of ABRITES) for (const c of cheminsSkill(dir, nom)) assert.ok(!laBas(c), `${c} : rien n'a été réécrit à leur place non plus`);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
@@ -446,7 +501,7 @@ test('T9 — clause 2 : un dossier du projet qui est un LIEN vers l\'extérieur 
   assert.equal(r.lance, false, 'un plan dont les chemins sortent réellement du projet ne se reprend pas');
   assert.equal(fs.readFileSync(path.join(dehors, 'skills', 'frontend-design', 'SKILL.md'), 'utf8'), 'MA CONFIG PARTAGEE',
     '⛔ le `rmSync` de la reprise est sorti du projet en traversant un dossier-lien');
-  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, DESIGN_SKILL_NAMES.length * 2, 'et l\'abri n\'a pas bougé');
+  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, ABRITES.length * 2, 'et l\'abri n\'a pas bougé');
   fs.rmSync(dir, { recursive: true, force: true });
   fs.rmSync(dehors, { recursive: true, force: true });
 });
@@ -454,7 +509,7 @@ test('T9 — clause 2 : un dossier du projet qui est un LIEN vers l\'extérieur 
 test('T9 — clause 3 : un plan qui nomme `src/` ne fait pas effacer le code de l\'utilisateur', () => {
   // « Dans le projet » ne suffit PAS : `<projet>/src` est dans le projet et n'a jamais été à nous.
   // L'ensemble des `origine` que ce module peut produire est CLOS — deux chemins par skill de
-  // `DESIGN_SKILL_NAMES` — et c'est le seul jeu auquel un plan a le droit de faire obéir un `rmSync`.
+  // `ABRITES` — et c'est le seul jeu auquel un plan a le droit de faire obéir un `rmSync`.
   // MUTATION QUI LE FAIT ROUGIR : retirer `nosChemins.has(cheminReel(e.origine))` → `src/` part.
   const dir = projetAvecSkillsDuKit();
   const interrompu = runInterrompu(dir);
@@ -465,7 +520,7 @@ test('T9 — clause 3 : un plan qui nomme `src/` ne fait pas effacer le code de 
   const r = refuse(dir);
   assert.equal(r.lance, false);
   assert.equal(fs.readFileSync(path.join(dir, 'src', 'index.ts'), 'utf8'), 'LE CODE DE L\'UTILISATEUR', '⛔ un plan a fait effacer un dossier du projet qui n\'était pas à nous');
-  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, DESIGN_SKILL_NAMES.length * 2, 'et l\'abri n\'a pas bougé');
+  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, ABRITES.length * 2, 'et l\'abri n\'a pas bougé');
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
@@ -478,10 +533,10 @@ test('T9 — le même projet atteint par un chemin ALIAS se reprend quand même'
   runInterrompu(dir);
   const alias = path.join(tmp('t9-alias-'), 'projet');
   fs.symlinkSync(dir, alias);
-  const r = lancerAutoskills({ projectDir: alias, assistant: 'claude-code', run: fauxAutoskills(alias, DESIGN_SKILL_NAMES) });
+  const r = lancerAutoskills({ projectDir: alias, assistant: 'claude-code', run: fauxAutoskills(alias, ABRITES) });
   assert.equal(r.lance, true, `l'alias doit se reprendre comme le chemin réel : ${r.echec}`);
-  assert.deepEqual([...r.repris].sort(), [...DESIGN_SKILL_NAMES].sort());
-  for (const nom of DESIGN_SKILL_NAMES) assert.equal(fs.readFileSync(path.join(dir, '.agents/skills', nom, 'SKILL.md'), 'utf8'), `KIT:${nom}`);
+  assert.deepEqual([...r.repris].sort(), [...ABRITES].sort());
+  for (const nom of ABRITES) assert.equal(fs.readFileSync(path.join(dir, '.agents/skills', nom, 'SKILL.md'), 'utf8'), `KIT:${nom}`);
   fs.rmSync(path.dirname(alias), { recursive: true, force: true });
   fs.rmSync(dir, { recursive: true, force: true });
 });
@@ -492,7 +547,7 @@ test('T9 — le même projet atteint par un chemin ALIAS se reprend quand même'
 // chose) : ce qui est mesuré est ce que le rapport dit ALORS. Ici le dossier natif est remplacé par
 // un FICHIER — `rmSync` sort en `ENOTDIR` (mesuré) et les 4 entrées `.claude/` restent coincées.
 const fauxAutoskillsQuiCasseLaRemise = (dir, journal = []) => {
-  const vrai = fauxAutoskills(dir, DESIGN_SKILL_NAMES, journal);
+  const vrai = fauxAutoskills(dir, ABRITES, journal);
   return (cmd, args, opts) => {
     vrai(cmd, args, opts);
     if (args.includes('--dry-run')) return;
@@ -514,8 +569,8 @@ test('T9 — le ✅ ne compte QUE ce qui est REVENU, et le ❌ dit quelle entré
   const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskillsQuiCasseLaRemise(dir) });
 
   assert.equal(r.lance, true, 'les deux passes npx ont abouti : c\'est la REMISE qui a échoué');
-  assert.deepEqual([...r.proteges].sort(), [...DESIGN_SKILL_NAMES].sort(), 'les 4 sont bien SORTIS');
-  assert.equal(r.perdus.length, DESIGN_SKILL_NAMES.length, 'et leurs 4 chemins `.claude/` sont restés coincés à l\'abri');
+  assert.deepEqual([...r.proteges].sort(), [...ABRITES].sort(), 'tous sont bien SORTIS');
+  assert.equal(r.perdus.length, ABRITES.length, 'et leurs chemins `.claude/` sont restés coincés à l\'abri');
   assert.deepEqual(r.remis, [], '⛔ AUCUN n\'est « remis » : chacun a encore un chemin à l\'abri');
   assert.deepEqual(r.repris, [], 'et « récupéré au démarrage » ne survit pas à « reperdu à l\'arrivée »');
 
@@ -541,10 +596,10 @@ test('T9 — sur un run qui va bien, le ✅ compte les 4 revenus et il n\'y a pa
   // « remis en place » passerait pour correct.
   // MUTATION QUI LE FAIT ROUGIR : supprimer la moitié « ; tes N skills design… » de la ligne ✅.
   const dir = projetAvecSkillsDuKit();
-  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, DESIGN_SKILL_NAMES) });
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, ABRITES) });
   const rap = rapportAutoskills(r, dir);
   assert.deepEqual(rap.failed, [], 'rien n\'est coincé');
-  assert.match(rap.done.join('\n'), new RegExp(`tes ${DESIGN_SKILL_NAMES.length} skills design du kit ont été remis en place`));
+  assert.match(rap.done.join('\n'), new RegExp(`tes ${ABRITES.length} skills du kit ont été remis en place`));
   assert.deepEqual(rap.skipped, []);
   fs.rmSync(dir, { recursive: true, force: true });
 });
@@ -591,10 +646,10 @@ test('T9 — un abri coincé sort en ❌ (donc en code non nul), pas en « Saut�
   fs.rmSync(path.join(dir, DOSSIER_ABRI, FICHIER_PLAN)); // plan absent → refus
   const r = refuse(dir);
   assert.equal(r.lance, false);
-  assert.equal(r.abriEnAttente.length, DESIGN_SKILL_NAMES.length * 2, 'le refus RAPPORTE ce qui reste coincé, il ne le garde pas pour lui');
+  assert.equal(r.abriEnAttente.length, ABRITES.length * 2, 'le refus RAPPORTE ce qui reste coincé, il ne le garde pas pour lui');
 
   const rap = rapportAutoskills(r, dir);
-  assert.equal(rap.failed.length, 1, '⛔ 4 skills du kit hors de leur place : ❌ et exitCode 1, pas un « Sauté » à 0');
+  assert.equal(rap.failed.length, 1, '⛔ des skills du kit hors de leur place : ❌ et exitCode 1, pas un « Sauté » à 0');
   for (const p of r.abriEnAttente) assert.ok(rap.failed[0].includes(path.relative(dir, p)), `le ❌ doit nommer ${p} :\n${rap.failed[0]}`);
   assert.ok(rap.failed[0].includes('.claude/skills/<nom>') && rap.failed[0].includes('.agents/skills/<nom>'), 'et les DEUX destinations, parce qu\'il y a une entrée pour chacune');
   assert.match(rap.failed[0], /NE relance PAS/, 'le conseil du bac ❌ ne marche pas ici — la ligne le corrige elle-même');

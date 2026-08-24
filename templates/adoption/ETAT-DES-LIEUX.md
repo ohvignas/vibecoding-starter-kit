@@ -3,8 +3,9 @@
 La **première page de la mémoire**. Le kit vient d'être installé dans un projet qui existait déjà :
 il n'a rien deviné de ce qu'il y a dedans, et il ne prétend pas le savoir.
 
-Ce fichier est le compte rendu de la **première lecture** du projet par l'IA. Il répond à cinq
-questions, et il en garde une cinquième ouverte — celle des choses qu'elle n'a pas su déterminer.
+Ce fichier est le compte rendu de la **première lecture** du projet par l'IA. Il répond à **quatre**
+questions — technos, structure, comment on lance, comment on teste — et il en garde une **cinquième**
+ouverte : celle des choses qu'elle n'a pas su déterminer.
 Tant qu'une ligne y est marquée `À DÉTERMINER`, c'est qu'on ne sait pas : personne ne comble.
 
 > **Rempli une fois, corrigé souvent.** Le kit ne régénère jamais ce fichier — ce qui est écrit ici
