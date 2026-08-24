@@ -151,9 +151,14 @@ const capture = () => { const lignes = []; return { out: { write: (s) => lignes.
 const scripted = (reponses) => { let i = 0; return async () => reponses[i++]; };
 // Le CLI joué pour de vrai. On garde le CODE DE SORTIE : c'est lui que lisent l'utilisateur, sa CI
 // et le runbook — un refus qui sortirait en 0 se ferait enchaîner comme une réussite.
+// Le scaffold COMMITTE (`git init` + commit initial) : sans identité git, le commit est refusé,
+// le kit range l'échec et sort en 1 — sur tout runner de CI, et sur tout poste où git vient d'être
+// installé. Mesuré : 6 tests de ce fichier rouges pour cette seule raison, verts en local.
+// Source unique de l'identité : test-scaffold.mjs.
+const GIT_ENV_ADOPT = { ...process.env, ...IDENTITE_GIT };
 const lancerSetup = (argv) => {
   const cmd = [path.resolve('scripts/setup.mjs'), ...argv];
-  try { return { code: 0, out: String(execFileSync(process.execPath, cmd, { stdio: 'pipe' })), err: '' }; }
+  try { return { code: 0, out: String(execFileSync(process.execPath, cmd, { stdio: 'pipe', env: GIT_ENV_ADOPT })), err: '' }; }
   catch (e) { return { code: e.status ?? 1, out: String(e.stdout ?? ''), err: String(e.stderr ?? '') }; }
 };
 
@@ -722,14 +727,8 @@ const afaire = (stack, assistant, skillsInstalled = true) => renderSetupAi({
   stack, assistant, manifest: resolveStackManifest(stack, assistant),
   superpowersCmd: SUPERPOWERS[assistant], skillsInstalled,
 });
-// Un runner qui porte une identité git : le parcours NEUF fait `git init` + commit initial, et sans
-// ça le discriminant échouerait sur la machine de CI pour une raison qui n'a rien à voir.
-const GIT_ENV_ADOPT = { ...process.env, ...IDENTITE_GIT };
-const lancerSetupGit = (argv) => {
-  const cmd = [path.resolve('scripts/setup.mjs'), ...argv];
-  try { return { code: 0, out: String(execFileSync(process.execPath, cmd, { stdio: 'pipe', env: GIT_ENV_ADOPT })), err: '' }; }
-  catch (e) { return { code: e.status ?? 1, out: String(e.stdout ?? ''), err: String(e.stderr ?? '') }; }
-};
+// `lancerSetup` porte désormais la même identité git : ce helper était son jumeau exact.
+const lancerSetupGit = lancerSetup;
 
 test('adoption — le prompt du premier contact ne renvoie JAMAIS à `/new-project`', () => {
   // `COLLE-MOI-DANS-L-IA.md` est le TOUT PREMIER texte lu. Sa dernière ligne dit « et maintenant ? ».
