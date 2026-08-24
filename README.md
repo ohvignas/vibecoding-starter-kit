@@ -23,7 +23,20 @@
 
 ---
 
-Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation **Vibe Coding** (4 stacks expliquées + le contexte à donner à l'IA), **et** un **installeur (wizard interactif)** qui génère un environnement de développement complet — 10 commandes, mémoire persistante, revue de code, **test E2E** (design + fonctionnel), CI, filet de sécurité — pour **Cursor, Claude Code et Codex**.
+Une **méthode de travail avec l'IA**, installée pour toi : 10 commandes, mémoire persistante, revue de code et de sécurité, **test E2E** (design + fonctionnel), filet de sécurité — pour **Cursor, Claude Code et Codex**.
+
+Elle s'installe de **deux façons**, et c'est la même méthode dans les deux cas :
+
+| 🆕 Tu pars de zéro | 🧬 **Tu as déjà un projet** |
+|---|---|
+| `npm create vibecoding-kit@latest` | `npx create-vibecoding-kit@latest --adopt` |
+| Le kit choisit la stack, écrit le code de départ, la CI, la maquette | Le kit **n'écrit aucun code** et **ne revendique pas ta techno**. Il pose la méthode **à côté** du tien, et fusionne ses règles **dans** ton `AGENTS.md` / `CLAUDE.md` entre deux marqueurs — tout ce qui est en dehors reste **à la ligne près** |
+| 4 stacks au choix : SaaS · Mobile · Desktop · Vitrine | **N'importe quelle techno** : Rails, Django, Laravel, Next.js, Symfony, Flutter… le kit ne regarde pas |
+
+> [!IMPORTANT]
+> **Sur un projet existant, rien de ce que tu as écrit n'est écrasé.** Aucun de tes fichiers n'est remplacé, ton `package.json` n'est pas touché, et les trois seules écritures qui s'imposeraient — hooks git, workflow de scan de secrets, `.gitignore` — te sont **demandées à l'écran** avant d'être faites. Interromps (Ctrl-C) pendant les questions : rien n'a encore été écrit.
+
+Ce dépôt est aussi le **kit pour débutants** de la formation **Vibe Coding** : 4 stacks expliquées + le contexte à donner à l'IA.
 
 > [!TIP]
 > Pas besoin de choisir un seul assistant : l'installeur configure celui que tu utilises, et le projet reste **portable** (les mêmes règles marchent partout).
@@ -34,6 +47,7 @@ Ce dépôt fait deux choses : c'est un **kit pour débutants** de la formation *
 - [Pourquoi ce projet](#-pourquoi-ce-projet)
 - [Fonctionnalités](#-fonctionnalités)
 - [Démarrage rapide](#-démarrage-rapide)
+- [Projet existant : le parcours complet](#-projet-existant--le-parcours-complet)
 - [Comment ça marche](#-comment-ça-marche)
 - [Les commandes](#-les-commandes)
 - [Les 4 stacks](#-les-4-stacks)
@@ -78,7 +92,9 @@ Résultat : un débutant obtient un environnement de dev **niveau pro** sans sav
 
 ## ⚡ Démarrage rapide
 
-**1. Installe le kit** — dans un dossier vide *(publié sur npm ✅)* :
+### 🆕 Cas A — tu pars de zéro
+
+Dans un **dossier vide** :
 
 ```bash
 npm create vibecoding-kit@latest
@@ -88,15 +104,21 @@ npm create vibecoding-kit@latest
 >
 > **Stack vitrine** : Astro 7 exige **Node ≥ 22.12** (il refuse de démarrer en dessous). Le wizard, lui, tourne dès 20.12.
 
-**Tu as déjà un projet ?** Ne scaffolde rien par-dessus — **adopte-le**, depuis son dossier :
+### 🧬 Cas B — tu as déjà un projet
+
+**Depuis le dossier de ton projet** (pas un dossier vide, pas un sous-dossier) :
 
 ```bash
 npx create-vibecoding-kit@latest --adopt
 ```
 
-> Même méthode (les 10 commandes, les agents, la mémoire, les règles), **sans revendiquer ta techno** : pas de stack, pas de scaffold, pas de CI, pas de `maquette/`. Les règles sont fusionnées **dans** ton `AGENTS.md` et ton `CLAUDE.md` entre deux marqueurs — le reste de ces fichiers n'est pas touché, et aucun fichier à toi n'est écrasé. Le kit **demande** avant les trois écritures qui s'imposeraient : hooks git, workflow de scan de secrets, `.gitignore`.
+> Même méthode — les 10 commandes, les 7 agents, la mémoire, les règles — mais le kit **ne revendique pas ta techno** : pas de stack, pas de code, pas de CI, pas de `maquette/`, pas de MCP de framework. Il ne sait pas si tu fais du Rails ou du Next.js, et il n'a pas besoin de le savoir.
+>
+> Les règles arrivent **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs — le reste de ces fichiers n'est pas touché, à la ligne près, et **aucun fichier à toi n'est écrasé**. Ton `package.json` non plus. Le kit **demande** avant les trois écritures qui s'imposeraient : hooks git, workflow de scan de secrets, `.gitignore`.
 >
 > Et ensuite, ce n'est **pas** `/new-project` — il fonderait un PRD, une roadmap et un scaffold par-dessus un code qui existe déjà. C'est **`docs/ETAT-DES-LIEUX.md`** : ouvre-le, fais-le remplir par ton IA qui lit **ton** code, et tout part de là.
+
+**Le détail, étape par étape** : [Projet existant : le parcours complet](#-projet-existant--le-parcours-complet) ci-dessous.
 
 **2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
 
@@ -122,6 +144,83 @@ Clone le dépôt, lis [`guides/01-comment-parler-a-l-IA.md`](guides/01-comment-p
 Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** explique tout le vocabulaire (LLM, MCP, stack, MVP, hook…) simplement.
 
 </details>
+
+## 🧬 Projet existant : le parcours complet
+
+Tu as un projet qui tourne déjà — six mois de code, une équipe, une techno que tu n'as pas envie de changer. Le kit n'y touche pas. Il installe **la façon de travailler avec l'IA** par-dessus, et rien d'autre.
+
+### Les commandes, dans l'ordre
+
+**1. Mets ton travail au propre.** Le kit va écrire ; tu veux pouvoir tout annuler d'un `git checkout`.
+
+```bash
+git status
+```
+
+**2. Lance l'adoption, depuis le dossier de ton projet.**
+
+```bash
+npx create-vibecoding-kit@latest --adopt
+```
+
+Le wizard pose **toutes** ses questions avant d'écrire quoi que ce soit. Tu peux faire Ctrl-C tant que tu réponds : rien n'aura été écrit.
+
+| Il demande | Réponds | Ce que ça change |
+|---|---|---|
+| Installer la méthode dans CE projet ? | `O` | Sans ça, il ne fait rien |
+| Ton assistant | `1` Cursor · `2` Claude Code · `3` Codex | Où sont posées les commandes et les agents |
+| Scanner tes technos avec `autoskills` ? | `N` si tu hésites | Outil **tiers** (midudev, CC BY-NC 4.0), pas embarqué par le kit. Il installe des skills depuis **son** registre, non relus par le kit |
+| Compléter ton `.gitignore` ? | `O` | Empêche `.env` de partir au prochain commit |
+| Poser les hooks git (`core.hooksPath`) ? | `N` si tu as déjà husky/lefthook | Cette clé **remplace** `.git/hooks/`, elle ne s'y ajoute pas — le kit ne l'impose jamais |
+| Poser le workflow de scan de secrets ? | Comme tu veux | Un workflow GitHub qui tournera à chaque push sur **ton** compte |
+
+**3. Vérifie que rien à toi n'a bougé.** C'est la promesse du kit — exige la preuve :
+
+```bash
+git diff --stat
+```
+
+Tu dois voir **au plus deux fichiers modifiés** : `AGENTS.md` et `.gitignore` (les deux annoncés à l'écran). Tout le reste est en `??` — des fichiers **neufs**. Aucun de tes fichiers n'est réécrit.
+
+Pour lire ce qui a été ajouté dans ton `AGENTS.md`, cherche `vibecoding:start` — le bloc du kit va de là jusqu'à `vibecoding:end`. **Tout ce qui est en dehors n'a pas été touché, à la ligne près.**
+
+**4. Ouvre ton assistant IA** dans le dossier, et colle le prompt affiché par le wizard (il est aussi dans `COLLE-MOI-DANS-L-IA.md`).
+
+**5. Fais l'état des lieux.** ⚠️ **N'utilise pas `/new-project`** — il fonderait un PRD, une roadmap et un scaffold **par-dessus** un code qui existe déjà. Sur un projet adopté, le point de départ est :
+
+```
+Ouvre docs/ETAT-DES-LIEUX.md et remplis-le en lisant mon code.
+```
+
+Ton IA lit **ton** projet et écrit ce qu'elle y trouve : la techno réelle, comment on lance le projet, ce qui manque. C'est de là que tout part.
+
+**6. Vérifie l'installation.**
+
+```
+/doctor
+```
+
+Il passe 17 points et rend un verdict. Sur un projet adopté, plusieurs items sortent en « **choix, pas un ✗** » — CI, MCP de stack, skills de stack : le kit ne les a délibérément pas posés parce qu'il ne connaît pas ta techno. C'est normal, et le ✅ reste atteignable.
+
+**7. Ensuite, la méthode ne change plus.** `/help` liste les 10 runbooks. `/new-feature` pour ajouter quelque chose, `/next` si tu es perdu, `/sos` si ça casse.
+
+### Si tu veux annuler
+
+Tout ce que le kit a fait est visible dans git :
+
+```bash
+git checkout AGENTS.md .gitignore && git clean -nd
+```
+
+Le `-n` **liste sans supprimer** — lis la liste, et relance en `-fd` seulement si elle te convient.
+
+### Mettre à jour plus tard
+
+```bash
+npx create-vibecoding-kit@latest --refresh
+```
+
+Régénère ce qui appartient au kit (commandes, agents, règles). Il ne réécrit **jamais** un fichier où tu as pu écrire : il dépose la version du kit à côté, en `.new`, et te laisse choisir.
 
 ## ✅ Après l'install — ce qu'il te reste à faire
 
