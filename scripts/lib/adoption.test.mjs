@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { scaffold } from './test-scaffold.mjs';
+import { scaffold, IDENTITE_GIT } from './test-scaffold.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -724,11 +724,7 @@ const afaire = (stack, assistant, skillsInstalled = true) => renderSetupAi({
 });
 // Un runner qui porte une identité git : le parcours NEUF fait `git init` + commit initial, et sans
 // ça le discriminant échouerait sur la machine de CI pour une raison qui n'a rien à voir.
-const GIT_ENV_ADOPT = {
-  ...process.env,
-  GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@vibecoding.local',
-  GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 'test@vibecoding.local',
-};
+const GIT_ENV_ADOPT = { ...process.env, ...IDENTITE_GIT };
 const lancerSetupGit = (argv) => {
   const cmd = [path.resolve('scripts/setup.mjs'), ...argv];
   try { return { code: 0, out: String(execFileSync(process.execPath, cmd, { stdio: 'pipe', env: GIT_ENV_ADOPT })), err: '' }; }
