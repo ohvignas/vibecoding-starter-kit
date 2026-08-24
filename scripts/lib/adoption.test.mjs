@@ -8,11 +8,15 @@ import { STACK_AUCUNE, estAdopte, adapterGlossaireAdopte, estProjetExistant, ent
 import { renderAgentsFile, adapterAuProjetAdopte } from './agents-file.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
 import { choisirMode, needsWizard } from './wizard.mjs';
-import { resolveAssets, resolveStackManifest, SUPERPOWERS } from './matrix.mjs';
+import { resolveAssets, resolveStackManifest, SUPERPOWERS, DESIGN_SKILL_NAMES } from './matrix.mjs';
+// L'abri d'autoskills est nommé À LA SOURCE : le jour où le dossier change de nom, /doctor doit
+// suivre, et c'est ce test qui le réclamera — pas un utilisateur devant 4 skills disparus.
+import { DOSSIER_ABRI, AUTOSKILLS } from './autoskills.mjs';
 import { renderColleMoi } from './colle-moi.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
 import { kitOwnedFiles, kitOwnedGenerated } from './kit-owned.mjs';
 import { MARK_START_PREFIX, MARK_END } from './managed-section.mjs';
+import { refreshProject } from './refresh.mjs';
 
 test('adoption — `aucune` est une valeur de stack légale', () => {
   assert.equal(STACK_AUCUNE, 'aucune');
@@ -1194,4 +1198,168 @@ test('T8 — `/doctor` ne compte plus comme un ✗ ce que le parcours adopté ne
     assert.match(item8, /workflows\/\{ci,secrets\}\.yml/, `${rel} : l'item 8 doit continuer d'exiger les workflows là où le kit les pose`);
     assert.match(hooks, /git config core\.hooksPath \.githooks/, `${rel} : et la commande de rattrapage doit rester`);
   }
+});
+
+// ── T9 — LE VERDICT, ET LES TROIS ITEMS QUI LE TENAIENT FERMÉ ─────────────────────────────────
+//
+// T8 a ouvert les items 8 et 10 (workflows, `core.hooksPath`). Il en restait TROIS, tous dans la
+// plage bloquante « de 1 à 17 », donc tous suffisants à eux seuls pour refuser le ✅ :
+//   · l'item 10, ligne MCP — un projet adopté n'a aucun serveur MCP DE STACK : `resolveAssets`
+//     ne lui en livre pas, et le kit ne revendique pas sa techno ;
+//   · l'item 11 — il n'a pas davantage de skill de STACK (mesuré par le 2ᵉ test de ce fichier) ;
+//   · l'item 17 — le kit ne lui branche aucun MCP de test.
+// …et le VERDICT lui-même, qui prescrivait `/new-project` : sur un projet qui a déjà son code,
+// c'est le runbook qui fonde un PRD, une roadmap et un scaffold par-dessus. `/next` et `/build`
+// l'interdisent déjà là-bas (deux tests plus haut) ; `/doctor` — le DERNIER écran de
+// l'installation, celui qui dit « c'est prêt » — le prescrivait encore.
+//
+// ⛔ AUCUN ITEM DE PLUS, et ce n'est pas une préférence de style : le verdict ne lit que « de 1 à
+// 17 ». Un item 20 « projet adopté » se ferait afficher puis ignorer. C'est donc CHAQUE item
+// concerné qui porte son exception, et le verdict qui la reconnaît — la plage est lue dans le
+// fichier, jamais recopiée ici, pour que ce test suive un renumérotage au lieu de le figer.
+//
+// LE QUATRIÈME, qui n'a rien à voir avec l'adoption : un abri autoskills COINCÉ
+// (`autoskills.mjs` — un run interrompu dont le plan n'est plus lisible) laisse les 4 skills
+// design du kit hors de `.claude/skills/`. L'installeur sort alors en ❌ + code 1 — mais ça, c'est
+// l'écran d'un run qu'on ne relit jamais, et l'abri porte un `.gitignore` à `*` : `git status` ne
+// le montre PAS. Il ne reste que `/doctor`, qui voyait des skills « manquants » et prescrivait la
+// section Skills de `docs/A-FAIRE.md` — laquelle n'existe même pas sur un projet adopté (le wizard
+// les a posés lui-même, cf. `renderColleMoi`). Un diagnostic qui nomme le bon symptôme et la
+// mauvaise réparation. On lui donne le nom du dossier, pris à la source (`DOSSIER_ABRI`).
+test('T9 — le verdict de `/doctor` devient atteignable par un projet adopté, sans un item de plus', () => {
+  for (const rel of ['templates/commands/doctor.md', 'cursor-plugin/commands/doctor.md']) {
+    const txt = fs.readFileSync(path.resolve(rel), 'utf8');
+    const lignes = txt.split('\n');
+    const item = (n) => lignes.find((l) => l.startsWith(`${n}. `));
+    // ⛔ « aucune » SEUL NE DISCRIMINE RIEN, et c'est mesuré : l'item 17 dit déjà « le kit n'en
+    // revendique aucune » dans sa prose, donc un `assert.match(i17, /aucune/)` restait VERT après
+    // avoir supprimé la condition. Ce qu'un item doit porter, c'est la façon dont l'assistant
+    // RECONNAÎT un projet adopté — le même couple que l'item 8 (T8) : le fichier, et la clé.
+    const conditionAdoptee = (l) => l.includes('.vibecoding.json') && l.includes('"stack": "aucune"');
+
+    // La plage bloquante, LUE dans le fichier : c'est elle qui décide de ce qui compte.
+    const plage = Number(txt.match(/de 1 à \*{0,2}(\d+)/)?.[1]);
+    assert.ok(plage, `${rel} : le verdict ne dit plus jusqu'où va la plage bloquante`);
+
+    // ── LE VERDICT ─────────────────────────────────────────────────────────────────────────
+    const iv = lignes.findIndex((l) => l.startsWith('**Verdict final**'));
+    assert.ok(iv >= 0, `${rel} : la ligne de verdict introuvable`);
+    const fin = lignes.findIndex((l, k) => k > iv && l.trim() === '');
+    const verdict = lignes.slice(iv, fin === -1 ? lignes.length : fin).join('\n');
+
+    assert.match(verdict, /✅ Ton environnement est prêt/, `${rel} : la phrase de fin d'installation a disparu`);
+    assert.ok(conditionAdoptee(verdict), `${rel} : le verdict ne reconnaît pas le projet adopté (\`.vibecoding.json\` porte \`"stack": "aucune"\`) — les items 8/10/11/17 lui restent des ✗ et le ✅ est inatteignable`);
+    assert.match(verdict, /ETAT-DES-LIEUX\.md/, `${rel} : le verdict doit dire par où continuer sur un projet adopté (c'est \`docs/ETAT-DES-LIEUX.md\`, comme COLLE-MOI et \`/next\`)`);
+    // ⛔ MENTIONNER NE SUFFIT PAS — c'est le grief exact que `/next` et `/build` ont déjà reçu
+    // (deux tests plus haut) : citer `/new-project` sans l'INTERDIRE laisse le choix à l'IA.
+    assert.match(verdict, /jamais\s+`?\/new-project`?/i, `${rel} : le verdict doit INTERDIRE \`/new-project\` sur un projet adopté, pas seulement proposer autre chose`);
+    // LE DISCRIMINANT : sur les 4 stacks offertes, `/new-project` EST la bonne suite.
+    assert.match(verdict, /lancer\s+`?\/new-project`?/, `${rel} : sur un projet NEUF, \`/new-project\` reste la suite — la PRESCRIRE, pas seulement la citer (le mot apparaît déjà dans l'interdiction ci-dessus)`);
+
+    // ── ITEM 10, LIGNE MCP : un segment `aucune`, sans casser les 4 segments de stack (D6) ──
+    const ligneMcp = lignes.find((l) => /serveurs MCP de la stack/.test(l));
+    assert.ok(ligneMcp, `${rel} : la ligne des MCP par stack a disparu`);
+    const segAucune = ligneMcp.split(/\s*;\s*/).find((s) => /\baucune\b/.test(s));
+    assert.ok(segAucune, `${rel} : la ligne MCP n'a pas de segment « aucune » — un projet adopté n'a aucun MCP de stack, et l'item le comptait en ✗`);
+    assert.match(segAucune, /choix, pas un ✗/, `${rel} : le segment « aucune » doit dire que l'absence n'est PAS un ✗ — sinon le verdict reste bloqué`);
+    for (const stack of ['saas', 'mobile', 'desktop', 'vitrine']) {
+      assert.ok(ligneMcp.split(/\s*;\s*/).some((s) => new RegExp(`\\b${stack}\\s*:`).test(s)), `${rel} : le segment « ${stack} : … » a été perdu en ajoutant « aucune »`);
+    }
+
+    // ── ITEM 11 : ni skill de stack sur un projet adopté, et l'abri DÉCRIT sans être nommé ──
+    const i11 = item(11);
+    assert.ok(i11, `${rel} : item 11 introuvable`);
+    assert.ok(conditionAdoptee(i11), `${rel} : l'item 11 doit dire COMMENT reconnaître un projet adopté (\`.vibecoding.json\` porte \`"stack": "aucune"\`) — il n'y a pas de skill de STACK là-bas`);
+    assert.match(i11, /choix, pas un ✗/, `${rel} : un skill de stack absent par conception ne doit pas bloquer le verdict`);
+
+    // ⛔ L'ABRI, ET LA CONTRAINTE QUI DÉCIDE DE SA FORMULATION — les deux tiennent ensemble, donc
+    // elles sont jugées ensemble. Un abri coincé (`autoskills.mjs`) laisse les 4 skills design
+    // HORS de `.claude/skills/`, et il porte un `.gitignore` à `*` : `git status` ne le montre
+    // pas. Sans cet item, /doctor voyait « skills manquants » et prescrivait la section Skills de
+    // `docs/A-FAIRE.md` — qui n'existe pas sur un projet adopté. Le bon symptôme, la mauvaise
+    // réparation.
+    // MAIS `/doctor` est livré AUX 4 STACKS OFFERTES AUSSI, et `autoskills.test.mjs` interdit —
+    // à raison — qu'un fichier d'un projet NEUF nomme cet outil tiers : le kit ne l'y propose
+    // jamais, et le citer là-bas, c'est faire de la publicité pour du CC BY-NC dans le fichier
+    // qui sert de critère officiel de fin d'installation. Mesuré : la 1re version de cet item
+    // faisait rougir ce garde-là.
+    // L'item DÉCRIT donc l'abri par sa forme, jamais par le nom de l'outil — et le PATRON est
+    // vérifié contre la source, sinon on documenterait un dossier qui n'existe plus.
+    assert.ok(DOSSIER_ABRI.startsWith('.vibecoding-') && DOSSIER_ABRI.endsWith('-abri'), `montage : \`${DOSSIER_ABRI}\` ne suit plus le patron « .vibecoding-…-abri » que /doctor apprend à reconnaître`);
+    for (const bout of ['.vibecoding-', '-abri']) {
+      assert.ok(i11.includes(bout), `${rel} : l'item 11 ne dit pas à quoi reconnaître le dossier d'abri (« ${bout} ») — un abri coincé laisse les ${DESIGN_SKILL_NAMES.length} skills design du kit hors de leur dossier, invisibles à \`git status\``);
+    }
+    assert.match(i11, /n'est PAS `--refresh`/, `${rel} : l'item 11 doit écarter \`--refresh\` — c'est la réparation que le lecteur va tenter, et elle ne remet pas les skills en place`);
+    assert.ok(!i11.includes(AUTOSKILLS.commande), `${rel} : l'item 11 nomme « ${AUTOSKILLS.commande} » — /doctor est livré aux 4 stacks offertes, où le kit ne propose JAMAIS cet outil tiers (autoskills.test.mjs le mesure sur un scaffold neuf)`);
+    // Et il BLOQUE : un abri coincé n'est pas une installation saine.
+    assert.ok(11 <= plage, `${rel} : l'item 11 est hors de la plage bloquante « de 1 à ${plage} »`);
+    // DISCRIMINANT : l'item reste une VÉRIFICATION des skills là où le kit en pose.
+    assert.match(i11, /\(design \+ stack\)/, `${rel} : l'item 11 doit continuer d'exiger « design + stack » là où le kit pose les deux — le mot « design » seul est déjà dans la phrase de l'abri, il ne discrimine rien`);
+
+    // ── ITEM 17 : le MCP de test, que le kit ne branche pas sur un projet adopté ────────────
+    const i17 = item(17);
+    assert.ok(i17, `${rel} : item 17 introuvable`);
+    assert.ok(conditionAdoptee(i17), `${rel} : l'item 17 doit dire COMMENT reconnaître un projet adopté (\`.vibecoding.json\` porte \`"stack": "aucune"\`) — sans la condition, l'exception s'applique partout`);
+    assert.match(i17, /choix, pas un ✗/, `${rel} : l'item 17 doit dire que l'absence n'est PAS un ✗ — sinon le verdict reste bloqué`);
+    // DISCRIMINANT : les 3 MCP de test des stacks offertes restent exigés, chacun chez la sienne.
+    for (const [mcp, stack] of [['playwright', 'saas'], ['maestro', 'mobile'], ['chrome-devtools', 'desktop']]) {
+      assert.match(i17, new RegExp(`\`${mcp}\`[^·\n]*${stack}`), `${rel} : l'item 17 doit continuer d'exiger \`${mcp}\` sur la stack ${stack}`);
+    }
+  }
+});
+
+// ── T10 — `--refresh` NE RÉOUVRE PAS CE QUE `--adopt` A FERMÉ ─────────────────────────────────
+//
+// Mesuré sur un vrai projet Next.js + Prisma adopté, puis rafraîchi : `--refresh` a écrit DEUX
+// fichiers, et les deux étaient des régressions.
+//   1. `docs/glossaire.md` — le scaffold l'ADAPTE (`adapterGlossaireAdopte`, setup.mjs) parce que
+//      son entrée « Domaine » renvoie à `docs/DOMAINS.md`, que ce parcours ne pose pas. Le refresh
+//      recopiait la source BRUTE : le renvoi mort revenait — et c'est `/help` qui y mène, au bout
+//      de la chaîne que le kit met le plus en avant.
+//   2. `ai-context/README.md` — `AI_CONTEXT` n'a pas d'entrée `aucune`, donc le scaffold ne pose
+//      RIEN de ce dossier. Le refresh y créait un dossier ne contenant QUE son README, lequel
+//      annonce « les fichiers officiels qui apprennent à ton IA chaque techno » devant un dossier
+//      vide — dans le dépôt de quelqu'un d'autre.
+// Le pire des deux, c'est le MOMENT : ça n'arrive qu'au refresh, donc jamais sous les yeux de
+// quelqu'un qui lit le rapport d'installation.
+test('T10 — `--refresh` sur un projet adopté : glossaire adapté, et aucun `ai-context/`', () => {
+  for (const assistant of ['cursor', 'claude-code', 'codex']) {
+    const copies = kitOwnedFiles(STACK_AUCUNE, assistant);
+    const ai = copies.filter((c) => c.to.startsWith('ai-context/')).map((c) => c.to);
+    assert.deepEqual(ai, [], `${assistant} : --refresh recréerait ${ai.length} fichier(s) sous \`ai-context/\` dans un projet qui n'en a AUCUN (le scaffold ne pose pas ce dossier sur \`aucune\`)`);
+    // …et le glossaire, lui, reste régénéré : le laisser périmer serait l'autre moitié du défaut.
+    const g = copies.find((c) => c.to === 'docs/glossaire.md');
+    assert.ok(g, `${assistant} : docs/glossaire.md n'est plus régénéré du tout — un glossaire périmé est pire que pas de glossaire (kit-owned.mjs le dit)`);
+    assert.ok(g.transform, `${assistant} : docs/glossaire.md est régénéré SANS adaptation — le renvoi vers \`docs/DOMAINS.md\` revient au premier --refresh`);
+    // LE DISCRIMINANT : sur une stack OFFERTE, ni l'un ni l'autre ne bouge.
+    const offerte = kitOwnedFiles('saas', assistant);
+    assert.ok(offerte.some((c) => c.to === 'ai-context/README.md'), `${assistant} : \`ai-context/\` doit rester régénéré sur une stack offerte`);
+    assert.equal(offerte.find((c) => c.to === 'docs/glossaire.md').transform, undefined, `${assistant} : le glossaire d'une stack offerte n'a rien à adapter`);
+  }
+
+  // ⛔ LA TABLE NE PROUVE QUE L'INTENTION. C'est `refreshProject` qui applique — ou non — le
+  // transform : un `transform` déclaré et jamais lu laisserait ce test vert et le renvoi mort.
+  // On joue donc un vrai refresh, sur un projet minimal écrit à la main (3 fichiers) : pas de
+  // scaffold, donc pas 3 secondes de plus dans une suite qui en manque déjà.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-refresh-adopte-'));
+  try {
+    const manifest = { stack: STACK_AUCUNE, assistant: 'claude-code' };
+    fs.mkdirSync(path.join(dir, 'docs'), { recursive: true });
+    fs.writeFileSync(path.join(dir, '.vibecoding.json'), `${JSON.stringify(manifest)}\n`);
+    // Le glossaire tel que le scaffold l'a laissé sur un projet adopté : DÉJÀ adapté.
+    const brut = fs.readFileSync(path.resolve('guides/glossaire.md'), 'utf8');
+    const attendu = adapterGlossaireAdopte(brut);
+    fs.writeFileSync(path.join(dir, 'docs/glossaire.md'), attendu);
+
+    const { changed } = refreshProject({ source: path.resolve('.'), projectDir: dir, manifest });
+
+    assert.equal(fs.readFileSync(path.join(dir, 'docs/glossaire.md'), 'utf8'), attendu,
+      'le refresh a remis la version BRUTE du glossaire : le renvoi vers `docs/DOMAINS.md` est revenu dans un projet qui ne pose pas ce fichier');
+    assert.ok(!changed.includes('docs/glossaire.md'),
+      `le refresh réécrit le glossaire à chaque passage — il n'est donc jamais idempotent : ${changed.filter((c) => c.includes('glossaire')).join(', ')}`);
+    assert.ok(!fs.existsSync(path.join(dir, 'ai-context')),
+      `le refresh a créé \`ai-context/\` : ${fs.existsSync(path.join(dir, 'ai-context')) ? fs.readdirSync(path.join(dir, 'ai-context')).join(', ') : ''} — un dossier de plus dans le dépôt de l'utilisateur, avec un README qui promet des fichiers absents`);
+    // Montage : le refresh a bien AGI (sans ça, les trois assertions ci-dessus sont vraies à vide).
+    assert.ok(changed.length > 0, 'montage : ce refresh n\'a rien régénéré du tout');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

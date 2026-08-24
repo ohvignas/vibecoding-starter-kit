@@ -9,6 +9,7 @@ import { kitOwnedFiles, kitOwnedGenerated } from './kit-owned.mjs';
 import { collerRunbook } from './commands-list.mjs';
 import { toCursorAgent } from './agent-frontmatter.mjs';
 import { resolveAssets } from './matrix.mjs';
+import { adapterGlossaireAdopte } from './adoption.mjs';
 
 export function readVibecodingManifest(projectDir) {
   const mf = path.join(projectDir, '.vibecoding.json');
@@ -65,6 +66,10 @@ export function refreshProject({ source, projectDir, manifest, dryRun = false })
     try {
       next = fs.readFileSync(src, 'utf8');
       if (transform === 'cursor-agent') next = toCursorAgent(next);
+      // Le glossaire d'un projet adopté : son entrée « Domaine » renvoie à un fichier que ce
+      // parcours ne pose pas. `adapterGlossaireAdopte` JETTE si la phrase source a changé — le
+      // `catch` ci-dessous range alors le fichier en « sauté », plutôt que d'écrire un renvoi mort.
+      if (transform === 'glossaire-adopte') next = adapterGlossaireAdopte(next);
       // `concat` : des FICHIERS (jamais un dossier) à recoller derrière la source — l'entrée
       // Codex suivie de ses étapes. Une partie introuvable JETTE : le fichier part en « sauté »
       // plutôt que d'être régénéré amputé, en silence, par-dessus la version complète du projet.

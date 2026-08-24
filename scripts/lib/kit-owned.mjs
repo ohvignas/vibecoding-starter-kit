@@ -69,7 +69,12 @@ export function kitOwnedFiles(stack, assistant) {
   // Le glossaire embarqué (Lot H7) : 100 % kit lui aussi, et le seul fichier du projet qui vienne
   // de `guides/` plutôt que de `templates/`. Sans cette ligne, un projet créé aujourd'hui garderait
   // à jamais le vocabulaire d'aujourd'hui — un glossaire périmé est pire que pas de glossaire.
-  pairs.push({ from: 'guides/glossaire.md', to: 'docs/glossaire.md' });
+  // ⛔ ET SUR UN PROJET ADOPTÉ, IL S'ADAPTE — le scaffold le fait déjà (setup.mjs,
+  // `adapterGlossaireAdopte`) parce que l'entrée « Domaine » renvoie à `docs/DOMAINS.md`, que ce
+  // parcours ne pose pas. Sans le transform ici, le PREMIER `--refresh` recopiait la source
+  // brute et ramenait le renvoi mort — mesuré sur un vrai projet adopté. Et il revenait au
+  // moment où personne ne regarde : pas à l'installation, mais deux semaines plus tard.
+  pairs.push({ from: 'guides/glossaire.md', to: 'docs/glossaire.md', ...(estAdopte(stack) ? { transform: 'glossaire-adopte' } : {}) });
 
   // `ai-context/` — les `llms.txt` officiels des technos de la stack, recopiés VERBATIM depuis la
   // doc amont. 100 % kit : l'utilisateur n'y écrit jamais.
@@ -79,9 +84,16 @@ export function kitOwnedFiles(stack, assistant) {
   // moyen de rafraîchir qu'il indiquait, `scripts/download-ai-context.sh`, n'est PAS livré dans le
   // projet : la commande était morte chez l'utilisateur, et rien d'autre ne prenait le relais.
   // Fichier par fichier, jamais le dossier : `refresh.mjs` lit chaque `from` avec `readFileSync`.
-  pairs.push({ from: 'ai-context/README.md', to: 'ai-context/README.md' });
-  for (const d of AI_CONTEXT[stack] ?? []) {
-    for (const f of listKitFiles(`ai-context/${d}`)) pairs.push({ from: `ai-context/${d}/${f}`, to: `ai-context/${d}/${f}` });
+  // ⛔ RIEN DE TOUT ÇA SUR UN PROJET ADOPTÉ. `AI_CONTEXT` n'a pas d'entrée `aucune` — le kit ne
+  // revendique pas la techno de ce projet, il n'a donc aucun `llms.txt` à lui donner, et le
+  // scaffold ne pose pas le dossier. Le README poussé seul créait `ai-context/` au premier
+  // `--refresh` : un dossier de plus dans le dépôt de quelqu'un d'autre, ne contenant QUE la
+  // page qui annonce « les fichiers officiels qui apprennent à ton IA chaque techno ». Mesuré.
+  if (!estAdopte(stack)) {
+    pairs.push({ from: 'ai-context/README.md', to: 'ai-context/README.md' });
+    for (const d of AI_CONTEXT[stack] ?? []) {
+      for (const f of listKitFiles(`ai-context/${d}`)) pairs.push({ from: `ai-context/${d}/${f}`, to: `ai-context/${d}/${f}` });
+    }
   }
 
   // Les 7 agents du crew, dans le dossier natif de l'assistant. Cursor ne comprend pas le
