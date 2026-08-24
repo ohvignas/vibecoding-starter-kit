@@ -14,6 +14,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { scaffold } from './test-scaffold.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -32,8 +33,7 @@ const gitIgnore = (dir, chemin) => {
   try { execFileSync('git', ['-C', dir, 'check-ignore', chemin], { stdio: 'pipe' }); return true; }
   catch { return false; }
 };
-const scaffolderAdopte = (dir, assistant = 'claude-code') => execFileSync(process.execPath, [
-  path.resolve('scripts/setup.mjs'), '--stack', 'aucune', '--assistant', assistant,
+const scaffolderAdopte = (dir, assistant = 'claude-code') => scaffold(['--stack', 'aucune', '--assistant', assistant,
   '--project', dir, '--no-skills', '--yes',
 ], { stdio: 'pipe' });
 
@@ -228,8 +228,7 @@ test('adoption — un `!.env` volontaire n\'est pas renversé sans accord, et le
 test('parcours NEUF — le `.gitignore` de la stack est toujours copié tel quel, sans bloc ajouté', () => {
   // Le garde qui tient l'autre moitié : tout ce qui précède ne doit rien changer au parcours neuf.
   const dir = path.join(projet('neuf-gi-'), 'mon-app');
-  execFileSync(process.execPath, [
-    path.resolve('scripts/setup.mjs'), '--stack', 'saas', '--assistant', 'claude-code',
+  scaffold(['--stack', 'saas', '--assistant', 'claude-code',
     '--project', dir, '--no-skills', '--yes', '--backend', 'local',
   ], { stdio: 'pipe' });
   const gi = fs.readFileSync(path.join(dir, '.gitignore'), 'utf8');

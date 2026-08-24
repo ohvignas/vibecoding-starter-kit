@@ -21,6 +21,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { scaffold } from './test-scaffold.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -673,7 +674,7 @@ test('T9 — `.agents/` et `skills-lock.json` sont ignorés par le `.gitignore` 
   const dir = tmp('t9-gitignore-');
   execFileSync('git', ['-C', dir, 'init', '-q', '-b', 'main'], { stdio: 'pipe' });
   fs.writeFileSync(path.join(dir, '.gitignore'), 'node_modules/\n');
-  execFileSync(process.execPath, [path.resolve('scripts/setup.mjs'), '--stack', 'aucune', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
+  scaffold(['--stack', 'aucune', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
   for (const chemin of ['.agents/skills/x/SKILL.md', 'skills-lock.json']) {
     const ok = (() => { try { execFileSync('git', ['-C', dir, 'check-ignore', '-q', chemin], { stdio: 'pipe' }); return true; } catch { return false; } })();
     assert.ok(ok, `${chemin} doit être ignoré : autoskills l'écrit à chaque run`);
@@ -688,8 +689,7 @@ test('T9 — un projet NEUF ne voit jamais autoskills : ni à l\'écran, ni dans
   // `runAdoptWizard`, que le parcours neuf n'atteint pas. Ce garde le mesure au lieu de l'affirmer.
   // MUTATION QUI LE FAIT ROUGIR : citer l'outil dans un template ou dans le rapport commun.
   const dir = path.join(tmp('t9-neuf-'), 'mon-app');
-  const out = String(execFileSync(process.execPath, [
-    path.resolve('scripts/setup.mjs'), '--stack', 'saas', '--assistant', 'claude-code',
+  const out = String(scaffold(['--stack', 'saas', '--assistant', 'claude-code',
     '--project', dir, '--no-skills', '--yes', '--backend', 'local',
   ], { stdio: 'pipe' }));
   assert.ok(!out.toLowerCase().includes(AUTOSKILLS.commande), `le rapport du parcours neuf parle d'autoskills :\n${out}`);

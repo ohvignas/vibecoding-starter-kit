@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { scaffold } from './test-scaffold.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -45,9 +46,8 @@ test('adoption — les 4 stacks offertes ne changent pas', () => {
 test('adoption — scaffold `aucune` : exit 0, et aucun fichier de stack posé', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adopt-'));
   fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"x"}');
-  execFileSync(process.execPath, [
-    path.resolve('scripts/setup.mjs'),
-    '--stack', 'aucune', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes',
+  scaffold([
+        '--stack', 'aucune', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes',
   ], { stdio: 'pipe' });
   for (const absent of ['.env.example', '.github/workflows/ci.yml', 'docs/examples/feature-exemple.md', 'AGENTS-stack.md', 'maquette', 'docs/ROADMAP.md']) {
     assert.ok(!fs.existsSync(path.join(dir, absent)), `${absent} ne doit pas être posé sur aucune`);
@@ -59,7 +59,7 @@ test('adoption — package.json ressort octet pour octet identique', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pkg-'));
   const avant = '{ "name": "x", "scripts": { "dev": "next dev" } }';
   fs.writeFileSync(path.join(dir, 'package.json'), avant);
-  execFileSync(process.execPath, [path.resolve('scripts/setup.mjs'), '--stack', 'aucune', '--assistant', 'cursor', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
+  scaffold(['--stack', 'aucune', '--assistant', 'cursor', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
   assert.equal(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'), avant, 'le kit a touché son package.json');
 });
 
@@ -127,7 +127,7 @@ test('adoption — la règle Cursor « CSS maquette » suit sa source : retirée
   // dise la même chose que sa source. Le scaffold ET le `--refresh` doivent s'abstenir.
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'curs-'));
   fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"x"}');
-  execFileSync(process.execPath, [path.resolve('scripts/setup.mjs'), '--stack', 'aucune', '--assistant', 'cursor', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
+  scaffold(['--stack', 'aucune', '--assistant', 'cursor', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
   assert.ok(!fs.existsSync(path.join(dir, '.cursor/rules/10-css-maquette.mdc')), 'la règle CSS maquette ne doit pas être posée sur un projet adopté');
   assert.ok(fs.existsSync(path.join(dir, '.cursor/rules/00-project.mdc')), '00-project.mdc reste : il renvoie à AGENTS.md, pas à une maquette');
   const cible = (stack) => kitOwnedFiles(stack, 'cursor').map((x) => x.to);
@@ -1498,7 +1498,7 @@ test('T11 — les 7 champs du manifeste de stack sont comptés : chacun a sa lig
     fs.writeFileSync(path.join(dir, 'package.json'), avant);
     fs.writeFileSync(path.join(dir, 'index.js'), '// du code qui existe déjà\n');
     execFileSync('git', ['-C', dir, 'init', '-q', '-b', 'main'], { stdio: 'pipe' });
-    execFileSync(process.execPath, [path.resolve('scripts/setup.mjs'), '--stack', STACK_AUCUNE,
+    scaffold(['--stack', STACK_AUCUNE,
       '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
     assert.ok(fs.existsSync(path.join(dir, '.vibecoding.json')), 'montage : le scaffold adopté a bien tourné');
     const apres = fs.readFileSync(path.join(dir, 'package.json'), 'utf8');

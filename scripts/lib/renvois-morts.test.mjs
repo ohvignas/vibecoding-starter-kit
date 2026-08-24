@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { scaffold } from './test-scaffold.mjs';
 import { renderAgentsFile } from './agents-file.mjs';
 import { AGENTS_DIR } from './kit-owned.mjs';
 import { MARK_START_PREFIX } from './managed-section.mjs';
@@ -157,8 +158,7 @@ test('renvois morts — chaque `docs/…` cité par le bloc adopté existe VRAIM
   // projet existant a presque toujours son AGENTS.md : c'est le cas nominal, pas un cas limite.
   const PERSO = '# Mes règles à moi\n\n- **pnpm, pas npm.**\n';
   fs.writeFileSync(path.join(dir, 'AGENTS.md'), PERSO);
-  execFileSync(process.execPath, [
-    path.resolve('scripts/setup.mjs'), '--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills',
+  scaffold(['--adopt', '--assistant', 'claude-code', '--project', dir, '--no-skills',
   ], { stdio: 'pipe' });
 
   const livre = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
