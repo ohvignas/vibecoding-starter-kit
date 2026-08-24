@@ -111,11 +111,20 @@ export const DOSSIER_ABRI = '.vibecoding-autoskills-abri';
 // le run, en se nommant. Ce qu'on ne comprend pas, on n'y touche pas — on ne le supprime jamais.
 export const FICHIER_PLAN = 'plan.json';
 
-// Ce que l'abri contient ENCORE, hors le plan : `<i>/<nom>`. Sert deux fois — pour ne supprimer
-// l'abri que s'il est vraiment vide, et pour nommer ce qui reste quand on refuse de partir.
+// ⛔ L'ABRI SE CACHE DE GIT TOUT SEUL. Il était transitoire ; il PERSISTE maintenant par conception,
+// à chaque refus — un dossier du kit dans le dépôt de quelqu'un d'autre, qui sortirait dans son
+// `git status` et partirait dans son prochain commit. Un `.gitignore` à `*` DANS l'abri l'ignore
+// lui-même et tout ce qu'il contient (mesuré : `git status --porcelain` ne le voit plus), sans
+// ajouter une 6ᵉ ligne à l'écran d'accord `.gitignore`, sans dépendre de cet accord — un
+// utilisateur qui l'a refusé est protégé pareil — et il disparaît avec l'abri.
+export const FICHIER_IGNORE = '.gitignore';
+
+// Ce que l'abri contient ENCORE, hors les deux fichiers que le kit y écrit lui-même : `<i>/<nom>`.
+// Sert deux fois — pour ne supprimer l'abri que s'il est vraiment vide, et pour nommer ce qui reste
+// quand on refuse de partir.
 export function contenuAbri(abri) {
   let ranges;
-  try { ranges = fs.readdirSync(abri).filter((n) => n !== FICHIER_PLAN).sort(); } catch { return []; }
+  try { ranges = fs.readdirSync(abri).filter((n) => n !== FICHIER_PLAN && n !== FICHIER_IGNORE).sort(); } catch { return []; }
   const restant = [];
   for (const r of ranges) {
     let dedans = [];
@@ -125,45 +134,89 @@ export function contenuAbri(abri) {
   return restant;
 }
 
+// LE CHEMIN RÉEL, au sens exact de ce que `rmSync`/`renameSync` vont toucher :
+//   · les dossiers TRAVERSÉS sont résolus — c'est par eux qu'on sort du projet sans le voir ;
+//   · le DERNIER segment ne l'est PAS. `rmSync` délie un lien feuille sans suivre sa cible, et
+//     `renameSync` écrit à la place du lien : le kit pose justement des liens feuilles
+//     (`.claude/skills/<nom>` → `.agents/skills/<nom>`). Les résoudre ferait refuser à tort un
+//     projet dont un skill est lié ailleurs, alors que rien n'y serait touché.
+// `realpathSync` jette sur un chemin absent — et `origine` est absent PAR CONSTRUCTION pendant la
+// fenêtre (le skill est à l'abri) : on résout donc le plus long préfixe qui existe, et on recolle.
+function cheminReel(p) {
+  const abs = path.resolve(p);
+  let cur = path.dirname(abs), reste = path.basename(abs);
+  for (;;) {
+    try { return path.join(fs.realpathSync(cur), reste); } catch { /* pas encore là : on remonte */ }
+    const parent = path.dirname(cur);
+    if (parent === cur) return abs; // racine atteinte : plus rien à résoudre
+    reste = path.join(path.basename(cur), reste);
+    cur = parent;
+  }
+}
+
 // LA REPRISE. Trois issues, et une seule supprime quelque chose :
 //   · pas d'abri            → rien à faire, le run peut partir ;
 //   · abri + plan lisible   → on REMET tout, l'abri disparaît, le run peut partir ;
 //   · abri illisible, ou une remise qui échoue, ou un reste hors plan → REFUS, l'abri est INTACT.
-export function reprendreAbri(projectDir) {
+export function reprendreAbri(projectDir, noms = DESIGN_SKILL_NAMES) {
   const abri = path.join(projectDir, DOSSIER_ABRI);
   if (!existe(abri)) return { repris: [], refus: null };
-  // ⛔ UN PLAN NE FAIT PAS SUPPRIMER HORS DU PROJET. La reprise OBÉIT à un fichier trouvé sur le
-  // disque, et cette obéissance déclenche un `rmSync` RÉCURSIF sur chaque `origine`. Un plan qui
-  // nomme des chemins d'ailleurs — projet copié avec son abri, plan édité, chemins absolus périmés —
-  // ferait donc effacer ailleurs. Chaque entrée doit SORTIR DE CET ABRI et RENTRER DANS CE PROJET ;
-  // une seule qui déborde et le plan entier est traité comme illisible : on refuse, on ne touche à rien.
-  const sous = (racine, p) => { const r = path.relative(racine, p); return r !== '' && !r.startsWith('..') && !path.isAbsolute(r); };
+  // ⛔ CE QU'UN PLAN A LE DROIT DE NOMMER. La reprise OBÉIT à un fichier trouvé sur le disque, et
+  // cette obéissance déclenche un `rmSync` RÉCURSIF sur `origine` puis un `renameSync` vers elle.
+  // TROIS clauses, une par vecteur mesuré — et chacune a son garde, parce qu'elles ne se couvrent
+  // pas l'une l'autre :
+  //   1. `e.abri` sort de CET abri — sans quoi un plan forgé fait DÉPLACER n'importe quel chemin du
+  //      disque DANS le projet ;
+  //   2. `e.origine` reste dans CE projet, chemins RÉSOLUS. Un contrôle lexical suffisait à s'en
+  //      convaincre et se trompait : si un dossier du projet est lui-même un LIEN vers l'extérieur
+  //      (`.claude` partagé entre projets, cas courant), `<projet>/.claude/skills/<nom>` est
+  //      lexicalement dedans et réellement dehors — le `rmSync` partait effacer ailleurs. Mesuré.
+  //   3. `e.origine` est l'un des chemins que `cheminsSkill` produit LUI-MÊME. L'ensemble est CLOS
+  //      (deux par skill) : un plan forgé ne peut donc pas faire effacer `<projet>/src`, qui est
+  //      « dans le projet » et n'a jamais été à nous.
+  // Une seule clause qui tombe et le plan ENTIER est illisible : on refuse, on ne touche à rien.
+  //
+  // Les liens sont résolus des deux côtés, ce qui ferme aussi le sens inverse : un même projet
+  // atteint par un alias (`/tmp/x` vs `/private/tmp/x`) cesse d'être refusé à tort.
+  const racineReelle = (d) => { try { return fs.realpathSync(d); } catch { return path.resolve(d); } };
+  const projetReel = racineReelle(projectDir), abriReel = racineReelle(abri);
+  const sous = (racine, p) => { const r = path.relative(racine, cheminReel(p)); return r !== '' && !r.startsWith('..') && !path.isAbsolute(r); };
+  const nosChemins = new Set(noms.flatMap((nom) => cheminsSkill(projectDir, nom)).map(cheminReel));
   let ecartes = null;
   try {
     const plan = JSON.parse(fs.readFileSync(path.join(abri, FICHIER_PLAN), 'utf8'));
-    if (Array.isArray(plan?.ecartes) && plan.ecartes.every((e) => e?.nom && sous(abri, e.abri) && sous(projectDir, e.origine) && !sous(abri, e.origine))) ecartes = plan.ecartes;
+    if (Array.isArray(plan?.ecartes) && plan.ecartes.every((e) => e?.nom
+      && sous(abriReel, e.abri)
+      && sous(projetReel, e.origine)
+      && nosChemins.has(cheminReel(e.origine)))) ecartes = plan.ecartes;
   } catch { /* plan absent, illisible ou débordant : traité comme un refus, jamais comme une permission */ }
-  const nommer = (raison) => [
-    `${DOSSIER_ABRI}/ : ${raison}.`,
-    `Tes skills design du kit y sont peut-être encore — le kit n'y touche pas : ${contenuAbri(abri).join(', ') || '(vide)'}`,
-  ].join(' ');
-  if (!ecartes) return { repris: [], refus: nommer(`un run précédent a été interrompu et son \`${FICHIER_PLAN}\` est absent, illisible, ou nomme des chemins hors de ce projet`) };
+  // Un refus RAPPORTE ce qui reste coincé : le rapport en fait un ❌ (et un code de sortie non nul),
+  // pas un « Sauté » à 0. Un run qui laisse 4 skills du kit hors de leur place n'est pas un run qui
+  // s'est bien passé, même s'il n'a rien cassé.
+  const refuser = (repris, raison) => {
+    const restant = contenuAbri(abri);
+    return {
+      repris,
+      restant,
+      refus: `${DOSSIER_ABRI}/ : ${raison}. Tes skills design du kit y sont peut-être encore — le kit n'y touche pas : ${restant.join(', ') || '(vide)'}`,
+    };
+  };
+  if (!ecartes) return refuser([], `un run précédent a été interrompu et son \`${FICHIER_PLAN}\` est absent, illisible, ou nomme des chemins que ce module n'écrit pas`);
   const { remis, perdus } = restaurerSkillsDesign({ abri, ecartes });
   // Des NOMS, uniques : chaque skill a deux chemins (le lien natif et le magasin `.agents/`), et le
   // rapport parle de skills. La même forme dans les trois issues — un appelant ne doit pas avoir à
   // deviner laquelle il tient pour savoir s'il faut dédoublonner.
   const repris = [...new Set(remis)];
-  if (perdus.length) return { repris, refus: nommer('un run précédent a été interrompu et je n\'ai pas pu tout remettre en place') };
-  const restant = contenuAbri(abri);
-  if (restant.length) return { repris, refus: nommer('un run précédent a laissé un fichier que son plan ne mentionne pas') };
-  return { repris, refus: null };
+  if (perdus.length) return refuser(repris, 'un run précédent a été interrompu et je n\'ai pas pu tout remettre en place');
+  if (contenuAbri(abri).length) return refuser(repris, 'un run précédent a laissé un fichier que son plan ne mentionne pas');
+  return { repris, restant: [], refus: null };
 }
 
 export function ecarterSkillsDesign(projectDir, noms = DESIGN_SKILL_NAMES) {
   const abri = path.join(projectDir, DOSSIER_ABRI);
   // ⛔ ON NE SUPPRIME PLUS UN ABRI TROUVÉ : on le REPREND, ou on refuse de partir. Voir ci-dessus.
-  const reprise = reprendreAbri(projectDir);
-  if (reprise.refus) return { abri, ecartes: [], noms: [], repris: reprise.repris, refus: reprise.refus };
+  const reprise = reprendreAbri(projectDir, noms);
+  if (reprise.refus) return { abri, ecartes: [], noms: [], repris: reprise.repris, restant: reprise.restant, refus: reprise.refus };
   const ecartes = [];
   let i = 0;
   for (const nom of noms) {
@@ -172,6 +225,9 @@ export function ecarterSkillsDesign(projectDir, noms = DESIGN_SKILL_NAMES) {
       const range = path.join(abri, String(i));
       i += 1;
       fs.mkdirSync(range, { recursive: true });
+      // Posé à la SECONDE où l'abri naît, avant le premier déplacement : un Ctrl-C entre les deux
+      // laisserait sinon un dossier visible dans le `git status` de l'utilisateur.
+      fs.writeFileSync(path.join(abri, FICHIER_IGNORE), '*\n');
       // `rename` déplace le LIEN, pas sa cible : un skill lié revient lié, vers la même cible.
       fs.renameSync(origine, path.join(range, nom));
       ecartes.push({ nom, origine, abri: path.join(range, nom) });
@@ -249,7 +305,7 @@ export function lancerAutoskills({ projectDir, assistant, run = defaultRun, noms
   const abri = ecarterSkillsDesign(projectDir, noms ?? DESIGN_SKILL_NAMES);
   // Un abri qu'on n'a pas su reprendre : on ne lance RIEN. Relancer par-dessus écarterait une
   // seconde fois des skills déjà absents et empilerait deux restes l'un sur l'autre.
-  if (abri.refus) return { lance: false, etapes: [], proteges: [], remis: [], perdus: [], repris: abri.repris, echec: abri.refus };
+  if (abri.refus) return { lance: false, etapes: [], proteges: [], remis: [], perdus: [], repris: abri.repris, abriEnAttente: abri.restant, echec: abri.refus };
   const etapes = [];
   let echec = null;
   // ⛔ LE `catch` NE LAISSE PAS PASSER : une passe qui jette au milieu a DÉJÀ pu supprimer des
@@ -298,6 +354,17 @@ export function rapportAutoskills(a, projectDir) {
   // Un run précédent interrompu laisse ses skills à l'abri ; celui-ci les a récupérés. Le dire,
   // parce que l'utilisateur les avait peut-être vus disparaître de `.claude/skills/`.
   if (a.repris?.length) done.push(`skills design récupérés d'un run interrompu : ${[...new Set(a.repris)].join(', ')}`);
+  // ⛔ UN ABRI COINCÉ EST UN ÉCHEC, PAS UN « SAUTÉ ». Le refus protège — mais il laisse les skills
+  // design du kit HORS de leur place, et « Sauté » sort en code 0 : l'écran disait « tout va bien »
+  // sur un projet où 4 skills manquent. Ils sont ici, avec leurs deux destinations — et avec la
+  // seule instruction qui marche, parce que le titre du bac (« relance le script ») ne marche pas :
+  // relancer refusera encore, c'est le sens même du refus.
+  if (a.abriEnAttente?.length) {
+    failed.push([
+      `skills design coincés dans \`${DOSSIER_ABRI}/\` — un run précédent a été interrompu : ${a.abriEnAttente.map((p) => path.relative(projectDir, p)).join(', ')}.`,
+      'NE relance PAS pour ça (le kit refusera encore, exprès) : remets chaque `<i>/<nom>` dans `.claude/skills/<nom>` ET `.agents/skills/<nom>` (il y a une entrée pour chacun des deux), puis supprime le dossier.',
+    ].join(' '));
+  }
   // Un skill du kit que la restauration n'a pas pu remettre n'existe plus qu'à l'abri : il est
   // toujours là, mais pas à sa place. Le taire laisserait `/doctor` item 11 le déclarer absent sans
   // que personne sache où il est passé — donc ❌. Et le message doit être ACTIONNABLE : l'abri est

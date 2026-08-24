@@ -26,7 +26,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
-  AUTOSKILLS, AGENTS_AUTOSKILLS, ETAPES_AUTOSKILLS, DOSSIER_ABRI, FICHIER_PLAN,
+  AUTOSKILLS, AGENTS_AUTOSKILLS, ETAPES_AUTOSKILLS, DOSSIER_ABRI, FICHIER_PLAN, FICHIER_IGNORE,
   supporteAutoskills, renderProposeAutoskills, cheminsSkill, contenuAbri,
   ecarterSkillsDesign, restaurerSkillsDesign, lancerAutoskills, rapportAutoskills,
 } from './autoskills.mjs';
@@ -397,31 +397,93 @@ test('T9 — une reprise PARTIELLE ne fait pas détruire, au run d\'après, ce q
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('T9 — un plan qui nomme des chemins HORS du projet ne fait rien effacer dehors', () => {
-  // ⛔ LA REPRISE OBÉIT À UN FICHIER TROUVÉ SUR LE DISQUE, et cette obéissance déclenche un `rmSync`
-  // RÉCURSIF sur chaque `origine`. Un plan périmé (projet copié ailleurs avec son abri, chemins
-  // absolus d'un autre dossier) ou édité ferait donc effacer ailleurs — et `renameSync` déplacerait
-  // ensuite l'entrée d'abri à cet endroit. Chaque entrée doit sortir de CET abri et rentrer dans CE
-  // projet, sinon le plan entier est illisible.
-  // MUTATION QUI LE FAIT ROUGIR : retirer les contrôles `sous(...)` de `reprendreAbri` → le plan est
-  // accepté, `these.txt` disparaît.
-  const dir = projetAvecSkillsDuKit();
-  const interrompu = runInterrompu(dir);
-  const abri = path.join(dir, DOSSIER_ABRI);
-  const dehors = tmp('t9-dehors-');
-  const victime = path.join(dehors, 'documents');
-  fs.mkdirSync(victime, { recursive: true });
-  fs.writeFileSync(path.join(victime, 'these.txt'), 'DIX ANS DE TRAVAIL');
-  // L'entrée d'abri, elle, est RÉELLE : c'est ce qui rend la mutation destructrice au lieu d'échouer.
-  fs.writeFileSync(path.join(abri, FICHIER_PLAN), `${JSON.stringify({ ecartes: [{ ...interrompu.ecartes[0], origine: victime }] }, null, 2)}\n`);
+// ⛔ TROIS CLAUSES, TROIS GARDES — ET POURQUOI PAS UN SEUL. Le plan est un fichier du DISQUE qui
+// pilote un `rmSync` récursif puis un `renameSync`. Un garde unique qui retire les trois clauses
+// ensemble MASQUE le trou : mesuré, retirer `sous(abriReel, e.abri)` seul, ou la clause du jeu clos,
+// laissait la suite VERTE. Chaque clause a donc ici sa victime à elle, et sa mutation à elle.
+const forgerPlan = (abri, ecartes) => fs.writeFileSync(path.join(abri, FICHIER_PLAN), `${JSON.stringify({ ecartes }, null, 2)}\n`);
+const refuse = (dir) => lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: () => { throw new Error('aucune passe npx ne doit partir ici') } });
 
-  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: () => { throw new Error('aucune passe npx ne doit partir ici'); } });
+test('T9 — clause 1 : un plan dont l\'`abri` est ailleurs ne fait pas DÉPLACER un dossier du disque dans le projet', () => {
+  // MUTATION QUI LE FAIT ROUGIR : retirer `sous(abriReel, e.abri)` de `reprendreAbri`. `e.abri`
+  // existe, `origine` est un chemin à nous : `rmSync` ne trouve rien, puis `renameSync` DÉPLACE le
+  // dossier visé dans `.claude/skills/`. L'utilisateur perd ses photos de leur place, sans un mot.
+  const dir = projetAvecSkillsDuKit();
+  runInterrompu(dir);
+  const dehors = tmp('t9-tresor-');
+  const tresor = path.join(dehors, 'photos');
+  fs.mkdirSync(tresor, { recursive: true });
+  fs.writeFileSync(path.join(tresor, 'vacances.txt'), 'DIX ANS DE PHOTOS');
+  forgerPlan(path.join(dir, DOSSIER_ABRI), [{ nom: 'frontend-design', origine: cheminsSkill(dir, 'frontend-design')[0], abri: tresor }]);
+
+  const r = refuse(dir);
   assert.equal(r.lance, false);
-  assert.ok(r.echec.includes('hors de ce projet'), `le refus doit nommer la raison : ${r.echec}`);
-  assert.equal(fs.readFileSync(path.join(victime, 'these.txt'), 'utf8'), 'DIX ANS DE TRAVAIL', '⛔ un chemin hors projet, cité par un plan, a été effacé');
-  assert.equal(contenuAbri(abri).length, DESIGN_SKILL_NAMES.length * 2, 'et l\'abri n\'a pas bougé');
+  assert.equal(fs.readFileSync(path.join(tresor, 'vacances.txt'), 'utf8'), 'DIX ANS DE PHOTOS', '⛔ un dossier du disque, cité comme « abri » par un plan, a été déplacé');
+  assert.ok(!laBas(cheminsSkill(dir, 'frontend-design')[0]), 'et rien n\'a atterri dans le projet');
   fs.rmSync(dir, { recursive: true, force: true });
   fs.rmSync(dehors, { recursive: true, force: true });
+});
+
+test('T9 — clause 2 : un dossier du projet qui est un LIEN vers l\'extérieur ne fait pas effacer dehors', () => {
+  // ⛔ LE VECTEUR QUE LE CONTRÔLE LEXICAL LAISSAIT PASSER. `<projet>/.claude/skills/frontend-design`
+  // est un chemin À NOUS (clause 3 le laisse donc passer) et lexicalement DANS le projet — mais si
+  // `.claude` est un LIEN vers une config partagée entre projets, il est réellement DEHORS. Le plan
+  // est réinterprété au run SUIVANT, à travers un lien qui a pu changer entre-temps : ici
+  // l'utilisateur met sa config en commun entre les deux runs, et le `rmSync` part chez lui.
+  // MUTATION QUI LE FAIT ROUGIR : retirer `sous(projetReel, e.origine)` → `MA CONFIG PARTAGEE`
+  // disparaît, remplacée par la copie de l'abri.
+  const dir = projetAvecSkillsDuKit();
+  runInterrompu(dir); // le plan écrit ici nomme `<projet>/.claude/skills/<nom>`
+  const dehors = tmp('t9-config-partagee-');
+  fs.mkdirSync(path.join(dehors, 'skills', 'frontend-design'), { recursive: true });
+  fs.writeFileSync(path.join(dehors, 'skills', 'frontend-design', 'SKILL.md'), 'MA CONFIG PARTAGEE');
+  // Entre les deux runs : « je mets ma config Claude en commun ». `.claude` devient un lien.
+  fs.rmSync(path.join(dir, '.claude'), { recursive: true, force: true });
+  fs.symlinkSync(dehors, path.join(dir, '.claude'));
+  assert.equal(fs.realpathSync(path.join(dir, '.claude')), fs.realpathSync(dehors), 'montage : `.claude` sort du projet');
+
+  const r = refuse(dir);
+  assert.equal(r.lance, false, 'un plan dont les chemins sortent réellement du projet ne se reprend pas');
+  assert.equal(fs.readFileSync(path.join(dehors, 'skills', 'frontend-design', 'SKILL.md'), 'utf8'), 'MA CONFIG PARTAGEE',
+    '⛔ le `rmSync` de la reprise est sorti du projet en traversant un dossier-lien');
+  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, DESIGN_SKILL_NAMES.length * 2, 'et l\'abri n\'a pas bougé');
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.rmSync(dehors, { recursive: true, force: true });
+});
+
+test('T9 — clause 3 : un plan qui nomme `src/` ne fait pas effacer le code de l\'utilisateur', () => {
+  // « Dans le projet » ne suffit PAS : `<projet>/src` est dans le projet et n'a jamais été à nous.
+  // L'ensemble des `origine` que ce module peut produire est CLOS — deux chemins par skill de
+  // `DESIGN_SKILL_NAMES` — et c'est le seul jeu auquel un plan a le droit de faire obéir un `rmSync`.
+  // MUTATION QUI LE FAIT ROUGIR : retirer `nosChemins.has(cheminReel(e.origine))` → `src/` part.
+  const dir = projetAvecSkillsDuKit();
+  const interrompu = runInterrompu(dir);
+  fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'src', 'index.ts'), 'LE CODE DE L\'UTILISATEUR');
+  forgerPlan(path.join(dir, DOSSIER_ABRI), [{ ...interrompu.ecartes[0], origine: path.join(dir, 'src') }]);
+
+  const r = refuse(dir);
+  assert.equal(r.lance, false);
+  assert.equal(fs.readFileSync(path.join(dir, 'src', 'index.ts'), 'utf8'), 'LE CODE DE L\'UTILISATEUR', '⛔ un plan a fait effacer un dossier du projet qui n\'était pas à nous');
+  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, DESIGN_SKILL_NAMES.length * 2, 'et l\'abri n\'a pas bougé');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('T9 — le même projet atteint par un chemin ALIAS se reprend quand même', () => {
+  // Le sens inverse, et il compte autant : refuser à tort, c'est laisser les 4 skills à l'abri.
+  // `/tmp/x` et `/private/tmp/x` sont le même dossier ; le plan porte l'un, le run reçoit l'autre.
+  // MUTATION QUI LE FAIT ROUGIR : comparer les chemins BRUTS (retirer `cheminReel`/`realpathSync`
+  // des deux côtés du `sous`) → le plan est jugé « hors projet » et la reprise refuse.
+  const dir = projetAvecSkillsDuKit();
+  runInterrompu(dir);
+  const alias = path.join(tmp('t9-alias-'), 'projet');
+  fs.symlinkSync(dir, alias);
+  const r = lancerAutoskills({ projectDir: alias, assistant: 'claude-code', run: fauxAutoskills(alias, DESIGN_SKILL_NAMES) });
+  assert.equal(r.lance, true, `l'alias doit se reprendre comme le chemin réel : ${r.echec}`);
+  assert.deepEqual([...r.repris].sort(), [...DESIGN_SKILL_NAMES].sort());
+  for (const nom of DESIGN_SKILL_NAMES) assert.equal(fs.readFileSync(path.join(dir, '.agents/skills', nom, 'SKILL.md'), 'utf8'), `KIT:${nom}`);
+  fs.rmSync(path.dirname(alias), { recursive: true, force: true });
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 // ── GARDE 5 — LE RAPPORT NE DIT PAS L'INVERSE DE CE QUI EST SUR LE DISQUE ─────────────────────
@@ -495,6 +557,49 @@ test('T9 — un run non lancé part en « Sauté » et ne promet aucune remise',
   assert.deepEqual(rap.failed, []);
   assert.equal(rap.skipped.length, 1);
   assert.match(rap.skipped[0].reason, /AGENT_FOLDER_MAP/, 'la raison est celle qu\'on a mesurée, et elle reste dans le rapport');
+});
+
+test('T9 — l\'abri ne sort JAMAIS dans le `git status` de l\'utilisateur', () => {
+  // ⛔ IL ÉTAIT TRANSITOIRE, IL PERSISTE MAINTENANT — par conception, à chaque refus. Donc un
+  // dossier du kit dans le dépôt de quelqu'un d'autre, prêt à partir dans son prochain
+  // `git add -A`. Il porte son propre `.gitignore` à `*` : ça ne dépend pas de l'accord
+  // `.gitignore` (que l'utilisateur a le droit de refuser) et ça n'ajoute pas une 6ᵉ ligne à
+  // l'écran qui lui énumère ce qu'on écrit chez lui.
+  // MUTATION QUI LE FAIT ROUGIR : retirer le `writeFileSync(path.join(abri, FICHIER_IGNORE), '*\n')`
+  // d'`ecarterSkillsDesign` → `?? .vibecoding-autoskills-abri/` réapparaît.
+  const dir = projetAvecSkillsDuKit();
+  execFileSync('git', ['-C', dir, 'init', '-q', '-b', 'main'], { stdio: 'pipe' });
+  fs.writeFileSync(path.join(dir, '.gitignore'), 'node_modules/\n');
+  runInterrompu(dir);
+  assert.ok(fs.existsSync(path.join(dir, DOSSIER_ABRI)), 'montage : l\'abri est bien là');
+  const vu = String(execFileSync('git', ['-C', dir, 'status', '--porcelain'], { stdio: 'pipe' }));
+  assert.ok(!vu.includes(DOSSIER_ABRI), `⛔ le dossier de travail du kit part dans le dépôt de l'utilisateur :\n${vu}`);
+  assert.equal(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8'), 'node_modules/\n', 'et SON `.gitignore` n\'a pas été touché pour ça');
+  assert.deepEqual(REGLES_ARTEFACTS, ['.agents/', 'skills-lock.json'], 'la table de la tâche 8 n\'a pas eu à bouger');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('T9 — un abri coincé sort en ❌ (donc en code non nul), pas en « Sauté » à 0', () => {
+  // ⛔ LE REFUS PROTÈGE, MAIS IL LAISSE 4 SKILLS DU KIT HORS DE LEUR PLACE. Rangé en « Sauté », il
+  // sortait en `exitCode` 0 : l'écran disait « tout va bien » sur un projet cassé. Et le titre du
+  // bac ❌ — « relance le script » — est le seul conseil qui ne marche PAS ici : relancer refusera
+  // encore, c'est le sens du refus. La ligne le dit donc elle-même.
+  // MUTATIONS QUI LE FONT ROUGIR : ranger `abriEnAttente` dans `skipped` au lieu de `failed` ;
+  // ne pas propager `restant`/`abriEnAttente` depuis `reprendreAbri`.
+  const dir = projetAvecSkillsDuKit();
+  runInterrompu(dir);
+  fs.rmSync(path.join(dir, DOSSIER_ABRI, FICHIER_PLAN)); // plan absent → refus
+  const r = refuse(dir);
+  assert.equal(r.lance, false);
+  assert.equal(r.abriEnAttente.length, DESIGN_SKILL_NAMES.length * 2, 'le refus RAPPORTE ce qui reste coincé, il ne le garde pas pour lui');
+
+  const rap = rapportAutoskills(r, dir);
+  assert.equal(rap.failed.length, 1, '⛔ 4 skills du kit hors de leur place : ❌ et exitCode 1, pas un « Sauté » à 0');
+  for (const p of r.abriEnAttente) assert.ok(rap.failed[0].includes(path.relative(dir, p)), `le ❌ doit nommer ${p} :\n${rap.failed[0]}`);
+  assert.ok(rap.failed[0].includes('.claude/skills/<nom>') && rap.failed[0].includes('.agents/skills/<nom>'), 'et les DEUX destinations, parce qu\'il y a une entrée pour chacune');
+  assert.match(rap.failed[0], /NE relance PAS/, 'le conseil du bac ❌ ne marche pas ici — la ligne le corrige elle-même');
+  assert.equal(rap.skipped.length, 1, 'le scan tiers, lui, est bien « sauté » : il n\'a pas eu lieu');
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 // ── LA SECONDE COLLISION : `skills-lock.json`, LE MÊME FICHIER QUE CELUI DU KIT ───────────────
