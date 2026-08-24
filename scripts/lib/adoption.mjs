@@ -267,19 +267,42 @@ export async function runAdoptWizard(ask, on, out, { projectDir, entrees, assist
 //
 // Même discipline que `SUBSTITUTIONS_ADOPTE` : la phrase source est citée EN ENTIER, et son absence
 // JETTE. Une substitution qui rate en silence laisse le renvoi mort, et personne ne l'apprend.
-const GLOSSAIRE_DOMAINE_DE = 'Le kit les liste dans `docs/DOMAINS.md` et l\'IA **pioche selon le PRD**. *Ex. : PRD parle d\'« abonnement » → domaine paiement.*';
-const GLOSSAIRE_DOMAINE_VERS = 'Ton projet a déjà les siennes, et le kit n\'en pose aucun catalogue ici : c\'est `docs/ETAT-DES-LIEUX.md` qui relève ce qui tourne déjà. *Ex. : ton code encaisse des paiements → dis-le dans l\'état des lieux.*';
+// ⛔ IL Y EN A DEUX, ET LA PREMIÈRE VERSION N'EN VOYAIT QU'UNE. Ce fichier porte DEUX renvois vers
+// des chemins que le parcours adopté ne pose pas, à 17 lignes d'écart :
+//   · ligne 109 — `docs/DOMAINS.md` (le catalogue de domaines, jamais posé ici) ;
+//   · ligne 92  — `ai-context/` (« Le kit en télécharge pour ta stack ») : il n'y a pas de stack,
+//     et depuis le correctif de `kit-owned.mjs` ce dossier n'est posé NI au scaffold NI au refresh.
+// D'où une TABLE plutôt qu'une paire de constantes : une entrée par renvoi, et chacune JETTE si sa
+// phrase source a bougé. Un troisième renvoi ajouté au glossaire n'aura qu'une ligne à écrire ici —
+// mais rien ne le RÉCLAMERA : c'est `renvois-morts.test.mjs`, sur un `--adopt` réel, qui tient ce
+// bout-là. Ici on garantit seulement qu'une adaptation déclarée ne rate jamais en silence.
+const SUBSTITUTIONS_GLOSSAIRE = [
+  {
+    quoi: 'docs/DOMAINS.md',
+    de: 'Le kit les liste dans `docs/DOMAINS.md` et l\'IA **pioche selon le PRD**. *Ex. : PRD parle d\'« abonnement » → domaine paiement.*',
+    vers: 'Ton projet a déjà les siennes, et le kit n\'en pose aucun catalogue ici : c\'est `docs/ETAT-DES-LIEUX.md` qui relève ce qui tourne déjà. *Ex. : ton code encaisse des paiements → dis-le dans l\'état des lieux.*',
+  },
+  {
+    quoi: 'ai-context/',
+    de: 'Le kit en télécharge pour ta stack dans `ai-context/`.',
+    vers: 'Ici, le kit ne revendique aucune stack : il n\'en télécharge aucun et ne pose pas de dossier `ai-context/` — donne toi-même à ton IA les `llms.txt` de tes outils.',
+  },
+];
 
 export function adapterGlossaireAdopte(texte) {
-  if (!texte.includes(GLOSSAIRE_DOMAINE_DE)) {
-    throw new Error([
-      'guides/glossaire.md : la phrase à adapter pour un projet adopté a changé — introuvable :',
-      `  « ${GLOSSAIRE_DOMAINE_DE.slice(0, 60)}… »`,
-      '',
-      'Sans adaptation, le glossaire d\'un projet adopté renvoie à `docs/DOMAINS.md`, que le',
-      'parcours ne pose pas — et c\'est `/help` qui y mène. Mets à jour GLOSSAIRE_DOMAINE_DE',
-      '(scripts/lib/adoption.mjs).',
-    ].join('\n'));
+  let out = texte;
+  for (const { quoi, de, vers } of SUBSTITUTIONS_GLOSSAIRE) {
+    if (!out.includes(de)) {
+      throw new Error([
+        `guides/glossaire.md : la phrase à adapter pour un projet adopté a changé — introuvable (renvoi « ${quoi} ») :`,
+        `  « ${de.slice(0, 60)}… »`,
+        '',
+        `Sans adaptation, le glossaire d'un projet adopté renvoie à \`${quoi}\`, que le parcours ne`,
+        'pose pas — et c\'est `/help` qui y mène. Mets à jour SUBSTITUTIONS_GLOSSAIRE',
+        '(scripts/lib/adoption.mjs).',
+      ].join('\n'));
+    }
+    out = out.replace(de, vers);
   }
-  return texte.replace(GLOSSAIRE_DOMAINE_DE, GLOSSAIRE_DOMAINE_VERS);
+  return out;
 }

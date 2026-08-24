@@ -966,10 +966,31 @@ test('adoption — si la phrase source du glossaire bouge, l\'adaptation JETTE a
     assert.match(e.message, /DOMAINS\.md/, 'le message doit nommer le renvoi qui redeviendrait mort');
     assert.match(e.message, /adoption\.mjs/, 'et dire où le réparer');
   }
-  // Le témoin : sur le fichier RÉEL, la phrase est là et l'adaptation la trouve.
+  // Le témoin : sur le fichier RÉEL, les phrases sont là et l'adaptation les trouve.
   const reel = fs.readFileSync(path.resolve('guides/glossaire.md'), 'utf8');
-  assert.doesNotMatch(adapterGlossaireAdopte(reel), /docs\/DOMAINS\.md/,
-    'montage : sur la source réelle, l\'adaptation doit bel et bien retirer le renvoi');
+  const adapte = adapterGlossaireAdopte(reel);
+  // ⛔ DEUX RENVOIS, PAS UN. Le glossaire en portait un second — « Le kit en télécharge pour ta
+  // stack dans `ai-context/` » — 17 lignes au-dessus du premier. Sur un projet adopté il n'y a pas
+  // de stack, et `ai-context/` n'existe NI au scaffold NI au refresh (kit-owned.mjs) : c'est le
+  // jumeau exact de `docs/DOMAINS.md`, dans le fichier même que cette fonction existe pour nettoyer.
+  // ⛔ CE QU'ON EXIGE : que la PROMESSE disparaisse, pas le mot. Le texte de remplacement nomme
+  // légitimement `ai-context/` pour dire qu'il n'y en a pas — un `!includes('ai-context/')` ferait
+  // rougir la bonne réparation. C'est donc la PHRASE SOURCE, entière, qu'on exige absente.
+  for (const [quoi, promesse] of [
+    ['docs/DOMAINS.md', 'Le kit les liste dans `docs/DOMAINS.md`'],
+    ['ai-context/', 'Le kit en télécharge pour ta stack dans `ai-context/`.'],
+  ]) {
+    assert.ok(reel.includes(promesse), `montage : la promesse « ${promesse} » doit bien être dans la source, sinon ce contrôle est vide`);
+    assert.ok(!adapte.includes(promesse), `l'adaptation laisse la promesse « ${promesse} » dans le glossaire d'un projet adopté, qui ne pose jamais \`${quoi}\``);
+  }
+  // Et `docs/DOMAINS.md` doit disparaître ENTIÈREMENT : rien, dans un projet adopté, n'a de raison
+  // de nommer un catalogue qui n'existe pas. (`ai-context/`, lui, est nommé pour être nié.)
+  assert.ok(!adapte.includes('docs/DOMAINS.md'), 'le chemin `docs/DOMAINS.md` survit quelque part dans le glossaire adapté');
+  // Et chacune JETTE pour elle-même : un texte qui ne porte QUE la première phrase ne doit pas
+  // passer pour adapté — c'est exactement l'état d'avant, où la seconde n'existait pas.
+  const quePremiere = '# Glossaire\n\n- Le kit les liste dans `docs/DOMAINS.md` et l\'IA **pioche selon le PRD**. *Ex. : PRD parle d\'« abonnement » → domaine paiement.*\n';
+  assert.throws(() => adapterGlossaireAdopte(quePremiere), /ai-context/,
+    'une seule des deux phrases trouvées doit JETER en nommant celle qui manque');
 });
 
 test('parité neuf — la FORME de docs/A-FAIRE.md est gardée, pas seulement son contenu', () => {
@@ -1272,6 +1293,19 @@ test('T9 — le verdict de `/doctor` devient atteignable par un projet adopté, 
     assert.ok(conditionAdoptee(i11), `${rel} : l'item 11 doit dire COMMENT reconnaître un projet adopté (\`.vibecoding.json\` porte \`"stack": "aucune"\`) — il n'y a pas de skill de STACK là-bas`);
     assert.match(i11, /choix, pas un ✗/, `${rel} : un skill de stack absent par conception ne doit pas bloquer le verdict`);
 
+    // ⛔ ET IL NE DOIT PAS AFFIRMER DU FAUX. Une 1re version disait « `docs/A-FAIRE.md` n'a pas de
+    // section Skills, le wizard les ayant posés lui-même ». Faux deux fois : `sousSection('Design')`
+    // et `sousSection('Skills du crew…')` sont INCONDITIONNELLES (setup-ai.mjs), et sous
+    // `--no-skills` elles portent les cases `- [ ]` qui sont la SEULE réparation qui marche. L'item
+    // niait la réparation qu'il aurait dû prescrire. On juge donc contre le rendu RÉEL, pas contre
+    // une conviction : ce que `renderSetupAi` produit pour `aucune` décide.
+    const afaireAdopte = afaire(STACK_AUCUNE, 'claude-code', false);
+    const sectionsSkills = afaireAdopte.split('\n').filter((l) => /^## .*(Skills|Design)/.test(l));
+    assert.ok(sectionsSkills.length >= 2, `montage : le \`docs/A-FAIRE.md\` d'un projet adopté doit bien porter ses sections de skills — trouvé : ${sectionsSkills.join(' | ') || '(aucune)'}`);
+    assert.ok(afaireAdopte.includes('- [ ] `npx'), 'montage : sous `--no-skills`, ces sections portent bien des cases `- [ ]` — ce sont elles, la réparation');
+    assert.ok(!/n'a pas de section Skills/.test(i11), `${rel} : l'item 11 affirme que \`docs/A-FAIRE.md\` n'a pas de section Skills — le rendu réel en porte ${sectionsSkills.length} : ${sectionsSkills.join(' | ')}`);
+    assert.match(i11, /docs\/A-FAIRE\.md/, `${rel} : l'item 11 doit renvoyer à \`docs/A-FAIRE.md\` — c'est là que sont les commandes qui réparent`);
+
     // ⛔ L'ABRI, ET LA CONTRAINTE QUI DÉCIDE DE SA FORMULATION — les deux tiennent ensemble, donc
     // elles sont jugées ensemble. Un abri coincé (`autoskills.mjs`) laisse les 4 skills design
     // HORS de `.claude/skills/`, et il porte un `.gitignore` à `*` : `git status` ne le montre
@@ -1361,5 +1395,107 @@ test('T10 — `--refresh` sur un projet adopté : glossaire adapté, et aucun `a
       `le refresh a créé \`ai-context/\` : ${fs.existsSync(path.join(dir, 'ai-context')) ? fs.readdirSync(path.join(dir, 'ai-context')).join(', ') : ''} — un dossier de plus dans le dépôt de l'utilisateur, avec un README qui promet des fichiers absents`);
     // Montage : le refresh a bien AGI (sans ça, les trois assertions ci-dessus sont vraies à vide).
     assert.ok(changed.length > 0, 'montage : ce refresh n\'a rien régénéré du tout');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── T11 — CE QUI COMPTE LES EXCEPTIONS, AU LIEU DE LES POSER À LA MAIN ────────────────────────
+//
+// Le défaut trouvé en revue n'était pas « une ligne oubliée » : l'item 10 a QUATRE sous-puces,
+// trois avaient reçu leur exception et la quatrième — les scripts `package.json` — refermait le
+// verdict à elle seule. Rien ne comptait. Une 5ᵉ sous-puce ajoutée demain repasserait par le même
+// trou.
+//
+// ON PART DONC DE LA SOURCE, PAS DU TEXTE. `resolveStackManifest('aucune')` (matrix.mjs) rend ses
+// SEPT champs VIDES : tout ce que `/doctor` exige et qui provient de l'un d'eux est insatisfaisable
+// sur un projet adopté — par construction, pas par accident. Chaque champ doit donc être ici soit
+// rattaché à la ligne de `/doctor` qui le contrôle (et cette ligne porte son exception), soit rangé
+// dans `SANS_LIGNE` avec son motif. Un 8ᵉ champ ajouté à `STACKS` fera échouer ce test tant que
+// personne n'aura tranché — c'est ça, compter.
+//
+// CE QU'IL NE GARANTIT PAS, mesuré en mutation : il juge la PRÉSENCE de deux marques (la condition
+// dans l'item, « choix, pas un ✗ » sur la ligne), pas le sens de la phrase autour. Réécrire
+// « **Sauf sur un projet adopté** » en « **Sur les 4 stacks** » en gardant les deux marques passe —
+// la ligne devient incohérente et le test reste vert. Aucun ensemble fermé de motifs ne caractérise
+// « cette phrase française scope correctement une exception » : c'est le plafond d'un garde sur de
+// la prose, pas un correctif oublié. La relecture reste le filet sur ce cas-là.
+test('T11 — les 7 champs du manifeste de stack sont comptés : chacun a sa ligne de /doctor exemptée, ou son motif', () => {
+  const manifeste = resolveStackManifest(STACK_AUCUNE, 'claude-code');
+  const vide = (v) => (Array.isArray(v) ? v.length === 0
+    : v && typeof v === 'object' ? Object.values(v).every(vide)
+      : !v);
+  // MONTAGE : si un champ cessait d'être vide, la déduction ci-dessus tomberait — et le test
+  // deviendrait une formalité au lieu d'un garde.
+  for (const [k, v] of Object.entries(manifeste)) {
+    assert.ok(vide(v), `montage : le champ « ${k} » du manifeste \`aucune\` n'est plus vide — la carte de ce test est à revoir`);
+  }
+
+  // Le champ → le motif qui reconnaît la ligne de `/doctor` qui l'exige.
+  const CONTROLE_PAR = {
+    mcp: /serveurs MCP de la stack/,        // item 10, 1re sous-puce (l'item 17 est tenu par T9)
+    scripts: /Scripts `package\.json`/,     // item 10, 4e sous-puce — celle qui manquait
+    skills: /^11\. \*\*Skills installés/,   // item 11
+  };
+  // …et ceux que `/doctor` ne contrôle nulle part. Le motif est écrit, pas sous-entendu : c'est lui
+  // qu'on relit le jour où quelqu'un ajoute l'item correspondant.
+  const SANS_LIGNE = {
+    plugins: 'aucun item ne cherche un plugin de STACK — l\'item 13 ne vérifie que superpowers, qui est universel',
+    checks: 'la sous-puce « Câblage checks » ne contrôle que la PRÉSENCE du fichier de config de l\'assistant, que ce parcours pose (mesuré sur un scaffold réel)',
+    rules: 'les règles de stack ne sont pas livrées sur `aucune` et aucun item ne les cherche',
+    domains: 'le catalogue de domaines n\'est pas posé sur `aucune` et aucun item ne le cherche',
+  };
+  const nonTranches = Object.keys(manifeste).filter((k) => !(k in CONTROLE_PAR) && !(k in SANS_LIGNE));
+  assert.deepEqual(nonTranches, [], `champ(s) du manifeste de stack ni rattaché(s) à une ligne de /doctor, ni justifié(s) : ${nonTranches.join(', ')}.\n`
+    + 'Un champ vide sur `aucune` que /doctor exige quand même referme le verdict — ajoute-le à CONTROLE_PAR (avec son exception dans doctor.md) ou à SANS_LIGNE (avec son motif).');
+
+  for (const rel of ['templates/commands/doctor.md', 'cursor-plugin/commands/doctor.md']) {
+    const lignes = fs.readFileSync(path.resolve(rel), 'utf8').split('\n');
+    const plage = Number(lignes.join('\n').match(/de 1 à \*{0,2}(\d+)/)?.[1]);
+    assert.ok(plage, `${rel} : plage bloquante illisible`);
+    // Une sous-puce ne porte pas son numéro : elle hérite de l'item ouvert au-dessus d'elle. Et
+    // c'est l'ITEM ENTIER (son en-tête + ses sous-puces) qui doit dire comment reconnaître un
+    // projet adopté — le dire une fois en tête vaut mieux que quatre fois de suite —, tandis que
+    // l'exception elle-même (« choix, pas un ✗ ») doit être sur la LIGNE exacte : c'est la ligne
+    // qu'on lit quand on coche, et c'est une ligne, pas un item, qui refermait le verdict.
+    const numeroDe = (i) => {
+      for (let k = i; k >= 0; k--) { const m = lignes[k].match(/^(\d+)\. /); if (m) return Number(m[1]); }
+      return null;
+    };
+    const blocDeLItem = (n) => {
+      const debut = lignes.findIndex((l) => l.startsWith(`${n}. `));
+      let fin = debut + 1;
+      while (fin < lignes.length && !/^\d+\. /.test(lignes[fin])) fin++;
+      return lignes.slice(debut, fin).join('\n');
+    };
+    for (const [champ, motif] of Object.entries(CONTROLE_PAR)) {
+      const i = lignes.findIndex((l) => motif.test(l));
+      assert.ok(i >= 0, `${rel} : la ligne qui contrôle « ${champ} » a disparu (motif ${motif})`);
+      const ligne = lignes[i], n = numeroDe(i);
+      // Hors de la plage, elle ne bloquerait rien — et ce test n'aurait rien à garder.
+      assert.ok(n && n <= plage, `${rel} : la ligne de « ${champ} » est à l'item ${n}, hors de la plage bloquante « de 1 à ${plage} »`);
+      const bloc = blocDeLItem(n);
+      assert.ok(bloc.includes('.vibecoding.json') && bloc.includes('"stack": "aucune"'),
+        `${rel} : item ${n} — rien n'y dit COMMENT reconnaître un projet adopté (\`.vibecoding.json\` porte \`"stack": "aucune"\`), et il exige « ${champ} », qui y est vide`);
+      assert.match(ligne, /choix, pas un ✗/,
+        `${rel} : item ${n} — « ${champ} » est VIDE sur \`aucune\` (resolveStackManifest) et cette ligne l'exige quand même sans exception : le ✅ est inatteignable. « ${ligne.trim().slice(0, 100)}… »`);
+    }
+  }
+
+  // ── ET LA MOITIÉ EMPIRIQUE : le ✅ doit être atteint SUR UN VRAI PROJET, pas seulement promis.
+  // La phrase présente ne prouve rien tant que le `package.json` de l'utilisateur peut avoir été
+  // complété dans son dos — c'est la décision 7 de la spec qui est en jeu, pas une tournure.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-t11-'));
+  try {
+    const pkg = { name: 'app-a-flo', private: true, scripts: { dev: 'next dev', build: 'next build' } };
+    const avant = `${JSON.stringify(pkg, null, 2)}\n`;
+    fs.writeFileSync(path.join(dir, 'package.json'), avant);
+    fs.writeFileSync(path.join(dir, 'index.js'), '// du code qui existe déjà\n');
+    execFileSync('git', ['-C', dir, 'init', '-q', '-b', 'main'], { stdio: 'pipe' });
+    execFileSync(process.execPath, [path.resolve('scripts/setup.mjs'), '--stack', STACK_AUCUNE,
+      '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
+    assert.ok(fs.existsSync(path.join(dir, '.vibecoding.json')), 'montage : le scaffold adopté a bien tourné');
+    const apres = fs.readFileSync(path.join(dir, 'package.json'), 'utf8');
+    assert.equal(apres, avant, 'le kit a modifié le `package.json` de l\'utilisateur sur un projet adopté (décision 7 de la spec)');
+    const scripts = JSON.parse(apres).scripts;
+    assert.ok(!('typecheck' in scripts), `montage : \`typecheck\` ne doit PAS être là — c'est le cas que la sous-puce doit exempter (scripts : ${Object.keys(scripts).join(', ')})`);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
