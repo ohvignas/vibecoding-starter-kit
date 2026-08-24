@@ -18,7 +18,7 @@ import { toCursorAgent } from './lib/agent-frontmatter.mjs';
 import { renderAgentsFile } from './lib/agents-file.mjs';
 import { ensureDir, copyIfAbsent, copyDirIfAbsent, writeIfAbsent } from './lib/fsops.mjs';
 import { cloneRepo, pickFromClone, summarizeClone, installCaveman, installSkills } from './lib/external.mjs';
-import { AUTOSKILLS, DOSSIER_ABRI, lancerAutoskills } from './lib/autoskills.mjs';
+import { AUTOSKILLS, lancerAutoskills, rapportAutoskills } from './lib/autoskills.mjs';
 import { initProjectGit } from './lib/gitinit.mjs';
 import { formatReport } from './lib/report.mjs';
 import { meetsNode, ensureGit } from './lib/prereqs.mjs';
@@ -590,18 +590,13 @@ async function main() {
     // Dans ce bloc, donc jamais sous `--no-skills` — le drapeau vaut aussi pour les skills tiers.
     if (accordAutoskills) {
       console.log(`\nScan ${AUTOSKILLS.commande} (outil tiers de ${AUTOSKILLS.auteur}, licence ${AUTOSKILLS.licence}) — dry-run d'abord…`);
-      const a = lancerAutoskills({ projectDir, assistant: args.assistant });
-      // Le rapport re-nomme l'auteur et la licence : la ligne ✅ est la trace qui restera à
-      // l'écran, et elle ne doit pas laisser croire que ces skills viennent du kit.
-      // « remis en place » n'est écrit que s'il y avait quelque chose à remettre : sur un run où
-      // `npx skills add` a échoué, le kit n'avait AUCUN skill design sur disque, et le dire quand
-      // même serait rassurer sur une protection qui n'a rien eu à protéger.
-      if (a.lance) done.push(`skills tiers : ${AUTOSKILLS.commande} (${AUTOSKILLS.auteur}, ${AUTOSKILLS.licence}) — NON relus par le kit${a.proteges.length ? ` ; tes ${a.proteges.length} skills design du kit ont été remis en place` : ''}`);
-      else cloneSkipped.push({ name: `skills tiers : ${AUTOSKILLS.commande}`, reason: `non lancé (${a.echec}) — optionnel, rien n'a été installé et tes skills design sont intacts` });
-      // Un skill du kit que la restauration n'a pas pu remettre n'existe plus qu'à l'abri : il est
-      // toujours là, mais pas à sa place. Le taire laisserait `/doctor` item 11 le déclarer absent
-      // sans que personne sache où il est passé — donc ❌, avec le chemin, pas un silence.
-      if (a.perdus?.length) failed.push(`skills design NON remis en place : ${a.perdus.join(', ')} — ils sont dans \`${DOSSIER_ABRI}/\`, déplace-les à la main`);
+      // Les trois lignes du rapport vivent dans `autoskills.mjs` : cette branche n'est atteinte que
+      // par un `--adopt` INTERACTIF où l'utilisateur a dit oui, donc aucun garde ne pouvait les
+      // lire ici — et c'est là que le ✅ s'est mis à contredire le ❌ imprimé deux lignes plus bas.
+      const rap = rapportAutoskills(lancerAutoskills({ projectDir, assistant: args.assistant }), projectDir);
+      done.push(...rap.done);
+      cloneSkipped.push(...rap.skipped);
+      failed.push(...rap.failed);
     }
   }
 

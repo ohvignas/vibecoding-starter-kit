@@ -6,6 +6,13 @@
 //   2. les 4 skills design du kit SURVIVENT au run — `installer.ts` fait un `rmSync` récursif sur
 //      `.claude/skills/<nom>` et `frontend-design` est dans les deux registres ;
 //   3. le `--dry-run` passe D'ABORD, et un dry-run qui échoue n'installe rien.
+//   4. LA FENÊTRE D'INTERRUPTION. Pendant les deux passes `npx` — « 1-2 minutes de téléchargement »
+//      selon ce module —, l'abri est le SEUL endroit où vivent ces 4 skills, et `wireSigint` est
+//      déjà mort (`rl.close()` en `finally`, setup.mjs). Un Ctrl-C là est le cas ORDINAIRE : ce que
+//      le run SUIVANT fait de l'abri qu'il trouve décide si les skills existent encore.
+//   5. ET CE QUE LE RAPPORT EN DIT. Un ✅ « tes 4 skills design ont été remis en place » imprimé
+//      au-dessus du ❌ « NON remis en place » est pire qu'un silence : il rassure exactement là où
+//      il devait alerter.
 //
 // ⛔ AUCUN APPEL RÉSEAU, ET AUCUNE INSTALLATION D'AUTOSKILLS. Ce qu'on teste est que le kit le
 // PROPOSE et l'ENCADRE correctement, pas l'outil lui-même. Le run est donc toujours un faux
@@ -19,9 +26,9 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
-  AUTOSKILLS, AGENTS_AUTOSKILLS, ETAPES_AUTOSKILLS, DOSSIER_ABRI,
-  supporteAutoskills, renderProposeAutoskills, cheminsSkill,
-  ecarterSkillsDesign, restaurerSkillsDesign, lancerAutoskills,
+  AUTOSKILLS, AGENTS_AUTOSKILLS, ETAPES_AUTOSKILLS, DOSSIER_ABRI, FICHIER_PLAN,
+  supporteAutoskills, renderProposeAutoskills, cheminsSkill, contenuAbri,
+  ecarterSkillsDesign, restaurerSkillsDesign, lancerAutoskills, rapportAutoskills,
 } from './autoskills.mjs';
 import { runAdoptWizard } from './adoption.mjs';
 import { DESIGN_SKILL_NAMES } from './matrix.mjs';
@@ -289,6 +296,205 @@ test('T9 — sous un assistant non supporté, RIEN n\'est lancé et rien n\'est 
   assert.ok(!fs.existsSync(path.join(dir, DOSSIER_ABRI)));
   assert.ok(fs.lstatSync(path.join(dir, '.claude/skills/frontend-design')).isSymbolicLink(), 'rien n\'a bougé');
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ── GARDE 4 — LA FENÊTRE D'INTERRUPTION : UN ABRI TROUVÉ NE DISPARAÎT JAMAIS ──────────────────
+//
+// ⛔ CE QUE CES GARDES FERMENT, ET CE QUI L'AVAIT OUVERT. La version d'avant ouvrait `ecarter…`
+// par un `fs.rmSync(abri)` commenté « reste d'un run interrompu : jamais réutilisé ». Or après une
+// interruption, l'abri est le SEUL exemplaire des 4 skills : ce `rmSync` était la perte définitive.
+// Et quand la restauration avait échoué, le rapport disait « ils sont dans l'abri, déplace-les à la
+// main » — puis le run suivant supprimait ce que le kit venait de désigner.
+//
+// L'état de départ n'est pas fabriqué à la main : c'est `ecarterSkillsDesign` LUI-MÊME qui le
+// produit, et s'arrêter là est exactement ce que fait un Ctrl-C pendant les deux passes `npx`.
+const runInterrompu = (dir) => ecarterSkillsDesign(dir);
+const laBas = (p) => { try { fs.lstatSync(p); return true; } catch { return false; } };
+
+test('T9 — un run interrompu laisse ses skills à l\'abri : le suivant les REPREND, il ne les efface pas', () => {
+  // MUTATION QUI LE FAIT ROUGIR : remettre `fs.rmSync(abri, { recursive: true, force: true })` en
+  // tête d'`ecarterSkillsDesign` → les 4 skills n'existent plus nulle part, et la boucle de contenu
+  // lit `CONTENU-AUTOSKILLS-REGISTRE` (ce qu'autoskills a posé à leur place) au lieu de `KIT:<nom>`.
+  const dir = projetAvecSkillsDuKit();
+  runInterrompu(dir);
+  // Montage : après l'interruption, plus RIEN à sa place. C'est ce qui rend l'abri irremplaçable.
+  for (const nom of DESIGN_SKILL_NAMES) for (const c of cheminsSkill(dir, nom)) assert.ok(!laBas(c), `montage : ${c} doit être vide après l'interruption`);
+  assert.equal(contenuAbri(path.join(dir, DOSSIER_ABRI)).length, DESIGN_SKILL_NAMES.length * 2, 'montage : les 8 chemins sont à l\'abri');
+
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, DESIGN_SKILL_NAMES) });
+  assert.equal(r.lance, true, `le run doit aboutir : ${r.echec}`);
+  assert.deepEqual([...r.repris].sort(), [...DESIGN_SKILL_NAMES].sort(), 'et le rapport doit NOMMER ce qu\'il a récupéré : l\'utilisateur les a vus disparaître');
+  for (const nom of DESIGN_SKILL_NAMES) {
+    for (const c of cheminsSkill(dir, nom)) {
+      assert.equal(fs.readFileSync(path.join(c, 'SKILL.md'), 'utf8'), `KIT:${nom}`, `⛔ ${c} : le skill du kit a été perdu à la reprise`);
+    }
+  }
+  assert.ok(fs.lstatSync(path.join(dir, '.claude/skills/frontend-design')).isSymbolicLink(), 'le skill lié revient LIÉ, même par la reprise');
+  assert.ok(!fs.existsSync(path.join(dir, DOSSIER_ABRI)), 'et l\'abri repris disparaît : il ne reste pas dans le dépôt de l\'utilisateur');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('T9 — un abri qu\'on ne sait pas LIRE fait REFUSER le run, se nomme, et reste intact', () => {
+  // Interruption pile avant la première écriture du plan, ou plan corrompu : on ne sait pas d'où
+  // vient ce qui est là. ⛔ Ce qu'on ne comprend pas, on n'y touche pas — et on le DIT, parce que
+  // c'est le seul endroit où les skills existent encore.
+  // MUTATION QUI LE FAIT ROUGIR : le `rmSync` aveugle en tête d'`ecarterSkillsDesign` (l'abri est
+  // vide → `contenuAbri` ne rend plus rien), ou retirer le `if (abri.refus) return` de
+  // `lancerAutoskills` (le journal voit deux passes npx, et un second abri s'empile sur le premier).
+  const dir = projetAvecSkillsDuKit();
+  runInterrompu(dir);
+  const abri = path.join(dir, DOSSIER_ABRI);
+  fs.rmSync(path.join(abri, FICHIER_PLAN));
+  const avant = contenuAbri(abri);
+  assert.equal(avant.length, DESIGN_SKILL_NAMES.length * 2, 'montage');
+
+  const journal = [];
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, DESIGN_SKILL_NAMES, journal) });
+  assert.equal(r.lance, false, 'on ne lance RIEN par-dessus un abri qu\'on ne comprend pas');
+  assert.deepEqual(journal, [], 'pas une seule passe npx : elle écarterait une seconde fois des skills déjà absents');
+  assert.ok(r.echec.includes(DOSSIER_ABRI), 'le refus NOMME le dossier — sinon l\'utilisateur ne sait pas où chercher');
+  for (const e of avant) assert.ok(r.echec.includes(e), `le refus doit nommer ce qui reste : ${e}`);
+  assert.deepEqual(contenuAbri(abri), avant, '⛔ l\'abri est INTACT : c\'est le seul exemplaire de ces skills');
+  const uneEntree = avant.find((p) => p.endsWith('brand-guidelines'));
+  assert.equal(fs.readFileSync(path.join(uneEntree, 'SKILL.md'), 'utf8'), 'KIT:brand-guidelines', 'et son contenu n\'a pas bougé d\'un octet');
+  for (const nom of DESIGN_SKILL_NAMES) for (const c of cheminsSkill(dir, nom)) assert.ok(!laBas(c), `${c} : rien n'a été réécrit à leur place non plus`);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('T9 — une reprise PARTIELLE ne fait pas détruire, au run d\'après, ce qu\'elle vient de remettre', () => {
+  // ⛔ LE TROU DE LA REPRISE ELLE-MÊME, MESURÉ SUR DEUX RUNS CONSÉCUTIFS. `ecarterSkillsDesign`
+  // réécrit son plan APRÈS chaque déplacement : une interruption entre le `rename` et l'écriture
+  // laisse un abri dont le plan ne cite pas tout. La reprise remet alors ce qu'elle sait, REFUSE à
+  // cause du reste — et laisse sur le disque un plan périmé qui nomme des entrées DÉJÀ rentrées.
+  // Au run suivant, l'ordre « rmSync(origine) puis renameSync(abri) » supprimait le skill revenu
+  // AVANT de découvrir qu'il n'avait plus rien à mettre à sa place : la perte définitive revenait
+  // par la porte du correctif.
+  // MUTATION QUI LE FAIT ROUGIR : retirer le `if (!existe(e.abri))` de `restaurerSkillsDesign`.
+  const dir = projetAvecSkillsDuKit();
+  const interrompu = runInterrompu(dir);
+  const abri = path.join(dir, DOSSIER_ABRI);
+  // L'interruption pile entre un déplacement et l'écriture du plan : 8 entrées à l'abri, 4 au plan.
+  const partiel = interrompu.ecartes.slice(0, 4);
+  fs.writeFileSync(path.join(abri, FICHIER_PLAN), `${JSON.stringify({ ecartes: partiel }, null, 2)}\n`);
+  const jamais = () => { throw new Error('aucune passe npx ne doit partir ici'); };
+
+  // Run A — il remet les 4 qu'il sait lire, et refuse à cause des 4 que son plan ne mentionne pas.
+  const a = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: jamais });
+  assert.equal(a.lance, false);
+  assert.ok(a.echec.includes(DOSSIER_ABRI), `le refus doit être celui de l'abri, pas celui du run : ${a.echec}`);
+  assert.deepEqual([...a.repris].sort(), [...new Set(partiel.map((e) => e.nom))].sort(), 'ce qu\'il a su remettre est nommé');
+  for (const e of partiel) assert.ok(laBas(e.origine), `montage : ${e.origine} doit être revenu au run A`);
+
+  // Run B — sans une seule manipulation à la main. Le plan est périmé : ses 4 entrées sont chez
+  // elles, leurs chemins d'abri n'existent plus.
+  const b = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: jamais });
+  assert.equal(b.lance, false, 'le reste hors plan fait toujours refuser — c\'est le comportement voulu');
+  for (const e of partiel) {
+    assert.ok(laBas(e.origine), `⛔ ${e.origine} : le run suivant a DÉTRUIT ce que la reprise avait remis`);
+    assert.equal(fs.readFileSync(path.join(e.origine, 'SKILL.md'), 'utf8'), `KIT:${e.nom}`, 'et son contenu est celui du kit, pas un dossier vide');
+  }
+  assert.deepEqual(b.repris, [], 'rien n\'a été « récupéré » au run B : tout ce que son plan cite était déjà chez soi');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('T9 — un plan qui nomme des chemins HORS du projet ne fait rien effacer dehors', () => {
+  // ⛔ LA REPRISE OBÉIT À UN FICHIER TROUVÉ SUR LE DISQUE, et cette obéissance déclenche un `rmSync`
+  // RÉCURSIF sur chaque `origine`. Un plan périmé (projet copié ailleurs avec son abri, chemins
+  // absolus d'un autre dossier) ou édité ferait donc effacer ailleurs — et `renameSync` déplacerait
+  // ensuite l'entrée d'abri à cet endroit. Chaque entrée doit sortir de CET abri et rentrer dans CE
+  // projet, sinon le plan entier est illisible.
+  // MUTATION QUI LE FAIT ROUGIR : retirer les contrôles `sous(...)` de `reprendreAbri` → le plan est
+  // accepté, `these.txt` disparaît.
+  const dir = projetAvecSkillsDuKit();
+  const interrompu = runInterrompu(dir);
+  const abri = path.join(dir, DOSSIER_ABRI);
+  const dehors = tmp('t9-dehors-');
+  const victime = path.join(dehors, 'documents');
+  fs.mkdirSync(victime, { recursive: true });
+  fs.writeFileSync(path.join(victime, 'these.txt'), 'DIX ANS DE TRAVAIL');
+  // L'entrée d'abri, elle, est RÉELLE : c'est ce qui rend la mutation destructrice au lieu d'échouer.
+  fs.writeFileSync(path.join(abri, FICHIER_PLAN), `${JSON.stringify({ ecartes: [{ ...interrompu.ecartes[0], origine: victime }] }, null, 2)}\n`);
+
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: () => { throw new Error('aucune passe npx ne doit partir ici'); } });
+  assert.equal(r.lance, false);
+  assert.ok(r.echec.includes('hors de ce projet'), `le refus doit nommer la raison : ${r.echec}`);
+  assert.equal(fs.readFileSync(path.join(victime, 'these.txt'), 'utf8'), 'DIX ANS DE TRAVAIL', '⛔ un chemin hors projet, cité par un plan, a été effacé');
+  assert.equal(contenuAbri(abri).length, DESIGN_SKILL_NAMES.length * 2, 'et l\'abri n\'a pas bougé');
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.rmSync(dehors, { recursive: true, force: true });
+});
+
+// ── GARDE 5 — LE RAPPORT NE DIT PAS L'INVERSE DE CE QUI EST SUR LE DISQUE ─────────────────────
+
+// Une restauration qui ÉCHOUE. La cause importe peu (droits, disque plein, un chemin devenu autre
+// chose) : ce qui est mesuré est ce que le rapport dit ALORS. Ici le dossier natif est remplacé par
+// un FICHIER — `rmSync` sort en `ENOTDIR` (mesuré) et les 4 entrées `.claude/` restent coincées.
+const fauxAutoskillsQuiCasseLaRemise = (dir, journal = []) => {
+  const vrai = fauxAutoskills(dir, DESIGN_SKILL_NAMES, journal);
+  return (cmd, args, opts) => {
+    vrai(cmd, args, opts);
+    if (args.includes('--dry-run')) return;
+    fs.rmSync(path.join(dir, '.claude/skills'), { recursive: true, force: true });
+    fs.writeFileSync(path.join(dir, '.claude/skills'), 'PLUS UN DOSSIER');
+  };
+};
+
+test('T9 — le ✅ ne compte QUE ce qui est REVENU, et le ❌ dit quelle entrée d\'abri va où', () => {
+  // ⛔ LA LIGNE QUI MENTAIT AU PIRE MOMENT. Le ✅ comptait `proteges` — les skills SORTIS — donc il
+  // imprimait « tes 4 skills design du kit ont été remis en place » juste au-dessus de « ❌ skills
+  // design NON remis en place : … », sur un `.claude/skills` vide.
+  // MUTATIONS QUI LE FONT ROUGIR, une par assertion : `a.remis` → `a.proteges` dans
+  // `rapportAutoskills` ; retirer le filtre de `repris` par `perdus` dans `lancerAutoskills` ;
+  // `perdus.push(e.origine)` (au lieu de l'entrée entière) dans `restaurerSkillsDesign` ;
+  // `a.perdus.map((e) => e.nom)` dans la ligne ❌.
+  const dir = projetAvecSkillsDuKit();
+  runInterrompu(dir); // ce run-ci COMMENCE par une reprise : `repris` passe par le même filtre
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskillsQuiCasseLaRemise(dir) });
+
+  assert.equal(r.lance, true, 'les deux passes npx ont abouti : c\'est la REMISE qui a échoué');
+  assert.deepEqual([...r.proteges].sort(), [...DESIGN_SKILL_NAMES].sort(), 'les 4 sont bien SORTIS');
+  assert.equal(r.perdus.length, DESIGN_SKILL_NAMES.length, 'et leurs 4 chemins `.claude/` sont restés coincés à l\'abri');
+  assert.deepEqual(r.remis, [], '⛔ AUCUN n\'est « remis » : chacun a encore un chemin à l\'abri');
+  assert.deepEqual(r.repris, [], 'et « récupéré au démarrage » ne survit pas à « reperdu à l\'arrivée »');
+
+  const rap = rapportAutoskills(r, dir);
+  const vu = rap.done.join('\n');
+  assert.match(vu, new RegExp(`${AUTOSKILLS.commande} \\(${AUTOSKILLS.auteur}`), 'la ligne ✅ nomme toujours l\'outil tiers et son auteur…');
+  assert.doesNotMatch(vu, /ont été remis en place/, '⛔ …mais elle NE PROMET PAS une remise, au-dessus du ❌ qui dit l\'inverse');
+  assert.doesNotMatch(vu, /récupérés d'un run interrompu/, '…ni « récupéré » pour un skill reperdu depuis');
+
+  assert.equal(rap.failed.length, 1, 'et l\'échec, lui, est bien là — jamais un silence');
+  for (const e of r.perdus) {
+    // ACTIONNABLE : `<abri>/<i>/<nom> → <chemin d'origine>`. « ils sont dans l'abri » ne suffit pas :
+    // `frontend-design` a DEUX entrées, et rien dans leur nom ne dit laquelle va où.
+    assert.ok(rap.failed[0].includes(`${path.relative(dir, e.abri)} → ${path.relative(dir, e.origine)}`),
+      `le ❌ doit dire où déplacer ${e.abri} :\n${rap.failed[0]}`);
+    assert.ok(laBas(e.abri), '⛔ et le chemin cité doit VRAIMENT exister — sinon « déplace-le à la main » est une impasse');
+  }
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('T9 — sur un run qui va bien, le ✅ compte les 4 revenus et il n\'y a pas d\'❌', () => {
+  // Le témoin de l'assertion ci-dessus : sans lui, un `rapportAutoskills` qui ne dirait JAMAIS
+  // « remis en place » passerait pour correct.
+  // MUTATION QUI LE FAIT ROUGIR : supprimer la moitié « ; tes N skills design… » de la ligne ✅.
+  const dir = projetAvecSkillsDuKit();
+  const r = lancerAutoskills({ projectDir: dir, assistant: 'claude-code', run: fauxAutoskills(dir, DESIGN_SKILL_NAMES) });
+  const rap = rapportAutoskills(r, dir);
+  assert.deepEqual(rap.failed, [], 'rien n\'est coincé');
+  assert.match(rap.done.join('\n'), new RegExp(`tes ${DESIGN_SKILL_NAMES.length} skills design du kit ont été remis en place`));
+  assert.deepEqual(rap.skipped, []);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('T9 — un run non lancé part en « Sauté » et ne promet aucune remise', () => {
+  // MUTATION QUI LE FAIT ROUGIR : ranger l'échec dans `done` — l'écran dirait « ✅ skills tiers »
+  // pour un scan qui n'a jamais eu lieu.
+  const rap = rapportAutoskills({ lance: false, etapes: [], proteges: [], remis: [], perdus: [], repris: [], echec: 'codex n\'est pas dans l\'AGENT_FOLDER_MAP d\'autoskills' }, '/tmp/x');
+  assert.deepEqual(rap.done, []);
+  assert.deepEqual(rap.failed, []);
+  assert.equal(rap.skipped.length, 1);
+  assert.match(rap.skipped[0].reason, /AGENT_FOLDER_MAP/, 'la raison est celle qu\'on a mesurée, et elle reste dans le rapport');
 });
 
 // ── LA SECONDE COLLISION : `skills-lock.json`, LE MÊME FICHIER QUE CELUI DU KIT ───────────────

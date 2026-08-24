@@ -96,9 +96,74 @@ const existe = (p) => { try { fs.lstatSync(p); return true; } catch { return fal
 // disque externe). Le nom porte le mot « vibecoding » pour qu'un reste après crash se reconnaisse.
 export const DOSSIER_ABRI = '.vibecoding-autoskills-abri';
 
+// ⛔ LE PLAN, ET POURQUOI IL EXISTE. Pendant les deux passes `npx` — que ce module chiffre lui-même
+// à « 1-2 minutes de téléchargement » —, l'abri est le SEUL endroit où vivent les 4 skills design.
+// Un Ctrl-C là-dedans est le cas ORDINAIRE (un débutant qui annule un téléchargement tiers lent),
+// et `wireSigint` est déjà mort à cet instant (`rl.close()` en `finally`, setup.mjs) : personne ne
+// nettoie. La version d'avant ouvrait son écart par un `rmSync(abri)` « reste d'un run interrompu :
+// jamais réutilisé » — donc le run suivant DÉTRUISAIT les skills du run interrompu. Mesuré : après
+// une interruption, `.claude/skills` et `.agents/skills` vides, 8 entrées à l'abri, second run →
+// perte définitive. Pire encore quand la restauration avait échoué : le rapport disait « ils sont
+// dans l'abri, déplace-les à la main », et le run suivant supprimait ce qu'il venait de désigner.
+//
+// L'abri porte donc un PLAN qui dit, pour chaque entrée, d'où elle vient. Un abri trouvé au
+// démarrage est REPRIS (on remet ce qu'il contient) ; un abri qu'on ne sait pas lire FAIT REFUSER
+// le run, en se nommant. Ce qu'on ne comprend pas, on n'y touche pas — on ne le supprime jamais.
+export const FICHIER_PLAN = 'plan.json';
+
+// Ce que l'abri contient ENCORE, hors le plan : `<i>/<nom>`. Sert deux fois — pour ne supprimer
+// l'abri que s'il est vraiment vide, et pour nommer ce qui reste quand on refuse de partir.
+export function contenuAbri(abri) {
+  let ranges;
+  try { ranges = fs.readdirSync(abri).filter((n) => n !== FICHIER_PLAN).sort(); } catch { return []; }
+  const restant = [];
+  for (const r of ranges) {
+    let dedans = [];
+    try { dedans = fs.readdirSync(path.join(abri, r)); } catch { continue; }
+    for (const n of dedans) restant.push(path.join(abri, r, n));
+  }
+  return restant;
+}
+
+// LA REPRISE. Trois issues, et une seule supprime quelque chose :
+//   · pas d'abri            → rien à faire, le run peut partir ;
+//   · abri + plan lisible   → on REMET tout, l'abri disparaît, le run peut partir ;
+//   · abri illisible, ou une remise qui échoue, ou un reste hors plan → REFUS, l'abri est INTACT.
+export function reprendreAbri(projectDir) {
+  const abri = path.join(projectDir, DOSSIER_ABRI);
+  if (!existe(abri)) return { repris: [], refus: null };
+  // ⛔ UN PLAN NE FAIT PAS SUPPRIMER HORS DU PROJET. La reprise OBÉIT à un fichier trouvé sur le
+  // disque, et cette obéissance déclenche un `rmSync` RÉCURSIF sur chaque `origine`. Un plan qui
+  // nomme des chemins d'ailleurs — projet copié avec son abri, plan édité, chemins absolus périmés —
+  // ferait donc effacer ailleurs. Chaque entrée doit SORTIR DE CET ABRI et RENTRER DANS CE PROJET ;
+  // une seule qui déborde et le plan entier est traité comme illisible : on refuse, on ne touche à rien.
+  const sous = (racine, p) => { const r = path.relative(racine, p); return r !== '' && !r.startsWith('..') && !path.isAbsolute(r); };
+  let ecartes = null;
+  try {
+    const plan = JSON.parse(fs.readFileSync(path.join(abri, FICHIER_PLAN), 'utf8'));
+    if (Array.isArray(plan?.ecartes) && plan.ecartes.every((e) => e?.nom && sous(abri, e.abri) && sous(projectDir, e.origine) && !sous(abri, e.origine))) ecartes = plan.ecartes;
+  } catch { /* plan absent, illisible ou débordant : traité comme un refus, jamais comme une permission */ }
+  const nommer = (raison) => [
+    `${DOSSIER_ABRI}/ : ${raison}.`,
+    `Tes skills design du kit y sont peut-être encore — le kit n'y touche pas : ${contenuAbri(abri).join(', ') || '(vide)'}`,
+  ].join(' ');
+  if (!ecartes) return { repris: [], refus: nommer(`un run précédent a été interrompu et son \`${FICHIER_PLAN}\` est absent, illisible, ou nomme des chemins hors de ce projet`) };
+  const { remis, perdus } = restaurerSkillsDesign({ abri, ecartes });
+  // Des NOMS, uniques : chaque skill a deux chemins (le lien natif et le magasin `.agents/`), et le
+  // rapport parle de skills. La même forme dans les trois issues — un appelant ne doit pas avoir à
+  // deviner laquelle il tient pour savoir s'il faut dédoublonner.
+  const repris = [...new Set(remis)];
+  if (perdus.length) return { repris, refus: nommer('un run précédent a été interrompu et je n\'ai pas pu tout remettre en place') };
+  const restant = contenuAbri(abri);
+  if (restant.length) return { repris, refus: nommer('un run précédent a laissé un fichier que son plan ne mentionne pas') };
+  return { repris, refus: null };
+}
+
 export function ecarterSkillsDesign(projectDir, noms = DESIGN_SKILL_NAMES) {
   const abri = path.join(projectDir, DOSSIER_ABRI);
-  fs.rmSync(abri, { recursive: true, force: true }); // reste d'un run interrompu : jamais réutilisé
+  // ⛔ ON NE SUPPRIME PLUS UN ABRI TROUVÉ : on le REPREND, ou on refuse de partir. Voir ci-dessus.
+  const reprise = reprendreAbri(projectDir);
+  if (reprise.refus) return { abri, ecartes: [], noms: [], repris: reprise.repris, refus: reprise.refus };
   const ecartes = [];
   let i = 0;
   for (const nom of noms) {
@@ -110,9 +175,14 @@ export function ecarterSkillsDesign(projectDir, noms = DESIGN_SKILL_NAMES) {
       // `rename` déplace le LIEN, pas sa cible : un skill lié revient lié, vers la même cible.
       fs.renameSync(origine, path.join(range, nom));
       ecartes.push({ nom, origine, abri: path.join(range, nom) });
+      // Le plan est réécrit APRÈS chaque déplacement, jamais avant : une entrée annoncée mais non
+      // déplacée ferait échouer la reprise sur un fichier qui n'a jamais bougé. Et une entrée
+      // déplacée mais pas encore écrite est rattrapée par `contenuAbri` — qui fait refuser plutôt
+      // que supprimer. Les deux moitiés de la fenêtre penchent donc du côté qui ne perd rien.
+      fs.writeFileSync(path.join(abri, FICHIER_PLAN), `${JSON.stringify({ ecartes }, null, 2)}\n`);
     }
   }
-  return { abri, ecartes, noms: [...new Set(ecartes.map((e) => e.nom))] };
+  return { abri, ecartes, noms: [...new Set(ecartes.map((e) => e.nom))], repris: reprise.repris, refus: null };
 }
 
 // La remise en place. Ce qu'autoskills a posé à cet endroit est SUPPRIMÉ : c'est le sens du
@@ -125,14 +195,28 @@ export function ecarterSkillsDesign(projectDir, noms = DESIGN_SKILL_NAMES) {
 export function restaurerSkillsDesign({ abri, ecartes } = {}) {
   const remis = [], perdus = [];
   for (const e of ecartes ?? []) {
+    // ⛔ ON NE DÉTRUIT PAS `origine` AVANT D'AVOIR DE QUOI LE REMPLACER. Un plan de run interrompu
+    // peut nommer une entrée DÉJÀ rentrée : la reprise en remet 4, bute sur un reste hors plan et
+    // REFUSE — le plan cite toujours ces 4, dont les chemins d'abri n'existent plus. Au run suivant,
+    // l'ordre « rmSync(origine) puis renameSync(abri) » supprimait les 4 skills REVENUS pour échouer
+    // à la ligne d'après : la perte définitive que ce module ferme, rouverte par la porte de la
+    // reprise. Mesuré sur deux runs consécutifs, sans une seule manipulation à la main.
+    if (!existe(e.abri)) {
+      if (existe(e.origine)) continue; // déjà à sa place : rien à remettre — et surtout rien à casser
+      perdus.push(e); // ni à l'abri ni chez lui : une perte, et on la nomme plutôt que de la taire
+      continue;
+    }
     try {
       fs.rmSync(e.origine, { recursive: true, force: true });
       fs.mkdirSync(path.dirname(e.origine), { recursive: true });
       fs.renameSync(e.abri, e.origine);
       remis.push(e.nom);
-    } catch { perdus.push(e.origine); }
+    } catch { perdus.push(e); } // l'ENTRÉE entière : sans `origine`, « déplace-le à la main » n'est pas actionnable
   }
-  if (abri && !perdus.length) fs.rmSync(abri, { recursive: true, force: true });
+  // ⛔ L'ABRI NE DISPARAÎT QUE S'IL EST VIDE, plan mis à part. Un `<i>/<nom>` que le plan ne
+  // mentionne pas (interruption entre le déplacement et l'écriture du plan) serait sinon supprimé
+  // sans que personne ne l'ait jamais nommé.
+  if (abri && !perdus.length && !contenuAbri(abri).length) fs.rmSync(abri, { recursive: true, force: true });
   return { remis, perdus };
 }
 
@@ -160,9 +244,12 @@ export function renderProposeAutoskills(on) {
 export function lancerAutoskills({ projectDir, assistant, run = defaultRun, noms }) {
   if (!supporteAutoskills(assistant)) {
     // Rien n'est écarté non plus : on sort AVANT `ecarterSkillsDesign`, donc pas un fichier ne bouge.
-    return { lance: false, etapes: [], proteges: [], perdus: [], echec: `${assistant} n'est pas dans l'AGENT_FOLDER_MAP d'${AUTOSKILLS.commande}` };
+    return { lance: false, etapes: [], proteges: [], remis: [], perdus: [], repris: [], echec: `${assistant} n'est pas dans l'AGENT_FOLDER_MAP d'${AUTOSKILLS.commande}` };
   }
   const abri = ecarterSkillsDesign(projectDir, noms ?? DESIGN_SKILL_NAMES);
+  // Un abri qu'on n'a pas su reprendre : on ne lance RIEN. Relancer par-dessus écarterait une
+  // seconde fois des skills déjà absents et empilerait deux restes l'un sur l'autre.
+  if (abri.refus) return { lance: false, etapes: [], proteges: [], remis: [], perdus: [], repris: abri.repris, echec: abri.refus };
   const etapes = [];
   let echec = null;
   // ⛔ LE `catch` NE LAISSE PAS PASSER : une passe qui jette au milieu a DÉJÀ pu supprimer des
@@ -175,6 +262,47 @@ export function lancerAutoskills({ projectDir, assistant, run = defaultRun, noms
       etapes.push(etape.nom);
     }
   } catch (e) { echec = e?.message ?? String(e); }
-  const { perdus } = restaurerSkillsDesign(abri);
-  return { lance: !echec, etapes, proteges: abri.noms, perdus, ...(echec ? { echec } : {}) };
+  const { remis, perdus } = restaurerSkillsDesign(abri);
+  // ⛔ ON COMPTE CE QUI EST REVENU, PAS CE QUI EST SORTI. `proteges` (les skills ÉCARTÉS) servait
+  // de compte au rapport : avec les 4 restaurations en échec, il imprimait « tes 4 skills design
+  // ont été remis en place » ET « NON remis en place : … », sur un `.claude/skills` vide. La ligne
+  // ✅ mentait exactement là où elle devait alerter. Un nom qui figure dans `perdus` — donc dont
+  // l'un des deux chemins n'est pas rentré — n'est pas « remis », même si l'autre l'est.
+  const perdusNoms = new Set(perdus.map((e) => e.nom));
+  const remisNoms = [...new Set(remis)].filter((n) => !perdusNoms.has(n));
+  // Et `repris` passe par le MÊME filtre : un skill récupéré d'un run interrompu au démarrage, puis
+  // reperdu à la restauration finale, n'est pas « récupéré » — l'annoncer en ✅ au-dessus du ❌ qui
+  // le dit coincé serait le même mensonge, une ligne plus bas.
+  const reprisNoms = [...new Set(abri.repris ?? [])].filter((n) => !perdusNoms.has(n));
+  return { lance: !echec, etapes, proteges: abri.noms, remis: remisNoms, perdus, repris: reprisNoms, ...(echec ? { echec } : {}) };
+}
+
+// ── LE RAPPORT ────────────────────────────────────────────────────────────────────────────────
+//
+// ⛔ POURQUOI CES TROIS LIGNES SONT ICI ET PLUS DANS `setup.mjs`. Elles vivaient dans une branche
+// qu'on n'atteint que par un `--adopt` INTERACTIF où l'utilisateur a dit oui à un outil tiers :
+// aucun garde ne pouvait les LIRE. C'est exactement là que le ✅ s'est mis à imprimer « tes 4
+// skills design ont été remis en place » juste au-dessus du ❌ « NON remis en place », sur un
+// `.claude/skills` vide. Une ligne que personne ne peut mesurer ment sans qu'on le voie ; celle-ci
+// est pure, et `setup.mjs` ne fait plus que verser les trois bacs.
+export function rapportAutoskills(a, projectDir) {
+  const done = [], skipped = [], failed = [];
+  // Le rapport re-nomme l'auteur et la licence : la ligne ✅ est la trace qui restera à l'écran,
+  // et elle ne doit pas laisser croire que ces skills viennent du kit.
+  // ⛔ ON COMPTE `remis`, PAS `proteges` : ce qui est REVENU, pas ce qui est SORTI. Compter les
+  // écartés faisait imprimer « tes 4 skills design ont été remis en place » juste au-dessus du ❌
+  // qui disait le contraire — la classe de bug du commit 0a19a4f, où le rapport donnait « déjà
+  // présent » comme raison d'un `--force` écarté.
+  if (a.lance) done.push(`skills tiers : ${AUTOSKILLS.commande} (${AUTOSKILLS.auteur}, ${AUTOSKILLS.licence}) — NON relus par le kit${a.remis.length ? ` ; tes ${a.remis.length} skills design du kit ont été remis en place` : ''}`);
+  else skipped.push({ name: `skills tiers : ${AUTOSKILLS.commande}`, reason: `non lancé (${a.echec}) — optionnel, rien n'a été installé` });
+  // Un run précédent interrompu laisse ses skills à l'abri ; celui-ci les a récupérés. Le dire,
+  // parce que l'utilisateur les avait peut-être vus disparaître de `.claude/skills/`.
+  if (a.repris?.length) done.push(`skills design récupérés d'un run interrompu : ${[...new Set(a.repris)].join(', ')}`);
+  // Un skill du kit que la restauration n'a pas pu remettre n'existe plus qu'à l'abri : il est
+  // toujours là, mais pas à sa place. Le taire laisserait `/doctor` item 11 le déclarer absent sans
+  // que personne sache où il est passé — donc ❌. Et le message doit être ACTIONNABLE : l'abri est
+  // `<i>/<nom>` avec `<i>` un compteur, donc « il est dans l'abri » ne suffit pas — pour
+  // `frontend-design` il y a DEUX entrées, et rien dans leur nom ne dit laquelle va où.
+  if (a.perdus?.length) failed.push(`skills design NON remis en place — déplace-les à la main : ${a.perdus.map((e) => `${path.relative(projectDir, e.abri)} → ${path.relative(projectDir, e.origine)}`).join(' ; ')}`);
+  return { done, skipped, failed };
 }
