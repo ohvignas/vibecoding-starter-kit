@@ -27,6 +27,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { puceDeStack, SCAFFOLD_MD } from './puce-scaffold.mjs';
 
 const RACINE = path.resolve(import.meta.dirname, '..', '..');
 const lire = (rel) => fs.readFileSync(path.join(RACINE, rel), 'utf8');
@@ -35,19 +36,33 @@ const lire = (rel) => fs.readFileSync(path.join(RACINE, rel), 'utf8');
 // ICI. C'est pourquoi le garde ne peut pas être un simple `doesNotMatch` sur tout le dépôt —
 // `stacks/saas`, `stacks/mobile` et leurs règles les enseignent, à raison.
 const CLIENT_NAVIGATEUR = /\buseQuery\b|\bConvexProvider\b/;
-// Deux emplois légitimes dans un fichier de la vitrine, et deux seulement :
-//   · la ligne parle du `dashboard/` — l'app privée, où le temps réel est le bon outil ;
-//   · la ligne EST l'interdiction — une règle doit pouvoir nommer ce qu'elle refuse, sinon le kit
-//     ne peut plus mettre en garde contre rien (même exception que MISE_EN_GARDE, faits-stacks).
-// Tout le reste — un extrait de code, un exemple de page, un « puis lis avec useQuery » — est un
-// enseignement destiné au site public, et c'est exactement ce qu'on refuse.
-const LEGITIME = /dashboard|jamais|interdit|⛔|réserv/i;
+// Ce qui désigne le SITE PUBLIC — le seul endroit où ces deux API sont une faute.
+const PUBLIC = /site\/|pages? publiques?|\.astro\b|getStaticPaths|frontmatter/i;
+// Ce qui fait d'une ligne une INTERDICTION plutôt qu'un enseignement.
+const INTERDIT = /⛔|jamais|interdit|proscri|banni/i;
+const DASHBOARD = /dashboard/i;
 
+// ⛔ LA POSITION FAIT LE SENS, PAS LA PRÉSENCE DES MOTS. Une exonération « la ligne contient
+// `dashboard` OU `jamais` » a été mesurée contournable par deux lignes qui ENSEIGNENT :
+//   « Dans `site/…`, lis les articles avec `useQuery` — le même code que dans le dashboard. »
+//   « Dans `site/…` : `useQuery(api.articles.list)` — jamais besoin de rebuild. »
+// Les deux passaient vertes : le mot d'exonération était là, mais il ne portait pas sur le hook.
+// On lit donc l'ORDRE des trois éléments sur la ligne. Une ligne est légitime si, et seulement si :
+//   · une marque d'interdiction précède le hook   → c'est la règle qui nomme ce qu'elle refuse ;
+//   · ou la ligne rattache le hook au `dashboard/` SANS qu'une référence au site public le
+//     précède → c'est l'app privée, où le temps réel est le bon outil.
+// Tout le reste — y compris une ligne sans aucun contexte — est un enseignement destiné au site
+// public. L'ambiguïté compte comme une faute : sur ce garde-là, le faux rouge est le bon côté.
 function fautes(nom, texte) {
   const out = [];
   texte.split('\n').forEach((l, i) => {
-    if (!CLIENT_NAVIGATEUR.test(l) || LEGITIME.test(l)) return;
-    out.push(`${nom}:${i + 1} — ${l.trim().slice(0, 120)}`);
+    const hook = l.search(CLIENT_NAVIGATEUR);
+    if (hook < 0) return;
+    const interdit = l.search(INTERDIT);
+    const pub = l.search(PUBLIC);
+    const legitime = (interdit >= 0 && interdit < hook)
+      || (DASHBOARD.test(l) && !(pub >= 0 && pub < hook));
+    if (!legitime) out.push(`${nom}:${i + 1} — ${l.trim().slice(0, 120)}`);
   });
   return out;
 }
@@ -64,10 +79,23 @@ function marcher(rel, acc = []) {
 }
 // Tout ce que le kit livre POUR la vitrine — dérivé du chemin, jamais recopié : les fichiers que
 // les tâches suivantes ajouteront (règles Cursor, exemple, doc de lancement) entreront tout seuls.
-const FICHIERS_VITRINE = () => [
+const PAR_CHEMIN = () => [
   ...marcher('stacks'), ...marcher('templates'), ...marcher('.claude/skills'),
   ...marcher('playbook'), ...marcher('guides'), ...marcher('cursor-plugin'),
 ].filter((f) => /vitrine/.test(f));
+
+// 🔴 LE FICHIER QUE CE GARDE OUBLIAIT, ET C'ÉTAIT LE PLUS EXPOSÉ. Le corpus venait du CHEMIN
+// (`/vitrine/`) ; or `07-scaffold.md` ne porte « vitrine » que dans son CONTENU — il en était
+// donc absent. Mesuré : « Dans `site/`, lis les articles avec `useQuery(...)` et enveloppe la
+// page dans `<ConvexProvider>` » ajouté à la puce vitrine laissait la suite ENTIÈRE verte.
+// C'est pourtant LE template destiné à `site/`, celui que l'IA exécute. On y entre par la puce
+// de la stack (`puce-scaffold.mjs`), pas par le fichier entier : les puces `saas` et `mobile`
+// enseignent `useQuery` à raison.
+const FICHIERS_VITRINE = () => PAR_CHEMIN();
+const SOURCES = () => [
+  ...FICHIERS_VITRINE().map((f) => [f, lire(f)]),
+  [`${SCAFFOLD_MD} (puce vitrine)`, puceDeStack(RACINE, 'vitrine').join('\n')],
+];
 
 const REGLE = ['stacks/vitrine/AGENTS.md', 'templates/cursor/rules/vitrine/build-time.mdc'];
 
@@ -81,6 +109,12 @@ test('T4 — le détecteur voit le piège, et laisse passer les deux emplois lé
     ['une page publique qui lit en direct', 'const articles = useQuery(api.articles.list) ?? [];'],
     ['un layout public enveloppé', '<ConvexProvider client={convex}><Layout /></ConvexProvider>'],
     ['une consigne, sans code', 'Dans `site/src/pages/blog.astro`, lis les articles avec `useQuery`.'],
+    // LES DEUX CONTOURNEMENTS MESURÉS de la version « liste blanche de mots » : elles ENSEIGNENT
+    // le hook pour le site public tout en citant, plus loin sur la ligne, un mot qui exonérait.
+    ['un enseignement qui cite `dashboard` en fin de ligne', 'Dans `site/src/pages/blog.astro`, lis les articles avec `useQuery` — le même code que dans le dashboard.'],
+    ['un enseignement qui cite `jamais` APRÈS le hook', 'Dans `site/…` : `useQuery(api.articles.list)` — jamais besoin de rebuild.'],
+    ['une consigne du runbook de scaffold', 'Dans `site/`, lis les articles avec `const articles = useQuery(api.articles.list)` et enveloppe la page dans `<ConvexProvider>`.'],
+    ['un hook sans aucun contexte — l\'ambiguïté compte comme une faute', 'Lis les articles avec `useQuery`.'],
   ];
   for (const [quoi, ligne] of piegés) {
     assert.deepEqual(fautes('faux.md', ligne).length, 1, `le détecteur laisse passer ${quoi} :\n  ${ligne}`);
@@ -88,7 +122,7 @@ test('T4 — le détecteur voit le piège, et laisse passer les deux emplois lé
   const legitimes = [
     'Dans `dashboard/`, lis les données avec `useQuery` (réactif).',
     '⛔ Jamais `useQuery` ni `ConvexProvider` dans une page publique.',
-    '`useQuery` / `ConvexProvider` sont réservés à l\'application privée.',
+    '`useQuery` / `ConvexProvider` = `dashboard/` uniquement : privé, temps réel, jamais indexé.',
   ];
   for (const ligne of legitimes) {
     assert.deepEqual(fautes('faux.md', ligne), [], `le détecteur rougit sur un emploi légitime :\n  ${ligne}`);
@@ -97,13 +131,15 @@ test('T4 — le détecteur voit le piège, et laisse passer les deux emplois lé
 
 // ── LE SCAN ───────────────────────────────────────────────────────────────────────────────────
 test('T4 — aucun fichier livré pour la vitrine n\'enseigne `useQuery`/`ConvexProvider` côté public', () => {
-  const fichiers = FICHIERS_VITRINE();
+  const sources = SOURCES();
+  const noms = sources.map(([n]) => n);
   // Garde de montage : un corpus vide rendrait le scan vert à vide, et il rétrécit tout seul si
-  // quelqu'un renomme un dossier. On exige les trois fichiers que la règle vise vraiment.
-  for (const f of [...REGLE, 'templates/examples/vitrine.md']) {
-    assert.ok(fichiers.includes(f), `montage : ${f} n'est pas dans le corpus scanné (${fichiers.length} fichiers)`);
+  // quelqu'un renomme un dossier. On exige les fichiers que la règle vise vraiment — dont la puce
+  // vitrine du runbook de scaffold, la surface la plus exposée et celle qui manquait.
+  for (const f of [...REGLE, 'templates/examples/vitrine.md', `${SCAFFOLD_MD} (puce vitrine)`]) {
+    assert.ok(noms.includes(f), `montage : ${f} n'est pas dans le corpus scanné (${noms.length} sources)`);
   }
-  const trouvees = fichiers.flatMap((f) => fautes(f, lire(f)));
+  const trouvees = sources.flatMap(([n, t]) => fautes(n, t));
   assert.deepEqual(trouvees, [], [
     'Un fichier livré pour la vitrine enseigne un hook de NAVIGATEUR pour le site public :',
     ...trouvees.map((t) => `  ${t}`),

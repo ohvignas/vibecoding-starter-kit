@@ -29,6 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COMMANDS, fichiersDuRunbook } from './commands-list.mjs';
+import { pucesDeScaffold, SCAFFOLD_MD } from './puce-scaffold.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const lire = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -103,13 +104,25 @@ const SCAFFOLDS = [
   ['create-electron-app', '--template=vite-typescript', 'le choix du template Forge'],
 ];
 
+// ⛔ PAR PUCE DE STACK, PLUS PAR « LA PREMIÈRE LIGNE QUI CITE L'OUTIL ». Les deux gardes
+// ci-dessous faisaient `find(l => l.includes(outil))` sur le runbook entier. Tant qu'une seule
+// stack citait `create-convex`, ça revenait au même. Depuis que la vitrine en cite une deuxième —
+// et qu'elle passe AVANT dans le fichier —, les deux gardes ne jugeaient plus que la puce vitrine
+// et `saas` n'était plus protégée du tout : mesuré, retirer `-- -t tanstack-start` de la puce
+// saas, puis sa mention « n'inclut aucune auth », laissait les deux VERTS. On juge donc CHAQUE
+// puce qui cite l'outil, et on exige qu'il y en ait au moins une.
+const pucesCitant = (outil) => Object.entries(pucesDeScaffold(ROOT))
+  .map(([stack, lignes]) => [stack, lignes.join('\n')])
+  .filter(([, texte]) => texte.includes(outil));
+
 test('E2E — les 4 commandes de scaffold sont non interactives', () => {
-  const t = runbook();
   const fautes = [];
   for (const [outil, drapeau, prompt] of SCAFFOLDS) {
-    const ligne = t.split('\n').find((l) => l.includes(outil));
-    if (!ligne) { fautes.push(`${outil} : la commande a disparu du runbook`); continue; }
-    if (!ligne.includes(drapeau)) fautes.push(`${outil} : \`${drapeau}\` manque — ${prompt} bloquera l'IA.`);
+    const puces = pucesCitant(outil);
+    if (!puces.length) { fautes.push(`${outil} : la commande a disparu de ${SCAFFOLD_MD}`); continue; }
+    for (const [stack, texte] of puces) {
+      if (!texte.includes(drapeau)) fautes.push(`${outil} (puce ${stack}) : \`${drapeau}\` manque — ${prompt} bloquera l'IA.`);
+    }
   }
   // Sans ça, renommer les outils rendrait le test vert à vide.
   assert.equal(SCAFFOLDS.length, 3, 'garde de montage : 3 outils tiers + shadcn (testé au-dessus)');
@@ -133,14 +146,15 @@ test('E2E — mobile : NativeWind est nommé ET son install est donnée', () => 
     `NativeWind doit s'installer avec \`expo install\` (versions du SDK), pas \`npm i\` :\n  ${commandes.join('\n  ')}`);
 });
 
-test('E2E — saas : le template Convex n\'apporte pas d\'auth, le runbook le dit', () => {
-  const t = runbook();
+test('E2E — le template Convex n\'apporte pas d\'auth, et CHAQUE puce qui l\'utilise le dit', () => {
   // Mesuré : `convex/` sort avec schema.ts + myFunctions.ts, rien d'autre. Il n'existe pas non
   // plus de `template-tanstack-start-convexauth` dans get-convex/templates (contrairement à
-  // react-vite et nextjs). Promettre l'auth « incluse » serait faux.
-  const ligne = t.split('\n').find((l) => l.includes('create-convex'));
-  assert.ok(ligne, 'la commande saas a disparu');
-  assert.match(ligne, /aucune auth|sans auth|n'inclut aucune auth/i, 'le template n\'apporte pas d\'auth : le dire');
+  // react-vite et nextjs). Promettre l'auth « incluse » serait faux — dans N'IMPORTE laquelle des
+  // puces qui scaffoldent avec, pas seulement la première du fichier.
+  const puces = pucesCitant('create-convex');
+  assert.ok(puces.length, 'la commande create-convex a disparu du runbook de scaffold');
+  const muettes = puces.filter(([, t]) => !/aucune auth|sans auth|n'inclut aucune auth/i.test(t)).map(([s]) => s);
+  assert.deepEqual(muettes, [], `puces qui scaffoldent avec create-convex sans dire que le template n'apporte pas d'auth : ${muettes.join(', ')}`);
 });
 
 test('E2E — desktop : Forge n\'a pas de template React, le runbook doit le dire', () => {

@@ -1,5 +1,5 @@
 ---
-description: Convex au BUILD dans site/ — useQuery et ConvexProvider sont réservés au dashboard/
+description: Convex au BUILD côté public — useQuery et ConvexProvider réservés au dashboard/
 globs: site/**,dashboard/**
 alwaysApply: false
 ---
