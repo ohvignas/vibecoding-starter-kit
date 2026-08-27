@@ -206,12 +206,17 @@ const VITRINE = resolveStackManifest('vitrine', 'cursor');
 // CHAQUE application déclare — parce que la conformité des deux workspaces est précisément ce que
 // la production ne garantit pas : `npm create convex@latest -- -t tanstack-start` sort un
 // `dashboard/` SANS `typecheck` ni `lint`.
-function racineDeuxApps({ tsconfig = true, biome = true, workspaces = VITRINE.workspaces, scriptsPar = {} } = {}) {
+//
+// `pkg` et `apps` servent à V2bis, plus bas : là, la racine n'est plus DÉCRITE par le test mais
+// DÉRIVÉE du runbook, et une pièce que le runbook oublie de faire poser doit pouvoir manquer —
+// y compris le `package.json` de la racine ou l'une des deux applications. Les défauts
+// reproduisent la racine complète : aucun appel existant ne change de sens.
+function racineDeuxApps({ pkg = true, tsconfig = true, biome = true, workspaces = VITRINE.workspaces, apps = VITRINE.workspaces, scriptsPar = {} } = {}) {
   const d = tmp();
-  fs.writeFileSync(path.join(d, 'package.json'), `${JSON.stringify({ name: 'mon-site', private: true, workspaces }, null, 2)}\n`);
+  if (pkg) fs.writeFileSync(path.join(d, 'package.json'), `${JSON.stringify({ name: 'mon-site', private: true, workspaces }, null, 2)}\n`);
   if (tsconfig) fs.writeFileSync(path.join(d, 'tsconfig.json'), '{}');
   if (biome) fs.writeFileSync(path.join(d, 'biome.json'), '{}');
-  for (const app of VITRINE.workspaces) {
+  for (const app of apps) {
     const ids = scriptsPar[app] ?? Object.keys(VITRINE.scripts);
     fs.mkdirSync(path.join(d, app), { recursive: true });
     // Le script de l'application dépose une marque : c'est ce qui prouvera que la commande de la
@@ -346,27 +351,87 @@ test('V2 — une liste `workspaces` incomplète divise la couverture par deux, s
 // nie rien (`ne`/`pas`/`jamais`/`aucun`). Une ligne qui mélange les deux est refusée : sur un
 // garde d'architecture, le faux rouge est le bon côté de l'erreur.
 //
-// 📌 POUR LA TÂCHE 3, QUAND LA PUCE SERA ÉCRITE : le mener d'un cran plus haut, de lexical à
-// EXÉCUTABLE — construire une racine d'après ce que la puce décrit et exiger
-// `selectChecks(STACKS.vitrine.checks.preCommit)` → `[true, true]`. Tant que la puce n'existe pas,
-// il n'y a rien à exécuter ; c'est la seule raison pour laquelle ce garde lit encore du texte.
+// 📌 TÂCHE 3 — LA PUCE EXISTE, LE GARDE EST PASSÉ DE LEXICAL À EXÉCUTABLE. Le contrôle des mots
+// ne sert plus d'assertion : il ne sert plus qu'à FABRIQUER la racine. Ce que la puce affirme
+// poser est posé sur le disque, ce qu'elle oublie manque vraiment — puis on lance `selectChecks`
+// et la commande de la racine sur cette racine-là. Un oubli du runbook n'est donc plus « une
+// chaîne absente » : c'est un check qui se saute, ou une application jamais visitée. La liste
+// des mots reste néanmoins ce qui alimente le MESSAGE, pour dire quelle phrase manque.
 const POSE = /\b(pose|posent|porte|portent|cr[ée]e|cr[ée]er|ajoute|ajouter|d[ée]clare|d[ée]clarer|contient|[ée]cris|[ée]crire)\b/i;
 const NIE = /(\bne\b|\bn'|\bpas\b|\bjamais\b|\baucun)/i;
 
-test('V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels les checks se sautent', () => {
-  const exiges = new Set(['package.json', ...STACKS.vitrine.checks.preCommit.map((id) => CHECKS[id].needs)]);
+// LA PUCE DE LA STACK, PAS LE FICHIER ENTIER : `package.json` est cité pour d'autres stacks, et
+// un contrôle sur tout le fichier serait satisfait par la puce du voisin. La puce va de son
+// en-tête `- **vitrine**` jusqu'à la puce de stack suivante (ses lignes de continuation, qui
+// portent les ⚠️, en font partie).
+function puceVitrine() {
   const lignes = lire('templates/commands/new-project/07-scaffold.md').split('\n');
-  // LA PUCE DE LA STACK, PAS LE FICHIER ENTIER : `package.json` est cité pour d'autres stacks, et
-  // un contrôle sur tout le fichier serait satisfait par la puce du voisin. La puce va de son
-  // en-tête `- **vitrine**` jusqu'à la puce de stack suivante (ses lignes de continuation, qui
-  // portent les ⚠️, en font partie).
   const debut = lignes.findIndex((l) => /^\s*-\s+\*\*vitrine\*\*/.test(l));
   assert.ok(debut >= 0, '07-scaffold.md n\'a plus de puce `- **vitrine**`');
   const suite = lignes.slice(debut + 1).findIndex((l) => /^\s*-\s+\*\*(saas|desktop|mobile)\*\*/.test(l));
-  const puce = lignes.slice(debut, suite < 0 ? undefined : debut + 1 + suite);
-  // Seules les lignes qui posent ET ne nient pas comptent.
-  const affirme = puce.filter((l) => POSE.test(l) && !NIE.test(l)).join('\n');
-  const manquants = [...exiges, ...VITRINE.workspaces.map((w) => `${w}/`)].filter((f) => !affirme.includes(f));
-  assert.deepEqual(manquants, [], 'La racine des deux applications doit porter CHACUN de ces fichiers, et le runbook doit dire de les POSER :\n'
-    + `${manquants.join('\n')}\n→ sans eux, \`selectChecks\` sort sur \`needs\` et le check se saute en silence (voir V2 ci-dessus).`);
+  // Seules les lignes qui POSENT et ne NIENT rien : « ne crée surtout PAS de package.json » a
+  // rendu la version lexicale VERTE sans qu'on touche au test (mesuré). Une ligne qui mélange les
+  // deux est refusée — sur un garde d'architecture, le faux rouge est le bon côté de l'erreur.
+  return lignes.slice(debut, suite < 0 ? undefined : debut + 1 + suite).filter((l) => POSE.test(l) && !NIE.test(l));
+}
+
+// Les scripts que la puce fait DÉCLARER à une application donnée. Segmenté sur `;` : une puce qui
+// dit « `site/package.json` déclare "typecheck" ; `dashboard/package.json` déclare "lint" » ne
+// doit pas créditer les deux applications des deux scripts.
+function scriptsDeclares(affirme, app, ids) {
+  const segments = affirme.flatMap((l) => l.split(';'));
+  return ids.filter((id) => segments.some((s) => s.includes(`${app}/`) && s.includes(`"${id}"`)));
+}
+
+test('V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels les checks se sautent', () => {
+  const ids = STACKS.vitrine.checks.preCommit;
+  const exiges = ['package.json', ...ids.map((id) => CHECKS[id].needs)];
+  const affirme = puceVitrine();
+  const texte = affirme.join('\n');
+  // LE FICHIER DE LA RACINE, PAS CELUI D'UNE APPLICATION. Mesuré : en retirant `package.json` de
+  // la ligne qui pose la racine, le garde restait VERT — `site/package.json`, cité par la ligne
+  // des scripts d'application, satisfaisait la recherche naïve. On efface donc les chemins
+  // d'application avant de chercher.
+  const racineCite = (f) => VITRINE.workspaces.reduce((t, w) => t.split(`${w}/${f}`).join(''), texte).includes(f);
+  const manquants = [...new Set(exiges)].filter((f) => !racineCite(f))
+    .concat(VITRINE.workspaces.filter((w) => !texte.includes(`${w}/`)).map((w) => `${w}/`));
+
+  // LA RACINE QUE LA PUCE DÉCRIT, ET RIEN DE PLUS. Chaque pièce n'est posée que si une ligne
+  // affirmative la nomme : oublier `biome.json` dans le runbook, c'est ne pas l'avoir sur ce
+  // disque-là, donc `lint` qui se saute pour de vrai.
+  const apps = VITRINE.workspaces.filter((w) => texte.includes(`${w}/`));
+  const d = racineDeuxApps({
+    pkg: racineCite('package.json'),
+    tsconfig: racineCite('tsconfig.json'),
+    biome: racineCite('biome.json'),
+    workspaces: apps,
+    apps,
+    scriptsPar: Object.fromEntries(VITRINE.workspaces.map((w) => [w, scriptsDeclares(affirme, w, ids)])),
+  });
+  // Le kit pose ses scripts sur le `package.json` de la racine — s'il y en a un à poser.
+  writeStackEnvironment({ projectDir: d, source: RACINE, stack: 'vitrine', assistant: 'cursor' });
+
+  const pourquoi = (quoi) => [
+    `${quoi} sur la racine que la puce \`- **vitrine**\` de 07-scaffold.md fait naître.`,
+    manquants.length
+      ? `Fichiers exigés qu'AUCUNE ligne affirmative de la puce ne pose : ${manquants.join(', ')}`
+      : 'Tous les fichiers exigés sont nommés — le trou est ailleurs (scripts d\'application, liste `workspaces`).',
+    '→ la puce doit dire de POSER chacun de ces fichiers, et de déclarer `typecheck` et `lint` dans CHAQUE application.',
+  ].join('\n');
+
+  const vus = selectChecks(ids, { cwd: d });
+  assert.deepEqual(vus.map((c) => c.willRun), ids.map(() => true),
+    `${pourquoi('Un check du pre-commit se saute')}\n${vus.filter((c) => !c.willRun).map((c) => `  · ${c.id} → ${c.reason}`).join('\n')}`);
+  // `needs` est satisfait, mais est-ce la STACK qui pilote ? Sans `package.json` à la racine,
+  // `willRun` reste vrai et le check retombe sur `npx tsc --noEmit` : vert, et rien de vérifié.
+  assert.deepEqual(vus.map((c) => c.via), ids.map(() => 'script'), pourquoi('Le check ne passe pas par le script de la stack'));
+
+  // …et la commande de la racine entre-t-elle VRAIMENT dans les deux applications ? C'est la
+  // moitié qu'aucun contrôle de présence ne peut voir : une liste `workspaces` incomplète, ou une
+  // application qui ne déclare pas son script, se lit ici et nulle part ailleurs.
+  for (const id of ids) {
+    const { status, visites } = lancerDepuisLaRacine(d, id);
+    assert.equal(status, 0, `${pourquoi(`\`npm run ${id}\` échoue`)}`);
+    assert.deepEqual(visites, VITRINE.workspaces, pourquoi(`\`npm run ${id}\` n'est pas entré dans les deux applications`));
+  }
 });

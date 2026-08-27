@@ -21,11 +21,9 @@ import { spawn } from 'node:child_process';
 
 // nom = le titre EXACT du test, tel que le rapporteur TAP l'imprime.
 export const ROUGES_ATTENDUS = [
-  {
-    nom: 'V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels les checks se sautent',
-    tache: 'tâche 3',
-    quoi: 'la puce `- **vitrine**` de templates/commands/new-project/07-scaffold.md doit POSER package.json (workspaces), tsconfig.json, biome.json, site/, dashboard/',
-  },
+  // V2bis (tâche 3) est parti d'ici le jour où la puce `- **vitrine**` a été écrite : le garde est
+  // vert, et il est passé de lexical à EXÉCUTABLE au passage (il construit la racine que la puce
+  // décrit et lance les checks dessus). La liste RÉTRÉCIT — c'est le seul sens autorisé.
   {
     nom: 'D6 — /doctor vérifie les 10 commandes, la mémoire du crew, le MCP shadcn de desktop et les outils de preuve',
     tache: 'tâche 9',
