@@ -9,13 +9,15 @@ import { STACK_AUCUNE, estAdopte, adapterGlossaireAdopte, estProjetExistant, ent
 import { renderAgentsFile, adapterAuProjetAdopte } from './agents-file.mjs';
 import { parseArgs, validateArgs } from './args.mjs';
 import { choisirMode, needsWizard } from './wizard.mjs';
-import { resolveAssets, resolveStackManifest, SUPERPOWERS, DESIGN_SKILL_NAMES } from './matrix.mjs';
+import { resolveAssets, resolveStackManifest, SUPERPOWERS, DESIGN_SKILL_NAMES, STACKS } from './matrix.mjs';
 // L'abri d'autoskills est nommé À LA SOURCE : le jour où le dossier change de nom, /doctor doit
 // suivre, et c'est ce test qui le réclamera — pas un utilisateur devant 4 skills disparus.
 import { DOSSIER_ABRI, AUTOSKILLS } from './autoskills.mjs';
 import { renderColleMoi } from './colle-moi.mjs';
 import { renderSetupAi } from './setup-ai.mjs';
 import { kitOwnedFiles, kitOwnedGenerated } from './kit-owned.mjs';
+// Le fichier que chaque check exige AVANT son script — la source de `needs`, jamais recopiée.
+import { CHECKS } from '../../templates/hooks/framework/checks.mjs';
 import { MARK_START_PREFIX, MARK_END } from './managed-section.mjs';
 import { refreshProject } from './refresh.mjs';
 
@@ -1393,6 +1395,47 @@ test('T10 — `--refresh` sur un projet adopté : glossaire adapté, et aucun `a
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+// ── T12 — LE ✅ DOIT ÊTRE ATTEIGNABLE AU MOMENT OÙ LE KIT FAIT LANCER `/doctor` ────────────────
+//
+// `COLLE-MOI-DANS-L-IA.md` fait lancer `/doctor` à l'ÉTAPE 4 et `/new-project` à l'ÉTAPE 5. Entre
+// les deux, le projet n'a ni `package.json`, ni application, ni les fichiers que les checks
+// exigent : ils naissent AU SCAFFOLD. Une ligne bloquante qui les réclame sans exonérer cet
+// état-là rend le ✅ inatteignable pile au moment où le kit dit « vérifie que tout est branché ».
+// Le débutant suit les instructions du kit et récolte un ✗ qu'il ne peut pas encore réparer.
+//
+// ⛔ IL Y A DONC DEUX ÉTATS D'ABSENCE LÉGITIME, PAS UN. T11 tient le premier (projet adopté : le
+// kit ne revendique rien). Celui-ci tient le second (stack du kit, pas encore scaffoldée). Et il
+// ne compte pas du vocabulaire : il exige DEUX exonérations distinctes sur la ligne — une par
+// état — plus le nom de la commande qui fonde l'artefact, sans quoi « c'est absent » se lit comme
+// un ✗. Mesuré avant qu'il existe : retirer la clause « pas encore scaffoldé » de l'un ou l'autre
+// item ne faisait rougir PERSONNE, sur toute la suite.
+test('T12 — `/doctor` distingue « pas encore scaffoldé » de « mal scaffoldé » : le ✅ reste atteignable avant `/new-project`', () => {
+  // ── LA PRÉMISSE, MESURÉE SUR UN VRAI SCAFFOLD — pas supposée. Le jour où le kit posera ces
+  // fichiers lui-même, ce montage rougira, et c'est exactement le moment de relire les deux items.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-t12-'));
+  try {
+    scaffold(['--stack', 'vitrine', '--assistant', 'claude-code', '--project', dir, '--no-skills', '--yes'], { stdio: 'pipe' });
+    assert.ok(fs.existsSync(path.join(dir, '.vibecoding.json')), 'montage : le scaffold vitrine a bien tourné');
+    const nesPlusTard = ['package.json', ...STACKS.vitrine.workspaces,
+      ...new Set(STACKS.vitrine.checks.preCommit.map((id) => CHECKS[id]?.needs).filter(Boolean))];
+    assert.ok(nesPlusTard.length >= 4, `montage : ${nesPlusTard.length} artefact(s) — la liste se dérive du manifeste, elle ne peut pas être vide`);
+    const deja = nesPlusTard.filter((f) => fs.existsSync(path.join(dir, f)));
+    assert.deepEqual(deja, [], `le scaffold du kit pose désormais ${deja.join(', ')} : la clause « pas encore scaffoldé » des items 10 et 18 n'a plus lieu d'être — relis-les au lieu de la garder par habitude`);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+
+  // ── ET LES DEUX LIGNES QUI LES EXIGENT PORTENT BIEN LEURS **DEUX** EXONÉRATIONS ──
+  for (const rel of ['templates/commands/doctor.md', 'cursor-plugin/commands/doctor.md']) {
+    const lignes = fs.readFileSync(path.resolve(rel), 'utf8').split('\n');
+    for (const [quoi, motif] of [['les scripts de la stack', /Scripts `package\.json`/], ['la disposition des applications', /\*\*Applications de la stack/]]) {
+      const ligne = lignes.find((l) => motif.test(l));
+      assert.ok(ligne, `${rel} : la ligne qui exige ${quoi} a disparu (motif ${motif})`);
+      const exonerations = (ligne.match(/pas un ✗/g) ?? []).length;
+      assert.ok(exonerations >= 2, `${rel} : la ligne qui exige ${quoi} ne porte que ${exonerations} exonération(s) « pas un ✗ ». Il en faut DEUX, une par état d'absence légitime : le projet ADOPTÉ (le kit ne revendique rien) et la stack PAS ENCORE SCAFFOLDÉE (mesuré juste au-dessus : aucun de ces fichiers n'existe après l'install). Sans la seconde, le ✅ est inatteignable à l'étape 4 de COLLE-MOI — celle où le kit fait justement lancer /doctor.`);
+      assert.match(ligne, /new-project/, `${rel} : la ligne qui exige ${quoi} ne dit pas QUAND l'artefact arrive (\`/new-project\`). « C'est absent » sans « ça arrive plus tard » se lit comme un ✗.`);
+    }
+  }
+});
+
 // ── T11 — CE QUI COMPTE LES EXCEPTIONS, AU LIEU DE LES POSER À LA MAIN ────────────────────────
 //
 // Le défaut trouvé en revue n'était pas « une ligne oubliée » : l'item 10 a QUATRE sous-puces,
@@ -1452,6 +1495,19 @@ test('T11 — les 8 champs du manifeste de stack sont comptés : chacun a sa lig
     rules: 'les règles de stack ne sont pas livrées sur `aucune` et aucun item ne les cherche',
     domains: 'le catalogue de domaines n\'est pas posé sur `aucune` et aucun item ne le cherche',
   };
+  // ⛔ UN MOTIF QUI NE MATCHE QUE L'EN-TÊTE RATTACHE LE CHAMP « NOMINALEMENT », et c'est MESURÉ :
+  // l'item 18 privé de `site/`, `dashboard/` et `workspaces` — 0 occurrence sur le disque — gardait
+  // son titre en gras, et la suite ENTIÈRE restait verte. Le champ était « contrôlé par » une ligne
+  // qui ne le contrôlait plus. On exige donc que la ligne NOMME ce que le champ porte, et la liste
+  // est LUE dans le manifeste (`STACKS.vitrine.workspaces`), jamais recopiée ici : un 3ᵉ workspace
+  // ajouté demain fera rougir ce test tant que /doctor ne le nommera pas.
+  // (C'est la 5ᵉ fois du chantier qu'un garde est crédité du vocabulaire de son voisinage — ici,
+  // de son propre titre. Le motif est stable : exiger la PROPOSITION, jamais l'étiquette.)
+  const SUBSTANCE = {
+    workspaces: ['workspaces', ...STACKS.vitrine.workspaces.map((w) => `${w}/`)],
+  };
+  assert.ok(SUBSTANCE.workspaces.length >= 3, 'montage : la vitrine ne déclare plus ses workspaces — cette exigence porterait sur rien');
+
   const nonTranches = Object.keys(manifeste).filter((k) => !(k in CONTROLE_PAR) && !(k in SANS_LIGNE));
   assert.deepEqual(nonTranches, [], `champ(s) du manifeste de stack ni rattaché(s) à une ligne de /doctor, ni justifié(s) : ${nonTranches.join(', ')}.\n`
     + 'Un champ vide sur `aucune` que /doctor exige quand même referme le verdict — ajoute-le à CONTROLE_PAR (avec son exception dans doctor.md) ou à SANS_LIGNE (avec son motif).');
@@ -1487,6 +1543,10 @@ test('T11 — les 8 champs du manifeste de stack sont comptés : chacun a sa lig
       assert.match(ligne, /projet adopté/, `${rel} : item ${n} — la ligne de « ${champ} » ne dit plus À QUI s'applique l'exception : « ${ligne.trim().slice(0, 100)}… »`);
       assert.match(ligne, /choix, pas un ✗/,
         `${rel} : item ${n} — « ${champ} » est VIDE sur \`aucune\` (resolveStackManifest) et cette ligne l'exige quand même sans exception : le ✅ est inatteignable. « ${ligne.trim().slice(0, 100)}… »`);
+      for (const aiguille of SUBSTANCE[champ] ?? []) {
+        assert.ok(ligne.includes(aiguille),
+          `${rel} : item ${n} — la ligne censée contrôler « ${champ} » ne NOMME pas « ${aiguille} ». Le rattachement est alors NOMINAL : le titre reste, le contrôle a disparu, et ce test ne verrait rien.`);
+      }
     }
   }
 

@@ -14,6 +14,9 @@ import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIX
 import { refCommande, NOTE_CODEX_COMMANDES } from './commands-list.mjs';
 import { cursorDeeplink } from './deeplink.mjs';
 import { estAdopte } from './adoption.mjs';
+// Le fichier que CHAQUE check exige AVANT de lancer son script (`selectChecks` teste `needs` en
+// premier). Lu à la source, jamais recopié : c'est le même module que le kit copie en `.githooks/`.
+import { CHECKS } from '../../templates/hooks/framework/checks.mjs';
 
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
 export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skillsInstalled = true }) {
@@ -160,6 +163,14 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skil
     if (manifest.workspaces.length) {
       L.push(`- [ ] **D'abord** : ce \`package.json\` est celui de la **racine**, et il doit déclarer les deux applications, sinon les scripts ci-dessous répondent \`No workspaces found!\` → \`"workspaces": ${JSON.stringify(manifest.workspaces)}\``);
       L.push(`  - ⚠️ et chaque application (${manifest.workspaces.map((w) => `\`${w}/\``).join(', ')}) doit déclarer **ses** scripts \`typecheck\` et \`lint\` : une application qui n'en a pas fait échouer la commande de la racine, en la nommant.`);
+      // ⛔ LE `package.json` NE SUFFIT PAS, ET CE FICHIER NE LE DISAIT NULLE PART. `selectChecks`
+      // teste `needs` AVANT le script : sans le fichier qu'un check exige, ce check ne rougit pas,
+      // il se SAUTE. Mesuré sur le seul fichier d'install d'une vitrine : 0 occurrence de
+      // `tsconfig`, 0 de `biome` — alors que `/doctor` les réclame et que le runbook de scaffold
+      // les dicte. Un item bloquant exigeait deux artefacts que l'install ne nommait jamais.
+      // La liste vient de `CHECKS[…].needs`, dérivée des checks que CETTE stack déclare.
+      const requis = [...new Set(manifest.checks.preCommit.map((id) => CHECKS[id]?.needs).filter(Boolean))];
+      if (requis.length) L.push(`- [ ] **Et à la racine, à côté du \`package.json\`** : ${requis.map((f) => `\`${f}\``).join(' + ')} — le hook vérifie que ces fichiers sont là **avant** de lancer le script. S'il en manque un, le check ne rougit pas : il se **saute**, et le pre-commit sort vert sans avoir rien vérifié.`);
     }
     for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);
   }

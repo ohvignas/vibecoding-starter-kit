@@ -266,9 +266,21 @@ test('D6ter — /doctor reste d\'un bloc, et son verdict ne laisse aucun item ho
   // et personne ne le voit : c'est la façon dont /doctor peut redevenir complaisant en silence.
   const muets = items.filter((n) => n > plage && !new RegExp(`\\*\\*${n} est optionnel\\*\\*`).test(verdict));
   assert.deepEqual(muets, [], `item(s) hors de « de 1 à ${plage} » que le verdict ne déclare pas optionnel : ${muets.join(', ')}`);
+  // ⛔ ET L'AUTRE SENS, QUI MANQUAIT — une borne gardée d'un seul côté n'est pas gardée. Mesuré :
+  // porter la plage à « de 1 à 20 » alors que le MÊME verdict déclare 19 et 20 optionnels ne faisait
+  // rougir personne. Le verdict se contredit, et le ✅ redevient inatteignable pour tout le monde :
+  // l'item optionnel réclame `semgrep`/`gitleaks`/`osv-scanner`, que le kit n'installe pas.
+  const contradictoires = items.filter((n) => n <= plage && new RegExp(`\\*\\*${n} est optionnel\\*\\*`).test(verdict));
+  assert.deepEqual(contradictoires, [], `item(s) DANS la plage « de 1 à ${plage} » que le verdict déclare pourtant optionnel(s) : ${contradictoires.join(', ')} — le verdict exige un item qu'il dit lui-même facultatif`);
   // …et les renvois internes d'un item à l'autre visent un item qui existe : c'est le seul filet
   // contre une renumérotation à moitié faite.
-  const morts = [...t.matchAll(/l['’]item \*{0,2}(\d+)/gi)].map((m) => Number(m[1])).filter((n) => !items.includes(n));
+  // ⛔ LE SINGULIER NE SUFFISAIT PAS, et c'est mesuré : « les items 3, 7 et 42 » laissait la suite
+  // VERTE là où « l'item 42 » la faisait rougir. Une note au pluriel — celle qui dit quels items
+  // couvrent `docs/A-FAIRE.md`, précisément — sortait du filet sans un mot. On lit donc la
+  // RÉFÉRENCE (singulier ou pluriel), puis TOUS les numéros qu'elle énumère.
+  const morts = [...t.matchAll(/(?:l['’]|les\s+)items?\s+((?:\*{0,2}\d+\*{0,2}[\s,]*(?:et\s+)?)+)/gi)]
+    .flatMap((m) => [...m[1].matchAll(/\d+/g)].map((d) => Number(d[0])))
+    .filter((n) => !items.includes(n));
   assert.deepEqual(morts, [], `renvoi(s) vers un item inexistant de /doctor : ${morts.join(', ')}`);
 });
 
