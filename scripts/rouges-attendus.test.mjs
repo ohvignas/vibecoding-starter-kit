@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROUGES_ATTENDUS, rougesDuTap, verdict } from './rouges-attendus.mjs';
+import { ROUGES_ATTENDUS, relire, rougesDuTap, verdict } from './rouges-attendus.mjs';
 
 const RACINE = path.resolve(import.meta.dirname, '..');
 const TAP = [
@@ -45,6 +45,52 @@ test('ROUGES — un run PARTIEL ne conclut rien sur les rouges absents, mais voi
   assert.deepEqual(verdict(['A', 'SURPRISE'], attendus, { partiel: true }).inattendus, ['SURPRISE'], 'un rouge inattendu reste inattendu, même en partiel');
   // …et en run COMPLET, le même relevé accuse bien B.
   assert.deepEqual(verdict(['A'], attendus).disparus.map((r) => r.nom), ['B']);
+});
+
+// ── L'INSTRUMENT SAIT-IL DIRE QU'IL EST EN PANNE ? ────────────────────────────────────────────
+// C'est LA question, parce que ce lanceur pilote neuf tâches encore. La version naïve ne
+// distinguait pas « rien n'a échoué » de « je n'ai rien lu » : sous un rapporteur non-TAP elle
+// trouvait zéro `not ok` et annonçait que les 4 rouges attendus avaient DISPARU — quatre
+// corrections imaginaires, nommées, avec les tâches à aller retirer de la liste.
+const TAP_NOMINAL = ['ok 1 - vert', 'not ok 2 - A', '1..2', '# tests 2', '# pass 1', '# fail 1'].join('\n');
+
+test('ROUGES — sortie non-TAP : le lanceur dit qu\'il n\'a pas su lire, il n\'invente pas de disparitions', () => {
+  // Ce que `--test-reporter=spec` produit : des ▶/✔/✖, aucune ligne `ok`/`not ok`.
+  const spec = ['▶ cablage', '  ✔ un test (2ms)', '  ✖ un autre (1ms)', '▶ fin'].join('\n');
+  const { illisible, rouges } = relire(spec);
+  assert.equal(rouges.length, 0, 'montage : le parseur TAP ne trouve effectivement rien');
+  assert.match(illisible, /aucune ligne de résultat TAP/);
+  const v = verdict(rouges, ROUGES_ATTENDUS, { illisible });
+  assert.deepEqual(v.disparus, [], 'AUCUNE disparition annoncée : c\'est la lecture qui a échoué, pas les tests qui ont été corrigés');
+  assert.deepEqual(v.inattendus, []);
+  assert.equal(v.ok, false, 'un verdict qu\'on ne peut pas rendre est un échec, pas un succès');
+});
+
+test('ROUGES — sortie tronquée ou résumé incohérent : refus de conclure aussi', () => {
+  // Des `ok` mais pas de résumé : flux coupé.
+  assert.match(relire('ok 1 - vert\nok 2 - vert').illisible, /aucun résumé/);
+  // Le résumé annonce des échecs, aucun nom lu : notre lecture est fausse — la seule sous-lecture
+  // qui fabrique de fausses bonnes nouvelles.
+  assert.match(relire('ok 1 - vert\n# fail 3').illisible, /annonce 3 échec/);
+  // Le sens inverse (plus de noms que d'échecs annoncés) ne bloque pas : il ne peut produire qu'un
+  // « rouge inattendu » de trop, qui se relit — alors qu'un refus de conclure arrête tout.
+  assert.equal(relire(TAP_NOMINAL).illisible, null);
+});
+
+// Un drapeau qui ne restreint rien ne doit pas désarmer le contrôle ; un drapeau qui FILTRE, si.
+test('ROUGES — le lanceur distingue un drapeau inoffensif d\'un filtre de périmètre', () => {
+  const src = fs.readFileSync(path.join(RACINE, 'scripts/rouges-attendus.mjs'), 'utf8');
+  assert.match(src, /--test-name-pattern/, 'un filtre de tests restreint le périmètre : il rend le run partiel');
+  assert.doesNotMatch(src, /const partiel = args\.length > 0/, '« un argument quelconque » désarmait le contrôle dès qu\'on passait une option');
+});
+
+test('ROUGES — TAP nominal : rien ne change, le verdict est rendu', () => {
+  const { rouges, verts, echecsAnnonces, illisible } = relire(TAP_NOMINAL);
+  assert.deepEqual(rouges, ['A']);
+  assert.equal(verts, 1);
+  assert.equal(echecsAnnonces, 1);
+  assert.equal(illisible, null);
+  assert.equal(verdict(rouges, [{ nom: 'A', tache: 'tâche 3', quoi: '…' }], { illisible }).ok, true);
 });
 
 test('ROUGES — exactement les rouges attendus : verdict vert', () => {
