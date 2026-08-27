@@ -18,6 +18,10 @@ test('règles auto-attachées : frontmatter globs + alwaysApply:false', () => {
     ['vitrine/astro.mdc', 'astro\\.config'],
     ['vitrine/shadcn-islands.mdc', 'src/components'],
     ['vitrine/seo-geo.mdc', 'src/pages'],
+    // La règle qui protège le SEO de la vitrine (lecture Convex au BUILD). Ses globs portent les
+    // DEUX applications : c'est la frontière `site/` ↔ `dashboard/` qu'elle enseigne, et une règle
+    // attachée à une seule des deux ne dirait que la moitié de la consigne.
+    ['vitrine/build-time.mdc', 'site/'],
   ];
   for (const [f, needle] of cases) {
     const t = fs.readFileSync(`templates/cursor/rules/${f}`, 'utf8');

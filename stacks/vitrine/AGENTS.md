@@ -20,6 +20,13 @@ Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 - Images : **toujours** `astro:assets` (`<Image />`), jamais `<img>` brut sur une photo.
 - En cas de doute sur une API Astro : interroge le **MCP astro-docs** (la doc à jour — Astro n'a plus de llms.txt).
 
+## Convex — le site public lit au BUILD (non négociable)
+Le contenu vit dans **Convex**, et deux applications le partagent : `site/` (Astro, les pages publiques) et `dashboard/` (TanStack Start, la saisie).
+- **Les pages publiques lisent Convex au BUILD**, avec le client serveur `ConvexHttpClient`, dans le **frontmatter** d'une page `.astro` ou dans `getStaticPaths()`. Le HTML part du serveur **déjà rempli**.
+- ⛔ **Jamais `useQuery`, jamais `ConvexProvider` dans une page publique.** Ce sont des hooks de **navigateur** : le contenu arriverait **après** le chargement, le HTML servi serait **vide**, et le **JSON-LD n'aurait plus rien à décrire**. Google et les moteurs génératifs indexeraient une coquille — or le SEO est la raison d'être de cette stack.
+- `useQuery` et `ConvexProvider` sont **réservés au `dashboard/`** : là, le temps réel est exactement le bon outil, et personne n'a besoin d'indexer la page.
+- Conséquence à assumer : **publier dans le `dashboard/` ne change rien au site public tant qu'il n'est pas rebuildé.** Déclenche le rebuild à la publication.
+
 ## Règles shadcn/ui
 - Installe via le CLI : `npx shadcn@latest add <composant>` — ne recopie jamais un composant à la main.
 - Le **thème** vient du preset (`npx shadcn@latest init --preset <code> --template astro`) ou de tweakcn — modifie les **variables CSS**, pas les fichiers de composants.
