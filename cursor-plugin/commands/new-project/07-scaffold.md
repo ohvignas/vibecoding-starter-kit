@@ -43,9 +43,14 @@
         { "files": [] }
         ```
 
-        ```bash
-        # biome.json — exigé par le check `lint`. Créé sans aucune question par :
-        npx @biomejs/biome@latest init
+        ```json
+        // biome.json — exigé par le check `lint`. `npx @biomejs/biome@latest init` écrit ce
+        // fichier sans poser une seule question (mesuré, biome 2.5.10) :
+        {
+          "$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
+          "formatter": { "enabled": true },
+          "linter": { "enabled": true, "rules": { "preset": "recommended" } }
+        }
         ```
         ℹ️ Un seul `biome.json`, à la racine : lancé depuis `site/` ou `dashboard/`, `biome check .` **remonte** jusqu'à lui (mesuré, biome 2.5.10).
 

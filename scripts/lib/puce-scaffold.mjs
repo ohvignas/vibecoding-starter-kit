@@ -51,10 +51,14 @@ export function puceDeStack(racine, stack) {
 // de façons de nier en français. On ne demande donc plus rien à la prose. Le contenu à écrire est
 // un ARTEFACT — du JSON qu'on parse, une commande qu'on lit — et c'est lui qui fait foi.
 //
-// CE QUE ÇA NE VOIT PAS, et il faut le dire : une prose qui CONTREDIRAIT le bloc juste au-dessus.
-// C'est le plancher de ce garde. Il est bien plus haut que le précédent : contredire un fichier
-// dont le contenu est écrit juste en dessous est une incohérence visible à l'œil nu, là où « ⛔
-// Évite de créer package.json » se lisait comme une consigne normale.
+// CE QUE ÇA NE VOIT PAS, ET LE PLANCHER EST PLUS BAS QU'IL N'EN A L'AIR. Une prose qui RENDRAIT
+// LE BLOC FACULTATIF passe. Mesuré, 28 tests verts :
+//     5. **La racine** — ⚠️ uniquement si tu veux un monorepo. Pour un site simple, saute cette
+//        étape : les trois fichiers ci-dessous sont facultatifs.
+// Rien de choquant à l'œil : le débutant saute l'étape, et les deux checks se sautent avec lui.
+// Ce garde prouve donc que les artefacts sont DÉCRITS et CORRECTS, pas qu'ils sont OBLIGATOIRES.
+// Fermer ça demanderait de juger la modalité d'une phrase française — c'est exactement le terrain
+// où les trois versions précédentes se sont fait avoir. On le dit au lieu de le supposer.
 export function blocsDeLaPuce(puce) {
   const blocs = [];
   let courant = null;

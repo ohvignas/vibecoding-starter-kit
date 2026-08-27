@@ -371,7 +371,16 @@ test('V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels le
   // Le bloc qui produit un fichier donné, à la racine — `site/package.json` n'est pas
   // `package.json` : la première version confondait les deux, et retirer le manifeste de la
   // RACINE laissait le garde vert (mesuré).
-  const blocDe = (f) => blocs.find((b) => b.fichier === f);
+  // ⛔ TOUT ARTEFACT EST PARSÉ, SANS EXCEPTION. `biome.json` arrivait par un bloc `bash` dont on
+  // ne lisait que le commentaire : remplacer `biome init` (qui écrit le fichier) par
+  // `biome check .` (qui n'écrit rien) laissait le garde VERT — mesuré. Une seule exception dans
+  // une approche « on ne croit que les artefacts » suffit à la rouvrir. Les trois fichiers de la
+  // racine sont donc décrits par leur CONTENU, en JSON, et un bloc qui ne parse pas ne compte pas.
+  const blocDe = (f) => {
+    const b = blocs.find((x) => x.fichier === f);
+    return b && jsonDuBloc(b) !== null ? b : null;
+  };
+  const illisibles = exiges.filter((f) => blocs.some((x) => x.fichier === f) && !blocDe(f));
   const manquants = exiges.filter((f) => !blocDe(f));
 
   // Le `package.json` de la racine est PARSÉ, pas cherché : sa liste `workspaces` et ses scripts
@@ -400,7 +409,9 @@ test('V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels le
   const pourquoi = (quoi) => [
     `${quoi} sur la racine que la puce \`- **vitrine**\` de 07-scaffold.md fait naître.`,
     manquants.length
-      ? `Fichiers exigés qu'AUCUN bloc de la puce ne produit : ${manquants.join(', ')}\n  (convention : la 1re ligne du bloc est un commentaire qui nomme le fichier — \`// package.json\`)`
+      ? `Fichiers exigés qu'AUCUN bloc PARSABLE de la puce ne décrit : ${manquants.join(', ')}`
+        + `${illisibles.length ? `\n  (bloc présent mais illisible : ${illisibles.join(', ')} — le contenu doit être du JSON, pas une commande)` : ''}`
+        + '\n  (convention : la 1re ligne du bloc est un commentaire qui nomme le fichier — `// package.json`)'
       : 'Les trois fichiers de la racine sont bien décrits — le trou est ailleurs (scripts d\'application, liste `workspaces`).',
     `Blocs lus : ${blocs.map((b) => b.fichier ?? '(sans nom)').join(', ') || 'aucun'}`,
   ].join('\n');
