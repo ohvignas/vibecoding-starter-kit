@@ -104,7 +104,19 @@ test('stacks/vitrine : AGENTS.md + README + prompts présents et complets', () =
   assert.match(a, /JSON-LD/);
   assert.match(a, /robots\.txt/);
   assert.match(a, /@astrojs\/sitemap/);
-  assert.match(a, /Keystatic/);
+  // ⚠️ CETTE LIGNE EXIGEAIT `Keystatic` — le CMS git que la stack vient de quitter. Le fait a
+  // changé, la propriété non : le fichier doit toujours nommer la brique qui PORTE LE CONTENU,
+  // sinon l'IA se retrouve avec des règles de mise en page et aucune source de données. Le
+  // contenu vit maintenant dans Convex, saisi depuis une SECONDE application — et c'est cette
+  // seconde application qu'il faut nommer, sinon la règle « au build » n'a plus d'endroit où
+  // renvoyer `useQuery`.
+  assert.match(a, /Convex/, 'vitrine : la brique qui porte le contenu');
+  assert.match(a, /dashboard\//, 'vitrine : la seconde application, celle qui saisit le contenu');
+  assert.match(a, /Better Auth/, 'vitrine : ce qui ferme le dashboard');
   assert.ok(read('stacks/vitrine/README.md').length > 800);
-  assert.ok(read('stacks/vitrine/prompts-de-demarrage.md').includes('shadcn'));
+  const p = read('stacks/vitrine/prompts-de-demarrage.md');
+  assert.ok(p.includes('shadcn'));
+  // Un prompt de démarrage qui ne monte QUE le site public laisserait le débutant sans endroit
+  // où écrire son contenu — le défaut exact que le passage à Convex crée s'il n'est pas dit.
+  assert.match(p, /dashboard/, 'les prompts doivent monter les DEUX applications');
 });

@@ -22,6 +22,11 @@ test('règles auto-attachées : frontmatter globs + alwaysApply:false', () => {
     // DEUX applications : c'est la frontière `site/` ↔ `dashboard/` qu'elle enseigne, et une règle
     // attachée à une seule des deux ne dirait que la moitié de la consigne.
     ['vitrine/build-time.mdc', 'site/'],
+    // Les deux règles reprises de `saas/` : sans globs, elles ne s'attachent à rien et la stack
+    // livrerait un backend et une auth que Cursor ne charge jamais. Leurs globs visent
+    // `dashboard/` — c'est là que vivent le schéma Convex et Better Auth.
+    ['vitrine/convex.mdc', 'dashboard/convex'],
+    ['vitrine/better-auth.mdc', 'dashboard/'],
   ];
   for (const [f, needle] of cases) {
     const t = fs.readFileSync(`templates/cursor/rules/${f}`, 'utf8');

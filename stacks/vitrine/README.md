@@ -1,14 +1,32 @@
-# Stack Site vitrine — Astro + shadcn/ui + Keystatic
+# Stack Site vitrine — Astro + TanStack Start + Convex + Better Auth
 
-**Pour quoi ?** Un site qui **présente** (entreprise, portfolio, resto, assos) ou un **blog** : contenu, pages, SEO. Pas de comptes utilisateurs, pas de données temps réel — pour ça, prends la stack SaaS.
+**Pour quoi ?** Un site qui **présente** (entreprise, portfolio, resto, assos) ou un **blog**, avec un **espace privé pour écrire le contenu** sans toucher au code. Le site public reste du HTML statique : c'est ce qui le rend rapide et trouvable.
+
+Le projet porte **deux applications sous une seule racine** :
+
+```
+mon-projet/
+├── site/         ← Astro : les pages publiques (ce que Google et les IA lisent)
+├── dashboard/    ← TanStack Start : la saisie du contenu (privé, derrière une connexion)
+└── package.json  ← la racine : elle pilote les deux (workspaces)
+```
 
 ## Les briques
 | Brique | Rôle | Pourquoi celle-là |
 |---|---|---|
-| **Astro 7** | le framework | HTML statique par défaut → ultra rapide, imbattable en SEO. **Node ≥ 22.12 requis** |
+| **Astro 7** | `site/` — le site public | HTML statique par défaut → ultra rapide, imbattable en SEO. **Node ≥ 22.12 requis** |
+| **TanStack Start** | `dashboard/` — l'espace de saisie | React full-stack, routes typées ; c'est le framework que Convex outille officiellement |
+| **Convex** | la base de données + le backend | le contenu vit là, en TypeScript, sans serveur à gérer |
+| **Better Auth** | la connexion au dashboard | comptes et sessions clé en main, via le composant officiel `@convex-dev/better-auth` |
 | **shadcn/ui** | les composants (React en îlots) | beaux composants copiés dans TON code, thème par preset |
 | **Tailwind v4** | le style | utilitaire, marche main dans la main avec shadcn |
-| **Keystatic** | le CMS | admin visuel sur `/keystatic`, contenu **dans le git** (gratuit, zéro serveur) |
+
+## Le point à comprendre avant tout le reste : le site public lit Convex **au build**
+Les pages publiques ne se connectent **jamais** à Convex depuis le navigateur. Elles lisent le contenu **pendant le build**, avec le client serveur `ConvexHttpClient`, dans le frontmatter d'une page `.astro` ou dans `getStaticPaths()`. Le HTML part du serveur **déjà rempli** : le crawler de Google, ChatGPT ou Perplexity trouve le texte tel quel.
+
+Si une page publique lisait Convex depuis le navigateur, elle s'afficherait très bien pour un humain — et serait **vide pour tous les moteurs**. C'est une panne totale et silencieuse, et le SEO est la raison d'être de cette stack.
+
+**Ce que ça coûte, et il faut le savoir avant de commencer :** publier un article dans le dashboard **ne change rien au site public tant qu'il n'est pas rebuildé**. Le rebuild fait partie de la publication.
 
 ## Ce que cette stack optimise : SEO **et** GEO
 - **SEO** (Google) : sitemap auto, robots.txt, meta/OG par page, JSON-LD, perfs au max.
@@ -16,19 +34,24 @@
 
 ## Ordre de construction
 0. **Vérifie ta version de Node** : `node --version` doit afficher **22.12 ou plus**. En dessous, Astro 7 s'arrête net avec `Please upgrade Node.js to a supported version: ">=22.12.0"`.
-1. **Setup** : `npx shadcn@latest init --preset <ton-code> --template astro` (crée l'app Astro + shadcn avec TON thème) — le preset se choisit sur [ui.shadcn.com/create](https://ui.shadcn.com/create). Contrôle ensuite `npx astro --version` : **ce kit est écrit pour Astro 7**. Si tu vois un majeur plus récent, demande au MCP `astro-docs` ce qui a changé avant de suivre ces règles.
-2. **Keystatic** : `npx astro add react markdoc` + `@keystatic/core @keystatic/astro` → admin `/keystatic`.
-3. **Pages** depuis la maquette (accueil, offres, contact…), contenu via collections déclarées dans `src/content.config.ts` (une entrée par collection, avec son `loader`).
-4. **SEO/GEO** : sitemap + robots.txt + `<SEO />` + JSON-LD + `public/llms.txt`.
-5. **Déploiement** : pousse sur GitHub → **Cloudflare Pages** (gratuit, bande passante illimitée) ou Netlify/Vercel.
+1. **`site/`** : `npx shadcn@latest init --template astro --base base --no-monorepo --preset <ton-code> --name site --yes` (crée l'app Astro + shadcn avec TON thème, dans `site/`) — le preset se choisit sur [ui.shadcn.com/create](https://ui.shadcn.com/create). Contrôle ensuite `npx astro --version` : **ce kit est écrit pour Astro 7**. Si tu vois un majeur plus récent, demande au MCP `astro-docs` ce qui a changé avant de suivre ces règles.
+2. **`dashboard/`** : `npm create convex@latest dashboard -- -t tanstack-start` (crée l'app TanStack Start + Convex), puis **Better Auth dans `dashboard/` uniquement**, en suivant le [guide officiel TanStack Start](https://labs.convex.dev/better-auth/framework-guides/tanstack-start).
+3. **La racine, en dernier** : `package.json` (avec `workspaces: ["site", "dashboard"]`), `tsconfig.json`, `biome.json` — sans eux, les vérifications automatiques du kit se sautent **en silence**.
+4. **Le schéma Convex** : une table par type de contenu (pages, articles, témoignages…), avec les champs qui remplissent les balises SEO (slug, titre, description, date).
+5. **Pages** depuis la maquette (accueil, offres, contact…), alimentées par la lecture au build. Le contenu qui ne bouge jamais (mentions légales) peut rester en content collections, déclarées dans `src/content.config.ts` avec leur `loader`.
+6. **SEO/GEO** : sitemap + robots.txt + `<SEO />` + JSON-LD + `public/llms.txt`.
+7. **Déploiement** : **Docker sur un VPS** — une image pour le site statique, une pour le dashboard, un reverse-proxy TLS devant. Convex tourne en cloud.
 
 ## Lancer
 ```bash
-npm run dev        # http://localhost:4321
-# admin CMS : http://localhost:4321/keystatic
+npx convex dev                 # le backend Convex (un terminal, depuis dashboard/)
+npm run dev --workspace site   # http://localhost:4321  — le site public
+npm run dev --workspace dashboard  # l'espace de saisie
 ```
 
 ## FAQ débutant
-- **C'est quoi un îlot ?** Ta page est du HTML pur ; un îlot = un composant React chargé UNIQUEMENT là où il faut de l'interactivité. C'est pour ça que c'est rapide.
+- **C'est quoi un îlot ?** Ta page est du HTML pur ; un îlot = un composant React chargé UNIQUEMENT là où il faut de l'interactivité. C'est pour ça que c'est rapide. Un îlot du site public ne parle pas à Convex : il reçoit ses données en props.
 - **Je veux changer les couleurs.** Refais un preset sur ui.shadcn.com/create ou règle les variables CSS sur tweakcn.com — jamais dans les fichiers de composants.
-- **Le client peut éditer le contenu ?** Oui : `/keystatic` (en local) ; en ligne, passe le storage en mode `github`.
+- **Le client peut éditer le contenu ?** Oui : il se connecte au dashboard, il écrit, il publie. Prévois le rebuild du site à la publication — sinon il écrira dans le vide sans comprendre pourquoi rien ne bouge.
+- **Pourquoi deux applications et pas une ?** Parce qu'elles n'ont pas le même métier : le site public doit être **statique** pour être indexé, le dashboard doit être **vivant** pour être agréable à utiliser. Les mélanger, c'est perdre l'un ou l'autre.
+- **Est-ce que ça reste gratuit ?** Non. Convex a un palier gratuit, mais le VPS se loue. C'était le prix à payer pour avoir un vrai espace de saisie.

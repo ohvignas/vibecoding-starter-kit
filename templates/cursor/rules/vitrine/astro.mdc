@@ -1,6 +1,6 @@
 ---
 description: Astro 7 (îlots, content collections, assets)
-globs: src/**/*.astro,src/content.config.*,src/data/**,astro.config.*
+globs: site/src/**/*.astro,site/src/content.config.*,site/src/data/**,site/astro.config.*
 alwaysApply: false
 ---
 

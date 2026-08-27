@@ -1,0 +1,10 @@
+---
+description: Better Auth — dans dashboard/ uniquement, via le composant Convex
+globs: dashboard/convex/betterAuth/**,dashboard/**/auth*.ts,dashboard/**/*auth*.tsx
+alwaysApply: false
+---
+
+- L'auth vit dans `dashboard/` et nulle part ailleurs : le site public est statique, il n'a ni compte ni session. Il n'existe aucun guide Better Auth × Astro, et ce n'est pas un manque.
+- Auth via `@convex-dev/better-auth`, en suivant le guide officiel TanStack Start. Installe la version de `better-auth` que ce guide indique (ex. `~1.6.x`), jamais `@latest`.
+- Schéma : `npx auth generate` (pas `@better-auth/cli`). Secrets via `npx convex env set`, jamais `.env`.
+- Protège les routes privées côté serveur (vérifie la session), pas seulement en cachant un bouton.
