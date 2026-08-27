@@ -24,11 +24,10 @@ export const ROUGES_ATTENDUS = [
   // V2bis (tâche 3) est parti d'ici le jour où la puce `- **vitrine**` a été écrite : le garde est
   // vert, et il est passé de lexical à EXÉCUTABLE au passage (il construit la racine que la puce
   // décrit et lance les checks dessus). La liste RÉTRÉCIT — c'est le seul sens autorisé.
-  {
-    nom: 'D6 — /doctor vérifie les 10 commandes, la mémoire du crew, le MCP shadcn de desktop et les outils de preuve',
-    tache: 'tâche 9',
-    quoi: 'templates/commands/doctor.md item 10 (+ copie plugin) : le segment « vitrine : » doit gagner convex et better-auth',
-  },
+  // D6 (tâche 9) est parti d'ici le jour où le segment « vitrine : » de l'item 10 a gagné `convex`
+  // et `better-auth` — la liste que D6 confronte est LUE dans `matrix.mjs`, elle n'est pas recopiée
+  // dans le test : le rouge s'est éteint tout seul dès que /doctor a dit la vérité du manifeste.
+  // La liste RÉTRÉCIT — c'est le seul sens autorisé.
   {
     nom: 'H2 — le README annonce les amplitudes RÉELLES (plugins et MCP recomptés sur les 12 combos)',
     tache: 'tâche 10',

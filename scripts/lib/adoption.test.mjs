@@ -1436,6 +1436,13 @@ test('T11 — les 8 champs du manifeste de stack sont comptés : chacun a sa lig
     mcp: /serveurs MCP de la stack/,        // item 10, 1re sous-puce (l'item 17 est tenu par T9)
     scripts: /Scripts `package\.json`/,     // item 10, 4e sous-puce — celle qui manquait
     skills: /^11\. \*\*Skills installés/,   // item 11
+    // `workspaces` était dans `SANS_LIGNE` avec, pour motif, « à rattacher le jour où /doctor
+    // recevra son item “les deux applications sont présentes” ». Ce jour-là est arrivé : l'item
+    // qui contrôle la DISPOSITION (les deux dossiers d'application, et la racine qui les déclare)
+    // existe, donc le champ passe ici — un motif ne remplace une ligne que tant qu'il n'y a pas de
+    // ligne. Et comme les autres, cette ligne DOIT porter son exception : `workspaces` est vide
+    // sur `aucune`, où le kit ne revendique aucune disposition.
+    workspaces: /\*\*Applications de la stack, et le `package\.json` de la RACINE\*\*/,
   };
   // …et ceux que `/doctor` ne contrôle nulle part. Le motif est écrit, pas sous-entendu : c'est lui
   // qu'on relit le jour où quelqu'un ajoute l'item correspondant.
@@ -1444,7 +1451,6 @@ test('T11 — les 8 champs du manifeste de stack sont comptés : chacun a sa lig
     checks: 'la sous-puce « Câblage checks » ne contrôle que la PRÉSENCE du fichier de config de l\'assistant, que ce parcours pose (mesuré sur un scaffold réel)',
     rules: 'les règles de stack ne sont pas livrées sur `aucune` et aucun item ne les cherche',
     domains: 'le catalogue de domaines n\'est pas posé sur `aucune` et aucun item ne le cherche',
-    workspaces: 'la disposition en workspaces (stack vitrine : `site/` + `dashboard/`) : aucun item ne la contrôle aujourd\'hui, et sur `aucune` le kit ne revendique AUCUNE disposition — c\'est le dépôt de l\'utilisateur. À rattacher le jour où /doctor recevra son item « les deux applications sont présentes »',
   };
   const nonTranches = Object.keys(manifeste).filter((k) => !(k in CONTROLE_PAR) && !(k in SANS_LIGNE));
   assert.deepEqual(nonTranches, [], `champ(s) du manifeste de stack ni rattaché(s) à une ligne de /doctor, ni justifié(s) : ${nonTranches.join(', ')}.\n`
