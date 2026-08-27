@@ -23,16 +23,16 @@ Les pages publiques lisent Convex **au BUILD** : client serveur `ConvexHttpClien
 2. **`dashboard/`** — `npm create convex@latest dashboard -- -t tanstack-start` (le `-t` est obligatoire), puis Better Auth via `@convex-dev/better-auth`, guide officiel TanStack Start.
 3. **La racine, en dernier** — `package.json` (`workspaces: ["site", "dashboard"]` + scripts), `tsconfig.json`, `biome.json`.
 4. **Schéma Convex** — une table par type de contenu, avec les champs du SEO (slug, titre, description, date).
-5. **Pages** depuis la maquette, alimentées par la lecture au build. Le contenu figé (mentions légales) peut rester en content collections, déclarées dans `src/content.config.ts` avec leur `loader`.
-6. **SEO/GEO** — sitemap + robots.txt (IA autorisées) + `<SEO />`/JSON-LD + `public/llms.txt`.
+5. **Pages** depuis la maquette, alimentées par la lecture au build. Le contenu figé (mentions légales) peut rester en content collections, déclarées dans `site/src/content.config.ts` avec leur `loader`.
+6. **SEO/GEO** — sitemap + `site/public/robots.txt` (IA autorisées) + `<SEO />`/JSON-LD + `site/public/llms.txt`. ⚠️ Ces fichiers vont dans `site/public/`, **pas à la racine du projet** : posés à la racine, rien ne les sert et le GEO tombe en silence.
 7. **Déploiement** — Docker sur un VPS : une image par application, reverse-proxy TLS, Convex en cloud. Le rebuild du site fait partie de la publication.
 
 ## Pièges connus
 - **L'ordre de création** : les scripts de la racine ratissent les deux applications. Posés avant que `dashboard/` existe, ils échouent à chaque écriture de fichier — et le cas « racine + `site/` seul » sort en 0 **sans un mot**, la moitié du projet jamais vérifiée.
 - **`astro check`** : sans ce script dans `site/`, le typecheck retombe sur `tsc --noEmit`, qui ne lit pas les `.astro` et sort vert sans rien vérifier.
 - **Îlots** : le contexte React n'est pas partagé — composants shadcn interactifs liés dans UN .tsx. Un îlot public reçoit ses données en props, il ne se connecte pas à Convex.
-- Sitemap silencieusement absent si `site` manque dans `astro.config`.
-- **Collections** : `getCollection('x')` ne renvoie rien tant que `x` n'est pas déclarée dans `src/content.config.ts` avec un `loader`. Depuis Astro 6, un simple dossier ne crée plus de collection.
+- Sitemap silencieusement absent si le champ `site` manque dans `site/astro.config.mjs`.
+- **Collections** : `getCollection('x')` ne renvoie rien tant que `x` n'est pas déclarée dans `site/src/content.config.ts` avec un `loader`. Depuis Astro 6, un simple dossier ne crée plus de collection.
 - **APIs supprimées en Astro 6** : `Astro.glob()` et `<ViewTransitions />` (→ `<ClientRouter />`). Si l'IA les propose, elle raisonne sur Astro 4/5.
 - Astro n'a **plus** de llms.txt officiel → MCP `astro-docs` pour la doc.
 - **Better Auth** : le composant Convex épingle une version précise de `better-auth`. Ne jamais installer `@latest`.

@@ -5,6 +5,6 @@ alwaysApply: false
 ---
 
 - Chaque page : title unique, meta description, canonical, Open Graph. Une seule h1.
-- `@astrojs/sitemap` + champ `site` dans astro.config ; `site/public/robots.txt` pointe le sitemap et AUTORISE GPTBot/PerplexityBot/ClaudeBot.
+- `@astrojs/sitemap` + champ `site` dans `site/astro.config.mjs` ; `site/public/robots.txt` pointe le sitemap et AUTORISE GPTBot/PerplexityBot/ClaudeBot.
 - JSON-LD par type de page (Organization/LocalBusiness, FAQPage, Article, BreadcrumbList).
 - `site/public/llms.txt` = aperçu du site pour les IA — à mettre à jour à CHAQUE nouvelle page.

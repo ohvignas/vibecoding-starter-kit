@@ -9,7 +9,7 @@ Je construis un **site vitrine / blog** rapide et trouvable. Le projet porte **d
 - **`dashboard/` — TanStack Start** : la saisie du contenu. Privé, derrière une connexion, jamais indexé.
 - **Convex** — la base de données et le backend, partagés par les deux applications. Le contenu vit là.
 - **Better Auth** — la connexion au `dashboard/`, via le composant officiel `@convex-dev/better-auth`.
-- **shadcn/ui** (Tailwind v4 + React) — les composants UI : en **îlots** côté public, en pages React côté dashboard.
+- **shadcn/ui** (Tailwind v4 + React) — les composants UI du site public, montés en **îlots**. Le scaffold ne l'installe que dans `site/`.
 
 Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 
@@ -19,7 +19,7 @@ Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 - **Statique d'abord** : tout est `.astro` sans JS. N'ajoute `client:load` / `client:visible` QUE sur ce qui est vraiment interactif (menu mobile, carrousel, formulaire).
 - ⚠️ **Le contexte React n'est PAS partagé entre îlots.** Des composants shadcn qui interagissent (ex. `Dialog` + son bouton) doivent vivre dans **UN seul fichier `.tsx`**, importé une fois dans le `.astro`. Jamais éparpillés dans le `.astro`.
 - **Un îlot ne parle pas à Convex** : il reçoit ses données **en props**, préparées par la page qui l'importe (voir la section suivante).
-- Le contenu qui reste dans le dépôt (mentions légales, pages fixes) = **content collections**, jamais des données en dur dans les pages. Une collection se DÉCLARE dans **`src/content.config.ts`** avec un **`loader`** (`glob()` / `file()` de `astro/loaders`) : depuis Astro 6, un dossier ne suffit plus, et `src/content/config.ts` n'est plus lu.
+- Le contenu qui reste dans le dépôt (mentions légales, pages fixes) = **content collections**, jamais des données en dur dans les pages. Une collection se DÉCLARE dans **`site/src/content.config.ts`** avec un **`loader`** (`glob()` / `file()` de `astro/loaders`) : depuis Astro 6, un dossier ne suffit plus, et `src/content/config.ts` n'est plus lu.
 - ⚠️ **APIs supprimées par Astro 6, ne les écris jamais** : `Astro.glob()` (→ `getCollection()` ou `import.meta.glob()`) et `<ViewTransitions />` (→ `<ClientRouter />`).
   **Le skill design `ui-ux-pro-max` te les proposera** : sa fiche Astro (`data/stacks/astro.csv`, dépôt tiers que le kit ne modifie pas) date d'avant leur suppression et recommande encore les deux. Cette règle-ci prime — si un skill et cette page se contredisent sur une API Astro, c'est cette page qui a raison.
 - Images : **toujours** `astro:assets` (`<Image />`), jamais `<img>` brut sur une photo.
@@ -36,7 +36,7 @@ Le contenu vit dans **Convex**, et deux applications le partagent : `site/` (Ast
 - Installe via le CLI : `npx shadcn@latest add <composant>` — ne recopie jamais un composant à la main.
 - Le **thème** vient du preset (`npx shadcn@latest init --template astro --preset <code>`) ou de tweakcn — modifie les **variables CSS**, pas les fichiers de composants.
 - Style : classes Tailwind + tokens (`bg-primary`, `text-muted-foreground`…), pas de couleurs en dur.
-- Les deux applications partagent le même thème : mêmes variables CSS, mêmes tokens. Un composant installé deux fois se règle deux fois — installe-le là où il sert.
+- ⚠️ **shadcn ne vit que dans `site/`** : c'est le preset qui l'y pose, et rien ne l'installe ailleurs. Pour en mettre aussi dans `dashboard/`, il faut y lancer `npx shadcn@latest init` — les deux applications auront alors chacune SES variables CSS, à garder d'accord à la main.
 
 ## Le dashboard (TanStack Start + Better Auth)
 - **Toute la saisie du contenu vit ici**, et nulle part ailleurs : le site public n'a ni compte, ni session, ni écran d'admin.
@@ -53,13 +53,13 @@ Le contenu vit dans **Convex**, et deux applications le partagent : `site/` (Ast
 - Règles officielles à donner à l'IA : `ai-context/convex/`.
 
 ## SEO (non négociable — dès le premier jalon)
-- `@astrojs/sitemap` installé + champ **`site`** renseigné dans `astro.config` (sinon pas de sitemap).
-- `public/robots.txt` (dans `site/`) : pointe le sitemap, autorise tout par défaut **y compris les crawlers IA** (`GPTBot`, `PerplexityBot`, `ClaudeBot`, `Google-Extended`).
+- `@astrojs/sitemap` installé + champ **`site`** renseigné dans `site/astro.config.mjs` (sinon pas de sitemap).
+- **`site/public/robots.txt`** : pointe le sitemap, autorise tout par défaut **y compris les crawlers IA** (`GPTBot`, `PerplexityBot`, `ClaudeBot`, `Google-Extended`).
 - Chaque page a : `<title>` unique (50-60 car.), meta description (150-160 car.), canonical, Open Graph (titre, description, image) — via `astro-seo` ou un composant `<SEO />` maison.
 - Une seule `<h1>` par page ; hiérarchie `h2`/`h3` propre ; texte alternatif sur chaque image.
 
 ## GEO — être cité par ChatGPT / Perplexity / Claude (non négociable)
-- Maintiens **`public/llms.txt`** : aperçu du site en Markdown (qui on est, offres, pages clés avec URLs). **Mets-le à jour à chaque nouvelle page.**
+- Maintiens **`site/public/llms.txt`** (à la racine du site public, pas à la racine du projet) : aperçu du site en Markdown (qui on est, offres, pages clés avec URLs). **Mets-le à jour à chaque nouvelle page.**
 - **JSON-LD schema.org** par type de page : `Organization` ou `LocalBusiness` (accueil), `FAQPage` (FAQ), `Article` (blog), `BreadcrumbList` (navigation). Google lit le JSON-LD ; les IA lisent JSON-LD **et** llms.txt.
 - Écris **dense et factuel** : chiffres, listes, réponses directes — les moteurs génératifs citent ce qui est précis.
 

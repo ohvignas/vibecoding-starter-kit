@@ -34,13 +34,14 @@ Si une page publique lisait Convex depuis le navigateur, elle s'afficherait trè
 
 ## Ordre de construction
 0. **Vérifie ta version de Node** : `node --version` doit afficher **22.12 ou plus**. En dessous, Astro 7 s'arrête net avec `Please upgrade Node.js to a supported version: ">=22.12.0"`.
-1. **`site/`** : `npx shadcn@latest init --template astro --base base --no-monorepo --preset <ton-code> --name site --yes` (crée l'app Astro + shadcn avec TON thème, dans `site/`) — le preset se choisit sur [ui.shadcn.com/create](https://ui.shadcn.com/create). Contrôle ensuite `npx astro --version` : **ce kit est écrit pour Astro 7**. Si tu vois un majeur plus récent, demande au MCP `astro-docs` ce qui a changé avant de suivre ces règles.
+1. **`site/`** : `npx shadcn@latest init --template astro --base base --no-monorepo --preset <ton-code> --name site --yes` (crée l'app Astro + shadcn avec TON thème, dans `site/`) — le preset se choisit sur [ui.shadcn.com/create](https://ui.shadcn.com/create). Contrôle ensuite `cd site && npx astro --version` — **depuis la racine, la commande ne mesure rien** (`npx canceled due to missing packages`, ou la version du registre au lieu de la tienne). **Ce kit est écrit pour Astro 7**. Si tu vois un majeur plus récent, demande au MCP `astro-docs` ce qui a changé avant de suivre ces règles.
 2. **`dashboard/`** : `npm create convex@latest dashboard -- -t tanstack-start` (crée l'app TanStack Start + Convex), puis **Better Auth dans `dashboard/` uniquement**, en suivant le [guide officiel TanStack Start](https://labs.convex.dev/better-auth/framework-guides/tanstack-start).
-3. **La racine, en dernier** : `package.json` (avec `workspaces: ["site", "dashboard"]`), `tsconfig.json`, `biome.json` — sans eux, les vérifications automatiques du kit se sautent **en silence**.
-4. **Le schéma Convex** : une table par type de contenu (pages, articles, témoignages…), avec les champs qui remplissent les balises SEO (slug, titre, description, date).
-5. **Pages** depuis la maquette (accueil, offres, contact…), alimentées par la lecture au build. Le contenu qui ne bouge jamais (mentions légales) peut rester en content collections, déclarées dans `src/content.config.ts` avec leur `loader`.
-6. **SEO/GEO** : sitemap + robots.txt + `<SEO />` + JSON-LD + `public/llms.txt`.
-7. **Déploiement** : **Docker sur un VPS** — une image pour le site statique, une pour le dashboard, un reverse-proxy TLS devant. Convex tourne en cloud.
+3. **Les quatre scripts** : `"typecheck": "astro check"` + `"lint": "biome check ."` dans `site/`, `"typecheck": "tsc --noEmit"` + `"lint": "biome check ."` dans `dashboard/`. Les scripts de la racine appellent les deux applications **sans `--if-present`** : s'il en manque un, chaque écriture de fichier affiche « ⚠ problème détecté ».
+4. **La racine, en dernier** : `package.json` (avec `workspaces: ["site", "dashboard"]`), `tsconfig.json`, `biome.json` — sans eux, les vérifications automatiques du kit se sautent **en silence**.
+5. **Le schéma Convex** : une table par type de contenu (pages, articles, témoignages…), avec les champs qui remplissent les balises SEO (slug, titre, description, date).
+6. **Pages** depuis la maquette (accueil, offres, contact…), alimentées par la lecture au build. Le contenu qui ne bouge jamais (mentions légales) peut rester en content collections, déclarées dans `site/src/content.config.ts` avec leur `loader`.
+7. **SEO/GEO** : sitemap + `site/public/robots.txt` + `<SEO />` + JSON-LD + `site/public/llms.txt`. ⚠️ **Ces fichiers vont dans `site/public/`, pas à la racine du projet** — posés à la racine, ils ne sont servis par personne et le SEO tombe sans un mot.
+8. **Déploiement** : **Docker sur un VPS** — une image pour le site statique, une pour le dashboard, un reverse-proxy TLS devant. Convex tourne en cloud.
 
 ## Lancer
 ```bash
