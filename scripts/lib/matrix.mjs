@@ -250,20 +250,33 @@ export const STACKS = {
       STITCH_SKILL,
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: [] },
+    // LA DISPOSITION, DÉCLARÉE ICI ET NULLE PART AILLEURS. Elle pilote trois choses qui, sinon,
+    // recopieraient chacune la liste : les scripts ci-dessous, la case `workspaces` de
+    // `docs/A-FAIRE.md` (setup-ai.mjs) et le runbook de scaffold. Les autres stacks n'ont qu'une
+    // application : leur liste est vide, et c'est cette vacuité qui distingue les deux mondes.
+    workspaces: ['site', 'dashboard'],
     // ⚠️ CES TROIS SCRIPTS SONT CEUX DE LA RACINE, ET C'EST TOUT LE SUJET. Le hook de checks lit
     // le `package.json` du dossier COURANT (templates/hooks/framework/checks.mjs) : avec `site/`
     // et `dashboard/` en sous-dossiers, une racine sans `package.json` fait déclarer à CHAQUE
     // check `willRun: false` — il ne rougit pas, il se saute, et le pre-commit sort vert sans
-    // avoir rien vérifié. La racine porte donc un `package.json` avec `workspaces: ["site",
-    // "dashboard"]`, et ces scripts ratissent les DEUX (`--workspaces --if-present` — mesuré :
-    // il entre dans chaque workspace même sans `npm install` préalable).
+    // avoir rien vérifié. La racine porte donc un `package.json` avec `workspaces` (ci-dessus),
+    // et ces scripts ratissent les DEUX (mesuré : `--workspaces` entre dans chaque workspace
+    // même sans `npm install` préalable, en ~0,7 s).
+    //
+    // ⛔ PAS DE `--if-present`, ET C'EST DÉLIBÉRÉ. Il remet exactement le défaut que cette stack
+    // doit tuer : le template `npm create convex@latest -- -t tanstack-start` ne déclare NI
+    // `typecheck` NI `lint`, donc `npm run lint --workspaces --if-present` n'entre nulle part,
+    // n'imprime pas une ligne et sort 0 — et `checks.mjs` annonce `willRun: true, via: 'script'`,
+    // donc pas même un « check sauté ». Sans le drapeau, npm sort 1 en nommant le coupable
+    // (`Missing script: "lint" · workspace dashboard`) et le hook avertit. Une application qui
+    // ne déclare pas son check est une erreur de scaffold, pas un cas nominal à absorber.
     // ⚠️ Et le `package.json` ne suffit pas : `needs` est évalué AVANT le script, donc la racine
     // doit aussi porter `tsconfig.json` (typecheck) et `biome.json` (lint), sinon les deux checks
     // se sautent malgré des scripts parfaits. Mesuré, gardé par `cablage-stacks.test.mjs` (V2).
     scripts: {
-      typecheck: 'npm run typecheck --workspaces --if-present',
-      lint: 'npm run lint --workspaces --if-present',
-      build: 'npm run build --workspaces --if-present',
+      typecheck: 'npm run typecheck --workspaces',
+      lint: 'npm run lint --workspaces',
+      build: 'npm run build --workspaces',
     },
     rules: [
       { label: 'shadcn × Astro (installation officielle)', url: 'https://ui.shadcn.com/docs/installation/astro' },
@@ -299,7 +312,7 @@ export function resolveStackManifest(stack, assistant) {
   // `skills.length`. Toutes vides, jamais absentes : un champ manquant fait planter le consommateur
   // ailleurs, exactement ce que cette étape doit éviter.
   if (estAdopte(stack)) {
-    return { plugins: [], mcp: {}, skills: [], checks: { onEdit: [], preCommit: [], prePush: [] }, scripts: {}, rules: [], domains: {} };
+    return { plugins: [], mcp: {}, skills: [], checks: { onEdit: [], preCommit: [], prePush: [] }, workspaces: [], scripts: {}, rules: [], domains: {} };
   }
   const s = STACKS[stack];
   if (!s) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(STACKS).join('|')})`);
@@ -308,6 +321,8 @@ export function resolveStackManifest(stack, assistant) {
     mcp: s.mcp,
     skills: s.skills,
     checks: s.checks,
+    // Vide sur les stacks mono-application : `setup-ai.mjs` ne rend alors aucune case `workspaces`.
+    workspaces: s.workspaces ?? [],
     scripts: s.scripts,
     rules: s.rules,
     domains: s.domains,

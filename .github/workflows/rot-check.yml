@@ -10,11 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Dépôts de skills (GitHub) — doivent répondre 2xx/3xx
+      # ⚠️ DÉRIVÉE de `scripts/lib/matrix.mjs` comme la boucle d'URLs ci-dessous : tout dépôt qu'une
+      # stack fait cloner (`plugins[*].cmd`) doit y être. Garde : `faits-stacks.test.mjs`, F12bis.
+      - name: Dépôts de skills et de plugins (GitHub) — doivent répondre 2xx/3xx
         run: |
           set -e
           for r in \
             better-auth/skills get-convex/agent-skills expo/skills \
+            get-convex/convex-agent-plugins \
             google-labs-code/stitch-skills anthropics/skills \
             vercel-labs/agent-skills nextlevelbuilder/ui-ux-pro-max-skill \
             multica-ai/andrej-karpathy-skills \

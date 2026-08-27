@@ -202,20 +202,39 @@ test('F12 — rot-check surveille la DÉPRÉCIATION npm, pas seulement les codes
 
 // F12bis — LA LISTE DES SOURCES EXTERNES EST DÉRIVÉE DU MANIFESTE, PAS RECOPIÉE À LA MAIN.
 // `rot-check` est le seul endroit qui apprend au kit qu'une source a bougé. Il était rempli à la
-// main : ajouter un MCP ou une règle à une stack laissait sa source HORS surveillance — muette le
-// jour où elle disparaît, et le kit continuait de l'annoncer. Ce test lit ce que `matrix.mjs`
-// déclare vraiment et exige que chaque URL y figure.
-test('F12bis — toute URL externe déclarée par une stack (MCP ou règle) est surveillée par rot-check', () => {
-  const rot = lire('.github/workflows/rot-check.yml');
+// main : ajouter un MCP, une règle ou un plugin à une stack laissait sa source HORS surveillance —
+// muette le jour où elle disparaît, et le kit continuait de l'annoncer. Ce test lit ce que
+// `matrix.mjs` déclare vraiment et exige que chaque URL y figure.
+//
+// ⛔ IL LIT LES BOUCLES, PAS LE FICHIER. Un `includes` sur tout le YAML prouve « la chaîne est
+// quelque part », pas « l'URL est pingée » : sortie de sa boucle et collée dans un commentaire
+// `# TODO`, elle satisfaisait encore le garde alors que plus rien ne l'appelait. On ne lit donc
+// que le contenu des `for … in … ; do`, c'est-à-dire ce que la CI parcourt vraiment.
+const jetonsSurveilles = (yml) => new Set(
+  [...yml.matchAll(/for\s+\w+\s+in([\s\S]*?);\s*do/g)]
+    // …et à l'intérieur de la boucle, les lignes COMMENTÉES ne comptent pas non plus : une entrée
+    // mise en `# TODO` au milieu de la liste n'est plus parcourue, et le garde la créditait encore.
+    .flatMap((m) => m[1].split('\n').filter((l) => !/^\s*#/.test(l)).join(' ').split(/\s+/))
+    .filter((t) => t && t !== '\\'),
+);
+
+test('F12bis — toute URL externe déclarée par une stack (MCP, règle, plugin) est surveillée par rot-check', () => {
+  const surveilles = jetonsSurveilles(lire('.github/workflows/rot-check.yml'));
+  assert.ok(surveilles.has('https://convex.link/convex_rules.txt'), 'montage : les boucles de rot-check doivent être lisibles');
+
   const urls = new Set();
+  const moissonne = (v) => { for (const u of JSON.stringify(v).matchAll(/https:\/\/[^"'\s\\)`]+/g)) urls.add(u[0].replace(/[.,]$/, '')); };
   for (const s of Object.values(STACKS)) {
-    for (const cfg of Object.values(s.mcp)) {
-      // `chrome-devtools` pointe le navigateur LOCAL (127.0.0.1:9222) : rien à surveiller dehors.
-      for (const u of JSON.stringify(cfg).matchAll(/https:\/\/[^"'\s\\]+/g)) urls.add(u[0]);
-    }
-    for (const r of s.rules) urls.add(r.url);
+    // `chrome-devtools` pointe le navigateur LOCAL (127.0.0.1:9222) : le motif `https://` l'écarte.
+    moissonne(s.mcp);
+    moissonne(s.rules);
+    // Les plugins aussi : `git clone https://github.com/get-convex/convex-agent-plugins` est une
+    // source externe comme une autre, et elle était hors surveillance.
+    moissonne(s.plugins);
   }
-  assert.ok(urls.size >= 8, `le relevé doit trouver les sources des 4 stacks (trouvé ${urls.size})`);
-  const horsSurveillance = [...urls].filter((u) => !rot.includes(u));
-  assert.deepEqual(horsSurveillance, [], `Sources déclarées par matrix.mjs et jamais pingées :\n${horsSurveillance.join('\n')}\n→ ajoute-les à .github/workflows/rot-check.yml`);
+  assert.ok(urls.size >= 10, `le relevé doit trouver les sources des 4 stacks (trouvé ${urls.size})`);
+  // Un dépôt GitHub est surveillé sous sa forme courte `owner/repo` par la première boucle.
+  const couvert = (u) => surveilles.has(u) || surveilles.has(u.replace('https://github.com/', ''));
+  const horsSurveillance = [...urls].filter((u) => !couvert(u)).sort();
+  assert.deepEqual(horsSurveillance, [], `Sources déclarées par matrix.mjs et jamais pingées :\n${horsSurveillance.join('\n')}\n→ ajoute-les à une boucle de .github/workflows/rot-check.yml`);
 });

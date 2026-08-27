@@ -151,6 +151,16 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skil
   if (!adopte) {
     section('Scripts package.json');
     L.push(`- ℹ️ Aucun \`package.json\` pour l'instant : il naîtra avec le projet, quand ${cmd('new-project')} scaffoldera la stack à son étape \`07-scaffold.md\`. **Reviens cocher ces cases après.**`);
+    // LA CASE QUI MANQUAIT, ET LE MUR QU'ELLE ÉVITE. Sur une stack à deux applications, les
+    // scripts ci-dessous portent `--workspaces` : recopiés dans un `package.json` qui ne déclare
+    // pas le champ `workspaces`, ils donnent `npm error No workspaces found!` — et le hook, lui,
+    // affiche « ⚠ check typecheck : problème détecté ». L'élève a suivi la case à la lettre et le
+    // kit accuse son code. C'est exactement ce que le commentaire de `checks.mjs` interdit.
+    // La liste vient du manifeste (`STACKS.<stack>.workspaces`), jamais recopiée ici.
+    if (manifest.workspaces.length) {
+      L.push(`- [ ] **D'abord** : ce \`package.json\` est celui de la **racine**, et il doit déclarer les deux applications, sinon les scripts ci-dessous répondent \`No workspaces found!\` → \`"workspaces": ${JSON.stringify(manifest.workspaces)}\``);
+      L.push(`  - ⚠️ et chaque application (${manifest.workspaces.map((w) => `\`${w}/\``).join(', ')}) doit déclarer **ses** scripts \`typecheck\` et \`lint\` : une application qui n'en a pas fait échouer la commande de la racine, en la nommant.`);
+    }
     for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);
   }
   L.push('');

@@ -1401,10 +1401,10 @@ test('T10 — `--refresh` sur un projet adopté : glossaire adapté, et aucun `a
 // trou.
 //
 // ON PART DONC DE LA SOURCE, PAS DU TEXTE. `resolveStackManifest('aucune')` (matrix.mjs) rend ses
-// SEPT champs VIDES : tout ce que `/doctor` exige et qui provient de l'un d'eux est insatisfaisable
+// HUIT champs VIDES : tout ce que `/doctor` exige et qui provient de l'un d'eux est insatisfaisable
 // sur un projet adopté — par construction, pas par accident. Chaque champ doit donc être ici soit
 // rattaché à la ligne de `/doctor` qui le contrôle (et cette ligne porte son exception), soit rangé
-// dans `SANS_LIGNE` avec son motif. Un 8ᵉ champ ajouté à `STACKS` fera échouer ce test tant que
+// dans `SANS_LIGNE` avec son motif. Un 9ᵉ champ ajouté à `STACKS` fera échouer ce test tant que
 // personne n'aura tranché — c'est ça, compter.
 //
 // CE QU'IL NE GARANTIT PAS, mesuré en mutation : il juge la PRÉSENCE de TROIS marques (la condition
@@ -1420,7 +1420,7 @@ test('T10 — `--refresh` sur un projet adopté : glossaire adapté, et aucun `a
 // la régression, au nom d'une impossibilité qui n'en était pas une : les trois lignes de
 // `CONTROLE_PAR` portent toutes le littéral « projet adopté », donc l'exiger est gratuit et ferme
 // exactement cette mutation-là. Un commentaire qui déclare un garde impossible est une permission.
-test('T11 — les 7 champs du manifeste de stack sont comptés : chacun a sa ligne de /doctor exemptée, ou son motif', () => {
+test('T11 — les 8 champs du manifeste de stack sont comptés : chacun a sa ligne de /doctor exemptée, ou son motif', () => {
   const manifeste = resolveStackManifest(STACK_AUCUNE, 'claude-code');
   const vide = (v) => (Array.isArray(v) ? v.length === 0
     : v && typeof v === 'object' ? Object.values(v).every(vide)
@@ -1444,6 +1444,7 @@ test('T11 — les 7 champs du manifeste de stack sont comptés : chacun a sa lig
     checks: 'la sous-puce « Câblage checks » ne contrôle que la PRÉSENCE du fichier de config de l\'assistant, que ce parcours pose (mesuré sur un scaffold réel)',
     rules: 'les règles de stack ne sont pas livrées sur `aucune` et aucun item ne les cherche',
     domains: 'le catalogue de domaines n\'est pas posé sur `aucune` et aucun item ne le cherche',
+    workspaces: 'la disposition en workspaces (stack vitrine : `site/` + `dashboard/`) : aucun item ne la contrôle aujourd\'hui, et sur `aucune` le kit ne revendique AUCUNE disposition — c\'est le dépôt de l\'utilisateur. À rattacher le jour où /doctor recevra son item « les deux applications sont présentes »',
   };
   const nonTranches = Object.keys(manifeste).filter((k) => !(k in CONTROLE_PAR) && !(k in SANS_LIGNE));
   assert.deepEqual(nonTranches, [], `champ(s) du manifeste de stack ni rattaché(s) à une ligne de /doctor, ni justifié(s) : ${nonTranches.join(', ')}.\n`
