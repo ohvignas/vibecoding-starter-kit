@@ -21,23 +21,19 @@ import { spawn } from 'node:child_process';
 
 // nom = le titre EXACT du test, tel que le rapporteur TAP l'imprime.
 export const ROUGES_ATTENDUS = [
-  // V2bis (tâche 3) est parti d'ici le jour où la puce `- **vitrine**` a été écrite : le garde est
-  // vert, et il est passé de lexical à EXÉCUTABLE au passage (il construit la racine que la puce
-  // décrit et lance les checks dessus). La liste RÉTRÉCIT — c'est le seul sens autorisé.
-  // D6 (tâche 9) est parti d'ici le jour où le segment « vitrine : » de l'item 10 a gagné `convex`
-  // et `better-auth` — la liste que D6 confronte est LUE dans `matrix.mjs`, elle n'est pas recopiée
-  // dans le test : le rouge s'est éteint tout seul dès que /doctor a dit la vérité du manifeste.
-  // La liste RÉTRÉCIT — c'est le seul sens autorisé.
-  {
-    nom: 'H2 — le README annonce les amplitudes RÉELLES (plugins et MCP recomptés sur les 12 combos)',
-    tache: 'tâche 10',
-    quoi: 'README.md : « 2 à 4 serveurs MCP » → « 2 à 5 serveurs MCP »',
-  },
-  {
-    nom: 'H2bis — la table « Geste 2 » liste EXACTEMENT les stacks qui ont un plugin',
-    tache: 'tâche 10',
-    quoi: 'README.md : ajouter la ligne « Vitrine | Convex | Cursor, Claude Code » et corriger la phrase « qui n\'a aucun plugin dédié »',
-  },
+  // ⚠️ VIDE, ET C'EST L'ÉTAT NORMAL. Cette liste n'existe que pendant un chantier : le temps qu'un
+  // garde écrit à l'avance attende la tâche qui le rendra vert. Elle doit RÉTRÉCIR, jamais grandir,
+  // et finir ici. Le lot « stack vitrine → Convex » l'a vue passer de 4 à 0 : V2bis (tâche 3), D6
+  // (tâche 9), puis H2 et H2bis (tâche 10, le README qui annonçait « 2 à 4 serveurs MCP » et une
+  // stack Vitrine « sans plugin dédié »).
+  //
+  // ⛔ LISTE VIDE NE VEUT PAS DIRE LANCEUR INUTILE — c'est l'inverse. Avec zéro rouge épinglé, le
+  // verdict devient « TOUT rouge est une régression, et il est nommé » : la forme la plus stricte
+  // que ce fichier puisse rendre. Il continue aussi de refuser de conclure sur une sortie qu'il
+  // n'a pas su lire (`relire`), ce qu'aucune liste ne conditionne. On ne le retire pas.
+  //
+  // Pour rouvrir un chantier : ajoute une entrée { nom, tache, quoi } — `nom` est le TITRE EXACT
+  // du test, tel que le rapporteur TAP l'imprime — et retire-la dès que la tâche est faite.
 ];
 
 // Les `not ok` de PREMIER NIVEAU (colonne 0). Les sous-tests sont indentés : les compter
@@ -98,7 +94,11 @@ function rendre({ inattendus, disparus, ok, partiel, illisible }, attendus) {
   for (const r of attendus) L.push(`  · ${r.tache} — ${r.nom.split(' — ')[0]}`);
   if (partiel) L.push('  (run PARTIEL : périmètre restreint — fichiers ou filtre de tests → on ne conclut rien sur les rouges absents)');
   if (ok) {
-    L.push(partiel ? '✓ aucun rouge inattendu dans ce sous-ensemble.' : `✓ ${attendus.length} rouge(s), tous attendus. Aucune régression.`);
+    // Liste vide = l'état normal (fin de chantier) : « 0 rouge(s), tous attendus » se lit mal,
+    // et surtout n'annonce pas ce qui compte — que TOUT rouge serait désormais une régression.
+    if (partiel) L.push('✓ aucun rouge inattendu dans ce sous-ensemble.');
+    else if (!attendus.length) L.push('✓ aucun rouge attendu, aucun rouge trouvé. La suite est verte.');
+    else L.push(`✓ ${attendus.length} rouge(s), tous attendus. Aucune régression.`);
   } else {
     for (const n of inattendus) L.push(`✗ ROUGE INATTENDU : ${n}\n    → une régression, ou un garde à ajouter à ROUGES_ATTENDUS avec sa tâche.`);
     for (const r of disparus) L.push(`✗ ROUGE ATTENDU DISPARU : ${r.nom}\n    → ${r.tache} est faite ? RETIRE-LE de ROUGES_ATTENDUS (scripts/rouges-attendus.mjs).`);

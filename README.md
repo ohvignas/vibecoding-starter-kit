@@ -226,7 +226,7 @@ Régénère ce qui appartient au kit (commandes, agents, règles). Il ne réécr
 
 Le wizard a **déjà tout posé dans le projet**. Il reste trois familles de gestes **dans ton assistant IA** (impossible pour un scaffolder d'installer un plugin ou de connecter un compte à ta place) : la boucle superpowers, les plugins, les MCP.
 
-**Combien de cases exactement ? Ça dépend de ton couple stack × assistant** — de **0 à 2 plugins** (certains combos n'en ont aucun) et de **2 à 4 serveurs MCP**. Aucune promesse à l'aveugle ici : ta liste réelle, cochable, est dans **`docs/A-FAIRE.md`**, généré pour *ta* configuration.
+**Combien de cases exactement ? Ça dépend de ton couple stack × assistant** — de **0 à 2 plugins** (certains combos n'en ont aucun) et de **2 à 5 serveurs MCP**. Aucune promesse à l'aveugle ici : ta liste réelle, cochable, est dans **`docs/A-FAIRE.md`**, généré pour *ta* configuration.
 
 **Déjà fait automatiquement — n'y touche pas :** `AGENTS.md`/`CLAUDE.md`, les 10 commandes, les règles, la mémoire, git + hooks (scan de secrets), la CI, `.vibecoding.json`, les **skills** (design + stack) et les **fichiers** de config MCP.
 
@@ -242,13 +242,14 @@ Vérifie : tape `/brainstorm`. Si la commande est reconnue, c'est bon.
 
 ### Geste 2 — installe le plugin de ta stack *(seulement si ton combo en a un)*
 
-C'est le plugin propre à la techno de ta stack. Certaines combinaisons stack × assistant n'en ont **pas** (rien à faire alors) — c'est le cas de la stack **Vitrine**, qui n'a aucun plugin dédié.
+C'est le plugin propre à la techno de ta stack. Certaines combinaisons stack × assistant n'en ont **pas** (rien à faire alors) — sur **Codex**, seule la stack Mobile en a un.
 
 | Ta stack | Plugin | Disponible pour |
 |---|---|---|
 | **SaaS** | Convex | Cursor, Claude Code |
 | **Mobile** | Expo (+ Convex) | Claude Code, Codex |
 | **Desktop** | Electron | Claude Code |
+| **Vitrine** | Convex | Cursor, Claude Code |
 
 La **commande exacte** est dans `docs/A-FAIRE.md` § 1 (elle dépend de ton assistant). Exemple pour **Cursor + SaaS** :
 
@@ -265,7 +266,7 @@ Tape `/mcp` (ou, sur Cursor, **Settings → MCP**). Les serveurs à activer selo
 | **SaaS** | Convex · Better Auth · shadcn · **Playwright** *(test E2E)* |
 | **Mobile** | Convex · Expo *(login requis)* · **Maestro** *(test E2E — installe le CLI d'abord, voir A-FAIRE)* |
 | **Desktop** | Chrome DevTools *(test E2E)* · shadcn |
-| **Vitrine** | Astro Docs · shadcn · **Playwright** *(test E2E)* |
+| **Vitrine** | Astro Docs · Convex · Better Auth · shadcn · **Playwright** *(test E2E)* |
 
 ### Optionnel — design par IA (Stitch)
 
@@ -352,7 +353,7 @@ Les trois commandes longues arrivent en plus avec un **dossier d'étapes à côt
 | 💻 **SaaS / web** | Convex + TanStack Start + Better Auth |
 | 📱 **Mobile iOS/Android** | React Native (Expo) + Convex |
 | 🖥️ **Desktop** | Electron |
-| 🌐 **Vitrine** | Astro + shadcn/ui + Keystatic — site vitrine, portfolio, blog, SEO + GEO (cité par les IA) |
+| 🌐 **Vitrine** | Astro + shadcn/ui (site public) + TanStack Start + Convex + Better Auth (dashboard) — vitrine, portfolio, blog, SEO + GEO (cité par les IA) |
 
 Chaque stack : explication débutant, **docs officielles vérifiées**, `AGENTS.md`, `llms.txt` téléchargeables (`ai-context/`), et un **exemple de feature** (`docs/examples/`).
 

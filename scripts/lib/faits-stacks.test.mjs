@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { PINS, STACKS } from './matrix.mjs';
+import { fichiersDuRunbook } from './commands-list.mjs';
 
 const RACINE = path.resolve(import.meta.dirname, '..', '..');
 const lire = (rel) => fs.readFileSync(path.join(RACINE, rel), 'utf8');
@@ -103,15 +104,28 @@ test('F1 — la vitrine dit le contrat des collections d\'Astro 7 et le Node qu\
 });
 
 // ── F2 — l'exemple vitrine doit compiler ───────────────────────────────────────────────────────
-test('F2 — l\'exemple vitrine déclare la collection qu\'il lit', () => {
+test('F2 — l\'exemple vitrine déclare la collection qu\'il lit, et la remplit AU BUILD', () => {
   const ex = lire('templates/examples/vitrine.md');
   const lues = [...ex.matchAll(/getCollection\(['"]([^'"]+)['"]\)/g)].map((m) => m[1]);
   assert.ok(lues.length, 'l\'exemple lit bien une collection');
   assert.match(ex, /src\/content\.config\.ts/, 'sans ce fichier, `getCollection` ne trouve rien et le build casse');
-  assert.match(ex, /from ['"]astro\/loaders['"]/, 'le loader vient de `astro/loaders`');
   for (const c of lues) {
     assert.match(ex, new RegExp(`const ${c}\\s*=\\s*defineCollection`), `la collection « ${c} » doit être définie`);
     assert.match(ex, new RegExp(`collections\\s*=\\s*\\{[^}]*\\b${c}\\b`), `la collection « ${c} » doit être exportée`);
+    // ⚠️ CE CONTRÔLE EXIGEAIT `from 'astro/loaders'` — le `glob()` qui lisait les fichiers Markdown
+    // que le CMS git écrivait dans le dépôt. Le FAIT a changé (le contenu vit dans Convex, saisi
+    // depuis `dashboard/`), la propriété non : une collection sans `loader` n'existe pas en
+    // Astro 7, et sur CETTE stack le loader est le seul endroit qui a le droit de parler à Convex.
+    //
+    // …ET DANS LE BLOC DE LA COLLECTION, PAS DANS LE FICHIER. Un `assert.match(ex, /loader:/)`
+    // serait satisfait par n'importe quelle autre ligne du document — c'est le motif déjà pris
+    // quatre fois sur ce chantier (un contrôle crédité du vocabulaire de ses voisines). Mesuré :
+    // en déplaçant `ConvexHttpClient` du loader vers la prose qui le commente, la version « sur le
+    // fichier » restait VERTE alors que la collection ne lisait plus rien.
+    const bloc = new RegExp(`const ${c}\\s*=\\s*defineCollection\\(([\\s\\S]*?)\\n\\}\\);`).exec(ex);
+    assert.ok(bloc, `la déclaration de « ${c} » doit être un bloc lisible (\`const ${c} = defineCollection({ … });\`)`);
+    assert.match(bloc[1], /loader:/, `« ${c} » : une collection sans \`loader\` n'existe pas en Astro 7 — \`getCollection\` rendrait une liste vide et le build sortirait en 0`);
+    assert.match(bloc[1], /ConvexHttpClient/, `« ${c} » : le contenu vient de Convex, et il doit être lu AU BUILD par le client SERVEUR \`ConvexHttpClient\` — depuis le navigateur, le HTML servi au crawler serait vide`);
   }
 });
 
@@ -215,6 +229,10 @@ const jetonsSurveilles = (yml) => new Set(
     // …et à l'intérieur de la boucle, les lignes COMMENTÉES ne comptent pas non plus : une entrée
     // mise en `# TODO` au milieu de la liste n'est plus parcourue, et le garde la créditait encore.
     .flatMap((m) => m[1].split('\n').filter((l) => !/^\s*#/.test(l)).join(' ').split(/\s+/))
+    // Une entrée peut être GUILLEMETÉE dans le YAML (obligatoire dès qu'elle porte un `?` :
+    // sans guillemets, bash la traite comme un motif de glob). Le jeton surveillé est l'URL,
+    // pas ses guillemets.
+    .map((t) => t.replace(/^["']|["']$/g, ''))
     .filter((t) => t && t !== '\\'),
 );
 
@@ -237,4 +255,43 @@ test('F12bis — toute URL externe déclarée par une stack (MCP, règle, plugin
   const couvert = (u) => surveilles.has(u) || surveilles.has(u.replace('https://github.com/', ''));
   const horsSurveillance = [...urls].filter((u) => !couvert(u)).sort();
   assert.deepEqual(horsSurveillance, [], `Sources déclarées par matrix.mjs et jamais pingées :\n${horsSurveillance.join('\n')}\n→ ajoute-les à une boucle de .github/workflows/rot-check.yml`);
+});
+
+// F12ter — L'AUTRE MOITIÉ : UNE URL QUI NE VIT QUE DANS LA PROSE.
+// F12bis ne lit QUE `matrix.mjs`. Une URL qu'aucune stack ne déclare mais que le kit fait SUIVRE
+// lui échappe entièrement — et c'est arrivé : `labs.convex.dev/better-auth/framework-guides/
+// tanstack-start` était cité par quatre fichiers livrés, c'est le guide sans lequel aucune stack
+// à Better Auth ne s'installe, et personne ne le pinguait. Même motif que les « 4 URL surveillées
+// par personne » que ce chantier avait déjà trouvées.
+//
+// LE PÉRIMÈTRE, ET POURQUOI CELUI-LÀ. Pas « toute URL d'un fichier livré » : les docs de stack en
+// citent une soixantaine, et une page de doc qui bouge n'empêche personne de travailler. Le
+// runbook de `/new-project`, lui, est ce que l'IA EXÉCUTE à la création de chaque projet — une de
+// ses URL qui meurt, et le scaffold s'arrête. C'est un critère, pas une liste : une URL écrite
+// demain dans n'importe quelle étape de ce runbook entre sous surveillance sans qu'on touche ici.
+//
+// Les URL À PLACEHOLDER (`…/r/{name}`) ne désignent aucune ressource : on ne peut pas les pinguer,
+// et elles sont écartées par leur forme, pas par leur nom — aucune exception à tenir à jour.
+test('F12ter — toute URL que le runbook de `/new-project` fait suivre est surveillée par rot-check', () => {
+  const surveilles = jetonsSurveilles(lire('.github/workflows/rot-check.yml'));
+  assert.ok(surveilles.has('https://convex.link/convex_rules.txt'), 'montage : les boucles de rot-check doivent être lisibles');
+  const fichiers = fichiersDuRunbook(RACINE, 'new-project');
+  assert.ok(fichiers.length >= 8, `montage : ${fichiers.length} fichiers de runbook lus`);
+  const urls = new Set();
+  for (const f of fichiers) {
+    for (const m of fs.readFileSync(f, 'utf8').matchAll(/https:\/\/[^\s`)"'*]+/g)) {
+      const u = m[0].replace(/[).,*]+$/, '');
+      if (!u.includes('{')) urls.add(u);
+    }
+  }
+  assert.ok(urls.size >= 4, `montage : ${urls.size} URL lues dans le runbook de /new-project`);
+  const horsSurveillance = [...urls].filter((u) => !surveilles.has(u)).sort();
+  assert.deepEqual(horsSurveillance, [], [
+    'Le runbook de /new-project fait suivre des URL que personne ne pingue :',
+    ...horsSurveillance.map((u) => `  ${u}`),
+    '',
+    'Ces adresses sont exécutées à la création de CHAQUE projet. Si l\'une meurt, le scaffold',
+    's\'arrête et rien n\'aura prévenu. → ajoute-les à une boucle de .github/workflows/rot-check.yml',
+    '(un endpoint MCP répond souvent 4xx sur un GET nu : sa place est la boucle « Endpoints MCP »).',
+  ].join('\n'));
 });

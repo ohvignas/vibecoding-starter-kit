@@ -58,3 +58,7 @@ Et après chaque publication, la commande qui remet le site à jour : `npm run b
 - **Le client peut éditer le contenu ?** Oui : il se connecte au dashboard, il écrit, il publie. Prévois le rebuild du site à la publication (`npm run build --workspace site`, puis la reconstruction de l'image sur le VPS) — sinon il écrira dans le vide sans comprendre pourquoi rien ne bouge.
 - **Pourquoi deux applications et pas une ?** Parce qu'elles n'ont pas le même métier : le site public doit être **statique** pour être indexé, le dashboard doit être **vivant** pour être agréable à utiliser. Les mélanger, c'est perdre l'un ou l'autre.
 - **Est-ce que ça reste gratuit ?** Non. Convex a un palier gratuit, mais le VPS se loue. C'était le prix à payer pour avoir un vrai espace de saisie.
+
+## 👉 Prochaine étape
+
+Ouvre **`stacks/vitrine/prompts-de-demarrage.md`** pour les prompts prêts à copier-coller à ton IA, étape par étape.

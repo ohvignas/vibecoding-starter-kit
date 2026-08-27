@@ -44,7 +44,11 @@ jobs:
             https://www.electronjs.org/docs/latest/tutorial/security \
             https://www.electronjs.org/docs/latest \
             https://get.maestro.mobile.dev \
-            https://keystatic.com/docs/installation-astro ; do
+            https://labs.convex.dev/better-auth/framework-guides/tanstack-start \
+            https://biomejs.dev/schemas/2.5.10/schema.json \
+            https://www.nativewind.dev/getting-started/installation \
+            https://tweakcn.com \
+            "https://ui.shadcn.com/create?preset=b27GcrRo" ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
             echo "$u -> $code"
             [ "$code" -lt 400 ] || { echo "::error::source de contexte injoignable : $u ($code)"; exit 1; }
@@ -57,7 +61,7 @@ jobs:
           set -e
           fail=0
           for p in astro react-email @convex-dev/resend @convex-dev/auth convex expo electron \
-                   better-auth @keystatic/core @playwright/mcp ; do
+                   better-auth @convex-dev/better-auth @playwright/mcp ; do
             dep=$(npm view "$p" deprecated 2>/dev/null || true)
             ver=$(npm view "$p" version 2>/dev/null || echo '?')
             if [ -n "$dep" ]; then
@@ -83,7 +87,8 @@ jobs:
             https://stitch.googleapis.com/mcp \
             https://mcp.better-auth.com/mcp \
             https://mcp.expo.dev/mcp \
-            https://mcp.docs.astro.build/mcp ; do
+            https://mcp.docs.astro.build/mcp \
+            https://mcp.stripe.com ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
             echo "$u -> $code"
             [ "$code" -lt 500 ] || { echo "::error::endpoint MCP injoignable : $u ($code)"; exit 1; }

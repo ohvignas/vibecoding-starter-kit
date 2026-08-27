@@ -5,7 +5,7 @@ const STACKS = [
   { key: 'saas', label: 'SaaS web', hint: 'Convex + TanStack Start + Better Auth' },
   { key: 'mobile', label: 'Mobile', hint: 'React Native (Expo) + Convex' },
   { key: 'desktop', label: 'Desktop', hint: 'Electron' },
-  { key: 'vitrine', label: 'Site vitrine / blog', hint: 'Astro + shadcn/ui + Keystatic (CMS) — SEO/GEO' },
+  { key: 'vitrine', label: 'Site vitrine / blog', hint: 'Astro (site) + Convex + Better Auth (dashboard) — SEO/GEO' },
 ];
 // Les CLÉS viennent d'args.mjs (source unique : c'est contre elle que `validateArgs` juge) ; ce
 // fichier n'ajoute que le LIBELLÉ affiché. EXPORTÉE : le parcours adopté pose la même question.

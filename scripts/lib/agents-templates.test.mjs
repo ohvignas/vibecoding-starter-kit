@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fichiersDuRunbook } from './commands-list.mjs';
+import { STACKS } from './matrix.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -119,4 +120,26 @@ test('stacks/vitrine : AGENTS.md + README + prompts présents et complets', () =
   // Un prompt de démarrage qui ne monte QUE le site public laisserait le débutant sans endroit
   // où écrire son contenu — le défaut exact que le passage à Convex crée s'il n'est pas dit.
   assert.match(p, /dashboard/, 'les prompts doivent monter les DEUX applications');
+});
+
+// ── AUCUN `prompts-de-demarrage.md` N'EST ORPHELIN ────────────────────────────────────────────
+// Les prompts de démarrage sont le bout de la chaîne : le README d'une stack explique, les
+// prompts font AGIR. Trois stacks terminaient par « Ouvre `prompts-de-demarrage.md` » ; la
+// quatrième, la vitrine, ne le citait nulle part — le fichier existait, était tenu à jour par les
+// tests, et personne n'y était jamais envoyé. Un fichier que rien ne cite n'est pas livré, il est
+// stocké.
+//
+// La liste des stacks est LUE dans `matrix.mjs` : une cinquième stack entre sous contrôle sans
+// qu'on touche à ce test. Et le renvoi est cherché dans le README de la stack CONCERNÉE, pas dans
+// la concaténation des quatre — sinon le renvoi du saas couvrirait les trois autres.
+test('aucun `prompts-de-demarrage.md` n\'est orphelin : le README de chaque stack y renvoie', () => {
+  const stacks = Object.keys(STACKS);
+  assert.ok(stacks.length >= 4, `montage : ${stacks.length} stacks lues dans matrix.mjs`);
+  const orphelins = [];
+  for (const s of stacks) {
+    const prompts = `stacks/${s}/prompts-de-demarrage.md`;
+    assert.ok(fs.existsSync(path.join(ROOT, prompts)), `${prompts} n'existe pas`);
+    if (!read(`stacks/${s}/README.md`).includes(`${s}/prompts-de-demarrage.md`)) orphelins.push(prompts);
+  }
+  assert.deepEqual(orphelins, [], `des prompts de démarrage que le README de leur stack ne cite pas :\n${orphelins.join('\n')}`);
 });

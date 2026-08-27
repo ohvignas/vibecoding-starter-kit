@@ -99,8 +99,17 @@ test('ROUGES — exactement les rouges attendus : verdict vert', () => {
 });
 
 // Une entrée sans adresse est une exception qu'on ne saura pas refermer.
+// ⚠️ CE TEST A EXIGÉ `ROUGES_ATTENDUS.length` — « liste vide = retire le garde ». C'était faux, et
+// ça rendait INATTEIGNABLE le seul état que ce fichier dit vouloir : la liste doit RÉTRÉCIR,
+// donc finir vide, et fermer le dernier rouge attendu faisait alors rougir le lanceur lui-même.
+// Un lanceur à liste vide n'est pas muet, il est au plus strict : tout rouge devient une
+// régression nommée, et le refus de conclure sur une sortie illisible ne dépend d'aucune liste.
+// On garde donc la propriété qui compte (une entrée dit QUI la referme et QUOI corriger) et on
+// exige, à sa place, que le verdict MORDE encore avec zéro entrée.
 test('ROUGES — chaque rouge attendu porte sa tâche et le fichier à corriger', () => {
-  assert.ok(ROUGES_ATTENDUS.length, 'liste vide = plus rien à épingler : retire le garde, ne le laisse pas mentir');
+  assert.equal(verdict([], []).ok, true, 'liste vide + suite verte = le verdict passe');
+  assert.equal(verdict(['un test quelconque'], []).ok, false, 'liste vide : tout rouge est une régression, et le lanceur doit le dire');
+  assert.deepEqual(verdict(['un test quelconque'], []).inattendus, ['un test quelconque'], 'et il doit le NOMMER');
   for (const r of ROUGES_ATTENDUS) {
     assert.match(r.tache, /tâche \d+/, `${r.nom} : sans tâche, personne ne sait qui doit le refermer`);
     assert.ok(r.quoi && r.quoi.length > 20, `${r.nom} : dire QUOI corriger, pas seulement que c'est rouge`);
