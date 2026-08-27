@@ -92,8 +92,18 @@ test('D3 — /deploy couvre les 4 stacks, pose un gate avant la prod et ne dépe
   for (const s of ['SaaS', 'Mobile', 'Desktop', 'Vitrine']) {
     assert.match(t, new RegExp(`^## ${s}`, 'm'), `section « ${s} » absente`);
   }
-  assert.match(t, /Astro/, 'vitrine : le framework');
-  assert.match(t, /Keystatic/, 'vitrine : le CMS');
+  // ⚠️ LA SECTION D'UNE STACK, PAS LE FICHIER ENTIER. `assert.match(t, /Astro/)` était satisfait
+  // par n'importe quelle autre ligne du runbook — et le piège s'aggrave depuis que la vitrine
+  // partage Convex avec le SaaS : un `/Convex/` global resterait VERT même si la section Vitrine
+  // ne disait plus un mot de son backend. C'est la faute déjà prise deux fois sur ce chantier (un
+  // test crédité du vocabulaire de ses voisines). On découpe, et on interroge le segment.
+  const vitrine = t.match(/^## Vitrine[\s\S]*?(?=^## |^Termine par)/m);
+  assert.ok(vitrine, 'montage : la section Vitrine de /deploy n\'a pas pu être isolée');
+  assert.match(vitrine[0], /Astro/, 'vitrine : le framework');
+  assert.match(vitrine[0], /Convex/, 'vitrine : le backend qui porte le contenu des deux applications');
+  assert.match(vitrine[0], /Docker/, 'vitrine : la stack se déploie en Docker sur un VPS, plus chez un hébergeur de statique');
+  // Le CMS git a disparu de la stack (tâches 1-6) : un renvoi vers son admin est un renvoi mort.
+  assert.doesNotMatch(t, /Keystatic|\/keystatic/i, 'la vitrine n\'a plus de CMS git : /deploy y envoie encore');
   // Gate : CI verte PROUVÉE (commande + sortie) + sécurité.
   assert.match(t, /gh run watch/, 'CI verte prouvée par une commande');
   assert.match(t, /security-reviewer/, 'gate sécurité avant la prod');

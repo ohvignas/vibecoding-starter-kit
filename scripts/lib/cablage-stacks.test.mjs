@@ -464,3 +464,47 @@ test('V2ter — la puce vitrine pose la racine APRÈS les deux applications, pas
     '(`No workspaces found!`, puis `Missing script`), et le hook onEdit crie à chaque écriture.',
   ].join('\n'));
 });
+
+// ── V4 — « REBUILD » ÉTAIT DIT HUIT FOIS, LA COMMANDE ZÉRO ─────────────────────────────────────
+// Conséquence directe de la lecture au build : publier dans le `dashboard/` ne change RIEN aux
+// pages en ligne tant que le site n'est pas reconstruit. Les documents de la stack le disaient —
+// huit fois, comptées — sans jamais écrire COMMENT reconstruire. On enseignait un problème en
+// gardant sa solution pour soi, et c'est celui qu'un débutant rencontre le PREMIER JOUR.
+//
+// Les deux fichiers visés ne sont pas choisis au hasard : le modèle de `docs/RUN.md` est le seul
+// fichier qu'un débutant ouvre pour lancer son projet, et `/deploy` est le runbook de mise en
+// ligne. Un troisième qui dirait le problème sans la commande resterait invisible ici — c'est
+// assumé : `AGENTS.md` et les règles `.mdc` ont un plafond de taille, leur rôle est d'énoncer la
+// contrainte, pas de dérouler la procédure.
+//
+// ⚠️ LA COMMANDE EST DÉRIVÉE DU MANIFESTE, JAMAIS RECOPIÉE. `workspaces[0]` est le nom du dossier
+// public : renommer le workspace sans reprendre les documents fait rougir ce test, alors qu'une
+// chaîne en dur ici les laisserait diverger en silence — la faute exacte que V2bis a déjà prise.
+const ENTREES_REBUILD = ['templates/run/vitrine.md', 'templates/commands/deploy.md'];
+// LE PROBLÈME DIT SUR UNE LIGNE, ET C'EST LA NÉGATION QU'ON EXIGE, PAS LE VOCABULAIRE. Première
+// version, mesurée MENTEUSE : « publier … » + « rebuild|reconstru » quelque part sur la ligne.
+// Elle restait VERTE alors que j'avais retiré la phrase qui enseigne — parce qu'une ligne toute
+// autre la satisfaisait : « la fonction Convex qui publie appelle une URL de reconstruction ».
+// Les deux mots y sont ; la PROPOSITION n'y est pas. Ce qu'il faut lire, c'est le démenti :
+// publier NE MET PAS / NE SUFFIT PAS / NE CHANGE rien — ou les pages restent celles du DERNIER BUILD.
+const DIT_LE_PROBLEME = /publi[a-zé]+[^\n]*(\bne\s+(?:met|suffit|change)\b|dernier build)/i;
+
+test('V4 — le kit dit que publier ne suffit pas, ET donne la commande qui reconstruit', () => {
+  assert.ok(STACKS.vitrine.scripts.build, 'montage : la stack vitrine doit déclarer un script `build`');
+  assert.ok(STACKS.vitrine.workspaces && STACKS.vitrine.workspaces.length >= 2, 'montage : la vitrine doit déclarer ses deux workspaces');
+  const commande = `npm run build --workspace ${STACKS.vitrine.workspaces[0]}`;
+  const manques = [];
+  for (const f of ENTREES_REBUILD) {
+    const t = lire(f);
+    if (!DIT_LE_PROBLEME.test(t)) manques.push(`${f} : ne dit nulle part que publier ne met pas le site à jour`);
+    if (!t.includes(commande)) manques.push(`${f} : n'écrit pas la commande « ${commande} »`);
+  }
+  assert.deepEqual(manques, [], [
+    'La stack vitrine enseigne un problème sans donner sa solution :',
+    ...manques.map((m) => `  ${m}`),
+    '',
+    'Les pages publiques lisent Convex AU BUILD. Publier dans le `dashboard/` remplit la base,',
+    'et le site en ligne reste celui du dernier build. Le lecteur qui apprend ça sans recevoir la',
+    'commande n\'a rien appris d\'actionnable : il découvrira le décalage en production.',
+  ].join('\n'));
+});

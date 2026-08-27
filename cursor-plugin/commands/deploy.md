@@ -27,10 +27,12 @@ Lis la stack dans `AGENTS.md`, puis applique le chemin correspondant. **Rappel s
 4. Auto-update : `update-electron-app` (ou l'`autoUpdater` d'Electron) branché sur les GitHub Releases du projet.
 5. Sur **Claude Code uniquement**, le skill `electron:distribution` déroule les points 3 et 4 en détail. Sur Cursor et Codex il n'est pas installé → suis la doc officielle Electron, ne l'invoque pas.
 
-## Vitrine (Astro + Keystatic)
-1. Vérifie puis build : `npx astro check` (le typecheck déclaré par la stack) puis `npm run build` → sortie statique dans `dist/`.
-2. Héberge sur **Netlify**, **Vercel** ou **Cloudflare Pages** : connecte le repo GitHub, commande de build `npm run build`, dossier publié `dist`.
-3. Renseigne `site` dans `astro.config` **avant** le build : le sitemap (`@astrojs/sitemap`) et les URLs absolues en dépendent. Puis vérifie en prod que `/sitemap-index.xml` et `/robots.txt` répondent.
-4. **Keystatic** est en storage **local** dans ce kit : l'admin `/keystatic` ne tourne qu'en dev, il n'y a donc **rien à déployer ni aucun secret à poser** pour lui — le contenu part avec le dépôt. Passer en storage `github` (édition en ligne) demande une app GitHub et des variables d'environnement : lis la doc Keystatic avant, n'invente aucun nom de variable.
+## Vitrine (Astro + Convex + Better Auth) — Docker sur un VPS
+1. **Vérifie, puis construis les DEUX applications** : à la racine, `npm run typecheck` puis `npm run lint` (ils ratissent `site/` et `dashboard/`), puis `npm run build` → le statique dans `site/dist/` et le serveur Node du dashboard.
+2. **Backend** : `npx convex deploy` crée le déploiement de production, puis `npx convex env set <CLÉ> <valeur>` pour ses secrets (`BETTER_AUTH_SECRET`, `SITE_URL`). Convex tourne **en cloud** : c'est le chemin par défaut. L'auto-hébergement existe — Convex écrit lui-même « Self hosting is not for everyone » — ce n'est pas la voie de ce kit ; ne l'engage pas sans que l'utilisateur l'ait demandé.
+3. **Deux images Docker sur le VPS, un reverse-proxy TLS devant** (Caddy ou Traefik : certificat Let's Encrypt automatique). `ton-domaine.fr` → un serveur web qui sert le dossier statique du site ; `admin.ton-domaine.fr` → le serveur Node du dashboard. Le kit ne fournit pas ces `Dockerfile` : écris-les avec l'utilisateur, une image à la fois.
+4. ⚠️ **`PUBLIC_CONVEX_URL` et `SITE_URL` se passent AU BUILD de l'image du site**, pas à son démarrage : les pages publiques lisent Convex à ce moment-là. Passées au `run`, elles arrivent trop tard et le site part **sans contenu**. Côté dashboard, `PUBLIC_CONVEX_URL` et `BETTER_AUTH_URL` vont au démarrage du conteneur ; `BETTER_AUTH_SECRET` ne quitte jamais Convex.
+5. Renseigne `site` dans `site/astro.config.mjs` **avant** le build : le sitemap (`@astrojs/sitemap`) et les URLs absolues en dépendent. Puis vérifie en prod que `/sitemap-index.xml` et `/robots.txt` répondent.
+6. ⛔ **Publier dans le dashboard ne met PAS le site à jour** : les pages en ligne restent celles du dernier build. Le rebuild fait donc partie de la publication — `npm run build --workspace site`, et sur le VPS `docker compose build site && docker compose up -d site` (services nommés `site` et `dashboard`). **Décide qui le déclenche avant la mise en ligne**, et écris-le dans le README : à la main juste après avoir publié · un `cron` sur le VPS, avec le retard annoncé à qui publie · la fonction Convex qui publie appelant une URL de reconstruction protégée par un jeton.
 
 Termine par : l'URL/artefact de prod + comment vérifier que ça tourne.

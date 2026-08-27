@@ -25,7 +25,7 @@ Les pages publiques lisent Convex **au BUILD** : client serveur `ConvexHttpClien
 4. **Schéma Convex** — une table par type de contenu, avec les champs du SEO (slug, titre, description, date).
 5. **Pages** depuis la maquette, alimentées par la lecture au build. Le contenu figé (mentions légales) peut rester en content collections, déclarées dans `site/src/content.config.ts` avec leur `loader`.
 6. **SEO/GEO** — sitemap + `site/public/robots.txt` (IA autorisées) + `<SEO />`/JSON-LD + `site/public/llms.txt`. ⚠️ Ces fichiers vont dans `site/public/`, **pas à la racine du projet** : posés à la racine, rien ne les sert et le GEO tombe en silence.
-7. **Déploiement** — Docker sur un VPS : une image par application, reverse-proxy TLS, Convex en cloud. Le rebuild du site fait partie de la publication.
+7. **Déploiement** — Docker sur un VPS : une image par application, reverse-proxy TLS, Convex en cloud. Le rebuild du site fait partie de la publication : `npm run build --workspace site`, puis la reconstruction de son image sur le VPS.
 
 ## Pièges connus
 - **L'ordre de création** : les scripts de la racine ratissent les deux applications. Posés avant que `dashboard/` existe, ils échouent à chaque écriture de fichier — et le cas « racine + `site/` seul » sort en 0 **sans un mot**, la moitié du projet jamais vérifiée.

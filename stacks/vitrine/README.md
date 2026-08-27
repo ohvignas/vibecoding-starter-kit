@@ -44,15 +44,17 @@ Si une page publique lisait Convex depuis le navigateur, elle s'afficherait trè
 8. **Déploiement** : **Docker sur un VPS** — une image pour le site statique, une pour le dashboard, un reverse-proxy TLS devant. Convex tourne en cloud.
 
 ## Lancer
+Trois processus qui restent ouverts, donc **trois terminaux** :
 ```bash
-npx convex dev                 # le backend Convex (un terminal, depuis dashboard/)
-npm run dev --workspace site   # http://localhost:4321  — le site public
-npm run dev --workspace dashboard  # l'espace de saisie
+cd dashboard && npx convex dev     # le backend Convex + la génération des types
+npm run dev --workspace site       # http://localhost:4321  — le site public
+npm run dev --workspace dashboard  # http://localhost:3000  — l'espace de saisie
 ```
+Et après chaque publication, la commande qui remet le site à jour : `npm run build --workspace site`.
 
 ## FAQ débutant
 - **C'est quoi un îlot ?** Ta page est du HTML pur ; un îlot = un composant React chargé UNIQUEMENT là où il faut de l'interactivité. C'est pour ça que c'est rapide. Un îlot du site public ne parle pas à Convex : il reçoit ses données en props.
 - **Je veux changer les couleurs.** Refais un preset sur ui.shadcn.com/create ou règle les variables CSS sur tweakcn.com — jamais dans les fichiers de composants.
-- **Le client peut éditer le contenu ?** Oui : il se connecte au dashboard, il écrit, il publie. Prévois le rebuild du site à la publication — sinon il écrira dans le vide sans comprendre pourquoi rien ne bouge.
+- **Le client peut éditer le contenu ?** Oui : il se connecte au dashboard, il écrit, il publie. Prévois le rebuild du site à la publication (`npm run build --workspace site`, puis la reconstruction de l'image sur le VPS) — sinon il écrira dans le vide sans comprendre pourquoi rien ne bouge.
 - **Pourquoi deux applications et pas une ?** Parce qu'elles n'ont pas le même métier : le site public doit être **statique** pour être indexé, le dashboard doit être **vivant** pour être agréable à utiliser. Les mélanger, c'est perdre l'un ou l'autre.
 - **Est-ce que ça reste gratuit ?** Non. Convex a un palier gratuit, mais le VPS se loue. C'était le prix à payer pour avoir un vrai espace de saisie.
