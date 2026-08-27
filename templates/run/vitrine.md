@@ -14,6 +14,24 @@ Ouvre **http://localhost:4321** (le site public) et **http://localhost:3000** (l
 le HTML** (clic droit → « code source de la page » : le texte y est), et le dashboard demande une
 connexion sur **3000**.
 
+## Où va le `.env` — pas à la racine
+
+⚠️ Le `.env.example` posé à la racine par le kit est **l'inventaire** de ce qu'il faut remplir. Ce
+n'est **pas** un fichier que tes applications lisent : Astro et TanStack Start cherchent leur `.env`
+**dans leur propre dossier**. Trois destinations, et elles ne portent pas la même chose :
+
+| Fichier | Ce qu'il porte |
+| --- | --- |
+| `site/.env` | `PUBLIC_CONVEX_URL` · `SITE_URL` (l'adresse **publique du site**, celle du sitemap et des canonical) · `PUBLIC_WEB3FORMS_KEY` |
+| `dashboard/.env.local` | écrit **tout seul** par `npx convex dev` (`CONVEX_DEPLOYMENT` et l'URL du déploiement) ; ajoute-y `BETTER_AUTH_URL` |
+| dans Convex, jamais dans un fichier | `cd dashboard && npx convex env set BETTER_AUTH_SECRET <valeur>` et `... SITE_URL <origine du dashboard>` |
+
+⚠️ **`SITE_URL` porte DEUX adresses différentes, et les confondre casse la connexion.** Dans
+`site/.env`, c'est l'adresse publique du site (`https://ton-domaine.fr`). Dans **Convex**, c'est
+l'origine de l'application qui porte l'authentification, donc le **dashboard** — la même valeur que
+`BETTER_AUTH_URL` (`http://localhost:3000` en local). Y mettre l'URL publique casse les redirections
+et le CORS de la connexion, sans message compréhensible.
+
 ## Publier ne met pas le site à jour — il faut le RECONSTRUIRE
 
 Les pages publiques lisent Convex **au build**. Quand tu publies depuis le dashboard, le contenu part
@@ -40,25 +58,32 @@ pas d'une corvée du lendemain.
 **Un reverse-proxy TLS devant les deux** — Caddy ou Traefik obtiennent le certificat Let's Encrypt
 tout seuls. `ton-domaine.fr` va sur l'image du site, `admin.ton-domaine.fr` sur celle du dashboard.
 
-**Convex tourne en cloud**, c'est le chemin par défaut : `npx convex deploy` crée le déploiement de
-production, il n'y a aucune image à faire pour lui. (Convex publie aussi une version auto-hébergée et
-écrit lui-même « Self hosting is not for everyone » — ce n'est pas la voie de ce kit.)
+**Convex tourne en cloud**, c'est le chemin par défaut : `cd dashboard && npx convex deploy` crée le
+déploiement de production, il n'y a aucune image à faire pour lui. (Convex publie aussi une version
+auto-hébergée et écrit lui-même « Self hosting is not for everyone » — ce n'est pas la voie de ce kit.)
 
 **Les variables, et surtout QUAND elles sont lues** — c'est la conséquence directe de la lecture au
 build, et elle se paie cher si on la rate :
 
 | Variable | Où | Quand |
 | --- | --- | --- |
-| `PUBLIC_CONVEX_URL`, `SITE_URL` | image du site | **au BUILD** de l'image — le contenu est lu à ce moment-là. Passée seulement au démarrage du conteneur, elle arrive **trop tard** et le site part vide. |
-| `PUBLIC_CONVEX_URL`, `BETTER_AUTH_URL` | image du dashboard | au démarrage du conteneur |
-| `BETTER_AUTH_SECRET`, `SITE_URL` | dans Convex, jamais dans une image | `npx convex env set <CLÉ> <valeur>` |
+| `PUBLIC_CONVEX_URL`, `SITE_URL` (adresse publique du site) | image du site, dans **`build.args:`** du `compose.yaml` — **pas** `environment:` | **au BUILD** de l'image : le contenu est lu à ce moment-là. Mises dans `environment:`, elles n'arrivent qu'au démarrage du conteneur, **trop tard**, et le site part vide. |
+| `PUBLIC_CONVEX_URL`, `BETTER_AUTH_URL` | image du dashboard, dans `environment:` | au démarrage du conteneur |
+| `BETTER_AUTH_SECRET`, `SITE_URL` (= origine du dashboard) | dans Convex, jamais dans une image | `cd dashboard && npx convex env set <CLÉ> <valeur>` |
 
 **Reconstruire le site à la publication.** Nomme tes services `site` et `dashboard` dans le
-`compose.yaml` ; la reconstruction du site tient alors en une ligne, sur le VPS :
+`compose.yaml`, et fais déclarer à ton `Dockerfile` du site un `ARG CONTENU_REV` **juste avant** son
+`RUN npm run build`. La reconstruction tient alors en une ligne, sur le VPS :
 
 ```bash
-docker compose build site && docker compose up -d site
+docker compose build --build-arg CONTENU_REV=$(date +%s) site && docker compose up -d site
 ```
+
+⚠️ **Le `--build-arg` n'est pas décoratif, il est le cœur de la manœuvre.** Quand ton client publie,
+**tes sources ne bougent pas** : sans cet argument qui change à chaque fois, Docker réutilise son
+cache, ne rejoue jamais `npm run build`, et `up -d` répond « up-to-date ». Tu croirais reconstruire
+en ne reconstruisant rien. (`docker compose build --no-cache site` marche aussi, en plus brutal :
+il réinstalle aussi les dépendances.)
 
 Trois façons de la déclencher, de la plus simple à la plus réactive — choisis-en **une** et écris-la
 dans le README du projet :
@@ -75,6 +100,6 @@ dans le README du projet :
 
 Avant de lancer, **regarde s'il tourne déjà** — c'est le cas dès que tu mènes deux chantiers en même temps, ou que tu as laissé un terminal ouvert.
 
-Le backend Convex écoute sur **http://localhost:3210**, le site sur **http://localhost:4321**, le dashboard sur **http://localhost:3000**.
+Le site écoute sur **http://localhost:4321** et le dashboard sur **http://localhost:3000** ; Convex tourne en cloud, donc rien n'écoute en local pour lui.
 
 S'il répond, **n'en lance pas un second** : sers-toi de celui qui tourne. Deux serveurs sur le même projet, c'est au mieux une erreur « port déjà utilisé », au pire une app testée qui n'est pas celle que tu modifies. Le second chantier **partage** le serveur du premier.

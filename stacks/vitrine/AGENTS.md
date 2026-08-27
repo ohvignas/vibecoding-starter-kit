@@ -66,7 +66,7 @@ Le contenu vit dans **Convex**, et deux applications le partagent : `site/` (Ast
 ## Déploiement — Docker sur un VPS
 - **Deux images** : le build statique d'Astro servi par un serveur web, et le serveur Node du dashboard. Un reverse-proxy TLS devant les deux.
 - Convex tourne **en cloud** par défaut (l'auto-hébergement existe, ce n'est pas le chemin par défaut).
-- Variables au déploiement, jamais committées : `CONVEX_DEPLOYMENT`, `PUBLIC_CONVEX_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `SITE_URL`.
+- Variables au déploiement, jamais committées : `CONVEX_DEPLOYMENT`, `PUBLIC_CONVEX_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `SITE_URL`. Chaque app lit le `.env` de SON dossier (`site/`, `dashboard/`), pas celui de la racine. ⚠️ Le `SITE_URL` posé dans Convex vaut l'origine du `dashboard/` (= `BETTER_AUTH_URL`), pas l'adresse publique du site.
 - ⚠️ **Publier ne suffit pas** : le contenu change dans Convex, les pages publiques restent celles du dernier build. Le rebuild fait partie de la publication, pas d'une corvée du lendemain — la commande est `npm run build --workspace site`, puis la reconstruction de l'image du site sur le VPS.
 
 ## Sécurité & bonnes pratiques

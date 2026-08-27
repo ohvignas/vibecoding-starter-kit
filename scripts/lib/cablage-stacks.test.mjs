@@ -473,38 +473,89 @@ test('V2ter — la puce vitrine pose la racine APRÈS les deux applications, pas
 //
 // Les deux fichiers visés ne sont pas choisis au hasard : le modèle de `docs/RUN.md` est le seul
 // fichier qu'un débutant ouvre pour lancer son projet, et `/deploy` est le runbook de mise en
-// ligne. Un troisième qui dirait le problème sans la commande resterait invisible ici — c'est
-// assumé : `AGENTS.md` et les règles `.mdc` ont un plafond de taille, leur rôle est d'énoncer la
-// contrainte, pas de dérouler la procédure.
-//
-// ⚠️ LA COMMANDE EST DÉRIVÉE DU MANIFESTE, JAMAIS RECOPIÉE. `workspaces[0]` est le nom du dossier
-// public : renommer le workspace sans reprendre les documents fait rougir ce test, alors qu'une
-// chaîne en dur ici les laisserait diverger en silence — la faute exacte que V2bis a déjà prise.
+// ligne. Un troisième qui dirait le problème sans la commande resterait invisible ici — assumé :
+// `AGENTS.md` et les règles `.mdc` énoncent la contrainte, ils ne déroulent pas la procédure.
 const ENTREES_REBUILD = ['templates/run/vitrine.md', 'templates/commands/deploy.md'];
-// LE PROBLÈME DIT SUR UNE LIGNE, ET C'EST LA NÉGATION QU'ON EXIGE, PAS LE VOCABULAIRE. Première
-// version, mesurée MENTEUSE : « publier … » + « rebuild|reconstru » quelque part sur la ligne.
-// Elle restait VERTE alors que j'avais retiré la phrase qui enseigne — parce qu'une ligne toute
-// autre la satisfaisait : « la fonction Convex qui publie appelle une URL de reconstruction ».
-// Les deux mots y sont ; la PROPOSITION n'y est pas. Ce qu'il faut lire, c'est le démenti :
-// publier NE MET PAS / NE SUFFIT PAS / NE CHANGE rien — ou les pages restent celles du DERNIER BUILD.
-const DIT_LE_PROBLEME = /publi[a-zé]+[^\n]*(\bne\s+(?:met|suffit|change)\b|dernier build)/i;
 
-test('V4 — le kit dit que publier ne suffit pas, ET donne la commande qui reconstruit', () => {
+// ⛔ DEUX FOIS MENTEUR AU MÊME ENDROIT, ET LA 2ᵉ FOIS DANS MON PROPRE CORRECTIF.
+// v1 : « publier … » + « rebuild|reconstru » sur la ligne. VERTE alors que la phrase qui enseigne
+//      avait été retirée — « la fonction Convex qui PUBLIE appelle une URL de RECONSTRUCTION » la
+//      satisfaisait. Les deux mots y sont, la PROPOSITION n'y est pas.
+// v2 : j'ai exigé le démenti (`ne met/suffit/change`, `dernier build`) mais gardé `publi[a-zé]+`,
+//      qui attrape `public`, `publique`, `publication`. « La clé PUBLIQUE de Web3Forms NE SUFFIT
+//      pas … » suffisait à rendre le garde vert — et cette stack parle de « pages publiques » à
+//      toutes les lignes. On exige donc le VERBE publier, conjugué, jamais l'adjectif.
+const PUBLIER = String.raw`publi(?:e|es|ent|er|ez|ons|ée?s?|és?|cations?)\b`;
+const DIT_LE_PROBLEME = new RegExp(`${PUBLIER}[^\\n]*(\\bne\\s+(?:met|suffit|change)\\b|dernier build)`, 'i');
+
+// ⛔ …ET ON JUGE LA SECTION, PAS LE FICHIER. Le journal en a fait une règle (T4/JSON-LD,
+// cursor-rules/globs, D3 dans ce commit même) : un contrôle à l'échelle du fichier crédite une
+// section du vocabulaire de ses voisines. Ici, ça laisserait le problème énoncé en tête de page et
+// la commande enterrée trois sections plus bas — le lecteur apprend la panne sans jamais croiser
+// sa réparation. La commande doit être DANS la section qui pose le problème.
+const sectionsMd = (t) => t.split(/^(?=## )/m);
+
+test('V4 — le kit dit que publier ne suffit pas, ET donne la commande dans LA MÊME section', () => {
   assert.ok(STACKS.vitrine.scripts.build, 'montage : la stack vitrine doit déclarer un script `build`');
   assert.ok(STACKS.vitrine.workspaces && STACKS.vitrine.workspaces.length >= 2, 'montage : la vitrine doit déclarer ses deux workspaces');
+  // ⚠️ DÉRIVÉE DU MANIFESTE, JAMAIS RECOPIÉE : renommer le workspace public sans reprendre les
+  // documents fait rougir ce test, là où une chaîne en dur les laisserait diverger en silence.
   const commande = `npm run build --workspace ${STACKS.vitrine.workspaces[0]}`;
   const manques = [];
   for (const f of ENTREES_REBUILD) {
-    const t = lire(f);
-    if (!DIT_LE_PROBLEME.test(t)) manques.push(`${f} : ne dit nulle part que publier ne met pas le site à jour`);
-    if (!t.includes(commande)) manques.push(`${f} : n'écrit pas la commande « ${commande} »`);
+    const porteuses = sectionsMd(lire(f)).filter((s) => DIT_LE_PROBLEME.test(s));
+    if (!porteuses.length) { manques.push(`${f} : aucune section ne dit que publier ne met PAS le site à jour`); continue; }
+    if (!porteuses.some((s) => s.includes(commande))) {
+      manques.push(`${f} : ${porteuses.length} section(s) posent le problème, aucune n'écrit « ${commande} »`);
+    }
   }
   assert.deepEqual(manques, [], [
-    'La stack vitrine enseigne un problème sans donner sa solution :',
+    'La stack vitrine enseigne un problème sans donner sa solution, ou la donne ailleurs :',
     ...manques.map((m) => `  ${m}`),
     '',
     'Les pages publiques lisent Convex AU BUILD. Publier dans le `dashboard/` remplit la base,',
     'et le site en ligne reste celui du dernier build. Le lecteur qui apprend ça sans recevoir la',
-    'commande n\'a rien appris d\'actionnable : il découvrira le décalage en production.',
+    'commande — dans la même section, pas trois écrans plus bas — n\'a rien appris d\'actionnable.',
+  ].join('\n'));
+});
+
+// ── V5 — LE CODE GÉNÉRÉ PAR CONVEX SE COMMITE, ET GIT EST L'ARBITRE ───────────────────────────
+// Défaut mesuré et corrigé le jour même : `dashboard/convex/_generated/` avait été ajouté au
+// `.gitignore` de la stack. La mesure « ce motif ignore-t-il ce qu'il annonce ? » était juste ;
+// la question « FAUT-IL l'ignorer ? » n'avait pas été posée. Le CLI y répond
+// (`convex codegen --help`, 1.45.0) : « should be committed to the repo (your code won't typecheck
+// without it!) ». Mesuré de bout en bout : la règle posée, un clone neuf — donc le checkout de la
+// CI — sort `error TS2307: Cannot find module './_generated/server'`, `npm run typecheck` rend 2,
+// et la CI que ce kit livre est rouge au premier push. Le gate de /deploy devient infranchissable.
+//
+// ⚠️ L'ARBITRE EST `git check-ignore`, PAS UNE REGEX. Un contrôle lexical se ferait avoir par la
+// première reformulation (`**/convex/_generated/`, `convex/`, `_generated/`…) — et c'est justement
+// la subtilité des motifs git (séparateur médian ⇒ chemin relatif) qui a produit la faute.
+test('V5 — le `.gitignore` de la vitrine n\'ignore JAMAIS le code généré par Convex', () => {
+  const d = tmp();
+  fs.copyFileSync(path.join(RACINE, 'templates/gitignore/vitrine.gitignore'), path.join(d, '.gitignore'));
+  execFileSync('git', ['init', '-q', '.'], { cwd: d });
+  const suivis = [];
+  for (const ws of STACKS.vitrine.workspaces) {
+    const rel = `${ws}/convex/_generated/api.d.ts`;
+    fs.mkdirSync(path.join(d, ws, 'convex', '_generated'), { recursive: true });
+    fs.writeFileSync(path.join(d, rel), 'export {};\n');
+    // rc 0 = ignoré (la faute), rc 1 = suivi (ce qu'on veut). `status` évite que le rc non nul lève.
+    const r = spawnSync('git', ['check-ignore', '-q', rel], { cwd: d });
+    suivis.push([rel, r.status]);
+  }
+  // Garde de montage : sans fichier écrit, `check-ignore` rendrait 1 pour une raison qui n'est pas
+  // la bonne, et ce test serait vert à vide.
+  assert.ok(suivis.length >= 2, `montage : ${suivis.length} workspace(s) éprouvé(s)`);
+  const ignores = suivis.filter(([, s]) => s === 0).map(([rel]) => rel);
+  assert.deepEqual(ignores, [], [
+    'Le `.gitignore` de la vitrine ignore du code que Convex demande de COMMITER :',
+    ...ignores.map((f) => `  ${f}`),
+    '',
+    '`convex codegen --help` : « should be committed to the repo (your code won\'t typecheck',
+    'without it!) ». Sans ces fichiers dans le dépôt, le checkout de la CI ne compile pas',
+    '(`TS2307: Cannot find module \'./_generated/server\'`) et `npm run typecheck` — que',
+    '`templates/ci/vitrine.yml` lance SANS `--if-present` — rend 2. La CI est rouge au premier',
+    'push, et le gate « CI verte prouvée » de /deploy devient infranchissable.',
   ].join('\n'));
 });

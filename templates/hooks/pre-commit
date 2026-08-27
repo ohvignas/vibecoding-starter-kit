@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
-# Pre-commit vibe-stack : bloque les secrets évidents. C'est TOUT ce que ce fichier fait —
-# et c'est ce que le kit annonce partout ailleurs (« le scan de secrets du kit »).
-# Les checks de la stack (typecheck, lint…) sont ajoutés SOUS ce bloc par le kit, et ce sont
-# eux qui rapportent : `⚠ check lint : problème détecté`. Un `npm run lint` de plus ici le
-# ferait tourner DEUX fois par commit (mesuré sur une racine à deux workspaces : le linter
-# entrait 2 fois dans site/ et 2 fois dans dashboard/) sans jamais pouvoir rien signaler.
+# Pre-commit vibe-stack : bloque les secrets évidents. C'est TOUT ce que ce fichier fait — et
+# c'est ce que le kit annonce partout ailleurs (« le scan de secrets du kit »).
+#
+# ⛔ NE REMETS PAS `npm run lint --if-present --silent || true` ICI. Deux mesures, et elles ne
+# disent pas la même chose selon les projets — la seconde est le prix assumé, pas un oubli :
+#   · racine à deux workspaces AVEC biome.json (vitrine) : la ligne faisait entrer le linter
+#     2 fois dans site/ et 2 fois dans dashboard/ par commit. Pur doublon de la ligne de checks.
+#   · projet SANS biome.json (saas, desktop aujourd'hui : aucun scaffold ne le crée) : elle
+#     était le SEUL lint — retirée, il passe de 1 à 0 par commit.
+# Ce qu'on gagne quand même : `checks.mjs` imprime « check lint sauté (absent: biome.json) » à
+# CHAQUE commit. L'absence est désormais ANNONCÉE, là où la ligne `--silent || true` ne pouvait
+# ni bloquer, ni être comptée, ni même prouver qu'elle avait tourné. La vraie réparation pour
+# saas et desktop est de poser `biome.json`, pas de remettre une ligne muette.
+#
+# Les checks de la stack (typecheck, lint…) sont ajoutés SOUS ce bloc par le kit, et ce sont eux
+# qui rapportent : `⚠ check lint : problème détecté`.
 set -e
 if git diff --cached -U0 | grep -Eq '(sk-ant-[A-Za-z0-9_-]{20,}|sk-proj-[A-Za-z0-9_-]{20,}|sk-[a-zA-Z0-9]{20,}|sk_live_[A-Za-z0-9]{10,}|re_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z_-]{35}|ghp_[A-Za-z0-9]{36}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)'; then
   echo "⛔ Secret potentiel détecté dans le diff — retire-le avant de commit."
