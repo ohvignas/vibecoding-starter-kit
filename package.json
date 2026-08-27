@@ -36,6 +36,6 @@
     "starter"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node scripts/rouges-attendus.mjs"
   }
 }

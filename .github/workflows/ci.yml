@@ -13,7 +13,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      # Suite unitaire + intégration (les tests fournissent leur identité git via variables d'env)
-      - run: node --test
+      # Suite unitaire + intégration (les tests fournissent leur identité git via variables d'env).
+      # PAS `node --test` en direct : le lanceur ajoute le verdict des ROUGES ATTENDUS (par nom,
+      # pas par nombre) — sans lui, une régression arrive comme « un rouge de plus ».
+      - run: node --run test
       # Smoke E2E cross-platform en Node pur (pas de bash) : le kit tient-il ses promesses ?
       - run: node scripts/smoke-e2e.mjs

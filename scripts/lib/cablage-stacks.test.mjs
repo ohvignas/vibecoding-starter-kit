@@ -338,7 +338,22 @@ test('V2 — une liste `workspaces` incomplète divise la couverture par deux, s
 // `package.json` et le `tsconfig.json` mais oublierait le `biome.json` laisse `lint` sauté, le
 // hook sort 0, et AUCUN test du dépôt ne rougit. Ce garde ferme ce trou-là, et il ne recopie
 // aucune liste : les fichiers exigés sont DÉDUITS du `needs` de chaque check que la stack déclare.
-test('V2bis — le runbook de scaffold nomme les fichiers racine sans lesquels les checks se sautent', () => {
+//
+// ⛔ IL EXIGE UNE CLAUSE AFFIRMATIVE, PAS DES MOTS. Un garde purement lexical se satisfait de
+// n'importe quelle phrase qui contient les jetons — « ne crée surtout PAS de package.json, ni
+// tsconfig.json, ni biome.json » le rendait VERT sans qu'on touche au test. Chaque fichier doit
+// donc apparaître sur une ligne qui POSE quelque chose (`pose`/`crée`/`ajoute`/`porte`…) et qui ne
+// nie rien (`ne`/`pas`/`jamais`/`aucun`). Une ligne qui mélange les deux est refusée : sur un
+// garde d'architecture, le faux rouge est le bon côté de l'erreur.
+//
+// 📌 POUR LA TÂCHE 3, QUAND LA PUCE SERA ÉCRITE : le mener d'un cran plus haut, de lexical à
+// EXÉCUTABLE — construire une racine d'après ce que la puce décrit et exiger
+// `selectChecks(STACKS.vitrine.checks.preCommit)` → `[true, true]`. Tant que la puce n'existe pas,
+// il n'y a rien à exécuter ; c'est la seule raison pour laquelle ce garde lit encore du texte.
+const POSE = /\b(pose|posent|porte|portent|cr[ée]e|cr[ée]er|ajoute|ajouter|d[ée]clare|d[ée]clarer|contient|[ée]cris|[ée]crire)\b/i;
+const NIE = /(\bne\b|\bn'|\bpas\b|\bjamais\b|\baucun)/i;
+
+test('V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels les checks se sautent', () => {
   const exiges = new Set(['package.json', ...STACKS.vitrine.checks.preCommit.map((id) => CHECKS[id].needs)]);
   const lignes = lire('templates/commands/new-project/07-scaffold.md').split('\n');
   // LA PUCE DE LA STACK, PAS LE FICHIER ENTIER : `package.json` est cité pour d'autres stacks, et
@@ -348,8 +363,10 @@ test('V2bis — le runbook de scaffold nomme les fichiers racine sans lesquels l
   const debut = lignes.findIndex((l) => /^\s*-\s+\*\*vitrine\*\*/.test(l));
   assert.ok(debut >= 0, '07-scaffold.md n\'a plus de puce `- **vitrine**`');
   const suite = lignes.slice(debut + 1).findIndex((l) => /^\s*-\s+\*\*(saas|desktop|mobile)\*\*/.test(l));
-  const puce = lignes.slice(debut, suite < 0 ? undefined : debut + 1 + suite).join('\n');
-  const manquants = [...exiges, ...VITRINE.workspaces.map((w) => `${w}/`)].filter((f) => !puce.includes(f));
-  assert.deepEqual(manquants, [], 'La racine des deux applications doit porter CHACUN de ces fichiers, et le runbook doit le dire :\n'
+  const puce = lignes.slice(debut, suite < 0 ? undefined : debut + 1 + suite);
+  // Seules les lignes qui posent ET ne nient pas comptent.
+  const affirme = puce.filter((l) => POSE.test(l) && !NIE.test(l)).join('\n');
+  const manquants = [...exiges, ...VITRINE.workspaces.map((w) => `${w}/`)].filter((f) => !affirme.includes(f));
+  assert.deepEqual(manquants, [], 'La racine des deux applications doit porter CHACUN de ces fichiers, et le runbook doit dire de les POSER :\n'
     + `${manquants.join('\n')}\n→ sans eux, \`selectChecks\` sort sur \`needs\` et le check se saute en silence (voir V2 ci-dessus).`);
 });
