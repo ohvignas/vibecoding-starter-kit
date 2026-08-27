@@ -44,14 +44,48 @@ test('resolveStackManifest(desktop, claude-code) : MCP chrome-devtools, audit en
   assert.ok(!m.checks.prePush.includes('security'));
 });
 
-test('vitrine : MCP astro-docs + shadcn ; skills seo + shadcn ; domaines SEO/GEO', () => {
+// La vitrine n'est plus « Astro + un CMS dans git » : c'est `site/` (Astro) + `dashboard/`
+// (TanStack Start + Better Auth) sur Convex. Le manifeste doit porter les DEUX applications —
+// et rien de ce qui faisait la stack précédente ne doit y survivre en douce.
+test('vitrine : les 5 MCP des deux applications, et rien de Keystatic', () => {
   const m = resolveStackManifest('vitrine', 'claude-code');
-  assert.ok(m.mcp['astro-docs'], 'MCP astro-docs présent');
-  assert.ok(m.mcp.shadcn, 'MCP shadcn présent');
+  assert.deepEqual(Object.keys(m.mcp).sort(), ['astro-docs', 'better-auth', 'convex', 'playwright', 'shadcn']);
+  // Repris de `saas`, pas réinventés : deux définitions du même serveur finissent par diverger.
+  assert.deepEqual(m.mcp.convex, resolveStackManifest('saas', 'claude-code').mcp.convex);
+  assert.deepEqual(m.mcp['better-auth'], resolveStackManifest('saas', 'claude-code').mcp['better-auth']);
+  assert.doesNotMatch(JSON.stringify(m), /keystatic/i, 'la stack ne passe plus par Keystatic');
+});
+
+test('vitrine : le plugin Convex arrive, repris de saas', () => {
+  for (const a of ['claude-code', 'cursor', 'codex']) {
+    assert.deepEqual(resolveStackManifest('vitrine', a).plugins, resolveStackManifest('saas', a).plugins, `${a} : mêmes plugins Convex que saas`);
+  }
+  assert.ok(resolveStackManifest('vitrine', 'claude-code').plugins.some((p) => p.cmd.includes('convex@claude-plugins-official')));
+});
+
+test('vitrine : skills seo + shadcn conservés, Better Auth et Convex ajoutés ; domaines SEO/GEO', () => {
+  const m = resolveStackManifest('vitrine', 'claude-code');
   assert.ok(m.skills.some((s) => s.repo === 'shadcn/ui'), 'skill officiel shadcn/ui');
   assert.ok(m.skills.some((s) => (s.skills || []).includes('seo-audit')), 'skills SEO');
-  assert.ok(m.domains.seo && m.domains.geo, 'domaines seo + geo');
-  assert.match(m.scripts.typecheck, /astro check/);
+  assert.ok(m.skills.some((s) => s.repo === 'better-auth/skills'), 'skills Better Auth (dashboard)');
+  assert.ok(m.skills.find((s) => s.repo === 'get-convex/agent-skills')?.all, 'skills Convex, en --all comme en saas');
+  // `forms` RESTE : un formulaire de contact n'a pas besoin de Convex, et le service externe
+  // (Web3Forms, Formspree) reste le bon choix pour une page publique statique.
+  assert.ok(m.domains.seo && m.domains.geo && m.domains.forms, 'domaines seo + geo + forms');
+});
+
+// ⚠️ LE CHAMP QUI TIENT LES CHECKS DEBOUT. Avec `site/` et `dashboard/` en sous-dossiers, ces
+// scripts sont ceux de la RACINE : ils doivent ratisser les deux workspaces, sinon le hook de
+// pre-commit vérifie une application sur deux (ou zéro). Le câblage complet — et la preuve que la
+// commande entre vraiment dans les deux — est gardé par `cablage-stacks.test.mjs` (V2).
+test('vitrine : les scripts de la racine ratissent les DEUX workspaces', () => {
+  const m = resolveStackManifest('vitrine', 'claude-code');
+  for (const id of ['typecheck', 'lint', 'build']) {
+    assert.match(m.scripts[id], new RegExp(`^npm run ${id} --workspaces --if-present$`), `scripts.${id} doit ratisser les deux applications`);
+  }
+  // `astro check` reste le typecheck de `site/`, mais il est déclaré DANS `site/package.json`
+  // (runbook de scaffold) : à la racine, il ne verrait ni le dashboard ni Convex.
+  assert.doesNotMatch(m.scripts.typecheck, /astro check/, 'la racine ne lance pas le check d\'une seule des deux apps');
 });
 
 test('desktop : MCP shadcn ajouté (renderer React = shadcn possible)', () => {

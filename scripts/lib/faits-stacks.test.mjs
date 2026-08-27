@@ -199,3 +199,23 @@ test('F12 — rot-check surveille la DÉPRÉCIATION npm, pas seulement les codes
     assert.match(rot, new RegExp(`(^|[\\s'"])${p}([\\s'"]|$)`, 'm'), `rot-check doit surveiller ${p}`);
   }
 });
+
+// F12bis — LA LISTE DES SOURCES EXTERNES EST DÉRIVÉE DU MANIFESTE, PAS RECOPIÉE À LA MAIN.
+// `rot-check` est le seul endroit qui apprend au kit qu'une source a bougé. Il était rempli à la
+// main : ajouter un MCP ou une règle à une stack laissait sa source HORS surveillance — muette le
+// jour où elle disparaît, et le kit continuait de l'annoncer. Ce test lit ce que `matrix.mjs`
+// déclare vraiment et exige que chaque URL y figure.
+test('F12bis — toute URL externe déclarée par une stack (MCP ou règle) est surveillée par rot-check', () => {
+  const rot = lire('.github/workflows/rot-check.yml');
+  const urls = new Set();
+  for (const s of Object.values(STACKS)) {
+    for (const cfg of Object.values(s.mcp)) {
+      // `chrome-devtools` pointe le navigateur LOCAL (127.0.0.1:9222) : rien à surveiller dehors.
+      for (const u of JSON.stringify(cfg).matchAll(/https:\/\/[^"'\s\\]+/g)) urls.add(u[0]);
+    }
+    for (const r of s.rules) urls.add(r.url);
+  }
+  assert.ok(urls.size >= 8, `le relevé doit trouver les sources des 4 stacks (trouvé ${urls.size})`);
+  const horsSurveillance = [...urls].filter((u) => !rot.includes(u));
+  assert.deepEqual(horsSurveillance, [], `Sources déclarées par matrix.mjs et jamais pingées :\n${horsSurveillance.join('\n')}\n→ ajoute-les à .github/workflows/rot-check.yml`);
+});

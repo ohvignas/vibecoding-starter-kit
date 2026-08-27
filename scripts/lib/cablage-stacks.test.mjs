@@ -4,10 +4,11 @@
 // un catalogue de domaines dont les déclencheurs ne pilotaient rien (F11).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { STACKS, AI_CONTEXT, PINS, resolveAssets } from './matrix.mjs';
+import { STACKS, AI_CONTEXT, PINS, resolveAssets, resolveStackManifest } from './matrix.mjs';
 import { CHECKS, selectChecks, runChecks, resolveCheckCommand } from '../../templates/hooks/framework/checks.mjs';
 import { DOMAIN_TRIGGERS, SHARED_DOMAINS, renderDomains, secretsBlock, triggerWords } from './domains.mjs';
 import { writeStackEnvironment } from './environment.mjs';
@@ -101,7 +102,13 @@ test('F9 — une stack ne reçoit que SON contexte IA', () => {
   const dossiers = (stack) => resolveAssets(stack, 'cursor').copies
     .filter((c) => c.from.startsWith('ai-context/') && c.transform === 'dir')
     .map((c) => c.from.slice('ai-context/'.length));
-  assert.deepEqual(dossiers('vitrine'), ['astro'], 'une vitrine n\'a rien à faire des llms-full de Convex et Expo (4,6 Mo)');
+  // La vitrine porte maintenant deux applications sur Convex : elle a besoin du contexte Convex
+  // (2,3 Mo de llms-full), de Better Auth et de TanStack Start pour son `dashboard/`. Ce qui
+  // reste exclu — et le test le dit — c'est ce qu'elle n'utilise pas : Expo et Electron.
+  assert.deepEqual(dossiers('vitrine').sort(), ['astro', 'better-auth', 'convex', 'tanstack-start']);
+  for (const hors of ['react-native-expo', 'electron']) {
+    assert.equal(dossiers('vitrine').includes(hors), false, `une vitrine n'a rien à faire de ai-context/${hors}`);
+  }
   assert.deepEqual(dossiers('desktop'), ['electron']);
   assert.deepEqual(dossiers('mobile').sort(), ['convex', 'react-native-expo']);
   assert.deepEqual(dossiers('saas').sort(), ['better-auth', 'convex', 'tanstack-start']);
@@ -176,4 +183,87 @@ test('F11 — le scaffold écrit vraiment ces secrets dans le .env.example du pr
   writeStackEnvironment({ projectDir: d, source: RACINE, stack: 'saas', assistant: 'cursor' });
   const deux = fs.readFileSync(path.join(d, '.env.example'), 'utf8');
   assert.equal(deux.match(/STRIPE_SECRET_KEY=/g).length, 1, 'le bloc de secrets ne doit pas se dupliquer');
+});
+
+// ── V2 — DEUX APPLICATIONS, UNE RACINE, ET DES CHECKS QUI MORDENT ENCORE ───────────────────────
+// La vitrine ne scaffolde plus une application mais deux : `site/` (Astro, pages publiques) et
+// `dashboard/` (TanStack Start). Le runner de checks, lui, lit le `package.json` du dossier
+// COURANT (`templates/hooks/framework/checks.mjs`) — et quand il ne trouve pas de quoi travailler,
+// il ne rougit pas : il pose `willRun: false` avec une raison et passe au suivant. Une racine nue
+// au-dessus de deux sous-dossiers rend donc un pre-commit VERT qui n'a rien vérifié.
+//
+// Les quatre tests ci-dessous couvrent les deux sens. Un garde qui ne prouve que le sens « ça
+// marche » ne prouve rien : il faut aussi voir le check se taire quand la pièce manque.
+
+// La racine telle que `07-scaffold.md` doit la laisser. Chaque paramètre retire UNE pièce : c'est
+// ce qui permet de montrer laquelle fait taire le check.
+function racineDeuxApps({ tsconfig = true, biome = true, workspaces = ['site', 'dashboard'] } = {}) {
+  const d = tmp();
+  fs.writeFileSync(path.join(d, 'package.json'), `${JSON.stringify({ name: 'mon-site', private: true, workspaces }, null, 2)}\n`);
+  if (tsconfig) fs.writeFileSync(path.join(d, 'tsconfig.json'), '{}');
+  if (biome) fs.writeFileSync(path.join(d, 'biome.json'), '{}');
+  for (const app of ['site', 'dashboard']) {
+    fs.mkdirSync(path.join(d, app), { recursive: true });
+    // Le script de l'application dépose une marque : c'est ce qui prouvera que la commande de la
+    // racine est VRAIMENT entrée dans les deux workspaces, au lieu de le laisser croire.
+    fs.writeFileSync(path.join(d, app, 'marque.mjs'), `import fs from 'node:fs';\nfs.writeFileSync(\`\${process.env.MARQUE}/${app}.vu\`, '');\n`);
+    fs.writeFileSync(path.join(d, app, 'package.json'), `${JSON.stringify({ name: app, version: '0.0.0', scripts: { typecheck: 'node marque.mjs' } }, null, 2)}\n`);
+  }
+  return d;
+}
+
+test('V2 — deux apps et une racine nue : les DEUX checks du pre-commit se sautent, et rien ne rougit', () => {
+  const d = racineDeuxApps({ tsconfig: false, biome: false });
+  const vus = selectChecks(STACKS.vitrine.checks.preCommit, { cwd: d });
+  assert.deepEqual(vus.map((c) => c.willRun), [false, false], 'c\'est le défaut que cette tâche doit rendre impossible');
+  assert.match(vus[0].reason, /tsconfig\.json/);
+  assert.match(vus[1].reason, /biome\.json/);
+  // …et ce que ça donne à l'usage : le hook ne LANCE rien et sort 0. Vert, sans avoir vérifié.
+  const lances = [];
+  const code = runChecks(STACKS.vitrine.checks.preCommit, { cwd: d, log: () => {}, spawn: (f, a) => { lances.push([f, ...a]); return { status: 0 }; } });
+  assert.equal(code, 0);
+  assert.deepEqual(lances, [], 'un pre-commit qui ne lance RIEN et sort vert est pire qu\'un pre-commit absent');
+});
+
+test('V2 — le `package.json` racine ne suffit PAS : `needs` est évalué avant le script', () => {
+  // Mesuré. La solution du plan (un package.json racine avec les scripts qui ratissent les deux
+  // workspaces) est nécessaire mais pas suffisante : `selectChecks` teste d'abord la présence du
+  // fichier `needs` (tsconfig.json / biome.json) et sort AVANT de regarder les scripts. Des
+  // scripts parfaits sur une racine sans ces deux fichiers → les deux checks se sautent quand même.
+  const d = racineDeuxApps({ tsconfig: false, biome: false });
+  writeStackEnvironment({ projectDir: d, source: RACINE, stack: 'vitrine', assistant: 'cursor' });
+  const pkg = JSON.parse(fs.readFileSync(path.join(d, 'package.json'), 'utf8'));
+  assert.equal(pkg.scripts.typecheck, resolveStackManifest('vitrine', 'cursor').scripts.typecheck, 'le kit a bien posé le script');
+  assert.deepEqual(selectChecks(['typecheck', 'lint'], { cwd: d }).map((c) => c.willRun), [false, false],
+    'la racine des deux apps doit AUSSI porter tsconfig.json et biome.json, sinon les scripts ne servent à rien');
+});
+
+test('V2 — script absent de la racine : le check retombe sur un défaut qui n\'entre dans aucun workspace', () => {
+  const d = racineDeuxApps();
+  const [r] = selectChecks(['typecheck'], { cwd: d });
+  assert.equal(r.via, 'defaut', 'sans script à la racine, la stack n\'est plus ce qui pilote le check');
+  assert.notDeepEqual(r.cmd, ['npm', 'run', 'typecheck']);
+  // `npx tsc --noEmit` à la racine ne lit aucun `.astro` et n'entre ni dans site/ ni dans
+  // dashboard/ : il sort vert en n'ayant rien vérifié. C'est le repli, pas le contrôle.
+  assert.deepEqual(r.cmd, ['npx', 'tsc', '--noEmit']);
+});
+
+test('V2 — script posé par le kit : le check mord, et sa commande ratisse LES DEUX workspaces', () => {
+  const d = racineDeuxApps();
+  writeStackEnvironment({ projectDir: d, source: RACINE, stack: 'vitrine', assistant: 'cursor' });
+
+  const [r] = selectChecks(['typecheck'], { cwd: d });
+  assert.equal(r.willRun, true);
+  assert.equal(r.via, 'script', 'c\'est la stack qui pilote, pas le repli');
+  assert.deepEqual(r.cmd, ['npm', 'run', 'typecheck']);
+
+  // LA PREUVE, et elle n'est pas textuelle : on lance la commande que le hook lancerait et on
+  // regarde où elle est passée. Une racine sans `--workspaces`, ou dont la liste `workspaces`
+  // oublie une application, laisse une marque manquante ici. (Mesuré : `npm run --workspaces`
+  // entre dans chaque workspace sans `npm install` préalable, en ~0,7 s.)
+  const { file, args, options } = resolveCheckCommand(r.cmd);
+  execFileSync(file, args, { cwd: d, stdio: 'ignore', env: { ...process.env, MARQUE: d }, ...options });
+  for (const app of ['site', 'dashboard']) {
+    assert.ok(fs.existsSync(path.join(d, `${app}.vu`)), `le typecheck de la racine n'est jamais entré dans ${app}/ — il vérifie une application sur deux`);
+  }
 });

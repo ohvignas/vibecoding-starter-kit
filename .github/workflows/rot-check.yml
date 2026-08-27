@@ -23,6 +23,10 @@ jobs:
             echo "$r -> $code"
             [ "$code" -lt 400 ] || { echo "::error::dépôt de skills injoignable : $r ($code)"; exit 1; }
           done
+      # ⚠️ CETTE LISTE EST DÉRIVÉE DE `scripts/lib/matrix.mjs` : toute URL qu'une stack déclare
+      # (`mcp`, `rules`) doit s'y trouver, sinon elle disparaît un jour sans que rien ne rougisse.
+      # Le garde qui l'exige : `faits-stacks.test.mjs`, F12bis. Il en avait déjà trouvé trois
+      # oubliées (les deux docs Electron et l'installeur Maestro), en plus de la recette Docker.
       - name: URLs de contexte (llms.txt / règles) — doivent répondre 2xx/3xx
         run: |
           set -e
@@ -33,6 +37,10 @@ jobs:
             https://docs.expo.dev/llms.txt \
             https://reactnative.dev/llms.txt \
             https://ui.shadcn.com/docs/installation/astro \
+            https://docs.astro.build/en/recipes/docker/ \
+            https://www.electronjs.org/docs/latest/tutorial/security \
+            https://www.electronjs.org/docs/latest \
+            https://get.maestro.mobile.dev \
             https://keystatic.com/docs/installation-astro ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
             echo "$u -> $code"
