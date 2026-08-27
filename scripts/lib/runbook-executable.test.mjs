@@ -207,10 +207,49 @@ test('E2E — le tech spec vit à côté du PRD, pas dans la convention interne 
   assert.match(lire('scripts/lib/templates.mjs'), /docs\/ARCHITECTURE\.md/, 'AGENTS.md doit y renvoyer');
 });
 
-test('E2E — le runbook fait poser le script `typecheck` que le template n\'a pas', () => {
-  const t = runbook();
-  // Mesuré sur le projet réellement produit : scripts = dev, build, preview, astro, lint.
-  // Pas de `typecheck` → le hook du kit retombe sur `tsc --noEmit`, qui ne lit pas les `.astro`
-  // et sort vert sans rien vérifier (c'est le bug F4, par un autre chemin).
-  assert.match(t, /"typecheck":\s*"astro check"/, 'sans ce script, le check de la vitrine ne vérifie rien');
+// ── LA VALEUR DES QUATRE SCRIPTS, PAS SEULEMENT LEUR PRÉSENCE ─────────────────────────────────
+// ⚠️ CE TEST DISAIT « le runbook POSE le script `typecheck` que le template n'a pas ». Le fait a
+// changé — remesuré sur un scaffold RÉEL, les deux templates posent les quatre scripts :
+//     site/      typecheck: astro check     lint: eslint .
+//     dashboard/ typecheck: tsc --noEmit    lint: npm run typecheck && eslint …
+// La propriété, elle, n'a pas changé : ce que la puce ÉCRIT doit être une commande qui TOURNE.
+// La version livrée dictait `"lint": "biome check ."` dans les deux applications, or aucun
+// scaffold n'installe biome — mesuré sur le scaffold réel : `npm run lint` → **rc 127**,
+// `sh: biome: command not found`, dans les DEUX workspaces. CI rouge au premier push, et le
+// pre-commit affichant « ⚠ check lint : problème détecté » sur du code sans défaut.
+//
+// ⛔ ET C'EST LA VALEUR QU'ON JUGE, PAS LA CLÉ. V2bis (cablage-stacks) exécute la racine, mais sa
+// fixture remplace chaque commande par `node marque.mjs` : il prouve que la commande ENTRE dans
+// les deux applications, jamais qu'elle est lançable. Mesuré : `"lint": "true"` le laissait vert.
+// Ici on lit ce que la puce dicte, dans le bloc de CHAQUE application.
+test('E2E — vitrine : les quatre scripts dictés sont ceux des templates, et chacun lance un outil INSTALLÉ', () => {
+  const puce = pucesDeScaffold(ROOT).vitrine.join('\n');
+  const ATTENDU = {
+    site: { typecheck: /"typecheck":\s*"astro check"/, lint: /"lint":\s*"eslint\b/ },
+    dashboard: { typecheck: /"typecheck":\s*"tsc --noEmit"/, lint: /"lint":\s*"[^"]*\beslint\b/ },
+  };
+  const fautes = [];
+  for (const [app, attendus] of Object.entries(ATTENDU)) {
+    // Le bloc de CETTE application : de son commentaire d'en-tête au ``` suivant. Sans ce
+    // découpage, le `eslint` de `site/` couvrirait `dashboard/` — la faute « un contrôle crédité
+    // du vocabulaire de son voisin », déjà prise cinq fois sur ce chantier.
+    const bloc = new RegExp(`//\\s*${app}/package\\.json[^\n]*\n([\\s\\S]*?)\`\`\``).exec(puce);
+    if (!bloc) { fautes.push(`${app} : la puce ne porte plus de bloc \`${app}/package.json\``); continue; }
+    for (const [id, re] of Object.entries(attendus)) {
+      if (!re.test(bloc[1])) fautes.push(`${app} : \`${id}\` ne vaut pas ce que le template pose (${re})`);
+    }
+  }
+  // `biome` nulle part : c'est LE fait mesuré. `npx @biomejs/biome init` écrit la config et
+  // n'installe rien ; le binaire n'existe dans aucun des deux `node_modules`.
+  if (/biome/.test(puce)) {
+    const dictee = puce.split('\n').filter((l) => /biome/.test(l) && !/⛔|jamais|ne pose|n'installe|pas de/i.test(l));
+    if (dictee.length) fautes.push(`la puce fait encore écrire biome, qu'aucun scaffold n'installe :\n    ${dictee.join('\n    ')}`);
+  }
+  assert.deepEqual(fautes, [], [
+    'La puce vitrine dicte un script que le projet ne peut pas lancer :',
+    ...fautes.map((f) => `  ${f}`),
+    '',
+    'Critère : `npm run lint` et `npm run typecheck` doivent rendre 0 sur une vitrine',
+    'fraîchement scaffoldée, sans rien installer de plus que ce que les deux templates apportent.',
+  ].join('\n'));
 });

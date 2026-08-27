@@ -253,17 +253,27 @@ test('V2 — deux apps et une racine nue : les DEUX checks du pre-commit se saut
   assert.deepEqual(lances, [], 'un pre-commit qui ne lance RIEN et sort vert est pire qu\'un pre-commit absent');
 });
 
-test('V2 — le `package.json` racine ne suffit PAS : `needs` est évalué avant le script', () => {
-  // Mesuré. La solution « un package.json racine avec les scripts qui ratissent les deux
-  // workspaces » est nécessaire mais pas suffisante : `selectChecks` teste d'abord la présence du
-  // fichier `needs` (tsconfig.json / biome.json) et sort AVANT de regarder les scripts. Des
-  // scripts parfaits sur une racine sans ces deux fichiers → les deux checks se sautent quand même.
+// ⚠️ CE TEST DISAIT L'INVERSE, ET C'ÉTAIT UN BUG DE `checks.mjs`, PAS UNE PROPRIÉTÉ À TENIR.
+// Il asseyait que `needs` est évalué AVANT le script, donc qu'une racine sans `tsconfig.json` ni
+// `biome.json` saute ses deux checks même avec des scripts parfaits. Conséquence mesurée sur un
+// scaffold vitrine RÉEL : les deux templates posent `lint` (eslint, installé, configuré) et le
+// hook répondait « sauté (absent: biome.json) » — un contrôle qui existe, et qu'on saute.
+// `needs` est le prérequis de la commande PAR DÉFAUT. Un script déclaré la remplace, donc s'en
+// passe. Le sens qui compte est conservé juste au-dessus : ni script NI fichier `needs` → sauté.
+test('V2 — un script déclaré à la racine SUFFIT : `needs` ne gate que le repli', () => {
   const d = racineDeuxApps({ tsconfig: false, biome: false });
   writeStackEnvironment({ projectDir: d, source: RACINE, stack: 'vitrine', assistant: 'cursor' });
   const pkg = JSON.parse(fs.readFileSync(path.join(d, 'package.json'), 'utf8'));
   assert.equal(pkg.scripts.typecheck, VITRINE.scripts.typecheck, 'le kit a bien posé le script');
-  assert.deepEqual(selectChecks(['typecheck', 'lint'], { cwd: d }).map((c) => c.willRun), [false, false],
-    'la racine des deux apps doit AUSSI porter tsconfig.json et biome.json, sinon les scripts ne servent à rien');
+  const vus = selectChecks(['typecheck', 'lint'], { cwd: d });
+  assert.deepEqual(vus.map((c) => c.willRun), [true, true],
+    'la racine déclare les deux scripts : les gater sur le fichier de config d\'un outil qu\'elle n\'utilise pas saute un contrôle qui existe');
+  assert.deepEqual(vus.map((c) => c.via), ['script', 'script'], 'et c\'est bien la STACK qui pilote, pas le repli');
+  // …et l'autre sens, dans le même souffle : sans script déclaré, le fichier `needs` redevient la
+  // condition. Sans cette moitié, on aurait remplacé un gate trop strict par aucun gate du tout.
+  const nu = racineDeuxApps({ tsconfig: false, biome: false });
+  assert.deepEqual(selectChecks(['typecheck', 'lint'], { cwd: nu }).map((c) => c.willRun), [false, false],
+    'racine sans script ET sans fichier `needs` : le repli n\'a pas de quoi tourner, on saute');
 });
 
 test('V2 — script absent de la racine : le check retombe sur un défaut qui n\'entre dans aucun workspace', () => {
@@ -363,7 +373,6 @@ const VITRINE_PUCE = () => puceDeStack(RACINE, 'vitrine');
 
 test('V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels les checks se sautent', () => {
   const ids = STACKS.vitrine.checks.preCommit;
-  const exiges = [...new Set(['package.json', ...ids.map((id) => CHECKS[id].needs)])];
   const puce = VITRINE_PUCE();
   const blocs = blocsDeLaPuce(puce);
   assert.ok(blocs.length, 'la puce vitrine ne porte AUCUN bloc de code : les fichiers de la racine doivent y être écrits, pas racontés');
@@ -380,13 +389,20 @@ test('V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels le
     const b = blocs.find((x) => x.fichier === f);
     return b && jsonDuBloc(b) !== null ? b : null;
   };
-  const illisibles = exiges.filter((f) => blocs.some((x) => x.fichier === f) && !blocDe(f));
-  const manquants = exiges.filter((f) => !blocDe(f));
 
   // Le `package.json` de la racine est PARSÉ, pas cherché : sa liste `workspaces` et ses scripts
   // sont comparés au manifeste. Un `--if-present` qui reviendrait dans le runbook, ou une liste
   // d'applications incomplète, rougissent ici avant même qu'on lance quoi que ce soit.
   const racine = blocDe('package.json') && jsonDuBloc(blocDe('package.json'));
+  // ⚠️ `needs` N'EST EXIGÉ QUE POUR LES CHECKS DONT LA RACINE NE DÉCLARE PAS LE SCRIPT. C'est la
+  // règle de `checks.mjs` : un script déclaré remplace la commande par défaut, donc se passe du
+  // fichier de config de celle-ci. La version d'avant exigeait `tsconfig.json` ET `biome.json`
+  // sans condition — elle obligeait le runbook à faire poser un `biome.json` pour un outil
+  // qu'AUCUN scaffold n'installe. La dérivation reste vivante : que le runbook perde le script
+  // `lint` de la racine, et `biome.json` redevient exigé ici même.
+  const exiges = [...new Set(['package.json', ...ids.filter((id) => !racine?.scripts?.[id]).map((id) => CHECKS[id].needs)])];
+  const illisibles2 = exiges.filter((f) => blocs.some((x) => x.fichier === f) && !blocDe(f));
+  const manquants2 = exiges.filter((f) => !blocDe(f));
   if (racine) {
     assert.deepEqual(racine.workspaces, VITRINE.workspaces, 'le `package.json` de la racine, tel que le runbook le dicte, ne déclare pas les applications du manifeste');
     assert.deepEqual(racine.scripts, VITRINE.scripts, 'les scripts dictés par le runbook ne sont pas ceux du manifeste (`--if-present` de retour ? un script perdu ?)');
@@ -408,11 +424,11 @@ test('V2bis — le runbook de scaffold POSE les fichiers racine sans lesquels le
 
   const pourquoi = (quoi) => [
     `${quoi} sur la racine que la puce \`- **vitrine**\` de 07-scaffold.md fait naître.`,
-    manquants.length
-      ? `Fichiers exigés qu'AUCUN bloc PARSABLE de la puce ne décrit : ${manquants.join(', ')}`
-        + `${illisibles.length ? `\n  (bloc présent mais illisible : ${illisibles.join(', ')} — le contenu doit être du JSON, pas une commande)` : ''}`
+    manquants2.length
+      ? `Fichiers exigés qu'AUCUN bloc PARSABLE de la puce ne décrit : ${manquants2.join(', ')}`
+        + `${illisibles2.length ? `\n  (bloc présent mais illisible : ${illisibles2.join(', ')} — le contenu doit être du JSON, pas une commande)` : ''}`
         + '\n  (convention : la 1re ligne du bloc est un commentaire qui nomme le fichier — `// package.json`)'
-      : 'Les trois fichiers de la racine sont bien décrits — le trou est ailleurs (scripts d\'application, liste `workspaces`).',
+      : 'Les fichiers exigés de la racine sont bien décrits — le trou est ailleurs (scripts d\'application, liste `workspaces`).',
     `Blocs lus : ${blocs.map((b) => b.fichier ?? '(sans nom)').join(', ') || 'aucun'}`,
   ].join('\n');
 
@@ -557,5 +573,65 @@ test('V5 — le `.gitignore` de la vitrine n\'ignore JAMAIS le code généré pa
     '(`TS2307: Cannot find module \'./_generated/server\'`) et `npm run typecheck` — que',
     '`templates/ci/vitrine.yml` lance SANS `--if-present` — rend 2. La CI est rouge au premier',
     'push, et le gate « CI verte prouvée » de /deploy devient infranchissable.',
+  ].join('\n'));
+});
+
+// ── V6 — LA LIGNE DE CI QUI PORTE L'ARBITRAGE CENTRAL DU LOT, ET QUE RIEN NE TENAIT ───────────
+// `templates/ci/vitrine.yml` lance `npm run lint` / `typecheck` / `build` **sans `--if-present`**,
+// délibérément : avec le drapeau, une racine à qui il manque un script rend la CI VERTE sans avoir
+// rien lancé — le saut silencieux que toute cette stack est faite pour tuer. Cet arbitrage n'était
+// retenu que par un commentaire de cinq lignes. Mesuré : en ajoutant `--if-present` aux trois
+// lignes, les 621 tests du dépôt restaient VERTS. V2bis, lui, ne lit que le manifeste — pas la CI.
+//
+// La liste des scripts est LUE dans `STACKS.vitrine.scripts` : un quatrième script entrerait sous
+// contrôle sans qu'on touche ici, et un script retiré du manifeste cesserait d'être exigé.
+test('V6 — la CI vitrine lance CHAQUE script du manifeste, et aucun avec `--if-present`', () => {
+  const ci = lire('templates/ci/vitrine.yml');
+  const noms = Object.keys(VITRINE.scripts);
+  assert.ok(noms.length >= 3, `montage : ${noms.length} scripts lus dans le manifeste`);
+  const fautes = [];
+  for (const n of noms) {
+    const ligne = ci.split('\n').find((l) => new RegExp(`^\\s*-\\s*run:\\s*npm run ${n}\\b`).test(l));
+    if (!ligne) { fautes.push(`\`npm run ${n}\` : le manifeste le déclare, la CI ne le lance pas`); continue; }
+    if (/--if-present/.test(ligne)) fautes.push(`\`npm run ${n}\` porte \`--if-present\` : une racine sans ce script rendrait la CI VERTE sans rien lancer`);
+  }
+  assert.deepEqual(fautes, [], [
+    'La CI de la vitrine ne fait plus ce que le manifeste déclare :',
+    ...fautes.map((f) => `  ${f}`),
+    '',
+    'Sans `--if-present`, npm sort 1 EN NOMMANT le script manquant. Avec, il sort 0 sans un mot :',
+    'la CI passe au vert sur un projet dont la moitié n\'a jamais été vérifiée. C\'est l\'arbitrage',
+    'de ce lot, et il doit rester visible dans le fichier que la CI exécute.',
+  ].join('\n'));
+});
+
+// ── V7 — LES PORTS, QUE PERSONNE NE TENAIT ────────────────────────────────────────────────────
+// Quatre fichiers livrés annoncent où écoutent les deux applications ; aucun ne parlait aux
+// autres. Mesuré : remplacer `4321` par `1234` dans un seul d'entre eux laissait la suite VERTE.
+// Le débutant ouvre alors une adresse qui ne répond pas, et rien dans le kit ne le contredit.
+//
+// Il n'existe pas de source unique pour ces valeurs — elles viennent des templates amont (Astro
+// écoute sur 4321, le `vite.config.ts` de create-convex fixe `port: 3000`, mesuré sur un scaffold
+// réel). La règle est donc celle de la section « Un seul serveur » (parallele.test.mjs) : UN
+// fichier fait foi — `templates/run/vitrine.md`, livré tel quel en `docs/RUN.md`, dont c'est le
+// métier — et les autres ne doivent pas en diverger.
+test('V7 — les ports de la vitrine sont les mêmes dans tous les fichiers qui les annoncent', () => {
+  const ports = (rel) => [...new Set([...lire(rel).matchAll(/localhost:(\d{4,5})/g)].map((m) => m[1]))].sort();
+  const reference = ports('templates/run/vitrine.md');
+  assert.deepEqual(reference, ['3000', '4321'], `montage : \`docs/RUN.md\` doit annoncer les deux ports, lu ${JSON.stringify(reference)}`);
+  const AUTRES = ['stacks/vitrine/README.md', 'stacks/vitrine/prompts-de-demarrage.md', 'templates/env/vitrine.env.example'];
+  const fautes = [];
+  for (const f of AUTRES) {
+    const p = ports(f);
+    assert.ok(p.length, `montage : ${f} n'annonce plus aucun port — ce test serait vrai à vide`);
+    const intrus = p.filter((x) => !reference.includes(x));
+    if (intrus.length) fautes.push(`${f} : ${intrus.join(', ')} — absent(s) de docs/RUN.md`);
+  }
+  assert.deepEqual(fautes, [], [
+    'Un fichier livré annonce un port que `docs/RUN.md` n\'annonce pas :',
+    ...fautes.map((f) => `  ${f}`),
+    '',
+    'Le débutant ouvre l\'adresse qu\'on lui donne. Si deux fichiers du kit n\'en donnent pas la',
+    'même, l\'un des deux l\'envoie sur une page qui ne répond pas — et rien ne le lui dira.',
   ].join('\n'));
 });

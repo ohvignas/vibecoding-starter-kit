@@ -79,7 +79,7 @@
 
 - <a id="stack"></a>**Stack (pile technique)** — L'**ensemble des technologies** choisies pour construire une app (front + back + base + auth…). *Ex. : le kit propose 4 stacks selon le type d'app.*
 - **SaaS / mobile / desktop / vitrine** — Les **4 types d'app** du kit : SaaS = web hébergé, mobile = iOS/Android, desktop = logiciel installable, vitrine = site web statique (portfolio, blog). *Ex. : « une app de réservation » → SaaS.*
-- **Convex** — Un **backend réactif tout-en-un** (base de données + fonctions serveur + temps réel) en TypeScript, sans écrire de SQL. *Ex. : côté navigateur (jamais dans une page que Google doit lire), `useQuery` met à jour l'UI automatiquement quand la donnée change.*
+- **Convex** — Un **backend réactif tout-en-un** (base de données + fonctions serveur + temps réel) en TypeScript, sans écrire de SQL. *Ex. : jamais `useQuery` dans une page que Google doit lire — c'est un hook de navigateur ; ailleurs, il met à jour l'UI tout seul quand la donnée change.*
 - **Convex — déploiement cloud vs local** — En **cloud** (défaut) le backend tourne sur les serveurs Convex (compte gratuit) ; en **local** il tourne sur ta machine (zéro Docker, zéro compte, données dans `.convex/`). *Ex. : `npx convex deployment select local` pour du 100 % local.*
 - **TanStack Start** — Un **framework React full-stack** (rendu serveur, routing typé, server functions). *Ex. : la partie « site web » de la stack SaaS, et le `dashboard/` de la stack vitrine.*
 - **Better Auth** — Une **librairie d'authentification** open-source, branchée à Convex, où tes utilisateurs vivent dans **ta** base. *Ex. : connexion Google, sessions, 2FA, sans service tiers payant.*

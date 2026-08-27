@@ -2,16 +2,14 @@
 # Pre-commit vibe-stack : bloque les secrets évidents. C'est TOUT ce que ce fichier fait — et
 # c'est ce que le kit annonce partout ailleurs (« le scan de secrets du kit »).
 #
-# ⛔ NE REMETS PAS `npm run lint --if-present --silent || true` ICI. Deux mesures, et elles ne
-# disent pas la même chose selon les projets — la seconde est le prix assumé, pas un oubli :
-#   · racine à deux workspaces AVEC biome.json (vitrine) : la ligne faisait entrer le linter
-#     2 fois dans site/ et 2 fois dans dashboard/ par commit. Pur doublon de la ligne de checks.
-#   · projet SANS biome.json (saas, desktop aujourd'hui : aucun scaffold ne le crée) : elle
-#     était le SEUL lint — retirée, il passe de 1 à 0 par commit.
-# Ce qu'on gagne quand même : `checks.mjs` imprime « check lint sauté (absent: biome.json) » à
-# CHAQUE commit. L'absence est désormais ANNONCÉE, là où la ligne `--silent || true` ne pouvait
-# ni bloquer, ni être comptée, ni même prouver qu'elle avait tourné. La vraie réparation pour
-# saas et desktop est de poser `biome.json`, pas de remettre une ligne muette.
+# ⛔ NE REMETS PAS `npm run lint --if-present --silent || true` ICI. C'était un doublon MUET de la
+# ligne de checks : `--silent || true` ne bloque rien, n'entre dans aucun décompte, et ne prouve
+# jamais qu'elle a tourné. Mesuré sur une racine à deux workspaces : le linter entrait 2 fois dans
+# site/ ET 2 fois dans dashboard/ par commit.
+# La ligne de checks, elle, RAPPORTE : `⚠ check lint : problème détecté`, ou
+# `⚠ check lint : n'a pas pu être lancé` si l'outil déclaré n'est pas installé. Et depuis que
+# `needs` ne gate que le REPLI, un projet qui déclare son script `lint` le voit tourner pour de
+# vrai — mesuré rc 0 sur les scaffolds des quatre stacks, qui posent tous eslint.
 #
 # Les checks de la stack (typecheck, lint…) sont ajoutés SOUS ce bloc par le kit, et ce sont eux
 # qui rapportent : `⚠ check lint : problème détecté`.

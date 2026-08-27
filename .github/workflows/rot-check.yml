@@ -45,7 +45,6 @@ jobs:
             https://www.electronjs.org/docs/latest \
             https://get.maestro.mobile.dev \
             https://labs.convex.dev/better-auth/framework-guides/tanstack-start \
-            https://biomejs.dev/schemas/2.5.10/schema.json \
             https://www.nativewind.dev/getting-started/installation \
             https://tweakcn.com \
             "https://ui.shadcn.com/create?preset=b27GcrRo" ; do

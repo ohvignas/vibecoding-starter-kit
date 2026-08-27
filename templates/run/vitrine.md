@@ -1,14 +1,20 @@
 # Lancer le site — Vitrine (Astro + Convex + Better Auth)
 
 Ce projet porte **deux applications** — `site/` (les pages publiques) et `dashboard/` (la saisie du
-contenu, privée) — plus **un backend Convex**. Ce sont **trois processus qui restent ouverts**, donc
-**trois terminaux**, dans cet ordre :
+contenu, privée) — plus **un backend Convex**. Ça fait **deux terminaux**, pas trois, dans cet ordre :
 
-1. `cd dashboard && npx convex dev` — le backend Convex + la génération des types (laisse tourner).
+1. `cd dashboard && npm run dev` — ⚠️ **cette commande démarre DEUX choses** : le template pose
+   `"dev": "convex dev --start 'vite dev'"`, donc elle lance le backend Convex (et la génération
+   des types) **puis** le tableau de bord. Ne lance pas `npx convex dev` à côté : tu aurais **deux
+   Convex sur le même déploiement**, des logs en double, et rien pour te dire pourquoi.
 2. `cd site && npm run dev` — les pages publiques.
-3. `cd dashboard && npm run dev` — le tableau de bord.
 
 Ouvre **http://localhost:4321** (le site public) et **http://localhost:3000** (le dashboard).
+
+⚠️ **Astro 7 rend la main, et ce n'est pas un plantage** : `npm run dev` dans `site/` **rend la main en quelques
+secondes, avec le code 0** et laisse le serveur tourner **en tâche de fond** — ton terminal n'est pas bloqué,
+le site répond quand même sur 4321. Pour savoir où il en est : `cd site && npx astro dev status` ;
+pour l'arrêter : `cd site && npx astro dev stop`. Le `dev` du dashboard, lui, occupe son terminal.
 
 **Ce que tu dois voir :** la page d'accueil se charge sur **4321** avec son contenu **déjà présent dans
 le HTML** (clic droit → « code source de la page » : le texte y est), et le dashboard demande une

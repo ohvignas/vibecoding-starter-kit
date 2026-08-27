@@ -48,6 +48,33 @@ const DASHBOARD_DIR = /`?dashboard\//;
 const LOCALISE = /^[\s\-*\d.•⛔ℹ️⚠️`*]*dans\s+`?dashboard\//i;   // « Dans `dashboard/`, … »
 const CONFINE = /\b(r[ée]serv|uniquement|seulement|exclusivement)/i; // « réservé au `dashboard/` »
 
+// La ponctuation qui ferme une proposition et en ouvre une autre. Entre le mot d'interdiction et
+// le hook, elle signe que le mot ne GOUVERNE pas le hook.
+const CHANGE_DE_PROPOSITION = /[:;,.!?()—–·]/;
+
+// ⛔ 6ᵉ CONTOURNEMENT, ET IL VISAIT L'EXONÉRATION N°1. « L'interdiction précède le hook » était
+// POSITIONNEL : il ne vérifiait pas que le mot porte SUR le hook. Or `jamais` est un mot que cette
+// stack écrit à toutes les lignes. Trois phrases mesurées VERTES, toutes enseignant la faute :
+//   « Le contenu ne bouge jamais tout seul : dans `site/…`, lis les articles avec `useQuery`. »
+//   « ⛔ Ne saute pas cette étape : dans `site/…`, enveloppe la page dans `<ConvexProvider>`. »
+//   « Le cache est interdit ici — dans une page publique .astro, lis les articles avec `useQuery`. »
+// Et une exonération PAR ACCIDENT dans le dépôt : « Jamais d'API REST maison. Front réactif via
+// `useQuery` » — le `Jamais` y gouverne les API REST, pas le hook.
+// Deux conditions s'ajoutent donc, et chacune tue les trois phrases à elle seule :
+//   · aucune ponctuation de rupture entre le mot et le hook (même proposition) ;
+//   · le SITE PUBLIC ne s'intercale pas entre les deux — s'il est là, c'est de LUI qu'on parle au
+//     moment d'écrire le hook, et l'interdiction portait sur autre chose.
+function interditGouverne(l, hook) {
+  for (const m of l.matchAll(new RegExp(INTERDIT.source, 'gi'))) {
+    const fin = m.index + m[0].length;
+    if (fin > hook) continue;
+    const entre = l.slice(fin, hook);
+    if (CHANGE_DE_PROPOSITION.test(entre) || PUBLIC.test(entre)) continue;
+    return true;
+  }
+  return false;
+}
+
 // ⛔ LA POSITION ET LE RATTACHEMENT FONT LE SENS, PAS LA PRÉSENCE DES MOTS. Trois exonérations
 // ont été mesurées contournables, chacune par une ligne qui ENSEIGNE :
 //   « Dans `site/…`, lis les articles avec `useQuery` — le même code que dans le dashboard. »
@@ -59,12 +86,11 @@ const CONFINE = /\b(r[ée]serv|uniquement|seulement|exclusivement)/i; // « rés
 // noire ne clôt jamais une classe : il reste une infinité de façons de nier ou de contourner.
 // Une liste blanche, si : le DÉFAUT est la faute, et seules deux formes étroites exonèrent.
 // Une formulation légitime non reconnue rougit — faux rouge, le bon côté de l'erreur ici.
-function legitime(l) {
+export function legitime(l) {
   const hook = l.search(CLIENT_NAVIGATEUR);
-  const interdit = l.search(INTERDIT);
   const pub = l.search(PUBLIC);
-  // 1. la règle qui nomme ce qu'elle refuse : l'interdiction précède le hook.
-  if (interdit >= 0 && interdit < hook) return true;
+  // 1. la règle qui nomme ce qu'elle refuse : l'interdiction GOUVERNE le hook (même proposition).
+  if (interditGouverne(l, hook)) return true;
   // 2. le hook rattaché à l'app privée — et le site public n'est pas nommé avant lui.
   if (pub >= 0 && pub < hook) return false;
   return DASHBOARD_DIR.test(l) && (LOCALISE.test(l) || CONFINE.test(l));
@@ -163,6 +189,12 @@ test('T4 — le détecteur voit le piège, et laisse passer les deux emplois lé
     // présent, il n'est pas rattaché au hook. Mesuré vert avant le rattachement.
     ['`dashboard` comme source, pas comme destination', 'Pour afficher les articles publiés depuis le dashboard, lis-les avec `useQuery`.'],
     ['la même, avec la barre mais toujours sans rattachement', 'Pour afficher les articles publiés depuis le `dashboard/`, lis-les avec `useQuery`.'],
+    // LES TROIS CONTOURNEMENTS DE L'EXONÉRATION POSITIONNELLE (6ᵉ tour). Le mot d'interdiction est
+    // bien AVANT le hook — il gouverne une tout autre proposition.
+    ['un `jamais` qui gouverne autre chose', 'Le contenu ne bouge jamais tout seul : dans `site/…`, lis les articles avec `useQuery(api.articles.list)`.'],
+    ['un ⛔ qui ouvre une autre consigne', '⛔ Ne saute pas cette étape : dans `site/…`, enveloppe la page dans `<ConvexProvider>` pour la rendre réactive.'],
+    ['un `interdit` qui porte sur le cache', 'Le cache est interdit ici — dans une page publique .astro, lis les articles avec `useQuery`.'],
+    ['un `Jamais` qui gouverne les API REST', 'Jamais d\'API REST maison. Front réactif via `useQuery` dans une page `.astro` du site.'],
   ];
   for (const [quoi, ligne] of piegés) {
     assert.deepEqual(fautes('faux.md', [[1, ligne]]).length, 1, `le détecteur laisse passer ${quoi} :\n  ${ligne}`);

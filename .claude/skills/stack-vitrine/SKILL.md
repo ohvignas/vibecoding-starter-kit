@@ -21,7 +21,8 @@ Les pages publiques lisent Convex **au BUILD** : client serveur `ConvexHttpClien
 0. **Node ≥ 22.12** (`node --version`) — Astro 7 refuse de démarrer en dessous.
 1. **`site/`** — `npx shadcn@latest init --template astro --base base --no-monorepo --preset <code> --name site --yes` (le preset vient de ui.shadcn.com/create). Les 5 drapeaux sont obligatoires.
 2. **`dashboard/`** — `npm create convex@latest dashboard -- -t tanstack-start` (le `-t` est obligatoire), puis Better Auth via `@convex-dev/better-auth`, guide officiel TanStack Start.
-3. **La racine, en dernier** — `package.json` (`workspaces: ["site", "dashboard"]` + scripts), `tsconfig.json`, `biome.json`.
+3. **Les quatre scripts** — posés par les templates, à vérifier, pas à réécrire : `astro check` + `eslint .` (`site/`), `tsc --noEmit` + `eslint …` (`dashboard/`). ⛔ Pas biome : aucun scaffold ne l'installe, `npm run lint` sortirait 127. ⚠️ Ajoute `{ files: ["src/components/ui/**"], rules: { "react-refresh/only-export-components": "off" } }` à `site/eslint.config.js`, sinon le lint est rouge sur le code que `shadcn init` écrit.
+4. **La racine, en dernier** — un `package.json` (`workspaces: ["site", "dashboard"]` + les scripts qui ratissent les deux). Ni `tsconfig.json` ni `biome.json` : rien ne les lit à la racine.
 4. **Schéma Convex** — une table par type de contenu, avec les champs du SEO (slug, titre, description, date).
 5. **Pages** depuis la maquette, alimentées par la lecture au build. Le contenu figé (mentions légales) peut rester en content collections, déclarées dans `site/src/content.config.ts` avec leur `loader`.
 6. **SEO/GEO** — sitemap + `site/public/robots.txt` (IA autorisées) + `<SEO />`/JSON-LD + `site/public/llms.txt`. ⚠️ Ces fichiers vont dans `site/public/`, **pas à la racine du projet** : posés à la racine, rien ne les sert et le GEO tombe en silence.

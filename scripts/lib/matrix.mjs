@@ -270,9 +270,11 @@ export const STACKS = {
     // donc pas même un « check sauté ». Sans le drapeau, npm sort 1 en nommant le coupable
     // (`Missing script: "lint" · workspace dashboard`) et le hook avertit. Une application qui
     // ne déclare pas son check est une erreur de scaffold, pas un cas nominal à absorber.
-    // ⚠️ Et le `package.json` ne suffit pas : `needs` est évalué AVANT le script, donc la racine
-    // doit aussi porter `tsconfig.json` (typecheck) et `biome.json` (lint), sinon les deux checks
-    // se sautent malgré des scripts parfaits. Mesuré, gardé par `cablage-stacks.test.mjs` (V2).
+    // ⚠️ Ces trois scripts sont TOUT ce que la racine porte : `needs` (checks.mjs) est le
+    // prérequis du REPLI, pas du check — une racine qui déclare ses scripts n'a besoin ni de
+    // `tsconfig.json` ni de `biome.json`. Et les deux applications lintent avec l'eslint que
+    // LEUR template installe : aucun scaffold du kit n'installe biome. Gardé par V2/V2bis
+    // (`cablage-stacks.test.mjs`) et par `checks.test.mjs`.
     scripts: {
       typecheck: 'npm run typecheck --workspaces',
       lint: 'npm run lint --workspaces',
