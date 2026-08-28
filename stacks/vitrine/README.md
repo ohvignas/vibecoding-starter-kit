@@ -26,7 +26,7 @@ Les pages publiques ne se connectent **jamais** à Convex depuis le navigateur. 
 
 Si une page publique lisait Convex depuis le navigateur, elle s'afficherait très bien pour un humain — et serait **vide pour tous les moteurs**. C'est une panne totale et silencieuse, et le SEO est la raison d'être de cette stack.
 
-**Ce que ça coûte, et il faut le savoir avant de commencer :** publier un article dans le dashboard **ne change rien au site public tant qu'il n'est pas rebuildé**. Le rebuild fait partie de la publication.
+**Ce que ça coûte, et il faut le savoir avant de commencer :** publier un article dans le dashboard **n'atteint le site public que par une boucle de publication**, et il y en a deux — reconstruire tout le site, ou purger la seule page publiée. Ça se choisit **avant** d'écrire la première page ; le critère est dans `AGENTS.md`.
 
 ## Ce que cette stack optimise : SEO **et** GEO
 - **SEO** (Google) : sitemap auto, robots.txt, meta/OG par page, JSON-LD, perfs au max.
@@ -58,7 +58,7 @@ Et après chaque publication, la commande qui remet le site à jour : `npm run b
 ## FAQ débutant
 - **C'est quoi un îlot ?** Ta page est du HTML pur ; un îlot = un composant React chargé UNIQUEMENT là où il faut de l'interactivité. C'est pour ça que c'est rapide. Un îlot du site public ne parle pas à Convex : il reçoit ses données en props.
 - **Je veux changer les couleurs.** Refais un preset sur ui.shadcn.com/create ou règle les variables CSS sur tweakcn.com — jamais dans les fichiers de composants.
-- **Le client peut éditer le contenu ?** Oui : il se connecte au dashboard, il écrit, il publie. Prévois le rebuild du site à la publication (`npm run build --workspace site`, puis la reconstruction de l'image sur le VPS) — sinon il écrira dans le vide sans comprendre pourquoi rien ne bouge.
+- **Le client peut éditer le contenu ?** Oui : il se connecte au dashboard, il écrit, il publie. Prévois la boucle de publication **avant** de lui montrer : soit tu reconstruis tout le site à chaque fois (`npm run build --workspace site`, puis la reconstruction de l'image sur le VPS), soit la publication purge la seule page concernée et rien n'est reconstruit. Sans l'une des deux, il écrira dans le vide sans comprendre pourquoi rien ne bouge.
 - **Pourquoi deux applications et pas une ?** Parce qu'elles n'ont pas le même métier : le site public doit être **statique** pour être indexé, le dashboard doit être **vivant** pour être agréable à utiliser. Les mélanger, c'est perdre l'un ou l'autre.
 - **Est-ce que ça reste gratuit ?** Non. Convex a un palier gratuit, mais le VPS se loue. C'était le prix à payer pour avoir un vrai espace de saisie.
 

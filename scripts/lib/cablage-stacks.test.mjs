@@ -635,3 +635,159 @@ test('V7 — les ports de la vitrine sont les mêmes dans tous les fichiers qui 
     'même, l\'un des deux l\'envoie sur une page qui ne répond pas — et rien ne le lui dira.',
   ].join('\n'));
 });
+
+// ── V8 · V9 · V10 — LA BOUCLE DE PUBLICATION ──────────────────────────────────────────────────
+// Le kit prescrivait de RECONSTRUIRE TOUT LE SITE à chaque publication. Un template réel fait
+// mieux : il purge la page concernée et ne reconstruit rien. Ces trois gardes tiennent ce que le
+// kit doit désormais dire — et surtout la phrase dont l'absence coûte le plus cher (V9, `memoryCache()`).
+//
+// ⛔ L'UNITÉ EST LA PUCE, PAS LE FICHIER. C'est la leçon que ce dépôt a déjà payée cinq fois
+// (T4/JSON-LD, F2/loader, V4/rebuild, D3, cursor-rules/globs) : un contrôle à l'échelle du fichier
+// crédite une phrase du vocabulaire de ses voisines. `memoryCache()` cité dans une puce et « une
+// seule réplique » dans une autre, trois écrans plus loin, ne forment AUCUNE proposition — le
+// lecteur n'apprend pas que l'un impose l'autre. On découpe donc en UNITÉS : une puce, un item
+// numéroté, un titre ou un paragraphe, avec ses lignes de continuation. Une exigence est tenue
+// quand UNE unité porte TOUS ses morceaux.
+export function unites(texte) {
+  const NOUVELLE = /^\s*(?:[-*•]\s|\d+[.)]\s|#{1,6}\s)/;
+  const out = [];
+  let courante = null;
+  for (const l of texte.split('\n')) {
+    if (!l.trim()) { courante = null; continue; }
+    if (courante === null || NOUVELLE.test(l)) { courante = [l]; out.push(courante); }
+    else courante.push(l);
+  }
+  return out.map((u) => u.join(' '));
+}
+
+// Une exigence tenue par un fichier = une unité qui porte TOUS les motifs. Rend le motif MANQUANT
+// (le premier absent partout), pas un booléen : le message doit nommer ce qui manque.
+function tenue(texte, motifs) {
+  const us = unites(texte);
+  if (us.some((u) => motifs.every((re) => re.test(u)))) return null;
+  // Le morceau qu'AUCUNE unité ne porte est le plus informatif ; s'ils sont tous présents mais
+  // dispersés, on le dit aussi, parce que c'est un défaut différent et qu'il se corrige autrement.
+  const absent = motifs.find((re) => !us.some((u) => re.test(u)));
+  return absent ? `${absent} n'est nulle part` : `${motifs.map(String).join(' + ')} : présents, mais JAMAIS dans la même puce`;
+}
+
+function manquesDe(exigences) {
+  const manques = [];
+  for (const { quoi, ou, motifs } of exigences) {
+    for (const f of ou) {
+      const m = tenue(lire(f), motifs);
+      if (m) manques.push(`${f} — ${quoi} : ${m}`);
+    }
+  }
+  return manques;
+}
+
+// Les deux endroits que l'IA charge : la règle Cursor (par ses globs) et `AGENTS-stack.md` (rendu
+// depuis `stacks/vitrine/AGENTS.md`). Même paire que le garde SEO — et pour la même raison : une
+// IA n'en lit souvent qu'un seul, un contrôle sur leur somme laisserait la consigne disparaître de
+// l'un des deux sans un mot.
+const REGLE_MODELES = ['stacks/vitrine/AGENTS.md', 'templates/cursor/rules/vitrine/build-time.mdc'];
+// Là où la boucle se DÉROULE : `docs/RUN.md` (le seul fichier qu'un débutant ouvre pour lancer son
+// projet), `/deploy` (le runbook de mise en ligne) — et `AGENTS.md`, parce que c'est la SEULE
+// surface de cette liste que reçoivent Claude Code et Codex : les règles `.mdc` sont copiées pour
+// Cursor uniquement (`kit-owned.mjs`, gate `assistant === 'cursor'`).
+const SURFACES_BOUCLE = ['templates/run/vitrine.md', 'templates/commands/deploy.md', 'stacks/vitrine/AGENTS.md'];
+// La porte qui peut tout purger : mêmes deux endroits que la règle, la règle dédiée remplaçant ici
+// `build-time.mdc`.
+const REGLE_SECRET = ['stacks/vitrine/AGENTS.md', 'templates/cursor/rules/vitrine/revalidate.mdc'];
+
+const EXIGE_MODELES = [
+  { quoi: 'le modèle 1 (tout prérendu, rebuild complet)', ou: REGLE_MODELES, motifs: [/mod[èe]le 1/i, /pr[ée]rendu/i, /rebuild|reconstru/i] },
+  { quoi: 'le modèle 2 (routes CMS en SSR, purge par tag)', ou: REGLE_MODELES, motifs: [/mod[èe]le 2/i, /\bSSR\b/, /\btag\b/i, /purg/i] },
+  { quoi: 'le critère « CMS + change sans redéploiement → SSR »', ou: REGLE_MODELES, motifs: [/CMS/, /sans\s+red[ée]ploiement/i, /\bSSR\b/] },
+  { quoi: 'le critère « contenu dans le code → prérendue »', ou: REGLE_MODELES, motifs: [/dans le code/i, /pr[ée]rendue/i] },
+  { quoi: 'l\'opt-out : `prerender = false` DANS la route, jamais une absence de `routeRules`', ou: REGLE_MODELES, motifs: [/prerender\s*=\s*false/, /jamais/i, /routeRules/] },
+];
+
+const EXIGE_BOUCLE = [
+  { quoi: 'la chaîne complète (outbox → `drain` → `/api/revalidate` → tag `page:<slug>`)', ou: SURFACES_BOUCLE, motifs: [/outbox/i, /\bdrain\b/i, /api\/revalidate/, /page:<slug>/] },
+  { quoi: 'le tag PAR PAGE (`page:<slug>`) en plus du tag de route, sinon TOUTES les pages sont purgées', ou: SURFACES_BOUCLE, motifs: [/page:<slug>/, /tag de route/i, /toutes/i] },
+  { quoi: 'le 404 qui ne se cache JAMAIS (`Astro.cache.set(false)`)', ou: SURFACES_BOUCLE, motifs: [/404/, /cache\.set\(false\)/, /jamais/i] },
+  { quoi: 'l\'outbox plutôt qu\'un `fetch` direct — un appel direct est perdu sans trace', ou: SURFACES_BOUCLE, motifs: [/outbox/i, /fetch/i, /direct/i, /perdu|sans trace/i] },
+  // ⚠️ LA PHRASE DONT L'ABSENCE COÛTE LE PLUS CHER, et la seule exigée sur QUATRE surfaces : la
+  // règle Cursor s'y ajoute, parce que c'est elle qui accompagne l'écriture d'`astro.config.mjs`.
+  // Sans elle, un élève passe à deux conteneurs et voit ses publications marcher une fois sur
+  // deux, sans un message nulle part.
+  { quoi: '⚠️ `memoryCache()` est PAR PROCESSUS → UNE SEULE RÉPLIQUE, ou un cache PARTAGÉ avant d\'en lancer deux', ou: [...SURFACES_BOUCLE, 'templates/cursor/rules/vitrine/build-time.mdc'], motifs: [/memoryCache\(\)/, /par processus/i, /une seule r[ée]plique/i, /partag/i] },
+];
+
+const EXIGE_SECRET = [
+  { quoi: 'le plancher : un secret d\'au moins 32 caractères', ou: REGLE_SECRET, motifs: [/secret/i, /32\s*caract/i] },
+  { quoi: 'le secret lu DANS le handler, pas au chargement du module — absent ⇒ 500 visible', ou: REGLE_SECRET, motifs: [/handler/i, /module/i, /500/] },
+  // ⚠️ `[/timingSafeEqual/, /hach/i]` NE MORDAIT PAS, et c'est le piège de ce dépôt : la puce
+  // suivante (le motif de la faille) contient DÉJÀ `timingSafeEqual` et « Hacher d'abord » —
+  // retirer la CONSIGNE de comparaison laissait le garde vert, crédité par la puce d'à côté.
+  // On exige donc la proposition : le temps constant, les DEUX côtés, et l'appel qui hache.
+  { quoi: 'la comparaison : en temps constant, les DEUX côtés hachés (`createHash`) puis `timingSafeEqual`', ou: REGLE_SECRET, motifs: [/timingSafeEqual/, /createHash/, /temps constant/i, /deux c[ôo]t[ée]s/i] },
+  // LA RAISON, pas seulement la consigne. Une interdiction sans motif se contourne à la première
+  // bonne raison — et celle-ci a l'air d'une précaution inutile tant qu'on n'a pas lu pourquoi
+  // un contrôle de longueur transforme un 401 en 500.
+  { quoi: 'LE MOTIF : UTF-16 vs latin1 ⇒ un contrôle de longueur rend 500 au lieu de 401 et fuite la longueur du secret', ou: REGLE_SECRET, motifs: [/UTF-16/i, /latin1/i, /longueur/i, /\b500\b/, /\b401\b/] },
+  { quoi: 'un corps mal formé REFUSÉ, jamais coercé — sinon un 200 « purgé » qui n\'a rien purgé', ou: REGLE_SECRET, motifs: [/coerc/i, /refus/i, /\b200\b/] },
+];
+
+// ── LE DÉTECTEUR SAIT-IL ÉCHOUER, ET POUR LA RAISON QU'IL ANNONCE ? ───────────────────────────
+// Les trois scans ci-dessous sont VERTS aujourd'hui : ils ne prouvent rien sur leur propre pouvoir
+// de rougir. On leur donne donc de quoi échouer, écrit ici — et surtout le cas qui a menti cinq
+// fois dans ce dépôt : TOUS LES MOTS PRÉSENTS, DISPERSÉS. Un contrôle à l'échelle du fichier le
+// laisse passer ; celui-ci doit le voir.
+test('V8-V10 — le détecteur exige la PROPOSITION, pas la présence des mots', () => {
+  const motifs = [/memoryCache\(\)/, /par processus/i, /une seule r[ée]plique/i, /partag/i];
+  const ensemble = '- 🔴 `memoryCache()` est par processus : une seule réplique, ou un cache partagé.';
+  assert.equal(tenue(ensemble, motifs), null, 'montage : la puce complète doit être acceptée');
+  // …et la même puce coupée en deux par une ligne vide ne l'est plus.
+  const disperse = '- 🔴 `memoryCache()` est par processus.\n\n- Tourne à une seule réplique, ou passe à un cache partagé.';
+  const m = tenue(disperse, motifs);
+  assert.ok(m, 'les 4 mots dispersés dans DEUX puces ne forment aucune proposition : le détecteur doit rougir');
+  assert.match(m, /jamais dans la même puce/i, `le message doit nommer le défaut (dispersion), lu : ${m}`);
+  // Un morceau absent est nommé, lui, par son motif — pas par un « quelque chose manque ».
+  assert.match(tenue('- 🔴 `memoryCache()` est par processus, prends un cache partagé.', motifs), /r\[ée\]plique/,
+    'un morceau absent doit être nommé par son motif');
+  // Le découpage lui-même : une puce et ses lignes de continuation font UNE unité, deux puces en
+  // font deux. Sans ça, tout ce qui précède serait vrai à vide.
+  assert.deepEqual(unites('- a\n  suite\n- b\n\ntexte'), ['- a   suite', '- b', 'texte']);
+});
+
+test('V8 — la règle nomme les DEUX modèles de publication, et le critère qui les départage', () => {
+  const manques = manquesDe(EXIGE_MODELES);
+  assert.deepEqual(manques, [], [
+    'La règle de la vitrine a perdu une pièce de la décision « rebuild ou purge » :',
+    ...manques.map((m) => `  ${m}`),
+    '',
+    'Deux modèles existent et ils ne coûtent pas la même chose. Sans le critère écrit, celui qui',
+    'ajoute `/blog/[slug]` demain ne sait pas de quel côté le poser — et l\'opt-out qu\'il choisira',
+    'au hasard (une absence dans `routeRules`) ne fera rien du tout : la route restera prérendue.',
+  ].join('\n'));
+});
+
+test('V9 — le runbook déroule la boucle de publication, ses quatre points, et la dette de `memoryCache()`', () => {
+  const manques = manquesDe(EXIGE_BOUCLE);
+  assert.deepEqual(manques, [], [
+    'La boucle de publication est incomplète là où on la déroule :',
+    ...manques.map((m) => `  ${m}`),
+    '',
+    'Publier purge UNE page : `page:<slug>`. Sans le tag par page, c\'est tout le cache qui part.',
+    'Sans `cache.set(false)` sur le 404, l\'adresse reste en 404 quand la page finit par exister.',
+    'Sans outbox, une publication tombée pendant un redémarrage du site est perdue sans trace.',
+    'Et `memoryCache()` étant PAR PROCESSUS, une deuxième réplique casse une publication sur deux,',
+    'en silence — c\'est la phrase dont l\'absence coûte le plus cher, et elle doit être dite AVANT.',
+  ].join('\n'));
+});
+
+test('V10 — la règle dit comment fermer `/api/revalidate`, et POURQUOI hacher avant de comparer', () => {
+  const manques = manquesDe(EXIGE_SECRET);
+  assert.deepEqual(manques, [], [
+    '`/api/revalidate` peut purger tout le cache du site, et sa règle a perdu une pièce :',
+    ...manques.map((m) => `  ${m}`),
+    '',
+    'Le motif compte autant que la consigne : un contrôle de longueur AVANT `timingSafeEqual` a',
+    'l\'air prudent. Il fuite la longueur du secret — `String.length` compte de l\'UTF-16, Node lit',
+    'les en-têtes en latin1, et un secret de même longueur en caractères mais différente en octets',
+    'faisait jeter la comparaison : 500 au lieu de 401. Hacher d\'abord supprime la classe entière.',
+  ].join('\n'));
+});

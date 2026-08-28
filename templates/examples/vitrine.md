@@ -70,7 +70,9 @@ export default function CarouselTemoignages({ items }: { items: { auteur: string
 Dans la page : `<CarouselTemoignages items={temoignages.map((t) => t.data)} client:visible />`.
 
 ## Après avoir publié un témoignage
-Le contenu a changé dans Convex, **le site public n'a pas bougé** : il porte encore le HTML du
-dernier build. Reconstruis-le — `npm run build --workspace site` — puis redéploie l'image du site.
+Tout dépend du modèle de publication du projet. En **modèle 1**, le contenu a changé dans Convex et
+**le site public n'a pas bougé** : il porte encore le HTML du dernier build. Reconstruis-le —
+`npm run build --workspace site` — puis redéploie l'image du site. En **modèle 2**, la publication a
+purgé le tag `page:<slug>` de la page concernée : la requête suivante la re-rend, il n'y a rien à faire.
 
 Points clés : contenu saisi dans le `dashboard/`, **lu au build** par le `loader` de la collection, page statique par défaut, interactivité isolée dans UN îlot, composants shadcn jamais modifiés à la main.

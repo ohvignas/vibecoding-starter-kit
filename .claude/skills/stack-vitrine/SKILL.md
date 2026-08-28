@@ -15,7 +15,7 @@ Les pages publiques lisent Convex **au BUILD** : client serveur `ConvexHttpClien
 ⛔ **Jamais `useQuery` ni `ConvexProvider` dans une page publique** : le contenu arriverait après le chargement, le HTML servi serait **vide**, et le **JSON-LD** n'aurait plus rien à décrire. Le SEO est la raison d'être de cette stack.
 `useQuery` est réservé au `dashboard/` : privé, réactif, jamais indexé.
 
-**Conséquence à dire au débutant dès le premier jour :** publier dans le dashboard ne met le site public à jour **qu'au rebuild**.
+**Conséquence à dire au débutant dès le premier jour :** publier dans le dashboard n'atteint le site public que par une **boucle de publication**, et il y en a deux — reconstruire tout le site (modèle 1), ou purger la seule page publiée via `/api/revalidate` (modèle 2). Le choix se fait au scaffold, pas au déploiement.
 
 ## Ordre de construction
 0. **Node ≥ 22.12** (`node --version`) — Astro 7 refuse de démarrer en dessous.
@@ -26,7 +26,7 @@ Les pages publiques lisent Convex **au BUILD** : client serveur `ConvexHttpClien
 4. **Schéma Convex** — une table par type de contenu, avec les champs du SEO (slug, titre, description, date).
 5. **Pages** depuis la maquette, alimentées par la lecture au build. Le contenu figé (mentions légales) peut rester en content collections, déclarées dans `site/src/content.config.ts` avec leur `loader`.
 6. **SEO/GEO** — sitemap + `site/public/robots.txt` (IA autorisées) + `<SEO />`/JSON-LD + `site/public/llms.txt`. ⚠️ Ces fichiers vont dans `site/public/`, **pas à la racine du projet** : posés à la racine, rien ne les sert et le GEO tombe en silence.
-7. **Déploiement** — Docker sur un VPS : une image par application, reverse-proxy TLS, Convex en cloud. Le rebuild du site fait partie de la publication : `npm run build --workspace site`, puis la reconstruction de son image sur le VPS.
+7. **Déploiement** — Docker sur un VPS : une image par application, reverse-proxy TLS, Convex en cloud. **Modèle 1** : le rebuild fait partie de la publication — `npm run build --workspace site`, puis la reconstruction de son image. **Modèle 2** : rien à reconstruire, mais l'image du site est un serveur Node (`@astrojs/node` en `standalone`), et **une seule réplique** tant que le cache n'est pas partagé — `memoryCache()` est par processus, une purge n'atteint que l'instance qui a reçu l'appel.
 
 ## Pièges connus
 - **L'ordre de création** : les scripts de la racine ratissent les deux applications. Posés avant que `dashboard/` existe, ils échouent à chaque écriture de fichier — et le cas « racine + `site/` seul » sort en 0 **sans un mot**, la moitié du projet jamais vérifiée.
