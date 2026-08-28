@@ -28,9 +28,35 @@ Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 ## Convex — le site public lit au BUILD (non négociable)
 Le contenu vit dans **Convex**, et deux applications le partagent : `site/` (Astro, les pages publiques) et `dashboard/` (TanStack Start, la saisie).
 - **Les pages publiques lisent Convex au BUILD**, avec le client serveur `ConvexHttpClient`, dans le **frontmatter** d'une page `.astro` ou dans `getStaticPaths()`. Le HTML part du serveur **déjà rempli**.
+- ⚠️ **Ce qui est non négociable, c'est le CÔTÉ, pas le moment** : le même client serveur sert au build (page prérendue) **et** à la requête (route en SSR, modèle 2 ci-dessous). Dans les deux cas, le HTML part du serveur déjà rempli. Ce qui est interdit, c'est de lire depuis le **navigateur**.
 - ⛔ **Jamais `useQuery`, jamais `ConvexProvider` dans une page publique.** Ce sont des hooks de **navigateur** : le contenu arriverait **après** le chargement, le HTML servi serait **vide**, et le **JSON-LD n'aurait plus rien à décrire**. Google et les moteurs génératifs indexeraient une coquille — or le SEO est la raison d'être de cette stack.
 - `useQuery` et `ConvexProvider` sont **réservés au `dashboard/`** : là, le temps réel est exactement le bon outil, et personne n'a besoin d'indexer la page.
-- Conséquence à assumer : **publier dans le `dashboard/` ne change rien au site public tant qu'il n'est pas rebuildé.** Déclenche le rebuild à la publication.
+- Conséquence à assumer : ce que le `dashboard/` écrit n'atteint le site public que par une **boucle de publication**, et il y en a **deux** (section suivante). Choisis-en une **avant** d'écrire la première page.
+
+## Publier — deux modèles, et le critère qui les départage
+1. **Modèle 1 — tout prérendu, rebuild complet.** `output: "static"`, aucun cache à administrer : le site est un dossier de fichiers. Publier ne change rien en ligne tant que le site n'est pas reconstruit. Simple, et suffisant pour un site dont le contenu ne bouge presque jamais.
+2. **Modèle 2 — prérendu + routes CMS en SSR, avec cache par tag.** ⚠️ `output: "static"` **reste**, avec un adaptateur : le prérendu demeure le défaut et seules les routes CMS en sortent. `output: "server"` **inverse ce défaut** — tout passe en SSR, et la règle d'opt-out ci-dessous ne veut plus rien dire. La page qui vient d'être publiée est **purgée seule**, et la requête suivante la re-rend. **Aucun rebuild, aucun retard à annoncer.** C'est le modèle dès que quelqu'un d'autre que toi écrit du contenu.
+
+**Le critère de décision, page par page** — c'est lui qui tranche, jamais l'habitude :
+- contenu venu du **CMS**, qui peut changer **sans redéploiement** → **SSR + cache par tag** ;
+- contenu qui vit **dans le code** ou dans une content collection (accueil figée, mentions légales) → **prérendue**.
+- ⚠️ **L'opt-out est `export const prerender = false` DANS la route elle-même**, jamais une absence d'entrée dans `routeRules`. `routeRules` ne donne que des **indices de cache** par motif de route, lus quand la route n'appelle pas `Astro.cache.set(...)` elle-même : une route absente y reste **prérendue**, elle ne devient pas SSR.
+- Le modèle 2 réclame un **adaptateur serveur** (`@astrojs/node` en `standalone`) : il sert les pages prérendues **et** exécute les routes qui ont fait l'opt-out, depuis le même conteneur.
+
+**La boucle du modèle 2**, de bout en bout : publication dans le `dashboard/` → Convex écrit une ligne d'**outbox** dans la **même mutation** → une action **`drain`** POSTe sur **`/api/revalidate`** du site → le site purge le tag **`page:<slug>`** → la requête suivante re-rend **cette page-là**.
+- **Chaque page porte SON tag** (`page:<slug>`) en plus du tag de route (`pages`) — et **la publication n'envoie QUE `page:<slug>`**. ⚠️ `invalidate()` travaille en **OU** : une entrée part dès qu'elle porte **au moins un** des tags cités. Joindre `pages` à la liste purge donc **toutes** les pages en cache et annule tout le bénéfice du tag par page ; garde `pages` pour le cas rare où tu veux vraiment tout purger (un changement de gabarit).
+- **Un 404 ne se cache jamais** : `Astro.cache.set(false)`. Sinon il faudrait qu'une future publication de ce slug exact pense à l'invalider.
+- **Dépublier et supprimer écrivent une ligne d'outbox, exactement comme publier.** Une page retirée dont le tag n'est jamais purgé reste **servie depuis le cache jusqu'à l'expiration de `maxAge`** : le dashboard la dit retirée, le monde continue de la lire.
+- **Une ligne d'outbox, jamais un `fetch` direct depuis la mutation** : si le site redémarre juste à cet instant, un appel direct est perdu **sans trace**. Une ligne rejouée par `drain` (avec ré-essais espacés et un état terminal) ne l'est pas.
+- **`drain` a DEUX déclencheurs, pas un** : la mutation le planifie tout de suite (le chemin rapide), **et** un **cron de rattrapage** le rebalaye périodiquement (~60 s). Convex **ne rejoue pas** une action planifiée : si l'appel rapide se perd — le sinistre exact contre lequel l'outbox existe —, sans balayage la ligne reste `pending` pour toujours et la durabilité promise n'a aucun support.
+- 🔴 **`memoryCache()` est PAR PROCESSUS.** Une purge n'atteint que l'instance qui a reçu l'appel HTTP : tourne à **UNE SEULE RÉPLIQUE** du site, ou passe à un fournisseur de cache **partagé** (Redis) **avant** d'en lancer une deuxième. À deux conteneurs, une publication sur deux semble ne rien faire, et rien ne le dira.
+
+## `/api/revalidate` — la porte qui peut tout purger
+- **Secret d'au moins 32 caractères**, partagé avec Convex, lu avec **`process.env`** (jamais `import.meta.env`, qui le figerait dans l'artefact au build), **DANS le handler** et pas au chargement du module : une variable absente doit **jeter** (500 visible), pas devenir un refus indiscernable d'un mauvais secret.
+- **Comparaison en temps constant, les DEUX côtés hachés d'abord** : `createHash("sha256")…digest()` puis `timingSafeEqual`.
+- ⛔ **Aucun contrôle de longueur avant `timingSafeEqual`.** `String.length` compte des unités **UTF-16**, Node lit les en-têtes HTTP en **latin1**, donc un octet ≥ `0x80` devient **deux** octets en UTF-8 : un secret de même longueur en caractères mais différente en octets passait le contrôle puis faisait **jeter** `timingSafeEqual` — un **500** au lieu d'un **401**, qui laisse retrouver la longueur du vrai secret par dichotomie. Hacher d'abord supprime la classe entière : un digest fait toujours 32 octets.
+- **Un corps mal formé est refusé (400), jamais coercé en `[]`** — sinon un **200 « purgé »** répond sans avoir rien purgé.
+- La route ne se prérend pas et ne se cache pas : `export const prerender = false` + `cache.set(false)` en première instruction.
 
 ## Règles shadcn/ui
 - Installe via le CLI : `npx shadcn@latest add <composant>` — ne recopie jamais un composant à la main.
@@ -64,10 +90,11 @@ Le contenu vit dans **Convex**, et deux applications le partagent : `site/` (Ast
 - Écris **dense et factuel** : chiffres, listes, réponses directes — les moteurs génératifs citent ce qui est précis.
 
 ## Déploiement — Docker sur un VPS
-- **Deux images** : le build statique d'Astro servi par un serveur web, et le serveur Node du dashboard. Un reverse-proxy TLS devant les deux.
+- **Deux images**, et l'image du site dépend du modèle choisi : en **modèle 1**, le build statique d'Astro servi par un serveur web ; en **modèle 2**, le serveur Node d'Astro (adaptateur `@astrojs/node` en `standalone`), qui sert les pages prérendues **et** exécute les routes CMS. Plus le serveur Node du dashboard. Un reverse-proxy TLS devant les deux.
 - Convex tourne **en cloud** par défaut (l'auto-hébergement existe, ce n'est pas le chemin par défaut).
 - Variables au déploiement, jamais committées : `CONVEX_DEPLOYMENT`, `PUBLIC_CONVEX_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `SITE_URL`. Chaque app lit le `.env` de SON dossier (`site/`, `dashboard/`), pas celui de la racine. ⚠️ Le `SITE_URL` posé dans Convex vaut l'origine du `dashboard/` (= `BETTER_AUTH_URL`), pas l'adresse publique du site.
-- ⚠️ **Publier ne suffit pas** : le contenu change dans Convex, les pages publiques restent celles du dernier build. Le rebuild fait partie de la publication, pas d'une corvée du lendemain — la commande est `npm run build --workspace site`, puis la reconstruction de l'image du site sur le VPS.
+- ⚠️ **En modèle 1, publier ne suffit pas** : le contenu change dans Convex, les pages publiques restent celles du dernier build. Le rebuild fait alors partie de la publication, pas d'une corvée du lendemain — la commande est `npm run build --workspace site`, puis la reconstruction de l'image du site sur le VPS.
+- En **modèle 2**, il n'y a rien à reconstruire : `drain` POSTe sur `/api/revalidate`, le tag `page:<slug>` est purgé, la requête suivante re-rend cette page. Les variables nécessaires côté Convex sont le secret de revalidation **et** l'adresse publique du site — une variable distincte du `SITE_URL` de Better Auth.
 
 ## Sécurité & bonnes pratiques
 - **Aucun secret dans les pages publiques** : ce qui part au navigateur est public par construction. Les secrets vivent dans les variables d'environnement Convex (`npx convex env set`).

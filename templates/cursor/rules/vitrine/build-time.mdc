@@ -1,5 +1,5 @@
 ---
-description: Convex au BUILD côté public — useQuery et ConvexProvider réservés au dashboard/
+description: Convex au BUILD côté public — useQuery et ConvexProvider réservés au dashboard/, et les deux modèles de publication (rebuild complet, ou purge par tag)
 globs: site/**,dashboard/**
 alwaysApply: false
 ---
@@ -7,4 +7,22 @@ alwaysApply: false
 - `site/` (pages publiques) lit Convex **au BUILD** : client serveur `ConvexHttpClient`, dans le frontmatter d'une page `.astro` ou dans `getStaticPaths()`. Le HTML part du serveur déjà rempli.
 - ⛔ **Jamais `useQuery` ni `ConvexProvider` dans une page publique** : ce sont des hooks de navigateur — le contenu arriverait après le chargement, le HTML servi serait **vide**, et le **JSON-LD** n'aurait plus rien à décrire. C'est le SEO, raison d'être de la stack, qui tombe.
 - `useQuery` / `ConvexProvider` = `dashboard/` uniquement : privé, temps réel, jamais indexé.
-- Conséquence : publier dans le `dashboard/` ne met le site public à jour **qu'au rebuild**. Déclenche-le à la publication.
+- ⚠️ Ce qui est non négociable, c'est le **côté**, pas le moment : le même client serveur sert au build (page prérendue) **et** à la requête (route en SSR, modèle 2 ci-dessous). Dans les deux cas le HTML part du serveur déjà rempli ; ce qui est interdit, c'est de lire depuis le **navigateur**.
+
+**DEUX MODÈLES DE PUBLICATION. Tu en choisis UN, et tu écris lequel dans le README du projet.**
+
+1. **Modèle 1 — tout prérendu, rebuild complet.** `output: "static"`, aucun cache à administrer : le site est un dossier de fichiers. Ce qui part dans la base ne change rien en ligne tant que le site n'est pas reconstruit. Simple, honnête, et suffisant pour un site dont le contenu ne bouge presque jamais.
+2. **Modèle 2 — prérendu + routes CMS en SSR, avec cache par tag.** ⚠️ `output: "static"` **reste**, avec un adaptateur : c'est le prérendu qui est le défaut, et seules les routes CMS en sortent. Passer à `output: "server"` **inverse ce défaut** — tout devient SSR, et la règle d'opt-out ci-dessous ne veut plus rien dire. La page qui vient d'être écrite est **purgée seule**, et la requête suivante la re-rend. **Aucun rebuild, aucun retard à annoncer.** C'est le modèle dès que quelqu'un d'autre que toi écrit du contenu.
+
+**LE CRITÈRE DE DÉCISION, PAGE PAR PAGE — c'est lui qui tranche, jamais l'habitude :**
+
+- une page dont le contenu vient du **CMS** et peut changer **sans redéploiement** → **SSR + cache par tag** ;
+- une page dont le contenu vit **dans le code** ou dans une content collection (accueil figée, mentions légales) → **prérendue**.
+
+⚠️ **L'opt-out est `export const prerender = false` DANS la route elle-même**, jamais une absence d'entrée dans `routeRules`. `routeRules` ne donne que des **indices de cache** par motif de route, lus quand la route n'appelle pas `Astro.cache.set(...)` elle-même : une route absente de `routeRules` reste **prérendue**, elle ne devient pas SSR. Sans cette phrase écrite, celui qui ajoute `/blog/[slug]` demain ne sait pas de quel côté le poser.
+
+⚠️ **Le modèle 2 réclame un adaptateur serveur** : `@astrojs/node` en `standalone` sert les pages prérendues **et** exécute les routes qui ont fait l'opt-out, depuis le même conteneur. Sans lui, `prerender = false` n'a rien pour tourner.
+
+`memoryCache()` s'importe depuis **`astro/config`**, à côté de `defineConfig`.
+
+🔴 **Le fournisseur `memoryCache()` est PAR PROCESSUS, et c'est la dette du modèle 2.** Une purge n'atteint que l'instance qui a reçu l'appel HTTP. Tu tournes donc à **UNE SEULE RÉPLIQUE** du site, ou tu passes à un fournisseur de cache **partagé** (Redis) **avant** d'en lancer une deuxième. À deux conteneurs derrière la même configuration, une publication sur deux semble ne rien faire — et rien, nulle part, ne le dira.
