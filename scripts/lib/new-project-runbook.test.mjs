@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateNewProjectCommand } from './validate-commands.mjs';
-import { COMMANDS, cheminRunbook, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
+import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook, fichiersDuRunbook } from './commands-list.mjs';
 import { erreursRenvois } from './runbook-decoupe.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -298,3 +298,52 @@ test('P4 — une étape se nomme par son fichier, jamais « Phase N »', () => {
   assert.deepEqual(reste, [], ['Le runbook dit encore « phase » là où l\'entrée dit « étape » :', ...reste].join('\n'));
 });
 
+
+// M1 — LES CONTRAINTES DE SORTIE D'UNE MAQUETTE GÉNÉRÉE PAR UN OUTIL EXTERNE.
+//
+// POURQUOI CE GARDE EXISTE. Claude Design, Stitch, Lovable, v0 produisent chacun du HTML à
+// LEUR façon : `style=""` en dur, images en `background-image`, du JavaScript, des `<div>`
+// partout. L'utilisateur ne découvre le coût qu'À L'INTÉGRATION — c'est-à-dire après avoir
+// validé sa maquette, quand il est trop tard pour la régénérer sans tout revalider.
+//
+// Les huit contraintes se donnent À L'OUTIL, AVANT qu'il génère. C'est le seul moment où elles
+// coûtent zéro. Chacune achète une chose précise à l'intégration, et une seule qui disparaît
+// se paie en heures — d'où un contrôle PAR CONTRAINTE, avec le nom de ce qu'elle protège dans
+// le message : un test qui vérifierait « le bloc existe » laisserait le bloc se vider ligne à
+// ligne sans rougir (le défaut que ce dépôt a rencontré huit fois).
+const CONTRAINTES_MAQUETTE = [
+  [/AUCUN attribut style=""/, 'interdire `style=""` — sinon rien n\'est reprenable en Tailwind'],
+  [/p-\[26px\]|bg-\[#E8008A\]|valeur arbitraire/, 'montrer la valeur arbitraire — sans elle l\'outil retombe sur `style=""`'],
+  [/CDN/, 'le CDN Tailwind dans le `<head>` — c\'est ce qui fait que `maquette/index.html` s\'affiche sans build'],
+  [/variables CSS/, 'les couleurs et polices en variables CSS, en un seul bloc'],
+  [/data-section/, '`data-section` — les points de découpe en composants, sans relire le HTML'],
+  [/width et height explicites/, '`width`/`height` explicites — sinon la mise en page saute au chargement'],
+  [/background-image/, 'interdire `background-image` pour une image de contenu'],
+  [/Google Fonts/, 'les polices en `<link>` Google Fonts, ou nommées'],
+  [/un seul <h1>/, 'un seul `<h1>` — le SEO se gagne ici, pas après'],
+  [/h1 → h2 → h3 sans saut/, 'l\'ordre des titres sans saut'],
+  [/Pas de JavaScript/, 'pas de JavaScript — le comportement sera réécrit de toute façon'],
+];
+
+test('M1 — l\'étape design donne à l\'outil de maquette ses contraintes de sortie, AVANT qu\'il génère', () => {
+  const etape = read(cheminEtape('new-project', '05-design-maquette.md'));
+
+  // Le bloc doit être un bloc à COLLER : sans clôture, une IA le paraphrase au lieu de le
+  // transmettre, et l'outil externe reçoit une consigne reformulée — donc affaiblie.
+  assert.match(etape, /```\n?Contraintes de sortie/, 'les contraintes doivent être dans un bloc de code à coller tel quel, pas en prose');
+
+  for (const [motif, quoi] of CONTRAINTES_MAQUETTE) {
+    assert.match(etape, motif, `05-design-maquette.md : la contrainte manque — ${quoi}`);
+  }
+
+  // AVANT, pas après : donnée une fois la maquette validée, la contrainte ne sert plus à rien.
+  const iContraintes = etape.indexOf('Contraintes de sortie');
+  const iCas = etape.indexOf('### Cas (a) / (b)');
+  assert.ok(iContraintes > 0 && iCas > iContraintes,
+    'les contraintes doivent précéder les cas (a)/(b) : après la génération, elles ne coûtent plus zéro, elles coûtent une régénération');
+
+  // Le HTML d'une maquette n'est pas le produit — sans cette phrase, une IA colle l'export
+  // dans `src/` et le kit hérite du Tailwind d'un autre outil.
+  assert.match(etape, /référence visuelle|n'est pas le produit/i,
+    '05-design-maquette.md : dire que la maquette est une RÉFÉRENCE, pas du code à coller dans `src/`');
+});
