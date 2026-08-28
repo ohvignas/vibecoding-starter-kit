@@ -123,5 +123,36 @@ test('ROUGES — `npm test` et la CI passent par le lanceur, pas par `node --tes
   assert.match(pkg.scripts.test, /rouges-attendus\.mjs/, 'le script `test` doit rendre le verdict');
   const ci = fs.readFileSync(path.join(RACINE, '.github/workflows/ci.yml'), 'utf8');
   assert.doesNotMatch(ci, /^\s*- run: node --test\s*$/m, 'la CI contournerait le verdict');
-  assert.match(ci, /- run: node --run test/, 'la CI doit passer par le script `test`');
+  assert.match(ci, /^\s*- run: npm test\s*$/m, 'la CI doit passer par le script `test`');
+});
+
+// ⛔ CE GARDE EXISTE PARCE QUE LE PRÉCÉDENT NE SUFFISAIT PAS. Il vérifiait que la CI passe par le
+// lanceur — jamais que sa commande TOURNE sur les Node que la CI teste. Résultat mesuré sur `main` :
+// `- run: node --run test` a fait sortir les trois jobs Node 20.12 en `node: bad option: --run`,
+// exit 9, AVANT le moindre test — pendant que les trois jobs Node 22 passaient au vert. `--run` est
+// arrivé dans Node 22 ; le kit, lui, déclare `engines.node = >=20.12` et la matrice teste ce
+// plancher. Un garde qui contrôle le câblage sans contrôler la compatibilité laisse passer une CI
+// qui ne lance rien sur la moitié de sa matrice.
+test('ROUGES — la commande de test de la CI tourne sur le plancher Node que le kit déclare', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(RACINE, 'package.json'), 'utf8'));
+  const plancher = Number((pkg.engines?.node ?? '').replace(/[^\d.]/g, '').split('.')[0]);
+  assert.ok(plancher >= 18, `montage : engines.node doit être lisible, lu « ${pkg.engines?.node} »`);
+
+  const ci = fs.readFileSync(path.join(RACINE, '.github/workflows/ci.yml'), 'utf8');
+  const versions = [...ci.matchAll(/['"]?(\d+)(?:\.\d+)*['"]?/g)]
+    .map((m) => Number(m[1]))
+    .filter((n) => n >= 18 && n <= 40);
+  const minMatrice = Math.min(plancher, ...versions);
+
+  // Chaque drapeau, avec la version de Node qui l'a introduit. Un drapeau plus récent que le
+  // plancher fait échouer le job AVANT les tests, sans qu'aucune assertion ne soit jouée.
+  for (const [drapeau, depuis] of [['--run', 22], ['--watch', 18], ['--experimental-strip-types', 22]]) {
+    if (minMatrice < depuis) {
+      assert.doesNotMatch(
+        ci,
+        new RegExp(`- run: node [^\\n]*\\${drapeau}\\b`),
+        `la CI utilise \`node ${drapeau}\`, arrivé en Node ${depuis}, alors qu'elle teste Node ${minMatrice} — le job meurt avant le premier test`,
+      );
+    }
+  }
 });

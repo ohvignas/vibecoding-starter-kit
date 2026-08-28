@@ -16,6 +16,10 @@ jobs:
       # Suite unitaire + intégration (les tests fournissent leur identité git via variables d'env).
       # PAS `node --test` en direct : le lanceur ajoute le verdict des ROUGES ATTENDUS (par nom,
       # pas par nombre) — sans lui, une régression arrive comme « un rouge de plus ».
-      - run: node --run test
+      # ⛔ Et PAS `node --run` : ce drapeau n'existe qu'à partir de Node 22, or la matrice teste
+      # aussi le plancher déclaré par le kit (engines.node = 20.12). Mesuré sur la CI :
+      # « node: bad option: --run », exit 9, AVANT le moindre test. `npm test` appelle le même
+      # lanceur et marche partout.
+      - run: npm test
       # Smoke E2E cross-platform en Node pur (pas de bash) : le kit tient-il ses promesses ?
       - run: node scripts/smoke-e2e.mjs
