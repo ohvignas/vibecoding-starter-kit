@@ -53,7 +53,7 @@ cd site && npm run dev             # http://localhost:4321  — le site public
 ⚠️ Le `dev` du dashboard vaut `convex dev --start 'vite dev'` : il démarre **le backend Convex ET
 le tableau de bord**. Lancer `npx convex dev` à côté ferait tourner **deux Convex** sur le même
 déploiement — logs en double, et rien pour dire d'où ça vient.
-Et après chaque publication, la commande qui remet le site à jour : `npm run build --workspace site`.
+Et après chaque publication : en **modèle 1**, la commande qui remet le site à jour est `npm run build --workspace site` ; en **modèle 2**, il n'y a rien à lancer — la publication purge la page concernée toute seule.
 
 ## FAQ débutant
 - **C'est quoi un îlot ?** Ta page est du HTML pur ; un îlot = un composant React chargé UNIQUEMENT là où il faut de l'interactivité. C'est pour ça que c'est rapide. Un îlot du site public ne parle pas à Convex : il reçoit ses données en props.

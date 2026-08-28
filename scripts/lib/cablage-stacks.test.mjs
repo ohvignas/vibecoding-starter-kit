@@ -12,7 +12,7 @@ import { STACKS, AI_CONTEXT, PINS, resolveAssets, resolveStackManifest } from '.
 import { CHECKS, selectChecks, runChecks, resolveCheckCommand } from '../../templates/hooks/framework/checks.mjs';
 import { DOMAIN_TRIGGERS, SHARED_DOMAINS, renderDomains, secretsBlock, triggerWords } from './domains.mjs';
 import { writeStackEnvironment } from './environment.mjs';
-import { puceDeStack, blocsDeLaPuce, jsonDuBloc } from './puce-scaffold.mjs';
+import { puceDeStack, blocsDeLaPuce, jsonDuBloc, SCAFFOLD_MD } from './puce-scaffold.mjs';
 
 const RACINE = path.resolve(import.meta.dirname, '..', '..');
 const lire = (rel) => fs.readFileSync(path.join(RACINE, rel), 'utf8');
@@ -648,6 +648,13 @@ test('V7 — les ports de la vitrine sont les mêmes dans tous les fichiers qui 
 // lecteur n'apprend pas que l'un impose l'autre. On découpe donc en UNITÉS : une puce, un item
 // numéroté, un titre ou un paragraphe, avec ses lignes de continuation. Une exigence est tenue
 // quand UNE unité porte TOUS ses morceaux.
+//
+// ⚠️ LIMITE CONNUE, ÉCRITE PARCE QU'ELLE EST RÉELLE. `unites()` rend UNE unité pour deux
+// paragraphes collés sans ligne vide, et UNE unité pour un tableau markdown entier. Deux
+// propositions écrites ainsi se créditeraient l'une l'autre — l'angle mort est la prose continue,
+// pas la liste. C'est nettement plus fort qu'un contrôle à l'échelle du fichier, ce n'est pas une
+// garantie. Aujourd'hui chaque exigence vit dans SA puce : si une correction future déplaçait
+// l'une d'elles dans un paragraphe de prose, ce découpage cesserait de prouver ce qu'il prouve ici.
 export function unites(texte) {
   const NOUVELLE = /^\s*(?:[-*•]\s|\d+[.)]\s|#{1,6}\s)/;
   const out = [];
@@ -702,17 +709,29 @@ const EXIGE_MODELES = [
   { quoi: 'le critère « CMS + change sans redéploiement → SSR »', ou: REGLE_MODELES, motifs: [/CMS/, /sans\s+red[ée]ploiement/i, /\bSSR\b/] },
   { quoi: 'le critère « contenu dans le code → prérendue »', ou: REGLE_MODELES, motifs: [/dans le code/i, /pr[ée]rendue/i] },
   { quoi: 'l\'opt-out : `prerender = false` DANS la route, jamais une absence de `routeRules`', ou: REGLE_MODELES, motifs: [/prerender\s*=\s*false/, /jamais/i, /routeRules/] },
+  // ⚠️ `output: "static"` RESTE en modèle 2 — c'est le prérendu qui est le défaut, et seules les
+  // routes CMS en sortent. Dit nulle part ailleurs que dans le runbook de scaffold : qui écrit
+  // `output: "server"` inverse le défaut, et toute la règle d'opt-out ci-dessus devient vide de sens.
+  { quoi: 'le modèle 2 garde `output: "static"` — `output: "server"` inverserait le défaut de prérendu', ou: REGLE_MODELES, motifs: [/mod[èe]le 2/i, /output:\s*"static"/, /output:\s*"server"/, /invers/i] },
+  { quoi: 'l\'adaptateur serveur du modèle 2 (`@astrojs/node` en `standalone`)', ou: REGLE_MODELES, motifs: [/@astrojs\/node/, /standalone/] },
 ];
 
 const EXIGE_BOUCLE = [
   { quoi: 'la chaîne complète (outbox → `drain` → `/api/revalidate` → tag `page:<slug>`)', ou: SURFACES_BOUCLE, motifs: [/outbox/i, /\bdrain\b/i, /api\/revalidate/, /page:<slug>/] },
-  { quoi: 'le tag PAR PAGE (`page:<slug>`) en plus du tag de route, sinon TOUTES les pages sont purgées', ou: SURFACES_BOUCLE, motifs: [/page:<slug>/, /tag de route/i, /toutes/i] },
+  // ⚠️ LES DEUX MOITIÉS, ET C'EST LA SECONDE QU'ON RATE. Poser `page:<slug>` ne sert à rien si la
+  // publication envoie `["pages", "page:<slug>"]` : `invalidate()` travaille en OU (mesuré dans
+  // astro@7.2.8, `memory-provider.js` — `entry.tags.some((t) => tagsSet.has(t))`), donc tout part.
+  { quoi: 'le tag PAR PAGE **et** le fait que la publication n\'envoie QUE lui (`invalidate()` est en OU)', ou: SURFACES_BOUCLE, motifs: [/page:<slug>/, /tag de route/i, /invalidate\(\)/, /\bOU\b/, /toutes/i] },
   { quoi: 'le 404 qui ne se cache JAMAIS (`Astro.cache.set(false)`)', ou: SURFACES_BOUCLE, motifs: [/404/, /cache\.set\(false\)/, /jamais/i] },
   { quoi: 'l\'outbox plutôt qu\'un `fetch` direct — un appel direct est perdu sans trace', ou: SURFACES_BOUCLE, motifs: [/outbox/i, /fetch/i, /direct/i, /perdu|sans trace/i] },
   // ⚠️ LA PHRASE DONT L'ABSENCE COÛTE LE PLUS CHER, et la seule exigée sur QUATRE surfaces : la
   // règle Cursor s'y ajoute, parce que c'est elle qui accompagne l'écriture d'`astro.config.mjs`.
   // Sans elle, un élève passe à deux conteneurs et voit ses publications marcher une fois sur
   // deux, sans un message nulle part.
+  // Le fast path (`runAfter(0, drain)`) peut se perdre, et Convex ne rejoue PAS une action
+  // planifiée : sans balayage, la ligne d'outbox reste `pending` pour toujours. C'est le sinistre
+  // même contre lequel l'outbox existe — la durabilité promise n'a aucun support sans le cron.
+  { quoi: 'les DEUX déclencheurs de `drain` : la mutation, ET un cron de rattrapage (Convex ne rejoue pas une action planifiée)', ou: SURFACES_BOUCLE, motifs: [/\bdrain\b/i, /cron/i, /rejoue|retry/i, /planifi/i] },
   { quoi: '⚠️ `memoryCache()` est PAR PROCESSUS → UNE SEULE RÉPLIQUE, ou un cache PARTAGÉ avant d\'en lancer deux', ou: [...SURFACES_BOUCLE, 'templates/cursor/rules/vitrine/build-time.mdc'], motifs: [/memoryCache\(\)/, /par processus/i, /une seule r[ée]plique/i, /partag/i] },
 ];
 
@@ -729,6 +748,15 @@ const EXIGE_SECRET = [
   // un contrôle de longueur transforme un 401 en 500.
   { quoi: 'LE MOTIF : UTF-16 vs latin1 ⇒ un contrôle de longueur rend 500 au lieu de 401 et fuite la longueur du secret', ou: REGLE_SECRET, motifs: [/UTF-16/i, /latin1/i, /longueur/i, /\b500\b/, /\b401\b/] },
   { quoi: 'un corps mal formé REFUSÉ, jamais coercé — sinon un 200 « purgé » qui n\'a rien purgé', ou: REGLE_SECRET, motifs: [/coerc/i, /refus/i, /\b200\b/] },
+  // `docs/RUN.md` en porte une version condensée : c'est le seul fichier qu'un débutant ouvre, et
+  // il déroule la boucle — la porte qui la termine ne peut pas y manquer. Motifs adaptés à cette
+  // version-là, jamais recopiés de ceux de la règle : un garde qui exigerait ici le texte long
+  // serait rouge à vide, ou pousserait à dupliquer la règle dans le mode d'emploi.
+  { quoi: 'la porte `/api/revalidate` (32 caractères · handler · 500 · haché · timingSafeEqual · corps refusé)', ou: ['templates/run/vitrine.md'], motifs: [/api\/revalidate/, /32\s*caract/i, /handler/i, /\b500\b/, /timingSafeEqual/, /hach/i, /coerc/i] },
+  // `import.meta.env` est inliné AU BUILD, même en SSR, même sans préfixe `PUBLIC_` : c'est la
+  // phrase qui départage `build.args:` de `environment:`. Sans elle, la consigne « le secret va
+  // dans environment: » est un décret, et le débutant qui généralise déplace l'URL avec.
+  { quoi: 'POURQUOI `process.env` et pas `import.meta.env` : inliné AU BUILD, même en SSR', ou: ['templates/run/vitrine.md', 'templates/commands/deploy.md', 'templates/cursor/rules/vitrine/revalidate.mdc'], motifs: [/import\.meta\.env/, /au build/i, /SSR/] },
 ];
 
 // ── LE DÉTECTEUR SAIT-IL ÉCHOUER, ET POUR LA RAISON QU'IL ANNONCE ? ───────────────────────────
@@ -789,5 +817,54 @@ test('V10 — la règle dit comment fermer `/api/revalidate`, et POURQUOI hacher
     'l\'air prudent. Il fuite la longueur du secret — `String.length` compte de l\'UTF-16, Node lit',
     'les en-têtes en latin1, et un secret de même longueur en caractères mais différente en octets',
     'faisait jeter la comparaison : 500 au lieu de 401. Hacher d\'abord supprime la classe entière.',
+  ].join('\n'));
+});
+
+// ── V11 — LA 17ᵉ MUTATION : LA TÂCHE DE SCAFFOLD N'ÉTAIT TENUE PAR RIEN ───────────────────────
+// Mesuré : effacer TOUT le bloc « boucle de publication » de la puce vitrine de `07-scaffold.md`
+// — et son miroir dans `cursor-plugin/` — laissait la suite ENTIÈRE verte. Le runbook qui fait
+// CONSTRUIRE la boucle pouvait disparaître pendant que V8/V9/V10, qui jugent les règles et les
+// modes d'emploi, restaient au vert : on gardait la description et on perdait la consigne.
+//
+// ⛔ ET D10 NE COMPTE PAS. Muté dans le template seul, c'est « le plugin Cursor est le reflet
+// exact des 10 commandes » qui rougit — un garde de SYNCHRONISATION DE COPIE, pas de contenu. Il
+// donne l'illusion d'une couverture : il rougit tout autant si on efface une virgule, et pas du
+// tout si on efface le bloc des DEUX côtés. Ce test-ci lit la SOURCE UNIQUE (`puceDeStack`) et
+// juge ce qu'elle dit.
+const EXIGE_SCAFFOLD = [
+  { quoi: 'la config : `output: "static"` + `@astrojs/node` standalone + `memoryCache()` (importé d\'`astro/config`) + `routeRules`',
+    motifs: [/output:\s*"static"/, /@astrojs\/node/, /standalone/, /memoryCache\(\)/, /astro\/config/, /routeRules/] },
+  { quoi: 'la route CMS : opt-out `prerender = false`, tag `page:<slug>`, et `cache.set(false)` sur le 404',
+    motifs: [/prerender\s*=\s*false/, /page:<slug>/, /cache\.set\(false\)/, /404/] },
+  // `cache.invalidate({ tags })` est la SEULE occurrence du vrai nom d'API dans tout le kit :
+  // l'effacer laissait l'IA inventer un nom de méthode, sans que rien ne le voie.
+  { quoi: 'l\'endpoint : 32 caractères, `timingSafeEqual`, et l\'appel qui purge — `cache.invalidate({ tags })`',
+    motifs: [/api\/revalidate/, /32\s*caract/i, /timingSafeEqual/, /cache\.invalidate\(\{\s*tags\s*\}\)/] },
+  { quoi: 'côté Convex : l\'outbox dans la MÊME mutation, `drain`, et le cron de rattrapage',
+    motifs: [/outbox/i, /m[êe]me mutation/i, /\bdrain\b/i, /cron/i] },
+  { quoi: 'la dette à dire AVANT le déploiement : `memoryCache()` par processus ⇒ une seule réplique',
+    motifs: [/memoryCache\(\)/, /par processus/i, /une seule r[ée]plique/i] },
+];
+
+test('V11 — la puce vitrine de 07-scaffold.md fait CONSTRUIRE la boucle, et le dit assez pour qu\'on puisse l\'écrire', () => {
+  const puce = puceDeStack(RACINE, 'vitrine').join('\n');
+  // Montage : une puce vidée rendrait tout `tenue()` rouge — c'est le bon sens —, mais une puce
+  // introuvable ferait lever `puceDeStack`. On exige quand même qu'elle ait un corps.
+  assert.ok(unites(puce).length > 5, `montage : ${unites(puce).length} unité(s) dans la puce vitrine — elle est vide ou le découpage a cassé`);
+  const manques = [];
+  for (const { quoi, motifs } of EXIGE_SCAFFOLD) {
+    const m = tenue(puce, motifs);
+    if (m) manques.push(`${SCAFFOLD_MD} (puce vitrine) — ${quoi} : ${m}`);
+  }
+  assert.deepEqual(manques, [], [
+    'Le runbook de scaffold ne dit plus quoi construire pour la boucle de publication :',
+    ...manques.map((m) => `  ${m}`),
+    '',
+    'C\'est l\'étape où la boucle NAÎT. Les règles (V8) et les modes d\'emploi (V9/V10) la décrivent ;',
+    'ici on la fait construire. Sans cette puce, l\'IA scaffolde un site qui lit Convex au build et',
+    'personne ne pose jamais l\'endpoint : le client publiera dans le vide.',
+    '',
+    '⚠️ Ne compte pas sur D10 (« le plugin est le reflet exact ») : c\'est un garde de synchronisation',
+    'de copie. Il rougit si le miroir diverge, et reste VERT si le bloc part des deux côtés.',
   ].join('\n'));
 });
