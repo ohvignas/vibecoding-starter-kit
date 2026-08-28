@@ -32,7 +32,11 @@ export const AI_CONTEXT = {
   saas: ['better-auth', 'convex', 'tanstack-start'],
   mobile: ['convex', 'react-native-expo'],
   desktop: ['electron'],
-  vitrine: ['astro'],
+  // La vitrine n'est plus mono-application : `site/` (Astro) sert les pages publiques, `dashboard/`
+  // (TanStack Start + Better Auth) sert la saisie du contenu, et Convex porte les données des deux.
+  // Elle a donc besoin des quatre contextes — pas seulement d'Astro. Chaque nom doit exister sous
+  // `ai-context/` : un dossier cité mais absent fait livrer du vide au `--refresh` (garde F9).
+  vitrine: ['astro', 'convex', 'better-auth', 'tanstack-start'],
 };
 // awesome-cursorrules : SUPPRIMÉ. Le matching par tags déversait 64-201 règles .mdc hors-sujet
 // (Angular, Solidity…) avec `globs: **/*` — l'anti-pattern des docs Cursor. Les règles typées
@@ -98,23 +102,35 @@ export const PINS = {
   vitrine: { astro: '7', node: '22.12' },
 };
 
+// Les briques Convex / Better Auth, DÉFINIES UNE FOIS. Elles servaient déjà deux stacks (saas,
+// mobile) en double copie ; la vitrine en aurait fait une troisième — et c'est exactement de cette
+// façon que deux « copies identiques » finissent par diverger sans que rien ne rougisse. Une
+// constante partagée rend la divergence impossible plutôt que détectable.
+const MCP_CONVEX = { command: 'npx', args: ['-y', 'convex@latest', 'mcp', 'start'] };
+const MCP_BETTER_AUTH = { type: 'http', url: 'https://mcp.better-auth.com/mcp' };
+const MCP_SHADCN = { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] };
+// Test E2E fonctionnel : pilote un vrai navigateur (navigate/click/fill/assert) + tests rejouables en CI.
+const MCP_PLAYWRIGHT = { command: 'npx', args: ['-y', '@playwright/mcp@latest'] };
+const PLUGINS_CONVEX = {
+  'claude-code': [{ name: 'convex', cmd: '/plugin install convex@claude-plugins-official' }],
+  cursor: [{ name: 'convex-agent-plugins', cmd: 'git clone https://github.com/get-convex/convex-agent-plugins ~/.cursor/plugins/convex-agent-plugins' }],
+  codex: [],
+};
+const SKILL_BETTER_AUTH = { label: 'better-auth', repo: 'better-auth/skills' };
+const SKILL_CONVEX_AGENT = { label: 'convex-agent-skills', repo: 'get-convex/agent-skills', all: true };
+
 export const STACKS = {
   saas: {
-    plugins: {
-      'claude-code': [{ name: 'convex', cmd: '/plugin install convex@claude-plugins-official' }],
-      cursor: [{ name: 'convex-agent-plugins', cmd: 'git clone https://github.com/get-convex/convex-agent-plugins ~/.cursor/plugins/convex-agent-plugins' }],
-      codex: [],
-    },
+    plugins: PLUGINS_CONVEX,
     mcp: {
-      convex: { command: 'npx', args: ['-y', 'convex@latest', 'mcp', 'start'] },
-      'better-auth': { type: 'http', url: 'https://mcp.better-auth.com/mcp' },
-      shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
-      // Test E2E fonctionnel : pilote un vrai navigateur (navigate/click/fill/assert) + tests rejouables en CI.
-      playwright: { command: 'npx', args: ['-y', '@playwright/mcp@latest'] },
+      convex: MCP_CONVEX,
+      'better-auth': MCP_BETTER_AUTH,
+      shadcn: MCP_SHADCN,
+      playwright: MCP_PLAYWRIGHT,
     },
     skills: [
-      { label: 'better-auth', repo: 'better-auth/skills' },
-      { label: 'convex-agent-skills', repo: 'get-convex/agent-skills', all: true },
+      SKILL_BETTER_AUTH,
+      SKILL_CONVEX_AGENT,
       STITCH_SKILL,
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: [] },
@@ -141,13 +157,13 @@ export const STACKS = {
     plugins: {
       'claude-code': [
         { name: 'expo', cmd: 'claude plugin install expo@claude-plugins-official' },
-        { name: 'convex', cmd: '/plugin install convex@claude-plugins-official' },
+        ...PLUGINS_CONVEX['claude-code'],
       ],
       cursor: [],
       codex: [{ name: 'expo', cmd: 'codex plugin add expo@openai-curated' }],
     },
     mcp: {
-      convex: { command: 'npx', args: ['-y', 'convex@latest', 'mcp', 'start'] },
+      convex: MCP_CONVEX,
       expo: { type: 'http', url: 'https://mcp.expo.dev/mcp', needsAuth: true },
       // Test E2E fonctionnel mobile : pilote le simulateur iOS / émulateur Android + flows Maestro.
       // Bundlé dans le Maestro CLI (pas npx) → prérequis à installer une fois.
@@ -160,7 +176,7 @@ export const STACKS = {
     },
     skills: [
       { label: 'expo', repo: 'expo/skills' },
-      { label: 'convex-agent-skills', repo: 'get-convex/agent-skills', all: true },
+      SKILL_CONVEX_AGENT,
       STITCH_SKILL,
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint-expo', 'deps-check'], prePush: ['doctor'] },
@@ -192,7 +208,7 @@ export const STACKS = {
     },
     mcp: {
       'chrome-devtools': { command: 'npx', args: ['chrome-devtools-mcp@latest', '--browser-url=http://127.0.0.1:9222'] },
-      shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
+      shadcn: MCP_SHADCN,
     },
     skills: [STITCH_SKILL],
     // `security` (npx @doyensec/electronegativity) a été RETIRÉ : son paquet npm n'a pas bougé
@@ -212,26 +228,66 @@ export const STACKS = {
       'error-tracking': { label: `Suivi d'erreurs`, mcp: 'error-tracking', options: ['@sentry/electron'] },
     },
   },
+  // DEUX APPLICATIONS, UNE RACINE. `site/` (Astro) sert les pages publiques, `dashboard/`
+  // (TanStack Start + Better Auth) sert la saisie, Convex porte les données. Le site public lit
+  // Convex AU BUILD, jamais depuis le navigateur : un `useQuery` dans une page publique vide le
+  // HTML servi et le SEO — la raison d'être de cette stack — n'a plus rien à indexer.
   vitrine: {
-    plugins: { 'claude-code': [], cursor: [], codex: [] },
+    plugins: PLUGINS_CONVEX,
     mcp: {
       // Astro a RETIRÉ son llms.txt (05/2026) : le MCP Docs officiel est la source à jour.
       'astro-docs': { command: 'npx', args: ['-y', 'mcp-remote', 'https://mcp.docs.astro.build/mcp'] },
-      shadcn: { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] },
-      // Test E2E fonctionnel : pilote un vrai navigateur (navigate/click/fill/assert) + tests rejouables en CI.
-      playwright: { command: 'npx', args: ['-y', '@playwright/mcp@latest'] },
+      convex: MCP_CONVEX,
+      'better-auth': MCP_BETTER_AUTH,
+      shadcn: MCP_SHADCN,
+      playwright: MCP_PLAYWRIGHT,
     },
     skills: [
       { label: 'shadcn/ui (officiel : CLI, thèmes, registry)', repo: 'shadcn/ui' },
       { label: 'seo+geo (audit · schema · programmatic · contenu)', repo: 'boraoztunc/skills', skills: ['seo-audit', 'schema-markup', 'programmatic-seo', 'content-strategy'] },
+      SKILL_BETTER_AUTH,
+      SKILL_CONVEX_AGENT,
       STITCH_SKILL,
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: [] },
-    scripts: { typecheck: 'astro check', lint: 'biome check .' },
+    // LA DISPOSITION, DÉCLARÉE ICI ET NULLE PART AILLEURS. Elle pilote trois choses qui, sinon,
+    // recopieraient chacune la liste : les scripts ci-dessous, la case `workspaces` de
+    // `docs/A-FAIRE.md` (setup-ai.mjs) et le runbook de scaffold. Les autres stacks n'ont qu'une
+    // application : leur liste est vide, et c'est cette vacuité qui distingue les deux mondes.
+    workspaces: ['site', 'dashboard'],
+    // ⚠️ CES TROIS SCRIPTS SONT CEUX DE LA RACINE, ET C'EST TOUT LE SUJET. Le hook de checks lit
+    // le `package.json` du dossier COURANT (templates/hooks/framework/checks.mjs) : avec `site/`
+    // et `dashboard/` en sous-dossiers, une racine sans `package.json` fait déclarer à CHAQUE
+    // check `willRun: false` — il ne rougit pas, il se saute, et le pre-commit sort vert sans
+    // avoir rien vérifié. La racine porte donc un `package.json` avec `workspaces` (ci-dessus),
+    // et ces scripts ratissent les DEUX (mesuré : `--workspaces` entre dans chaque workspace
+    // même sans `npm install` préalable, en ~0,7 s).
+    //
+    // ⛔ PAS DE `--if-present`, ET C'EST DÉLIBÉRÉ. Il remet exactement le défaut que cette stack
+    // doit tuer : le template `npm create convex@latest -- -t tanstack-start` ne déclare NI
+    // `typecheck` NI `lint`, donc `npm run lint --workspaces --if-present` n'entre nulle part,
+    // n'imprime pas une ligne et sort 0 — et `checks.mjs` annonce `willRun: true, via: 'script'`,
+    // donc pas même un « check sauté ». Sans le drapeau, npm sort 1 en nommant le coupable
+    // (`Missing script: "lint" · workspace dashboard`) et le hook avertit. Une application qui
+    // ne déclare pas son check est une erreur de scaffold, pas un cas nominal à absorber.
+    // ⚠️ Ces trois scripts sont TOUT ce que la racine porte : `needs` (checks.mjs) est le
+    // prérequis du REPLI, pas du check — une racine qui déclare ses scripts n'a besoin ni de
+    // `tsconfig.json` ni de `biome.json`. Et les deux applications lintent avec l'eslint que
+    // LEUR template installe : aucun scaffold du kit n'installe biome. Gardé par V2/V2bis
+    // (`cablage-stacks.test.mjs`) et par `checks.test.mjs`.
+    scripts: {
+      typecheck: 'npm run typecheck --workspaces',
+      lint: 'npm run lint --workspaces',
+      build: 'npm run build --workspaces',
+    },
     rules: [
       { label: 'shadcn × Astro (installation officielle)', url: 'https://ui.shadcn.com/docs/installation/astro' },
-      { label: 'Keystatic × Astro', url: 'https://keystatic.com/docs/installation-astro' },
-      { label: 'Déployer Astro', url: 'https://docs.astro.build/en/guides/deploy/' },
+      { label: 'Convex rules', url: 'https://convex.link/convex_rules.txt' },
+      { label: 'Better Auth llms', url: 'https://better-auth.com/llms.txt' },
+      { label: 'TanStack Start llms', url: 'https://tanstack.com/start/latest/llms.txt' },
+      // `guides/deploy/` listait des hébergeurs (Netlify, Vercel, Pages) : la stack part sur
+      // Docker/VPS, la recette officielle est celle-ci.
+      { label: 'Déployer Astro en Docker', url: 'https://docs.astro.build/en/recipes/docker/' },
     ],
     domains: {
       seo: { label: 'SEO technique', options: ['@astrojs/sitemap (officiel — exige `site` dans astro.config)', 'astro-seo (meta + Open Graph par page)', 'robots.txt dans public/ (pointe le sitemap + autorise GPTBot/PerplexityBot/ClaudeBot)'], when: 'TOUJOURS pour un site vitrine — dès le premier jalon.' },
@@ -258,7 +314,7 @@ export function resolveStackManifest(stack, assistant) {
   // `skills.length`. Toutes vides, jamais absentes : un champ manquant fait planter le consommateur
   // ailleurs, exactement ce que cette étape doit éviter.
   if (estAdopte(stack)) {
-    return { plugins: [], mcp: {}, skills: [], checks: { onEdit: [], preCommit: [], prePush: [] }, scripts: {}, rules: [], domains: {} };
+    return { plugins: [], mcp: {}, skills: [], checks: { onEdit: [], preCommit: [], prePush: [] }, workspaces: [], scripts: {}, rules: [], domains: {} };
   }
   const s = STACKS[stack];
   if (!s) throw new Error(`Stack inconnue : ${stack} (attendu: ${Object.keys(STACKS).join('|')})`);
@@ -267,6 +323,8 @@ export function resolveStackManifest(stack, assistant) {
     mcp: s.mcp,
     skills: s.skills,
     checks: s.checks,
+    // Vide sur les stacks mono-application : `setup-ai.mjs` ne rend alors aucune case `workspaces`.
+    workspaces: s.workspaces ?? [],
     scripts: s.scripts,
     rules: s.rules,
     domains: s.domains,

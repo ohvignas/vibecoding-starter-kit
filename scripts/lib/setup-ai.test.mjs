@@ -49,3 +49,28 @@ test('SETUP-AI Claude Code : /mcp reste correct', () => {
   const md = call('saas', 'claude-code');
   assert.match(md, /\/mcp/);
 });
+
+// ── LE MUR DE LA SECTION « Scripts package.json » ─────────────────────────────────────────────
+// Mesuré : l'élève coche `"typecheck": "npm run typecheck --workspaces"` dans un `package.json`
+// qui ne déclare pas de champ `workspaces` → `npm error No workspaces found!`, puis le hook
+// affiche « ⚠ check typecheck : problème détecté ». Il a suivi la case à la lettre, et le kit
+// accuse son code — exactement ce que le commentaire de `checks.mjs` interdit (« l'outil n'a pas
+// démarré » ≠ « l'outil a trouvé un problème »). La case manquante est celle du champ lui-même.
+test('SETUP-AI : une stack à deux applications fait déclarer `workspaces` AVANT ses scripts', () => {
+  const md = call('vitrine', 'claude-code');
+  const m = resolveStackManifest('vitrine', 'claude-code');
+  assert.ok(m.workspaces.length, 'montage : la vitrine doit déclarer sa disposition');
+  assert.match(md, /No workspaces found/, 'la case doit dire ce qui casse sans elle');
+  // La liste vient du manifeste, elle n'est pas recopiée dans le rendu.
+  assert.match(md, new RegExp(`"workspaces": ${JSON.stringify(m.workspaces).replace(/[[\]]/g, '\\$&')}`));
+  // …et l'ordre compte : la case du champ doit précéder les cases de scripts qui en dépendent.
+  assert.ok(md.indexOf('"workspaces"') < md.indexOf(`"typecheck": "${m.scripts.typecheck}"`), 'le champ doit être posé avant les scripts qui l\'exigent');
+  // L'autre moitié du mur : une application qui ne déclare pas son script fait échouer la racine.
+  assert.match(md, /doit déclarer \*\*ses\*\* scripts `typecheck` et `lint`/);
+});
+
+test('SETUP-AI : une stack mono-application ne parle jamais de workspaces', () => {
+  for (const s of ['saas', 'mobile', 'desktop']) {
+    assert.doesNotMatch(call(s, 'claude-code'), /workspaces/, `${s} : une seule application, la case n'a aucun sens`);
+  }
+});

@@ -79,7 +79,7 @@ C'est normal. Voici la boucle de débogage :
 
 - `guides/` — les guides généraux (celui-ci + installation des outils) et le **[glossaire](glossaire.md)**.
 - `stacks/` — pour chaque type d'app (**SaaS**, **mobile**, **desktop**, **vitrine**) : explications débutant, liens de doc officielle, et **prompts de démarrage** prêts à copier.
-- `ai-context/` — les fichiers à donner à l'IA (règles officielles, `llms.txt`) + un script pour les télécharger automatiquement. Un projet généré ne reçoit **que les dossiers de sa stack** : une vitrine n'a rien à faire des 2,3 Mo de doc Convex (ni des 2,3 Mo d'Expo).
+- `ai-context/` — les fichiers à donner à l'IA (règles officielles, `llms.txt`) + un script pour les télécharger automatiquement. Un projet généré ne reçoit **que les dossiers de sa stack** : un desktop n'a rien à faire des 2,3 Mo de doc Convex (ni des 2,3 Mo d'Expo).
 - Dans le projet **généré**, le wizard pose en plus les **skills** (`.claude/skills/` ou l'équivalent Cursor) — l'IA charge toute seule les bonnes règles selon ce que tu construis — et la config des serveurs **MCP** (`.mcp.json`, ou `.cursor/mcp.json` sous Cursor).
 
 **Prochaine étape :** installe les outils (`guides/02-installer-les-outils.md`), puis choisis ta stack dans `stacks/`.

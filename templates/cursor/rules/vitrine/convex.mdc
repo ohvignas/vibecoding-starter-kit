@@ -1,0 +1,12 @@
+---
+description: Convex — schéma, fonctions, et où chaque application lit
+globs: dashboard/convex/**,dashboard/src/**,site/src/**
+alwaysApply: false
+---
+
+- La logique serveur = `query` / `mutation` / `action` dans `dashboard/convex/`. Jamais d'API REST maison pour les données.
+- Schéma dans `dashboard/convex/schema.ts` ; indexe chaque champ filtré ou paginé.
+- Les champs dont le SEO a besoin (slug, titre, description, date) font partie du schéma dès le départ : ce sont eux qui remplissent les balises de la page publique.
+- ⛔ Lecture depuis le site public : **au BUILD uniquement**, client serveur `ConvexHttpClient`, dans le frontmatter `.astro` ou `getStaticPaths()`.
+- `useQuery` est réservé au `dashboard/` : réactif, privé, jamais indexé.
+- Règles officielles : `ai-context/convex/`.

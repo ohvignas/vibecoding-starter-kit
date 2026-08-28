@@ -63,6 +63,38 @@ test('E7 — outil impossible à lancer : le hook dit qu\'il n\'a pas tourné, p
   assert.match(txt, /ENOENT|npx/, 'et dire pourquoi');
 });
 
+// 127 = « command not found », rendu par le shell et propagé par `npm run`. Mesuré : un script
+// `"lint": "biome check ."` dans un projet sans biome sort 127. Le hook l'a longtemps compté comme
+// « problème détecté » — il accusait le code de l'élève d'un défaut d'installation.
+test('E7 — 127 (binaire absent) : le hook dit qu\'il n\'a pas pu lancer, pas qu\'il a trouvé un bug', () => {
+  const lignes = [];
+  const d = tmp();
+  fs.writeFileSync(path.join(d, 'tsconfig.json'), '{}');
+  runChecks(['typecheck'], { cwd: d, log: (m) => lignes.push(m), spawn: () => ({ status: 127 }) });
+  const l = lignes.join('\n');
+  assert.match(l, /n'a pas pu être lancé/, '127 = la commande n\'existe pas : rien n\'a été vérifié');
+  assert.match(l, /introuvable|pas installé/, 'et il faut DIRE que c\'est une install manquante');
+  assert.doesNotMatch(l, /problème détecté/, 'un binaire absent n\'est pas un défaut du code');
+});
+
+// `needs` est le prérequis du REPLI. Un script déclaré le remplace, donc s'en passe : gater le
+// check sur le fichier de config d'un outil que le projet n'utilise pas saute un contrôle qui
+// existe (mesuré sur un scaffold vitrine : les deux templates posent `lint`, eslint installé).
+test('E7 — `needs` ne gate que le repli : un script déclaré fait tourner le check sans lui', () => {
+  const d = tmp();
+  fs.writeFileSync(path.join(d, 'package.json'), JSON.stringify({ scripts: { lint: 'eslint .' } }));
+  const [avec] = selectChecks(['lint'], { cwd: d });
+  assert.equal(avec.willRun, true, 'le projet déclare `lint` : il n\'a pas besoin du biome.json du repli');
+  assert.equal(avec.via, 'script');
+  // …et sans script NI fichier `needs`, on saute — sinon on aurait remplacé un gate trop strict
+  // par aucun gate du tout, et le repli partirait sur un outil absent.
+  const nu = tmp();
+  fs.writeFileSync(path.join(nu, 'package.json'), JSON.stringify({ scripts: {} }));
+  const [sans] = selectChecks(['lint'], { cwd: nu });
+  assert.equal(sans.willRun, false);
+  assert.match(sans.reason, /biome\.json/);
+});
+
 test('E7 — outil lancé qui sort en erreur : là, oui, « problème détecté »', () => {
   const d = tmp();
   fs.writeFileSync(path.join(d, 'tsconfig.json'), '{}');

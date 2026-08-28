@@ -31,29 +31,30 @@ fetch() {
 echo "📥 Téléchargement du contexte IA officiel vers ai-context/ ..."
 echo ""
 
-echo "▸ Convex"
+echo "▸ Convex (stacks : saas · mobile · vitrine)"
 fetch "https://www.convex.dev/llms.txt"          "$DEST/convex/llms.txt"
 fetch "https://docs.convex.dev/llms-full.txt"    "$DEST/convex/llms-full.txt"
 fetch "https://convex.link/convex_rules.txt"     "$DEST/convex/convex_rules.txt"
 fetch "https://convex.link/convex_rules.mdc"     "$DEST/convex/convex_rules.mdc"
 
-echo "▸ TanStack Start"
+echo "▸ TanStack Start (stacks : saas · vitrine)"
 fetch "https://tanstack.com/start/latest/llms.txt" "$DEST/tanstack-start/llms.txt"
 fetch "https://tanstack.com/llms.txt"              "$DEST/tanstack-start/llms-tanstack-global.txt"
 
-echo "▸ Better Auth"
+echo "▸ Better Auth (stacks : saas · vitrine)"
 fetch "https://better-auth.com/llms.txt"         "$DEST/better-auth/llms.txt"
 
-echo "▸ React Native / Expo"
+echo "▸ React Native / Expo (stacks : mobile)"
 fetch "https://docs.expo.dev/llms.txt"           "$DEST/react-native-expo/expo-llms.txt"
 fetch "https://docs.expo.dev/llms-full.txt"      "$DEST/react-native-expo/expo-llms-full.txt"
 fetch "https://reactnative.dev/llms.txt"         "$DEST/react-native-expo/react-native-llms.txt"
 
-echo "▸ Electron"
+echo "▸ Electron (stacks : desktop)"
 echo "  ℹ️  Electron ne publie pas de llms.txt officiel."
 echo "     → Utilise les skills locaux 'electron:*' dans Claude Code (voir stacks/desktop/README.md)."
+echo "     → Voir ai-context/electron/README.md."
 
-echo "▸ Astro (stack vitrine)"
+echo "▸ Astro (stacks : vitrine)"
 echo "  ℹ️  Astro a RETIRÉ son llms.txt (mai 2026) : il n'y a rien à télécharger."
 echo "     → La source à jour est le MCP Docs Astro, déjà configuré dans les projets vitrine :"
 echo "       npx -y mcp-remote https://mcp.docs.astro.build/mcp"

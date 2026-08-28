@@ -32,12 +32,21 @@ function scriptCommand(cwd, name) {
   } catch { return null; }
 }
 
+// ⚠️ `needs` EST LE PRÉREQUIS DE LA COMMANDE PAR DÉFAUT, PAS DU CHECK. La version d'avant le
+// testait AVANT de regarder les scripts : un projet qui déclarait un `lint` parfaitement
+// fonctionnel voyait son check sauté parce qu'il n'avait pas le fichier de config d'un outil
+// qu'il n'utilise pas. Mesuré sur un scaffold vitrine RÉEL : les deux applications sortent du
+// template avec `lint` (eslint, configuré, installé) — et le check répondait
+// « sauté (absent: biome.json) ». Un contrôle qui existe et qu'on saute est pire qu'un contrôle
+// absent : le pre-commit sort vert en n'ayant rien lancé.
+// Un projet qui DÉCLARE le script dit lui-même que la commande marche chez lui. On ne gate donc
+// que le REPLI — et s'il n'y a ni script déclaré ni fichier `needs`, on saute, comme avant.
 export function selectChecks(ids, { cwd = process.cwd() } = {}) {
   return ids.map((id) => {
     const def = CHECKS[id];
     if (!def) return { id, willRun: false, reason: 'inconnu' };
-    if (!fs.existsSync(path.join(cwd, def.needs))) return { id, willRun: false, reason: `absent: ${def.needs}` };
     const declare = scriptCommand(cwd, def.script);
+    if (!declare && !fs.existsSync(path.join(cwd, def.needs))) return { id, willRun: false, reason: `absent: ${def.needs}` };
     return { id, willRun: true, cmd: declare ?? def.cmd, via: declare ? 'script' : 'defaut' };
   });
 }
@@ -68,9 +77,17 @@ export function runChecks(ids, { cwd = process.cwd(), spawn = spawnSync, log = c
     const r = spawn(file, args, { cwd, stdio: 'inherit', ...options });
     // Deux issues à ne PAS confondre : l'outil n'a pas démarré (status null + error) ≠ l'outil
     // a tourné et n'est pas content (status ≠ 0). La première n'accuse pas le code de l'élève.
-    if (r.error || r.status === null || r.status === undefined) {
+    //
+    // ⚠️ 127 EST LA PREMIÈRE, PAS LA SECONDE. C'est le code que le shell rend pour « command not
+    // found », et que `npm run` propage tel quel — mesuré : un script `"lint": "biome check ."`
+    // dans un projet sans biome sort **127**, `sh: biome: command not found`. Le hook affichait
+    // alors « ⚠ check lint : problème détecté » : il accusait le code de l'élève d'un défaut
+    // d'installation. C'est exactement la confusion que le commentaire ci-dessus interdit, et
+    // elle passait parce que le contrôle ne regardait que `status !== 0`.
+    if (r.error || r.status === null || r.status === undefined || r.status === 127) {
       warnings++;
-      log(`⚠ check ${c.id} : n'a pas pu être lancé (${r.error ? r.error.message : 'processus interrompu'}) — rien n'a été vérifié`);
+      const cause = r.error ? r.error.message : (r.status === 127 ? `commande introuvable : \`${c.cmd.join(' ')}\` (l'outil n'est pas installé)` : 'processus interrompu');
+      log(`⚠ check ${c.id} : n'a pas pu être lancé (${cause}) — rien n'a été vérifié`);
       continue;
     }
     if (r.status !== 0) { warnings++; log(`⚠ check ${c.id} : problème détecté (non bloquant)`); }

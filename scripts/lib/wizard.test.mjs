@@ -2,6 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { needsWizard, buildArgsFromAnswers, renderBackendNote, runWizard, wireSigint, renderNonTtyHelp, ASSISTANTS, choisirMode } from './wizard.mjs';
 import { ASSISTANT_KEYS } from './args.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const RACINE = path.resolve(import.meta.dirname, '..', '..');
 
 const NULL_OUT = { write() {} };
 const scripted = (answers) => { let i = 0; return async () => answers[i++]; };
@@ -105,4 +109,51 @@ test('choisirMode : l\'ordre des modes du CLI, asserté sans TTY réel', () => {
   assert.equal(choisirMode([], true), 'wizard');
   assert.equal(choisirMode([], false), 'drapeaux');
   assert.equal(choisirMode(['--yes'], true), 'drapeaux', '--yes = jamais de questions, même en TTY');
+});
+
+// ── LA PREMIÈRE PHRASE QUE LE DÉBUTANT LIT, ET QUE PERSONNE NE RELISAIT ────────────────────────
+// Le menu du wizard décrit chaque stack en une ligne. C'est le TOUT PREMIER texte technique qu'un
+// débutant lit, et c'est sur lui qu'il choisit. Il a annoncé « Astro + shadcn/ui + Keystatic
+// (CMS) » pendant tout le temps où la stack quittait Keystatic pour Convex : les six documents de
+// la stack avaient été réécrits, le menu non, et RIEN ne rougissait — aucun test ne lisait ces
+// libellés.
+//
+// La propriété : une techno nommée dans un libellé doit être nommée dans le README de la stack
+// concernée. Le README est la source de vérité (il est tenu par `agents-templates`, `faits-stacks`
+// et `promesses-livrees`) ; le menu n'est qu'un résumé. Un résumé qui cite ce que la source ne
+// cite plus est périmé, par construction.
+//
+// ⚠️ ON LIT LE MENU RÉEL, PAS LA CONSTANTE. `STACKS` n'est pas exportée par `wizard.mjs`, et c'est
+// tant mieux : on joue le wizard, on capture ce qu'il ÉCRIT, et on rattache chaque ligne à sa
+// stack en relisant la clé que ce choix produit. Aucun ordre supposé, aucun libellé recopié.
+async function libellesDuMenu() {
+  const lignes = [];
+  const out = { write: (s) => lignes.push(s) };
+  await runWizard(scripted(['1', '1', 'x', '1', '']), false, out);
+  const menu = lignes.find((l) => /^\s*1\)/m.test(l));
+  assert.ok(menu, 'montage : le menu des stacks n\'a pas été capturé');
+  return menu.split('\n').flatMap((l) => l.match(/^\s*(\d+)\)\s+(.+)$/)?.slice(1) ? [[Number(RegExp.$1), RegExp.$2]] : []);
+}
+
+test('menu du wizard : aucun libellé de stack ne nomme une techno absente du README de cette stack', async () => {
+  const entrees = await libellesDuMenu();
+  assert.ok(entrees.length >= 4, `montage : ${entrees.length} lignes de menu lues`);
+  const fautes = [];
+  for (const [numero, ligne] of entrees) {
+    // La clé de la stack est celle que CE choix produit — relue, pas devinée.
+    const { stack } = await runWizard(scripted([String(numero), '1', 'x', '1', '']), false, NULL_OUT);
+    const readme = fs.readFileSync(path.join(RACINE, `stacks/${stack}/README.md`), 'utf8');
+    // Une « techno » = un mot capitalisé du libellé (Convex, Astro, TanStack, Electron, SEO…).
+    // Les mots en minuscules (« site », « dashboard ») décrivent la disposition, pas un outil.
+    for (const mot of ligne.match(/\b[A-Z][A-Za-z0-9.]*\b/g) ?? []) {
+      if (!readme.includes(mot)) fautes.push(`menu ${numero} (${stack}) : « ${mot} » — absent de stacks/${stack}/README.md`);
+    }
+  }
+  assert.deepEqual(fautes, [], [
+    'Le menu du wizard annonce une techno que le README de la stack ne nomme plus :',
+    ...fautes.map((f) => `  ${f}`),
+    '',
+    'C\'est la première phrase que lit un débutant, et il choisit dessus. Si la stack a changé,',
+    'le libellé de `STACKS` dans `scripts/lib/wizard.mjs` doit changer avec elle.',
+  ].join('\n'));
 });

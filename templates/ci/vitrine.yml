@@ -1,4 +1,7 @@
-# CI — Site vitrine (Astro 7 + shadcn/ui + Keystatic)
+# CI — Site vitrine (Astro 7 + shadcn/ui + Convex + Better Auth)
+# Deux applications sous une seule racine : `site/` (public) et `dashboard/` (privé).
+# `npm ci` à la racine installe les deux workspaces, et les scripts de la racine les ratissent
+# tous les deux (`npm run <script> --workspaces`) : un seul job suffit à couvrir le projet entier.
 name: CI
 on: [push, pull_request]
 jobs:
@@ -11,7 +14,13 @@ jobs:
           # Astro 7 refuse de démarrer en dessous (engines.node = ">=22.12.0").
           node-version: '22.12'
       - run: npm ci
-      - run: npm run lint --if-present
-      - run: npm run typecheck --if-present
+      # ⛔ Pas de `--if-present` sur ces trois-là, et c'est délibéré : la racine de cette stack
+      # DÉCLARE `lint`, `typecheck` et `build`. Avec le drapeau, une racine à qui il manque un
+      # script rendrait la CI verte sans avoir rien lancé — le saut silencieux que cette stack
+      # est justement faite pour tuer. Sans lui, npm sort 1 en nommant le coupable.
+      - run: npm run lint
+      - run: npm run typecheck
+      # `test`, lui, n'est déclaré par aucun scaffold du kit : le drapeau est ici à sa place.
       - run: npm test --if-present
-      - run: npm run build --if-present
+      # Construit les DEUX applications : le site statique et le serveur du dashboard.
+      - run: npm run build

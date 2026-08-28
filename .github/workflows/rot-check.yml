@@ -10,11 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Dépôts de skills (GitHub) — doivent répondre 2xx/3xx
+      # ⚠️ DÉRIVÉE de `scripts/lib/matrix.mjs` comme la boucle d'URLs ci-dessous : tout dépôt qu'une
+      # stack fait cloner (`plugins[*].cmd`) doit y être. Garde : `faits-stacks.test.mjs`, F12bis.
+      - name: Dépôts de skills et de plugins (GitHub) — doivent répondre 2xx/3xx
         run: |
           set -e
           for r in \
             better-auth/skills get-convex/agent-skills expo/skills \
+            get-convex/convex-agent-plugins \
             google-labs-code/stitch-skills anthropics/skills \
             vercel-labs/agent-skills nextlevelbuilder/ui-ux-pro-max-skill \
             multica-ai/andrej-karpathy-skills \
@@ -23,6 +26,10 @@ jobs:
             echo "$r -> $code"
             [ "$code" -lt 400 ] || { echo "::error::dépôt de skills injoignable : $r ($code)"; exit 1; }
           done
+      # ⚠️ CETTE LISTE EST DÉRIVÉE DE `scripts/lib/matrix.mjs` : toute URL qu'une stack déclare
+      # (`mcp`, `rules`) doit s'y trouver, sinon elle disparaît un jour sans que rien ne rougisse.
+      # Le garde qui l'exige : `faits-stacks.test.mjs`, F12bis. Il en avait déjà trouvé trois
+      # oubliées (les deux docs Electron et l'installeur Maestro), en plus de la recette Docker.
       - name: URLs de contexte (llms.txt / règles) — doivent répondre 2xx/3xx
         run: |
           set -e
@@ -33,7 +40,14 @@ jobs:
             https://docs.expo.dev/llms.txt \
             https://reactnative.dev/llms.txt \
             https://ui.shadcn.com/docs/installation/astro \
-            https://keystatic.com/docs/installation-astro ; do
+            https://docs.astro.build/en/recipes/docker/ \
+            https://www.electronjs.org/docs/latest/tutorial/security \
+            https://www.electronjs.org/docs/latest \
+            https://get.maestro.mobile.dev \
+            https://labs.convex.dev/better-auth/framework-guides/tanstack-start \
+            https://www.nativewind.dev/getting-started/installation \
+            https://tweakcn.com \
+            "https://ui.shadcn.com/create?preset=b27GcrRo" ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
             echo "$u -> $code"
             [ "$code" -lt 400 ] || { echo "::error::source de contexte injoignable : $u ($code)"; exit 1; }
@@ -46,7 +60,7 @@ jobs:
           set -e
           fail=0
           for p in astro react-email @convex-dev/resend @convex-dev/auth convex expo electron \
-                   better-auth @keystatic/core @playwright/mcp ; do
+                   better-auth @convex-dev/better-auth @playwright/mcp ; do
             dep=$(npm view "$p" deprecated 2>/dev/null || true)
             ver=$(npm view "$p" version 2>/dev/null || echo '?')
             if [ -n "$dep" ]; then
@@ -72,7 +86,8 @@ jobs:
             https://stitch.googleapis.com/mcp \
             https://mcp.better-auth.com/mcp \
             https://mcp.expo.dev/mcp \
-            https://mcp.docs.astro.build/mcp ; do
+            https://mcp.docs.astro.build/mcp \
+            https://mcp.stripe.com ; do
             code=$(curl -m 10 -o /dev/null -s -w '%{http_code}' "$u")
             echo "$u -> $code"
             [ "$code" -lt 500 ] || { echo "::error::endpoint MCP injoignable : $u ($code)"; exit 1; }

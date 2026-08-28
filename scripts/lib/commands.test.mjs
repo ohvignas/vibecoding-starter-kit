@@ -92,8 +92,18 @@ test('D3 — /deploy couvre les 4 stacks, pose un gate avant la prod et ne dépe
   for (const s of ['SaaS', 'Mobile', 'Desktop', 'Vitrine']) {
     assert.match(t, new RegExp(`^## ${s}`, 'm'), `section « ${s} » absente`);
   }
-  assert.match(t, /Astro/, 'vitrine : le framework');
-  assert.match(t, /Keystatic/, 'vitrine : le CMS');
+  // ⚠️ LA SECTION D'UNE STACK, PAS LE FICHIER ENTIER. `assert.match(t, /Astro/)` était satisfait
+  // par n'importe quelle autre ligne du runbook — et le piège s'aggrave depuis que la vitrine
+  // partage Convex avec le SaaS : un `/Convex/` global resterait VERT même si la section Vitrine
+  // ne disait plus un mot de son backend. C'est la faute déjà prise deux fois sur ce chantier (un
+  // test crédité du vocabulaire de ses voisines). On découpe, et on interroge le segment.
+  const vitrine = t.match(/^## Vitrine[\s\S]*?(?=^## |^Termine par)/m);
+  assert.ok(vitrine, 'montage : la section Vitrine de /deploy n\'a pas pu être isolée');
+  assert.match(vitrine[0], /Astro/, 'vitrine : le framework');
+  assert.match(vitrine[0], /Convex/, 'vitrine : le backend qui porte le contenu des deux applications');
+  assert.match(vitrine[0], /Docker/, 'vitrine : la stack se déploie en Docker sur un VPS, plus chez un hébergeur de statique');
+  // Le CMS git a disparu de la stack (tâches 1-6) : un renvoi vers son admin est un renvoi mort.
+  assert.doesNotMatch(t, /Keystatic|\/keystatic/i, 'la vitrine n\'a plus de CMS git : /deploy y envoie encore');
   // Gate : CI verte PROUVÉE (commande + sortie) + sécurité.
   assert.match(t, /gh run watch/, 'CI verte prouvée par une commande');
   assert.match(t, /security-reviewer/, 'gate sécurité avant la prod');
@@ -256,9 +266,21 @@ test('D6ter — /doctor reste d\'un bloc, et son verdict ne laisse aucun item ho
   // et personne ne le voit : c'est la façon dont /doctor peut redevenir complaisant en silence.
   const muets = items.filter((n) => n > plage && !new RegExp(`\\*\\*${n} est optionnel\\*\\*`).test(verdict));
   assert.deepEqual(muets, [], `item(s) hors de « de 1 à ${plage} » que le verdict ne déclare pas optionnel : ${muets.join(', ')}`);
+  // ⛔ ET L'AUTRE SENS, QUI MANQUAIT — une borne gardée d'un seul côté n'est pas gardée. Mesuré :
+  // porter la plage à « de 1 à 20 » alors que le MÊME verdict déclare 19 et 20 optionnels ne faisait
+  // rougir personne. Le verdict se contredit, et le ✅ redevient inatteignable pour tout le monde :
+  // l'item optionnel réclame `semgrep`/`gitleaks`/`osv-scanner`, que le kit n'installe pas.
+  const contradictoires = items.filter((n) => n <= plage && new RegExp(`\\*\\*${n} est optionnel\\*\\*`).test(verdict));
+  assert.deepEqual(contradictoires, [], `item(s) DANS la plage « de 1 à ${plage} » que le verdict déclare pourtant optionnel(s) : ${contradictoires.join(', ')} — le verdict exige un item qu'il dit lui-même facultatif`);
   // …et les renvois internes d'un item à l'autre visent un item qui existe : c'est le seul filet
   // contre une renumérotation à moitié faite.
-  const morts = [...t.matchAll(/l['’]item \*{0,2}(\d+)/gi)].map((m) => Number(m[1])).filter((n) => !items.includes(n));
+  // ⛔ LE SINGULIER NE SUFFISAIT PAS, et c'est mesuré : « les items 3, 7 et 42 » laissait la suite
+  // VERTE là où « l'item 42 » la faisait rougir. Une note au pluriel — celle qui dit quels items
+  // couvrent `docs/A-FAIRE.md`, précisément — sortait du filet sans un mot. On lit donc la
+  // RÉFÉRENCE (singulier ou pluriel), puis TOUS les numéros qu'elle énumère.
+  const morts = [...t.matchAll(/(?:l['’]|les\s+)items?\s+((?:\*{0,2}\d+\*{0,2}[\s,]*(?:et\s+)?)+)/gi)]
+    .flatMap((m) => [...m[1].matchAll(/\d+/g)].map((d) => Number(d[0])))
+    .filter((n) => !items.includes(n));
   assert.deepEqual(morts, [], `renvoi(s) vers un item inexistant de /doctor : ${morts.join(', ')}`);
 });
 

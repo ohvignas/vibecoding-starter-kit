@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fichiersDuRunbook } from './commands-list.mjs';
+import { STACKS } from './matrix.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -104,7 +105,41 @@ test('stacks/vitrine : AGENTS.md + README + prompts présents et complets', () =
   assert.match(a, /JSON-LD/);
   assert.match(a, /robots\.txt/);
   assert.match(a, /@astrojs\/sitemap/);
-  assert.match(a, /Keystatic/);
+  // ⚠️ CETTE LIGNE EXIGEAIT `Keystatic` — le CMS git que la stack vient de quitter. Le fait a
+  // changé, la propriété non : le fichier doit toujours nommer la brique qui PORTE LE CONTENU,
+  // sinon l'IA se retrouve avec des règles de mise en page et aucune source de données. Le
+  // contenu vit maintenant dans Convex, saisi depuis une SECONDE application — et c'est cette
+  // seconde application qu'il faut nommer, sinon la règle « au build » n'a plus d'endroit où
+  // renvoyer `useQuery`.
+  assert.match(a, /Convex/, 'vitrine : la brique qui porte le contenu');
+  assert.match(a, /dashboard\//, 'vitrine : la seconde application, celle qui saisit le contenu');
+  assert.match(a, /Better Auth/, 'vitrine : ce qui ferme le dashboard');
   assert.ok(read('stacks/vitrine/README.md').length > 800);
-  assert.ok(read('stacks/vitrine/prompts-de-demarrage.md').includes('shadcn'));
+  const p = read('stacks/vitrine/prompts-de-demarrage.md');
+  assert.ok(p.includes('shadcn'));
+  // Un prompt de démarrage qui ne monte QUE le site public laisserait le débutant sans endroit
+  // où écrire son contenu — le défaut exact que le passage à Convex crée s'il n'est pas dit.
+  assert.match(p, /dashboard/, 'les prompts doivent monter les DEUX applications');
+});
+
+// ── AUCUN `prompts-de-demarrage.md` N'EST ORPHELIN ────────────────────────────────────────────
+// Les prompts de démarrage sont le bout de la chaîne : le README d'une stack explique, les
+// prompts font AGIR. Trois stacks terminaient par « Ouvre `prompts-de-demarrage.md` » ; la
+// quatrième, la vitrine, ne le citait nulle part — le fichier existait, était tenu à jour par les
+// tests, et personne n'y était jamais envoyé. Un fichier que rien ne cite n'est pas livré, il est
+// stocké.
+//
+// La liste des stacks est LUE dans `matrix.mjs` : une cinquième stack entre sous contrôle sans
+// qu'on touche à ce test. Et le renvoi est cherché dans le README de la stack CONCERNÉE, pas dans
+// la concaténation des quatre — sinon le renvoi du saas couvrirait les trois autres.
+test('aucun `prompts-de-demarrage.md` n\'est orphelin : le README de chaque stack y renvoie', () => {
+  const stacks = Object.keys(STACKS);
+  assert.ok(stacks.length >= 4, `montage : ${stacks.length} stacks lues dans matrix.mjs`);
+  const orphelins = [];
+  for (const s of stacks) {
+    const prompts = `stacks/${s}/prompts-de-demarrage.md`;
+    assert.ok(fs.existsSync(path.join(ROOT, prompts)), `${prompts} n'existe pas`);
+    if (!read(`stacks/${s}/README.md`).includes(`${s}/prompts-de-demarrage.md`)) orphelins.push(prompts);
+  }
+  assert.deepEqual(orphelins, [], `des prompts de démarrage que le README de leur stack ne cite pas :\n${orphelins.join('\n')}`);
 });

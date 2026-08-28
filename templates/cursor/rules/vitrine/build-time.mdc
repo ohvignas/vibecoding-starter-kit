@@ -1,0 +1,10 @@
+---
+description: Convex au BUILD côté public — useQuery et ConvexProvider réservés au dashboard/
+globs: site/**,dashboard/**
+alwaysApply: false
+---
+
+- `site/` (pages publiques) lit Convex **au BUILD** : client serveur `ConvexHttpClient`, dans le frontmatter d'une page `.astro` ou dans `getStaticPaths()`. Le HTML part du serveur déjà rempli.
+- ⛔ **Jamais `useQuery` ni `ConvexProvider` dans une page publique** : ce sont des hooks de navigateur — le contenu arriverait après le chargement, le HTML servi serait **vide**, et le **JSON-LD** n'aurait plus rien à décrire. C'est le SEO, raison d'être de la stack, qui tombe.
+- `useQuery` / `ConvexProvider` = `dashboard/` uniquement : privé, temps réel, jamais indexé.
+- Conséquence : publier dans le `dashboard/` ne met le site public à jour **qu'au rebuild**. Déclenche-le à la publication.

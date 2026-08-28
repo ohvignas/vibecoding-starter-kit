@@ -3,6 +3,12 @@ node_modules/
 .env.*
 !.env.example
 dist/
+.output/
 .astro/
+# ⛔ N'ignore JAMAIS `convex/_generated/` ici. Le CLI le dit lui-même (`convex codegen --help`,
+# 1.45.0) : « should be committed to the repo (your code won't typecheck without it!) ».
+# Mesuré : la règle posée, un clone neuf (= le checkout de la CI) sort `error TS2307: Cannot find
+# module './_generated/server'` sur `npm run typecheck` — la CI que ce kit livre devient rouge au
+# premier push, et le gate de /deploy (« CI verte prouvée ») infranchissable.
 docs/memory/.edit-queue.log
 .DS_Store

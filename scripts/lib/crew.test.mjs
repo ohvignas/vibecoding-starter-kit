@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COMMANDS, fichiersDuRunbook } from './commands-list.mjs';
+import { STACKS } from './matrix.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -567,4 +568,72 @@ test('C7 — tout `docs/agents/…` cité par le crew est un fichier que le kit 
   for (const f of cites) {
     assert.match(env, new RegExp(`docs/agents/${f.replace('.', '\\.')}`), `${f} : cité par le crew mais jamais créé`);
   }
+});
+
+// ── UN SOUS-AGENT NE PROMET PAS UN MCP QUE SA STACK N'A PAS ───────────────────────────────────
+// Trois agents du crew portent une carte « stack → serveur MCP » écrite à la main dans leur
+// fichier (« saas et mobile → Convex MCP · sur desktop et vitrine, il n'y a pas de MCP de
+// données »). Rien ne la confrontait au manifeste. Quand la vitrine a gagné Convex et Better
+// Auth, `critique-donnees` a continué d'affirmer que cette stack n'avait AUCUN MCP de données :
+// l'agent, qui ne lit ni AGENTS.md ni CLAUDE.md, n'avait aucun moyen de savoir le contraire — il
+// aurait renoncé à inspecter une base qui était là.
+//
+// La carte est LUE, pas recopiée : on découpe la ligne sur ses `·`, on prend les stacks AVANT la
+// flèche et les MCP APRÈS, et on interroge `STACKS` pour chaque couple.
+//
+// ⚠️ LE SECOND SENS PORTE SUR TOUTES LES STACKS, PAS SUR CELLES QUE LA LIGNE CITE. Première
+// version : « une stack citée par la ligne mais devant aucune flèche ». Mutation jouée, VERTE —
+// retirer `vitrine` de « web (saas, vitrine) → Playwright MCP » sortait la stack de la ligne, donc
+// du contrôle : le garde ne pouvait pas voir une stack SUPPRIMÉE de la carte, précisément le
+// défaut qu'il est là pour attraper. La règle est donc une ÉGALITÉ : pour chaque serveur que la
+// ligne mentionne, l'ensemble des stacks à qui elle le donne doit être EXACTEMENT l'ensemble des
+// stacks dont le manifeste le déclare. Une stack ajoutée demain entre sous contrôle sans rien
+// toucher — ce qu'une liste de noms ne peut pas promettre.
+//
+// ⛔ CE QUE CE GARDE NE VOIT PAS, ET C'EST DIT PLUTÔT QUE SUPPOSÉ. Il juge les serveurs que la
+// ligne NOMME. Mutation jouée, VERTE : retirer d'un bloc la clause « · desktop → chrome-devtools
+// MCP » tout entière — le serveur sort de la ligne, donc du contrôle. Le fermer demanderait
+// d'exiger que CHAQUE stack soit nommée par chaque carte, or `critique-ux` ne nomme pas
+// `mobile` aujourd'hui (aucune consigne d'outil pour une critique UX mobile) : la règle rougirait
+// sur un manque de CONTENU, pas sur une incohérence. Décision : on ferme l'incohérence, on
+// consigne le manque.
+const STACKS_CONNUES = () => Object.keys(STACKS);
+const MCP_CONNUS = () => [...new Set(STACKS_CONNUES().flatMap((s) => Object.keys(STACKS[s].mcp)))];
+// `chrome-devtools` s'écrit « chrome-devtools MCP » dans la prose : on tolère le tiret ou l'espace.
+const motifMcp = (k) => new RegExp(`\\b${k.split('-').map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[-\\s]?')}\\b`, 'i');
+
+test('crew — la carte « stack → MCP » de chaque agent dit ce que le manifeste déclare', () => {
+  const stacks = STACKS_CONNUES();
+  const mcps = MCP_CONNUS();
+  assert.ok(stacks.length >= 4 && mcps.length >= 5, `montage : ${stacks.length} stacks, ${mcps.length} MCP lus dans matrix.mjs`);
+  const fautes = [];
+  let couples = 0;
+  for (const a of CREW) {
+    const ligne = agent(a).split('\n').find((l) => l.includes('→') && stacks.some((s) => l.includes(s)));
+    if (!ligne) continue; // cet agent ne prétend rien sur les MCP par stack
+    const donnes = new Map(); // serveur MCP → les stacks à qui CETTE ligne le donne
+    for (const segment of ligne.split('·')) {
+      const fleche = segment.indexOf('→');
+      if (fleche < 0) continue;
+      const avant = segment.slice(0, fleche), apres = segment.slice(fleche);
+      const visees = stacks.filter((s) => new RegExp(`\\b${s}\\b`).test(avant));
+      for (const m of mcps.filter((x) => motifMcp(x).test(apres))) {
+        if (!donnes.has(m)) donnes.set(m, new Set());
+        for (const s of visees) { donnes.get(m).add(s); couples++; }
+      }
+    }
+    for (const [m, ens] of donnes) {
+      const reelles = stacks.filter((s) => m in STACKS[s].mcp);
+      for (const s of ens) if (!reelles.includes(s)) fautes.push(`${a} : promet le MCP « ${m} » à la stack « ${s} », que son manifeste ne déclare pas`);
+      for (const s of reelles) if (!ens.has(s)) fautes.push(`${a} : la stack « ${s} » déclare le MCP « ${m} », et la carte de l'agent ne le lui donne pas`);
+    }
+  }
+  assert.ok(couples >= 6, `montage : ${couples} couples (stack, MCP) lus dans les fichiers du crew — la carte n'a pas été lue`);
+  assert.deepEqual(fautes, [], [
+    'Un sous-agent annonce une carte « stack → MCP » que `matrix.mjs` contredit :',
+    ...fautes.map((f) => `  ${f}`),
+    '',
+    'Ces agents ne lisent NI AGENTS.md NI CLAUDE.md : leur fichier est tout ce qu\'ils savent.',
+    'Une carte périmée les fait renoncer à un outil branché, ou réclamer un serveur qui n\'existe pas.',
+  ].join('\n'));
 });

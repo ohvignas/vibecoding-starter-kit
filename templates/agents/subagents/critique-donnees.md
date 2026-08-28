@@ -12,7 +12,7 @@ On te donne : la **maquette**, le **PRD**, l'**inventaire de complétude** (`doc
 
 Aucun skill officiel ne couvre cette lentille : charge `superpowers:systematic-debugging` (fourni par le plugin superpowers) pour remonter une donnée jusqu'à sa source au lieu de supposer.
 
-**Outils selon la stack** (rien n'est déclaré dans ton frontmatter) : saas et mobile → **Convex MCP** pour inspecter tables et fonctions. Sur desktop et vitrine, il n'y a pas de MCP de données : appuie-toi sur le code et les docs. Si le serveur n'est pas branché, dis-le (`BLOQUÉ`) au lieu de deviner.
+**Outils selon la stack** (rien n'est déclaré dans ton frontmatter) : saas, mobile et vitrine → **Convex MCP** pour inspecter tables et fonctions (sur la vitrine, le schéma vit dans `dashboard/convex/` et alimente les deux applications). Sur desktop, il n'y a pas de MCP de données : appuie-toi sur le code et les docs. Si le serveur n'est pas branché, dis-le (`BLOQUÉ`) au lieu de deviner.
 
 Ta lentille — **est-ce que ça peut VRAIMENT fonctionner ?**
 - Chaque écran a-t-il ses **vraies** données : quelle entité/table, quels champs, quelle source ?

@@ -1,12 +1,12 @@
 ---
 description: Astro 7 (îlots, content collections, assets)
-globs: src/**/*.astro,src/content.config.*,src/data/**,astro.config.*
+globs: site/src/**/*.astro,site/src/content.config.*,site/src/data/**,site/astro.config.*
 alwaysApply: false
 ---
 
 - Astro 7 : Node ≥ 22.12 obligatoire (il refuse de démarrer en dessous).
 - Statique d'abord : `client:load`/`client:visible` UNIQUEMENT sur l'interactif réel.
-- Contenu structuré = content collections déclarées dans `src/content.config.ts`, chacune avec son `loader` (`glob()`/`file()` de `astro/loaders`) — jamais en dur dans les pages.
+- Contenu structuré = content collections déclarées dans `site/src/content.config.ts`, chacune avec son `loader` (`glob()`/`file()` de `astro/loaders`) — jamais en dur dans les pages.
 - Supprimés en Astro 6, à ne jamais écrire : `Astro.glob()` (→ `getCollection()`/`import.meta.glob()`) · `<ViewTransitions />` (→ `<ClientRouter />`).
 - Images : `astro:assets` `<Image />`, jamais `<img>` brut sur une photo.
 - API incertaine → interroge le MCP `astro-docs` (Astro n'a plus de llms.txt).

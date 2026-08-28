@@ -1,9 +1,12 @@
 ---
-description: shadcn/ui en îlots React (contexte non partagé)
-globs: src/components/**/*.tsx
+description: shadcn/ui en îlots React (contexte non partagé, aucune connexion à Convex)
+globs: site/src/components/**
 alwaysApply: false
 ---
 
 - ⚠️ Le contexte React n'est PAS partagé entre îlots : composants shadcn interactifs liés = UN seul fichier .tsx, importé une fois avec `client:*`.
+- ⛔ Jamais `useQuery` ni `ConvexProvider` dans un îlot du site public : il ne se connecte pas à Convex. Il reçoit ses données **en props**, lues au build par la page `.astro` qui l'importe.
+- `useQuery` reste réservé aux composants du `dashboard/`.
 - Composants via `npx shadcn@latest add <c>` — jamais recopiés/modifiés à la main.
 - Thème = variables CSS du preset (ui.shadcn.com/create ou tweakcn) ; classes tokens (`bg-primary`), pas de couleur en dur.
+- ⚠️ shadcn n'est installé que dans `site/` (c'est le preset qui l'y pose). `npx shadcn add` échoue dans `dashboard/` tant que tu n'y as pas lancé `npx shadcn@latest init` — et les deux applications auront alors chacune SES variables CSS, à régler deux fois.

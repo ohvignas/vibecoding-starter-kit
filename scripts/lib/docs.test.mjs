@@ -17,7 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { COMMANDS, fichiersDuRunbook } from './commands-list.mjs';
-import { STACKS, PINS, DESIGN_SKILL_NAMES, AGENT_SKILL_SPECS, SUPERPOWERS, MCP_CONNECT, resolveAssets, resolveStackManifest } from './matrix.mjs';
+import { STACKS, PINS, AI_CONTEXT, DESIGN_SKILL_NAMES, AGENT_SKILL_SPECS, SUPERPOWERS, MCP_CONNECT, resolveAssets, resolveStackManifest } from './matrix.mjs';
 import { CREW, kitOwnedFiles } from './kit-owned.mjs';
 import { runWizard } from './wizard.mjs';
 import { parseArgs } from './args.mjs';
@@ -156,6 +156,100 @@ test('H2bis — la table « Geste 2 » liste EXACTEMENT les stacks qui ont un pl
   }
 });
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// H2ter — la table « Geste 3 » (les MCP à autoriser). Jumelle de H2bis, et elle manquait : la
+// ligne Vitrine a annoncé « Astro Docs · shadcn · Playwright » pendant tout le temps où le
+// manifeste en déclarait CINQ (Convex et Better Auth étaient arrivés). L'utilisateur qui suit le
+// README n'autorise pas les deux serveurs dont son projet a besoin, et rien ne le lui dit.
+// ⚠️ Le README porte DEUX tables par stack (Geste 2 = plugins, Geste 3 = MCP) : sans le découpage,
+// le test lirait la mauvaise — la faute que H2bis avait déjà dû éviter.
+// ⚠️ Et c'est un test À DEUX SENS : un MCP manquant est un geste qu'on ne fait pas, un MCP en trop
+// est un serveur qu'on autorise pour rien. Sans le second, la table pourrait tous les citer.
+// ─────────────────────────────────────────────────────────────────────────────
+const NOMS_STACKS = { saas: 'SaaS', mobile: 'Mobile', desktop: 'Desktop', vitrine: 'Vitrine' };
+// « Chrome DevTools *(test E2E)* » et la clé `chrome-devtools` doivent se reconnaître : on efface
+// la casse, les espaces et la ponctuation des deux côtés, et on compare des chaînes nues.
+const nu = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+test('H2ter — la table « Geste 3 » liste EXACTEMENT les MCP que le manifeste déclare, stack par stack', () => {
+  const readme = read('README.md');
+  const debut = readme.indexOf('### Geste 3');
+  assert.ok(debut > 0, 'la section « Geste 3 » existe');
+  const fin = readme.indexOf('\n### ', debut + 10);
+  const section = readme.slice(debut, fin > 0 ? fin : undefined);
+  // Tous les MCP que le kit connaît, toutes stacks confondues : c'est contre CETTE liste qu'on
+  // juge les absences (« la table promet un serveur que cette stack n'a pas »).
+  const tous = new Set(STACK_KEYS.flatMap((s) => Object.keys(STACKS[s].mcp)));
+  assert.ok(tous.size >= 5, `montage : ${tous.size} MCP lus dans le manifeste`);
+  const fautes = [];
+  for (const s of STACK_KEYS) {
+    const ligne = section.split('\n').find((l) => l.startsWith(`| **${NOMS_STACKS[s]}**`));
+    assert.ok(ligne, `${s} : aucune ligne dans la table « Geste 3 »`);
+    const attendus = new Set(Object.keys(STACKS[s].mcp));
+    for (const m of tous) {
+      const cite = nu(ligne).includes(nu(m));
+      if (attendus.has(m) && !cite) fautes.push(`${s} : le manifeste déclare « ${m} », la table « Geste 3 » ne le nomme pas`);
+      if (!attendus.has(m) && cite) fautes.push(`${s} : la table « Geste 3 » fait autoriser « ${m} », que cette stack ne déclare pas`);
+    }
+  }
+  assert.deepEqual(fautes, [], [
+    'La table « Geste 3 » du README ne dit plus ce que le manifeste déclare :',
+    ...fautes.map((f) => `  ${f}`),
+    '',
+    'Cette table EST la liste que l\'utilisateur coche dans `/mcp`. Un serveur oublié ici, c\'est',
+    'un projet câblé à moitié — et le kit ne le lui dira jamais.',
+  ].join('\n'));
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// H2quater — `ai-context/`. Deux surfaces disent quelle stack reçoit quel dossier de doc : le
+// tableau de `ai-context/README.md` (que le projet reçoit) et les en-têtes de
+// `scripts/download-ai-context.sh` (qui remplit le dépôt). Ni l'un ni l'autre n'était confronté à
+// `AI_CONTEXT` : quand la vitrine est passée d'`["astro"]` à quatre dossiers, les deux ont
+// continué d'annoncer « convex → saas · mobile » sans un mot.
+// ⚠️ RIEN N'EST RECOPIÉ ICI : les dossiers sortent de `AI_CONTEXT`, les stacks aussi. Un dossier
+// ajouté demain met les deux surfaces sous contrôle sans qu'on touche à ce test.
+// ─────────────────────────────────────────────────────────────────────────────
+const stacksDuDossier = (d) => STACK_KEYS.filter((s) => (AI_CONTEXT[s] ?? []).includes(d)).sort();
+const DOSSIERS_AI = () => [...new Set(STACK_KEYS.flatMap((s) => AI_CONTEXT[s] ?? []))].sort();
+
+test('H2quater — `ai-context/README.md` dit, dossier par dossier, les stacks que `AI_CONTEXT` déclare', () => {
+  const t = read('ai-context/README.md');
+  const dossiers = DOSSIERS_AI();
+  assert.ok(dossiers.length >= 5, `montage : ${dossiers.length} dossiers lus dans AI_CONTEXT`);
+  const fautes = [];
+  for (const d of dossiers) {
+    const ligne = t.split('\n').find((l) => l.startsWith(`| \`${d}/\` |`));
+    if (!ligne) { fautes.push(`${d}/ : absent du tableau « Ce qu'il y a dedans »`); continue; }
+    const annoncees = (ligne.split('|')[2] ?? '').split('·').map((x) => x.trim()).filter(Boolean).sort();
+    assert.deepEqual(annoncees, stacksDuDossier(d), `ai-context/README.md, ligne \`${d}/\` : stacks annoncées ≠ stacks de AI_CONTEXT`);
+  }
+  assert.deepEqual(fautes, [], fautes.join('\n'));
+});
+
+test('H2quater — `download-ai-context.sh` couvre chaque dossier de `AI_CONTEXT`, avec les bonnes stacks', () => {
+  const sh = read('scripts/download-ai-context.sh');
+  const lignes = sh.split('\n');
+  const departs = lignes.flatMap((l, i) => (/^echo "▸ /.test(l) ? [i] : []));
+  assert.ok(departs.length >= 5, `montage : ${departs.length} blocs « ▸ » lus dans le script`);
+  const couverts = new Map();
+  for (const [k, i] of departs.entries()) {
+    const bloc = lignes.slice(i, departs[k + 1] ?? lignes.length).join('\n');
+    // Le dossier n'est pas déduit du TITRE (« React Native / Expo » ≠ `react-native-expo`) mais
+    // des chemins que le bloc écrit ou cite : c'est ce que le bloc FAIT, pas comment il s'appelle.
+    const dossiers = new Set([...bloc.matchAll(/(?:\$DEST|ai-context)\/([a-z0-9-]+)\//g)].map((m) => m[1]));
+    assert.equal(dossiers.size, 1, `le bloc « ${lignes[i].slice(7, 40)} » doit désigner UN dossier de ai-context/, vu : ${[...dossiers].join(', ') || '(aucun)'}`);
+    const d = [...dossiers][0];
+    const annonce = /\(stacks?\s*:\s*([^)]+)\)/.exec(lignes[i]);
+    assert.ok(annonce, `le bloc « ${d} » n'annonce aucune stack — écris « (stacks : … ) » dans son en-tête`);
+    assert.deepEqual(annonce[1].split('·').map((x) => x.trim()).filter(Boolean).sort(), stacksDuDossier(d),
+      `download-ai-context.sh, bloc « ${d} » : stacks annoncées ≠ stacks de AI_CONTEXT`);
+    couverts.set(d, true);
+  }
+  assert.deepEqual([...couverts.keys()].sort(), DOSSIERS_AI(),
+    'un dossier de AI_CONTEXT n\'a aucun bloc dans download-ai-context.sh : `--refresh` livrerait un dossier vide');
+});
 // ─────────────────────────────────────────────────────────────────────────────
 // H3 — prérequis. Le Lot A a supprimé le code d'accès ; le wizard ne pose plus les mêmes
 // questions ; et la stack vitrine exige un Node plus récent que le kit lui-même (Astro 7).

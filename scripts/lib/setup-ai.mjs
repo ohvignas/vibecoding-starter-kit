@@ -14,6 +14,9 @@ import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIX
 import { refCommande, NOTE_CODEX_COMMANDES } from './commands-list.mjs';
 import { cursorDeeplink } from './deeplink.mjs';
 import { estAdopte } from './adoption.mjs';
+// Le fichier que CHAQUE check exige AVANT de lancer son script (`selectChecks` teste `needs` en
+// premier). Lu à la source, jamais recopié : c'est le même module que le kit copie en `.githooks/`.
+import { CHECKS } from '../../templates/hooks/framework/checks.mjs';
 
 // skillsInstalled=false (wizard lancé avec --no-skills) : on liste les commandes au lieu d'un faux ✅.
 export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skillsInstalled = true }) {
@@ -151,6 +154,25 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skil
   if (!adopte) {
     section('Scripts package.json');
     L.push(`- ℹ️ Aucun \`package.json\` pour l'instant : il naîtra avec le projet, quand ${cmd('new-project')} scaffoldera la stack à son étape \`07-scaffold.md\`. **Reviens cocher ces cases après.**`);
+    // LA CASE QUI MANQUAIT, ET LE MUR QU'ELLE ÉVITE. Sur une stack à deux applications, les
+    // scripts ci-dessous portent `--workspaces` : recopiés dans un `package.json` qui ne déclare
+    // pas le champ `workspaces`, ils donnent `npm error No workspaces found!` — et le hook, lui,
+    // affiche « ⚠ check typecheck : problème détecté ». L'élève a suivi la case à la lettre et le
+    // kit accuse son code. C'est exactement ce que le commentaire de `checks.mjs` interdit.
+    // La liste vient du manifeste (`STACKS.<stack>.workspaces`), jamais recopiée ici.
+    if (manifest.workspaces.length) {
+      L.push(`- [ ] **D'abord** : ce \`package.json\` est celui de la **racine**, et il doit déclarer les deux applications, sinon les scripts ci-dessous répondent \`No workspaces found!\` → \`"workspaces": ${JSON.stringify(manifest.workspaces)}\``);
+      L.push(`  - ⚠️ et chaque application (${manifest.workspaces.map((w) => `\`${w}/\``).join(', ')}) doit déclarer **ses** scripts \`typecheck\` et \`lint\` : une application qui n'en a pas fait échouer la commande de la racine, en la nommant.`);
+      // ⛔ LES FICHIERS `needs`, ET SEULEMENT CEUX QUI SERVENT ENCORE. `needs` est le prérequis de
+      // la commande PAR DÉFAUT d'un check (`checks.mjs`) : un check dont la stack DÉCLARE le
+      // script ne passe jamais par ce repli, donc n'a que faire de son fichier de config. La
+      // version d'avant les listait tous — elle faisait cocher « pose un `biome.json` » à une
+      // vitrine dont les deux applications lintent avec eslint, pour un outil qu'aucun scaffold
+      // n'installe. La liste reste DÉRIVÉE : qu'une stack cesse de déclarer son script, et le
+      // fichier de son repli réapparaît ici.
+      const requis = [...new Set(manifest.checks.preCommit.filter((id) => !manifest.scripts?.[id]).map((id) => CHECKS[id]?.needs).filter(Boolean))];
+      if (requis.length) L.push(`- [ ] **Et à la racine, à côté du \`package.json\`** : ${requis.map((f) => `\`${f}\``).join(' + ')} — le hook vérifie que ces fichiers sont là **avant** de lancer le script. S'il en manque un, le check ne rougit pas : il se **saute**, et le pre-commit sort vert sans avoir rien vérifié.`);
+    }
     for (const [k, v] of Object.entries(manifest.scripts)) L.push(`- [ ] "${k}": "${v}"`);
   }
   L.push('');
