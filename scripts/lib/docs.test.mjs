@@ -719,3 +719,43 @@ test('H8ter — formateur : décrit ce que le kit copie VRAIMENT dans un projet'
 });
 
 process.on('exit', () => { for (const p of PROJETS.values()) fs.rmSync(path.dirname(p), { recursive: true, force: true }); });
+
+// H2quinquies — LE README DIT CE QUE LA STACK VITRINE COÛTE, ET CE QUE PUBLIER N'ENTRAÎNE PAS.
+//
+// POURQUOI CE GARDE EXISTE. Le README est l'endroit où quelqu'un CHOISIT sa stack — pas
+// `stacks/vitrine/README.md`, qu'il ne lira qu'après. Or la vitrine a cessé d'être la stack
+// gratuite et sans serveur : elle demande un compte Convex et un VPS. Quelqu'un qui monte le
+// site d'un commerce le découvrirait après avoir scaffoldé, c'est-à-dire trop tard pour
+// changer d'avis sans tout refaire.
+//
+// Et une seconde chose, plus contre-intuitive encore : publier depuis le dashboard ne met pas
+// le site à jour tout seul, parce que le public lit Convex AU BUILD. C'est la propriété qui
+// surprend le premier jour ; elle appartient au moment du choix, pas à la documentation
+// d'exploitation.
+//
+// Le contrôle porte sur le BLOC de la stack vitrine — pas sur le fichier : le README parle de
+// coûts IA (`docs/COUTS.md`) et de Docker ailleurs, et un `includes` global serait crédité par
+// des phrases sans rapport. C'est le défaut que ce dépôt a rencontré huit fois.
+test('H2quinquies — le README dit, là où on CHOISIT sa stack, ce que la vitrine coûte et ce que publier n\'entraîne pas', () => {
+  const readme = read('README.md');
+
+  const iTable = readme.indexOf('| 🌐 **Vitrine** |');
+  assert.ok(iTable > 0, 'montage : la ligne « Vitrine » du tableau des stacks a disparu');
+  const iSuite = readme.indexOf('## ', iTable);
+  const bloc = readme.slice(iTable, iSuite > 0 ? iSuite : readme.length);
+
+  for (const [motif, quoi] of [
+    [/compte Convex/i, 'un **compte Convex** est nécessaire'],
+    [/VPS/, 'un **VPS** est nécessaire — la vitrine n\'est plus posable sur un hébergement statique'],
+    [/pas.{0,20}(gratuit|un site gratuit)/i, 'dire explicitement que ce n\'est PAS gratuit — sans ça le lecteur suppose l\'ancien modèle'],
+    [/au build/i, 'le site public lit Convex **au build** — c\'est ce qui explique la suite'],
+    [/purg/i, 'la page doit être **purgée** : publier ne suffit pas'],
+  ]) {
+    assert.match(bloc, motif, `README, bloc de la stack vitrine : ${quoi} — jamais dit à l'endroit où on choisit`);
+  }
+
+  // La sortie de secours : sans elle, l'avertissement décrit un mur sans porte, et quelqu'un
+  // dont le besoin est un site gratuit qui change deux fois par an croit que le kit ne le sert
+  // plus. Astro seul reste la bonne réponse pour ce cas-là.
+  assert.match(bloc, /Markdown/, 'README, bloc vitrine : dire ce qu\'on fait quand on veut rester gratuit (Astro seul + Markdown) — un avertissement sans alternative pousse à choisir quand même');
+});

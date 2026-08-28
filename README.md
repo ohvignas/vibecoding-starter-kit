@@ -357,6 +357,15 @@ Les trois commandes longues arrivent en plus avec un **dossier d'étapes à côt
 
 Chaque stack : explication débutant, **docs officielles vérifiées**, `AGENTS.md`, `llms.txt` téléchargeables (`ai-context/`), et un **exemple de feature** (`docs/examples/`).
 
+> [!IMPORTANT]
+> **La stack Vitrine, c'est deux applications et un serveur — à savoir avant de la choisir.**
+>
+> `site/` sert les pages au public, `dashboard/` sert à les écrire, et les deux parlent au même Convex. Ça demande donc un **compte Convex** et un **VPS** (Docker) : ce n'est **pas** un site gratuit posé sur un hébergement statique. En échange, quelqu'un qui ne code pas peut publier, avec des comptes et des rôles.
+>
+> Et une propriété qu'il vaut mieux connaître dès le départ : **le site public lit Convex au build, pas à chaque visite** — c'est ce qui le rend rapide et indexable. Publier depuis le dashboard ne suffit donc pas : la page concernée doit être **purgée** pour être re-rendue. Le kit livre la boucle qui le fait (outbox → purge par tag), mais c'est une pièce de plus à faire tourner.
+>
+> Pour un site qui change rarement et doit rester gratuit, un Astro seul avec du contenu en Markdown reste le bon outil — le kit ne vous y oblige pas.
+
 ## 📦 Ce qui est généré
 
 <details>
