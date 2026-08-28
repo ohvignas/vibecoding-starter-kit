@@ -323,6 +323,10 @@ const CONTRAINTES_MAQUETTE = [
   [/un seul <h1>/, 'un seul `<h1>` — le SEO se gagne ici, pas après'],
   [/h1 → h2 → h3 sans saut/, 'l\'ordre des titres sans saut'],
   [/Pas de JavaScript/, 'pas de JavaScript — le comportement sera réécrit de toute façon'],
+  [/mobile-first/i, 'le mobile-first — sans lui l\'outil dessine en desktop, et la mise en page mobile est à refaire'],
+  [/375px/, 'le seuil de 375px — un chiffre à vérifier, pas un « pense au mobile »'],
+  [/sm: md: lg:|md:|lg:/, 'les préfixes de breakpoint — sinon l\'outil invente ses propres media queries'],
+  [/figée FERMÉE|burger visible/, 'la nav mobile figée fermée — la seule lecture de « pas de JavaScript » qui ne perde pas le menu'],
 ];
 
 test('M1 — l\'étape design donne à l\'outil de maquette ses contraintes de sortie, AVANT qu\'il génère', () => {
@@ -336,11 +340,18 @@ test('M1 — l\'étape design donne à l\'outil de maquette ses contraintes de s
     assert.match(etape, motif, `05-design-maquette.md : la contrainte manque — ${quoi}`);
   }
 
-  // AVANT, pas après : donnée une fois la maquette validée, la contrainte ne sert plus à rien.
-  const iContraintes = etape.indexOf('Contraintes de sortie');
+  // RÉACTIF, pas prescriptif : on ne fait pas passer tout le monde par une cérémonie de
+  // contraintes. L'agent REGARDE ce qu'on lui donne, et ne sort le prompt que si la maquette
+  // n'est pas exploitable. Deux choses à tenir, donc — et l'ordre en découle :
+  //   · la puce de contrôle existe dans les cas (a)/(b), sinon personne ne regarde jamais ;
+  //   · le bloc suit, pour qu'on le lise au moment où on en a besoin.
   const iCas = etape.indexOf('### Cas (a) / (b)');
-  assert.ok(iContraintes > 0 && iCas > iContraintes,
-    'les contraintes doivent précéder les cas (a)/(b) : après la génération, elles ne coûtent plus zéro, elles coûtent une régénération');
+  const iControle = etape.indexOf('Regarde ce que tu reçois');
+  const iContraintes = etape.indexOf('Contraintes de sortie');
+  assert.ok(iControle > iCas && iControle > 0,
+    'les cas (a)/(b) doivent dire à l\'agent de REGARDER la maquette reçue — sans ce contrôle, le prompt de secours n\'est jamais sorti');
+  assert.ok(iContraintes > iControle,
+    'le bloc de contraintes se lit APRÈS le contrôle : c\'est un prompt de secours, pas une étape obligatoire');
 
   // Le HTML d'une maquette n'est pas le produit — sans cette phrase, une IA colle l'export
   // dans `src/` et le kit hérite du Tailwind d'un autre outil.

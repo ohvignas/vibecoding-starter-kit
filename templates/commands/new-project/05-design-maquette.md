@@ -14,11 +14,19 @@ La **maquette est le pivot** : on fixe le design **avant** de coder, on **itère
 
 L'ordre du travail dépend du cas : si une maquette existe déjà (a/b), on en **dérive** le design ; s'il n'y en a pas (c), on fixe le **design d'abord**, puis on dessine.
 
-### ⛔ AVANT de générer une maquette dans un outil externe — donne-lui les contraintes de sortie
+### Cas (a) / (b) — une maquette existe → on en dérive le design
+1. Récupère la maquette dans `maquette/` :
+   - **(a) Stitch** : connecte le MCP (voir `docs/A-FAIRE.md`), `list_projects` → `list_screens` → pour chaque écran validé `get_screen` (`htmlCode`) → écris-le dans `maquette/<ecran>.html`.
+   - **(b) Ailleurs** : demande à l'utilisateur de **déposer ses exports/captures dans `maquette/`** (un fichier par écran) ; ça te sert de référence visuelle.
+   - ⛔ **Regarde ce que tu reçois avant d'en dériver quoi que ce soit** : `style=""` en dur, `background-image` pour une image de contenu, du JavaScript, aucun rendu mobile ? Alors la maquette n'est pas exploitable telle quelle — voir juste en dessous.
+2. **Dérive `docs/design.md`** de la maquette validée (les deux volets « Le design system » ci-dessous).
+3. Génère la galerie **`maquette/index.html`** : une page qui liste chaque écran dans une `<iframe>` (titre + aperçu), pour tout valider d'un coup d'œil.
 
-Claude Design, Stitch, Lovable, v0… chacun a **ses habitudes** : `style=""` en dur, images en `background-image`, du JavaScript, des `<div>` partout. Un export fait à leur façon coûte des heures de reprise à l'intégration — et l'utilisateur ne le découvre qu'après avoir validé sa maquette.
+### La maquette fournie ne convient pas ? donne à l'utilisateur le prompt à recoller dans son outil
 
-**Si l'utilisateur s'apprête à générer sa maquette dans un outil, donne-lui d'abord ce bloc à coller dans son prompt** (adapte la 1ʳᵉ ligne à la stack : `Astro 7 + Tailwind v4` en vitrine, `React + Tailwind v4` en saas/desktop) :
+Claude Design, Stitch, Lovable, v0… chacun a **ses habitudes** : `style=""` en dur, images en `background-image`, du JavaScript, des `<div>` partout, et un rendu **desktop seulement**.
+
+**Tu ne demandes rien tant que la maquette convient.** Mais si celle qu'on te donne porte un de ces défauts, ne la reprends pas à la main : **donne à l'utilisateur ce bloc à recoller dans son outil**, il régénère, et tu repars d'un export propre. Adapte la 1ʳᵉ ligne à la stack (`Astro 7 + Tailwind v4` en vitrine, `React + Tailwind v4` en saas/desktop) :
 
 ```
 Contraintes de sortie — le HTML sera intégré dans Astro 7 + Tailwind v4 :
@@ -39,19 +47,21 @@ Contraintes de sortie — le HTML sera intégré dans Astro 7 + Tailwind v4 :
    l'ordre h1 → h2 → h3 sans saut.
 8. Pas de JavaScript. Les composants interactifs figés dans leur état
    initial, avec un commentaire décrivant le comportement attendu.
+9. Responsive mobile-first, pas seulement desktop. Les classes de base
+   sont le rendu MOBILE ; les écrans plus larges s'obtiennent avec les
+   préfixes sm: md: lg:. Chaque section doit tenir sur 375px de large
+   sans débordement horizontal.
+10. Pour chaque section, dis en commentaire ce qui change en mobile :
+   grille qui passe en une colonne, ordre des blocs inversé, élément
+   masqué. La navigation mobile est figée FERMÉE (burger visible, menu
+   non déployé) avec le comportement décrit en commentaire.
 ```
 
 **Ce que chaque contrainte t'achète, à l'intégration :** le `data-section` donne les **points de découpe en composants** sans relire le HTML · les `width`/`height` explicites évitent le décalage de mise en page au chargement · l'ordre des titres et le `<h1>` unique, c'est le SEO qui est déjà gagné · le CDN Tailwind dans le `<head>` fait que la maquette **s'affiche seule** dans `maquette/index.html`, sans build · et « pas de JavaScript » évite de reprendre un comportement que tu vas de toute façon réécrire.
 
-⚠️ **La maquette n'est pas le produit.** Ce HTML sert de **référence visuelle** et de découpe — tu réécris les composants dans la stack, tu ne colles pas l'export dans `src/`.
+⛔ **Le mobile-first n'est pas une option, et c'est la contrainte qu'on oublie.** Un outil laissé libre dessine en desktop : à l'intégration, il faut **refaire toute la mise en page mobile** — c'est-à-dire refaire la maquette, sur le support où arrive la majorité du trafic d'un site vitrine. Demandé **avant**, ça ne coûte rien ; demandé après, ça coûte une seconde maquette. Et fais **valider les deux rendus** — pas seulement le desktop : ouvre `maquette/index.html` et réduis la fenêtre à **375px**.
 
-### Cas (a) / (b) — une maquette existe → on en dérive le design
-1. Récupère la maquette dans `maquette/` :
-   - **(a) Stitch** : connecte le MCP (voir `docs/A-FAIRE.md`), `list_projects` → `list_screens` → pour chaque écran validé `get_screen` (`htmlCode`) → écris-le dans `maquette/<ecran>.html`.
-   - **(b) Ailleurs** : demande à l'utilisateur de **déposer ses exports/captures dans `maquette/`** (un fichier par écran) ; ça te sert de référence visuelle.
-   - ⛔ **Dans les deux cas, si la maquette n'est pas encore générée**, donne d'abord les **contraintes de sortie** ci-dessus : c'est le seul moment où elles coûtent zéro.
-2. **Dérive `docs/design.md`** de la maquette validée (les deux volets « Le design system » ci-dessous).
-3. Génère la galerie **`maquette/index.html`** : une page qui liste chaque écran dans une `<iframe>` (titre + aperçu), pour tout valider d'un coup d'œil.
+⚠️ **La maquette n'est pas le produit.** Ce HTML sert de **référence visuelle** et de découpe — tu réécris les composants dans la stack, tu ne colles pas l'export dans `src/`.
 
 > Beaucoup d'écrans ? **délègue un sous-agent par écran** pour les importer/normaliser sur `docs/design.md` (mêmes skills : `AGENTS.md → « Règle design »`).
 
