@@ -79,6 +79,11 @@ test('self-hosted — livré au projet (Claude, stacks Convex) ET dans le plugin
 
 test('self-hosted — les règles de stack y renvoient (saas · vitrine, les deux assistants)', () => {
   for (const f of ['stacks/saas/AGENTS.md', 'stacks/vitrine/AGENTS.md', '.claude/skills/stack-saas/SKILL.md', '.claude/skills/stack-vitrine/SKILL.md']) {
-    assert.match(read(f), /convex-self-hosted/, `${f} : doit pointer vers le skill d'auto-hébergement`);
+    const t = read(f);
+    assert.match(t, /convex-self-hosted/, `${f} : doit nommer le skill d'auto-hébergement`);
+    // Le renvoi doit pointer AUSSI vers ce qui existe dans TOUT projet Convex : pour Cursor et
+    // Codex, le SKILL.md n'est pas livré (le kit leur donne des règles, pas des skills). Citer le
+    // seul skill promettrait un fichier absent — un renvoi mort dès la première lecture.
+    assert.match(t, /ai-context\/convex\/self-hosting\.md/, `${f} : doit renvoyer au guide livré partout, pas seulement au skill`);
   }
 });
