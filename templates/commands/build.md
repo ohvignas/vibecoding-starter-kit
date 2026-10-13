@@ -11,6 +11,7 @@ Tu exécutes `docs/ROADMAP.md` **une tranche à la fois**, en montrant un résul
 0. **Pas de `docs/ROADMAP.md` ? Tu t'arrêtes ici.** C'est le cas d'un projet **existant** que le kit a adopté (`npx create-vibecoding-kit@latest --adopt`) : il a déjà son code, et le kit n'y pose ni PRD, ni roadmap, ni jalons. **Ne scaffolde rien, ne crée aucun fichier de fondation, n'invente aucun jalon** — tu écraserais un projet qui tourne. Dis-le en une phrase, puis renvoie à **`/next`** : c'est lui qui lit `docs/ETAT-DES-LIEUX.md` et propose la prochaine action sur CE projet-là. Tout ce qui suit — **« Jalon 0 » compris** — suppose une roadmap, et ne s'applique donc pas.
 1. **Lis `docs/ROADMAP.md`** → prends le **1er jalon non coché** dont les dépendances sont cochées. (Rien n'est en mémoire volatile : la roadmap est la source de vérité, relue à chaque tour.)
 2. **Plan** : si `docs/superpowers/plans/NN-*.md` du jalon n'existe pas → crée-le avec `superpowers:writing-plans` (dérivé du PRD + `docs/design.md` + la **maquette** `maquette/` (l'écran cible du jalon) + `docs/DOMAINS.md` pour les domaines).
+   - **Best practices d'abord** : avant d'écrire le plan, charge le(s) **skill(s) officiels de best practices** de la stack (Convex : `convex-design`, `convex-authz`, `convex-crons`… ; Better Auth : `better-auth-best-practices`, `better-auth-security-best-practices`…) et fais-en des tâches du plan. Le jalon respecte les règles officielles **dès le plan** — pas au moment de la revue.
 3. **Exécute** le plan avec `superpowers:subagent-driven-development` (TDD + review + fix). C'est la **boucle** du projet.
 4. **Montre le visuel** (voir **« Règle de vérification »** dans `AGENTS.md`) : lance l'app (`docs/RUN.md`) et vérifie le `✅ Ce que tu vois` du jalon — navigateur (web), simulateur (mobile), fenêtre (desktop), screenshot à l'appui. **Compare à l'écran correspondant de `maquette/`** : le rendu doit s'en approcher. Non atteint → `superpowers:systematic-debugging`, on ne passe pas au suivant.
 5. **Rejoue le parcours en vrai, mais pas dans ce fil** : délègue l'end-to-end au sous-agent **`test-runner`** (contexte frais, MCP Playwright en web · Maestro en mobile · chrome-devtools en desktop) avec le flux, les critères du jalon et l'écran de départ. Toi, tu as écrit le code : ton propre test ne prouve rien.
@@ -24,6 +25,7 @@ Tu exécutes `docs/ROADMAP.md` **une tranche à la fois**, en montrant un résul
 
 ## Jalon 0 (fondations)
 Joue `docs/A-FAIRE.md` (plugins/skills/MCP), scaffold la stack, fais **démarrer** l'app. Visuel = l'app boote.
+Puis **joue les skills de best practices de la stack** (`convex-design`, `convex-auth`, `convex-authz`, `better-auth-best-practices`…) et note leurs exigences : elles cadrent le schéma, l'auth et les permissions de tous les jalons suivants.
 
 ## Fini quand
 Tous les jalons de `docs/ROADMAP.md` sont cochés **et** chaque `✅ Ce que tu vois` a été constaté en vrai. Si un blocage externe empêche d'aller au bout → dis exactement ce qui manque.

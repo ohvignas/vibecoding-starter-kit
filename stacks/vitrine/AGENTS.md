@@ -96,6 +96,15 @@ Le contenu vit dans **Convex**, et deux applications le partagent : `site/` (Ast
 - ⚠️ **En modèle 1, publier ne suffit pas** : le contenu change dans Convex, les pages publiques restent celles du dernier build. Le rebuild fait alors partie de la publication, pas d'une corvée du lendemain — la commande est `npm run build --workspace site`, puis la reconstruction de l'image du site sur le VPS.
 - En **modèle 2**, il n'y a rien à reconstruire : `drain` POSTe sur `/api/revalidate`, le tag `page:<slug>` est purgé, la requête suivante re-rend cette page. Les variables nécessaires côté Convex sont le secret de revalidation **et** l'adresse publique du site — une variable distincte du `SITE_URL` de Better Auth.
 
+## 🧠 Skills officiels de la stack — à consulter AVANT de planifier
+Le wizard a installé les **skills officiels** de la stack. **Charge-les en premier** — avant d'écrire le schéma, la tech spec, la roadmap ou le plan d'un jalon :
+- **Schéma & données Convex** : `convex-design` (schéma, index, patterns) · `convex-expert` · `convex-crons` · `convex-seed`.
+- **Auth & permissions** : `convex-auth` · `convex-authz` (qui peut lire/écrire quoi — vaut pour le `dashboard/`).
+- **Better Auth** : `better-auth-best-practices` · `better-auth-security-best-practices` · `create-auth` · `organization-best-practices` · `email-and-password-best-practices` · `two-factor-authentication-best-practices`.
+- **Performance & coûts** : `convex-optimize` · `convex-insights` · `convex-cost`.
+- **Avant de livrer / auditer** : `convex-reviewer` · `convex-authz` · `convex-launch-readiness` · `convex-test` · `convex-verify` · `convex-monitor`.
+Le **skill officiel fait foi** (il est à jour) : si une règle de cette page et un skill se contredisent, **suis le skill** et corrige cette page.
+
 ## Sécurité & bonnes pratiques
 - **Aucun secret dans les pages publiques** : ce qui part au navigateur est public par construction. Les secrets vivent dans les variables d'environnement Convex (`npx convex env set`).
 - Formulaire de contact → service externe (Web3Forms/Formspree), la clé publique va dans `.env` (préfixe `PUBLIC_`).

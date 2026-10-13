@@ -28,6 +28,15 @@ Les pages publiques lisent Convex **au BUILD** : client serveur `ConvexHttpClien
 6. **SEO/GEO** — sitemap + `site/public/robots.txt` (IA autorisées) + `<SEO />`/JSON-LD + `site/public/llms.txt`. ⚠️ Ces fichiers vont dans `site/public/`, **pas à la racine du projet** : posés à la racine, rien ne les sert et le GEO tombe en silence.
 7. **Déploiement** — Docker sur un VPS : une image par application, reverse-proxy TLS, Convex en cloud. **Modèle 1** : le rebuild fait partie de la publication — `npm run build --workspace site`, puis la reconstruction de son image. **Modèle 2** : rien à reconstruire, mais l'image du site est un serveur Node (`@astrojs/node` en `standalone`), et **une seule réplique** tant que le cache n'est pas partagé — `memoryCache()` est par processus, une purge n'atteint que l'instance qui a reçu l'appel.
 
+## 🧠 Skills officiels de la stack — à consulter AVANT de planifier
+Le wizard a installé les **skills officiels** de la stack. **Charge-les en premier** — avant d'écrire le schéma, la tech spec, la roadmap ou le plan d'un jalon :
+- **Schéma & données Convex** : `convex-design` · `convex-expert` · `convex-crons` · `convex-seed`.
+- **Auth & permissions** : `convex-auth` · `convex-authz` (vaut pour le `dashboard/`).
+- **Better Auth** : `better-auth-best-practices` · `better-auth-security-best-practices` · `create-auth` · `organization-best-practices`.
+- **Performance & coûts** : `convex-optimize` · `convex-insights` · `convex-cost`.
+- **Avant de livrer / auditer** : `convex-reviewer` · `convex-authz` · `convex-launch-readiness` · `convex-test` · `convex-verify`.
+Le **skill officiel fait foi** (il est à jour) : si une règle de cette page et un skill se contredisent, **suis le skill** et corrige cette page.
+
 ## Pièges connus
 - **L'ordre de création** : les scripts de la racine ratissent les deux applications. Posés avant que `dashboard/` existe, ils échouent à chaque écriture de fichier — et le cas « racine + `site/` seul » sort en 0 **sans un mot**, la moitié du projet jamais vérifiée.
 - **`astro check`** : sans ce script dans `site/`, le typecheck retombe sur `tsc --noEmit`, qui ne lit pas les `.astro` et sort vert sans rien vérifier.
