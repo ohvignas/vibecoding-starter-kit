@@ -28,7 +28,10 @@ npm-debug.log*
 # Relance scripts/download-ai-context.sh pour le mettre à jour.
 
 # artefacts CLI skills / caveman (runs réels)
-.agents/
+# `.agents/` porte AUSSI la marketplace Codex du dépôt (`.agents/plugins/`) : on ignore son
+# contenu, sauf `plugins/`, qui doit être versionné pour que le plugin soit installable.
+.agents/*
+!.agents/plugins/
 skills-lock.json
 *.tgz
 
