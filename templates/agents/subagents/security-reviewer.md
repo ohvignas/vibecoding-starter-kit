@@ -19,6 +19,8 @@ osv-scanner scan source -r .
 ```
 Vérifie aussi que **chaque paquet importé existe vraiment** (~20 % des paquets suggérés par les LLM sont inventés).
 
+> **Escalade optionnelle (web).** Quand une cible de **staging** tourne et que Docker + une clé de modèle sont disponibles, un **pentest IA** (Shannon — le guide « Pentest IA » du kit) confirme une hypothèse par un **vrai exploit** : « pas d'exploit, pas de rapport ». Tu le **proposes**, tu ne l'imposes pas — ses exploits sont **mutatifs** (staging uniquement, **jamais** la production), et il n'est **jamais** requis pour ton `PROUVÉ`.
+
 ## 2. Tests négatifs — le cœur de la preuve
 Un avis n'est pas une preuve : une **requête qui échoue comme prévu** l'est. Selon la feature :
 - **Auth** : route protégée **sans** cookie → 401 ; avec le cookie d'un **autre** utilisateur → 403. Contrôle **côté serveur**, jamais seulement en middleware. Aucun rôle lu depuis le client.

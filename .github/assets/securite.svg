@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" width="1000" height="420" role="img" aria-label="Trois lignes de défense : scanners gratuits, agent security-reviewer, et pentest IA Shannon en option">
+  <defs>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .h { font-size: 31px; font-weight: 800; fill: #0f172a; }
+      .s { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; fill: #be123c; }
+      .cardh { font-size: 18px; font-weight: 800; fill: #0f172a; }
+      .cardp { font-size: 14px; fill: #475569; }
+      .tag { font-size: 12px; font-weight: 800; }
+      .emoji { font-size: 32px; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="418" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
+
+  <rect x="48" y="36" width="128" height="32" rx="16" fill="#ffe4e6"/>
+  <circle cx="68" cy="52" r="5" fill="#e11d48"/>
+  <text class="t eyebrow" x="84" y="57">SÉCURITÉ</text>
+
+  <text class="t h" x="48" y="108">Trois lignes de défense.</text>
+  <text class="t s" x="48" y="140">Du gratuit et déterministe d'abord. Le pentest IA ensuite — seulement si tu le veux.</text>
+
+  <!-- carte 1 -->
+  <rect x="40" y="172" width="290" height="186" rx="20" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text class="t emoji" x="80" y="226">🔎</text>
+  <text class="t cardh" x="72" y="266">Scanners gratuits</text>
+  <text class="t cardp" x="72" y="294">Sans compte, instantanés :</text>
+  <text class="t mono" x="72" y="318">semgrep · gitleaks</text>
+  <text class="t mono" x="72" y="340">osv-scanner</text>
+
+  <!-- carte 2 -->
+  <rect x="355" y="172" width="290" height="186" rx="20" fill="#fff1f2" stroke="#fecdd3" stroke-width="1.5"/>
+  <text class="t emoji" x="395" y="226">🛡️</text>
+  <text class="t cardh" x="387" y="266">security-reviewer</text>
+  <text class="t cardp" x="387" y="294">Tests négatifs : une requête</text>
+  <text class="t cardp" x="387" y="316">qui échoue comme prévu.</text>
+  <text class="t" x="387" y="342" font-size="13" font-weight="700" fill="#b91c1c">Verdict : PROUVÉ ou BLOQUÉ.</text>
+
+  <!-- carte 3 -->
+  <rect x="670" y="172" width="290" height="186" rx="20" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1.5"/>
+  <text class="t emoji" x="710" y="226">🎯</text>
+  <text class="t cardh" x="702" y="266">Shannon — optionnel</text>
+  <text class="t cardp" x="702" y="294">Pentest IA : il lit le code,</text>
+  <text class="t cardp" x="702" y="316">attaque la cible, prouve.</text>
+  <text class="t" x="702" y="342" font-size="13" font-weight="700" fill="#6d28d9">« Pas d'exploit, pas de rapport. »</text>
+
+  <rect x="40" y="374" width="920" height="32" rx="16" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
+  <text class="t" x="500" y="395" text-anchor="middle" font-size="14" font-weight="700" fill="#4338ca">Shannon n'est jamais un prérequis : rien dans le kit n'en dépend, et il ne tourne que sur du staging.</text>
+</svg>

@@ -47,8 +47,20 @@ Le **vibecoding**, c'est décrire ce que tu veux dans ta langue, et laisser une 
 
 **Ce qui se passe.** Tu décris ton idée. L'IA comprend, écrit un plan, dessine les écrans, en tire une feuille de route — puis construit tout, **écran par écran**, en te montrant le résultat à chaque fois.
 
+**Tous les plans, puis le build.** À la fin de la feuille de route, l'IA écrit **un plan par jalon** (toute l'app, d'un coup) — chaque plan charge les **skills officiels** et les **docs à jour**, et s'appuie sur la maquette si elle existe. Ensuite `/build` **enchaîne les jalons jusqu'au bout**.
+
+<p align="center">
+  <img src=".github/assets/plans.svg" alt="Un plan par jalon pour toute l'app, puis /build enchaîne jusqu'au bout" width="880">
+</p>
+
 <p align="center">
   <img src=".github/assets/deux-departs.svg" alt="Deux façons de commencer : de zéro, ou sur un projet existant" width="880">
+</p>
+
+**Le point d'étape, d'abord.** Quand tu dis « installe le projet », l'IA ne fonce pas : elle **liste ce qui est déjà là et ce qui manque**, te montre la liste, et **attend ton accord**. Projet neuf comme projet existant : rien ne part à moitié, aucune étape sautée en silence.
+
+<p align="center">
+  <img src=".github/assets/point-etape.svg" alt="Le point d'étape : inventaire « déjà là / à construire », puis accord demandé" width="880">
 </p>
 
 > **Une seule commande à retenir : `/help`.** Elle te dit toujours par où continuer.
@@ -78,6 +90,9 @@ Le **vibecoding**, c'est décrire ce que tu veux dans ta langue, et laisser une 
 | 🧬 | **Projet existant (`--adopt`)** | `npx create-vibecoding-kit@latest --adopt`, lancé **depuis** ton projet : la méthode arrive **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs. **Aucun fichier à toi n'est écrasé**, ton `package.json` non plus |
 | 🪟 | **Fiable & multi-OS** | `git init` + hooks actifs + commit initial ; testé en CI sur Windows/macOS/Linux × Node 20.12/22 |
 | 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : régénère les règles, les runbooks et les docs officielles de ta stack — ta zone perso n'est **jamais** touchée |
+| 🧭 | **Point d'étape** | avant d'installer, l'IA **liste ce qui est là et ce qui manque**, le montre, et **attend ton accord** — neuf comme projet existant : aucune étape sautée en silence |
+| 🗺️ | **Tous les plans d'un coup** | la fin de la roadmap génère **un plan par jalon** (toute l'app), chacun avec **skills + docs à jour + maquette** ; puis `/build` enchaîne jusqu'au bout (`--step` pour reprendre la main) |
+| 🎯 | **Pentest IA (optionnel)** | **Shannon** : un pentest IA web, en option — Action CI + SARIF, « pas d'exploit, pas de rapport ». **Jamais un prérequis** |
 | 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
@@ -236,6 +251,18 @@ Chaque stack a son README débutant : [`stacks/saas/README.md`](stacks/saas/READ
 - **Règle Preuve** — on ne déclare pas, on **prouve**. Trois statuts : `PROUVÉ` (commande + sortie brute + code 0) · `NON PROUVÉ` · `BLOQUÉ`. Un agent ne prononce jamais `PROUVÉ` sur son propre code, et **3 tentatives** sur le même bug suffisent : à la 3ᵉ, `BLOQUÉ`.
 - **Règle Réalité** — mieux vaut **lent et réel** que rapide et bidon : vraies données du vrai backend, chaque bouton câblé de bout en bout, la maquette reproduite à l'identique. Les mocks n'ont droit de cité que dans les tests.
 
+## 🛡️ La sécurité — trois lignes de défense
+
+<p align="center">
+  <img src=".github/assets/securite.svg" alt="Trois lignes de défense : scanners gratuits, security-reviewer, pentest IA Shannon en option" width="880">
+</p>
+
+1. **Gratuit et déterministe d'abord** : `semgrep`, `gitleaks`, `osv-scanner` (optionnels, sans compte) plus le **scan de secrets** en CI et le hook pre-commit.
+2. **La preuve par les tests négatifs** : l'agent **`security-reviewer`** rejoue une requête qui **doit échouer** (401/403, IDOR, XSS…) et rend un verdict **PROUVÉ / BLOQUÉ**.
+3. **Le pentest IA, si tu le veux** : **[Shannon](https://github.com/KeygraphHQ/shannon)** attaque une cible de **staging**, lit ton code, et ne rapporte que ce qu'il peut **exploiter**. Action CI + SARIF. **Optionnel** — voir [`guides/04-pentest-shannon.md`](guides/04-pentest-shannon.md).
+
+> Rien n'est exigé pour démarrer : le kit marche sans Docker ni clé. Shannon est une **escalade**, jamais un prérequis.
+
 ## 👥 L'équipe d'agents qui vérifie ton travail
 
 <p align="center">
@@ -286,6 +313,7 @@ L'IA te guide. À la fin de `/new-project`, tu as un **plan clair + un design + 
 | [`guides/01-comment-parler-a-l-IA.md`](guides/01-comment-parler-a-l-IA.md) | Comment demander ce que tu veux, sans être développeur |
 | [`guides/02-installer-les-outils.md`](guides/02-installer-les-outils.md) | Installer les outils (Node, git…) une fois pour toutes |
 | [`guides/03-securite-et-couts.md`](guides/03-securite-et-couts.md) | Sécurité et maîtrise des coûts IA |
+| [`guides/04-pentest-shannon.md`](guides/04-pentest-shannon.md) | Le pentest IA optionnel (Shannon) : quand, comment, prérequis |
 | [`docs/COUTS.md`](docs/COUTS.md) | Combien coûte une session, et comment la garder légère |
 
 Un mot te bloque ? Le **[glossaire du vibecodeur](guides/glossaire.md)** explique tout le vocabulaire (LLM, MCP, stack, MVP, hook…).

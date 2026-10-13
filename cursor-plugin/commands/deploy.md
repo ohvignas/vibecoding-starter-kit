@@ -7,6 +7,7 @@ Lis la stack dans `AGENTS.md`, puis applique le chemin correspondant. **Rappel s
 2. **Sécurité** : lance le sous-agent **`security-reviewer`** sur ce qui part en production. Son **`PROUVÉ`** est requis ; `NON PROUVÉ` ou `BLOQUÉ` → on ne déploie pas, on corrige.
 3. **Aucun secret dans le dépôt** : `git ls-files | grep -E '(^|/)\.env$'` doit être VIDE, et chaque clé listée dans `.env.example` doit exister chez l'hébergeur.
 4. Dis à l'utilisateur **ce que tu vas mettre en ligne** et **ce que ça coûte** (plan gratuit ou non) avant de lancer la première commande.
+5. **Pentest IA (optionnel — web uniquement)** : **si et seulement si** l'utilisateur a activé la case « Pentest avancé » de `docs/A-FAIRE.md` (ou ajouté `.github/workflows/shannon.yml`), le dernier rapport **Shannon** doit être **vert** — aucune vulnérabilité **exploitable** ≥ haute. Rien ne l'exige : sans lui, le gate reste celui du point 2. ⚠️ **Jamais de pentest contre la production** — staging, données jetables.
 
 ## SaaS (Convex + TanStack Start)
 1. Backend : `npx convex deploy` (crée le déploiement de production Convex).
