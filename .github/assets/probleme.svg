@@ -15,7 +15,7 @@
 
   <rect x="1" y="1" width="998" height="428" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
 
-  <rect x="48" y="38" width="168" height="32" rx="16" fill="#fee2e2"/>
+  <rect x="48" y="38" width="172" height="32" rx="16" fill="#fee2e2"/>
   <circle cx="68" cy="54" r="5" fill="#ef4444"/>
   <text class="t eyebrow" x="84" y="59">LE PROBLÈME</text>
 

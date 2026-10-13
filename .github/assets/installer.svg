@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" width="1000" height="480" role="img" aria-label="Installer le kit en 4 gestes : ouvrir un terminal, coller une commande, répondre aux questions, ouvrir son assistant et coller le prompt">
+  <defs>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .h { font-size: 31px; font-weight: 800; fill: #0f172a; }
+      .s { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; fill: #4338ca; }
+      .step { font-size: 14px; font-weight: 800; fill: #0f172a; }
+      .sub { font-size: 12px; fill: #64748b; }
+      .num { font-size: 13px; font-weight: 800; fill: #ffffff; }
+      .emoji { font-size: 30px; }
+      .arrow { font-size: 20px; fill: #a5b4fc; font-weight: 800; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; fill: #312e81; }
+      .pre { font-size: 14px; font-weight: 700; fill: #065f46; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="478" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
+
+  <rect x="48" y="34" width="148" height="32" rx="16" fill="#e0e7ff"/>
+  <circle cx="68" cy="50" r="5" fill="#4f46e5"/>
+  <text class="t eyebrow" x="84" y="55">INSTALLER</text>
+
+  <text class="t h" x="48" y="106">De zéro à un projet, en 4 gestes.</text>
+  <text class="t s" x="48" y="138">Deux minutes. Et si tu débutes, lis chaque geste jusqu'au bout — rien ne se saute.</text>
+
+  <!-- Prérequis -->
+  <rect x="48" y="160" width="904" height="44" rx="16" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text class="t pre" x="72" y="188">✅ Avant : Node.js ≥ 20.12 et git — rien d'autre. Pas de Docker, pas de compte, pas de clé.</text>
+
+  <!-- 4 gestes -->
+  <g>
+    <rect x="48" y="228" width="210" height="158" rx="18" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
+    <circle cx="72" cy="252" r="14" fill="#4f46e5"/>
+    <text class="t num" x="72" y="257" text-anchor="middle">1</text>
+    <text class="t emoji" x="153" y="256" text-anchor="middle">⌨️</text>
+    <text class="t step" x="66" y="298">Ouvre un terminal</text>
+    <text class="t sub" x="66" y="322">sur Mac : l'appli</text>
+    <text class="t sub" x="66" y="340">« Terminal »</text>
+    <text class="t mono" x="66" y="358">mkdir mon-app</text>
+    <text class="t mono" x="66" y="376">cd mon-app</text>
+  </g>
+  <text class="t arrow" x="272" y="312" text-anchor="middle">→</text>
+
+  <g>
+    <rect x="280" y="228" width="210" height="158" rx="18" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
+    <circle cx="304" cy="252" r="14" fill="#4f46e5"/>
+    <text class="t num" x="304" y="257" text-anchor="middle">2</text>
+    <text class="t emoji" x="385" y="256" text-anchor="middle">📦</text>
+    <text class="t step" x="298" y="298">Colle la commande</text>
+    <text class="t sub" x="298" y="322">puis appuie sur Entrée</text>
+    <text class="t mono" x="298" y="352">npm create</text>
+    <text class="t mono" x="298" y="370">vibecoding-kit@latest</text>
+  </g>
+  <text class="t arrow" x="504" y="312" text-anchor="middle">→</text>
+
+  <g>
+    <rect x="512" y="228" width="210" height="158" rx="18" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1.5"/>
+    <circle cx="536" cy="252" r="14" fill="#7c3aed"/>
+    <text class="t num" x="536" y="257" text-anchor="middle">3</text>
+    <text class="t emoji" x="617" y="256" text-anchor="middle">❓</text>
+    <text class="t step" x="530" y="298">Réponds aux questions</text>
+    <text class="t sub" x="530" y="322">4-5 questions simples :</text>
+    <text class="t sub" x="530" y="340">type d'app · assistant · nom</text>
+    <text class="t sub" x="530" y="368">aucune mauvaise réponse</text>
+  </g>
+  <text class="t arrow" x="736" y="312" text-anchor="middle">→</text>
+
+  <g>
+    <rect x="744" y="228" width="208" height="158" rx="18" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+    <circle cx="768" cy="252" r="14" fill="#16a34a"/>
+    <text class="t num" x="768" y="257" text-anchor="middle">4</text>
+    <text class="t emoji" x="849" y="256" text-anchor="middle">🧩</text>
+    <text class="t step" x="762" y="298">Ouvre ton assistant</text>
+    <text class="t sub" x="762" y="322">Cursor · Claude Code</text>
+    <text class="t sub" x="762" y="340">ou Codex — puis</text>
+    <text class="t sub" x="762" y="368">colle le prompt affiché</text>
+  </g>
+
+  <rect x="48" y="406" width="904" height="44" rx="16" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text class="t" x="500" y="434" text-anchor="middle" font-size="14" font-weight="700" fill="#1d4ed8">Ensuite : 2 gestes dans l'assistant (superpowers + autoriser les MCP), puis tape /help — il te guide.</text>
+</svg>

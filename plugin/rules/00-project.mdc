@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+
+Cursor lit **aussi** `AGENTS.md` : les règles du projet (Preuve, Réalité, vérification, sous-agents, secrets & coûts, mémoire) y sont écrites **une seule fois**. Ne les redéfinis pas ici — suis-les.
+
+- Tout est en **TypeScript strict**. Pas de `any` sans raison justifiée.
+- En cas de doute sur une API, lis les docs officielles de `ai-context/` (jamais d'API inventée).
+- Suis `AGENTS.md`, la roadmap `docs/ROADMAP.md`, les capacités `docs/DOMAINS.md`.
+- Secrets, actions destructives, coûts → « Règle secrets & coûts » d'`AGENTS.md`.
+- 3 tentatives ratées → « Règle Preuve » d'`AGENTS.md` (c'est elle qui fixe le plafond et la sortie).
+- Finir le travail, zéro placeholder, zéro report → « Boucle d'itération » d'`AGENTS.md`.

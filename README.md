@@ -23,6 +23,46 @@
 
 ---
 
+## 🧰 Installer — le guide débutant (2 minutes)
+
+<p align="center">
+  <img src=".github/assets/installer.svg" alt="Installer en 4 gestes : ouvrir un terminal, coller la commande, répondre aux questions, ouvrir son assistant" width="900">
+</p>
+
+**Avant de commencer** : il te faut **Node.js ≥ 20.12** et **git**. C'est tout — pas de Docker, pas de compte, pas de clé.
+
+**1. Ouvre un terminal.** Sur Mac, c'est l'application **Terminal** (⌘ + espace, tape « Terminal »). Crée un dossier vide et entre dedans :
+
+```bash
+mkdir mon-app && cd mon-app
+```
+
+**2. Colle cette commande, puis appuie sur Entrée** :
+
+```bash
+npm create vibecoding-kit@latest
+```
+
+Il te pose **4 à 5 questions** en français (type d'app, assistant, nom du projet…). Réponds comme ça vient : il n'y a pas de mauvaise réponse, et rien n'est écrit tant que tu n'as pas tout répondu (Ctrl-C pour tout annuler).
+
+**3. Ouvre ton assistant IA** — **Cursor**, **Claude Code** ou **Codex** — **dans ce dossier**, et **colle le prompt** qu'il t'a affiché (il est aussi enregistré dans `COLLE-MOI-DANS-L-IA.md`).
+
+**4. Il te reste deux gestes**, guidés par l'assistant : installer **superpowers** et **autoriser les MCP**. Puis tape :
+
+```
+/help
+```
+
+`/help` liste les 10 commandes et te dit **par où continuer**.
+
+> **Tu as déjà du code ?** Ne lance **pas** la commande ci-dessus. Va **dans le dossier de ton projet** et lance `npx create-vibecoding-kit@latest --adopt` : le kit installe la méthode **à côté** de ton code, sans écraser un seul fichier. C'est le **Cas B** de « Démarrage rapide », plus bas.
+
+> **Windows** : lance la commande avec `node` (pas de script `.sh`). Les hooks Git tournent sous **Git Bash**.
+
+> **Tu veux juste les commandes dans ton assistant, sans créer de projet ?** Installe le **plugin** — voir « [Installer la méthode en plugin](#-installer-la-méthode-en-plugin-sans-créer-de-projet) » plus bas.
+
+---
+
 ## 🧭 C'est quoi ce kit, en une minute
 
 **Tu ne sais pas coder ? C'est fait pour toi.**
@@ -93,6 +133,7 @@ Le **vibecoding**, c'est décrire ce que tu veux dans ta langue, et laisser une 
 | 🧭 | **Point d'étape** | avant d'installer, l'IA **liste ce qui est là et ce qui manque**, le montre, et **attend ton accord** — neuf comme projet existant : aucune étape sautée en silence |
 | 🗺️ | **Tous les plans d'un coup** | la fin de la roadmap génère **un plan par jalon** (toute l'app), chacun avec **skills + docs à jour + maquette** ; puis `/build` enchaîne jusqu'au bout (`--step` pour reprendre la main) |
 | 🎯 | **Pentest IA (optionnel)** | **Shannon** : un pentest IA web, en option — Action CI + SARIF, « pas d'exploit, pas de rapport ». **Jamais un prérequis** |
+| 🧩 | **Installable en plugin** | le dépôt est aussi un **plugin** (dossier `plugin/`, trois formats) : Claude Code, Codex, Cursor — les 10 commandes + 7 agents + règles, sans scaffolder |
 | 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
@@ -304,6 +345,32 @@ L'IA te guide. À la fin de `/new-project`, tu as un **plan clair + un design + 
 <p align="center">
   <img src=".github/assets/wizard.svg" alt="Aperçu du wizard : il génère AGENTS.md, .cursor/, docs/ et la CI, installe les skills, puis tu lances /new-project et /build" width="820">
 </p>
+
+## 🧩 Installer la méthode en plugin (sans créer de projet)
+
+Tu veux juste les **10 commandes**, les **7 agents** et les **règles de stack** dans ton assistant, sans rien scaffolder ? Le dépôt **est** aussi un plugin : un seul dossier `plugin/` qui porte les **trois formats** (Claude Code, Cursor, Codex) et trois marketplaces.
+
+**Claude Code**
+
+```bash
+claude plugin marketplace add ohvignas/vibecoding-starter-kit
+claude plugin install vibecoding@vibecoding
+```
+
+**Codex**
+
+```bash
+codex plugin marketplace add ohvignas/vibecoding-starter-kit
+# puis `/plugins` dans le CLI
+```
+
+**Cursor**
+
+```bash
+cp -r plugin ~/.cursor/plugins/local/vibecoding   # puis « Developer: Reload Window »
+```
+
+> Le plugin fournit la **méthode** ; il **ne scaffolde pas** (pas de git, CI, MCP, `maquette/`). Pour un projet complet : `npm create vibecoding-kit@latest`.
 
 ## 📚 Pour aller plus loin
 
