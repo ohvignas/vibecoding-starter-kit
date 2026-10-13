@@ -25,6 +25,6 @@ Puis propose le mode de travail. Garde ce cap : à chaque étape, redis en une p
 - [ ] **03** `new-project/03-stack-et-architecture.md` → `docs/ARCHITECTURE.md` (la stack, elle, est déjà fixée)
 - [ ] **04** `new-project/04-arborescence.md` → la section **« Arborescence »** de `docs/PRD.md` : les écrans, leur hiérarchie, la navigation, les URL
 - [ ] **05** `new-project/05-design-maquette.md` → `maquette/` + `docs/design.md`
-- [ ] **06** `new-project/06-roadmap.md` → `docs/agents/inventaire.md`, puis `docs/ROADMAP.md` et la section « Pour ton projet » de `docs/A-FAIRE.md`
+- [ ] **06** `new-project/06-roadmap.md` → `docs/agents/inventaire.md`, puis `docs/ROADMAP.md`, **tous les plans** (un par jalon) et la section « Pour ton projet » de `docs/A-FAIRE.md`
 - [ ] **07** `new-project/07-scaffold.md` → le projet **scaffoldé**, `AGENTS.md` complété, `docs/memory/`
 - [ ] **08** `new-project/08-fini-quand.md` → le contrôle de fin, et ce qu'on lance ensuite

@@ -22,7 +22,7 @@ export function forceAlwaysApplyFalse(text) {
 // vérification, puis les règles transverses — les règles UI (design, CSS) viennent après.
 export function renderProjectAgentsMd({ stack, assistant, commandsDir = '', loopSection = '', designRule = '', subagentsRule = '', verifyRule = '', realityRule = '', proofRule = '', secretsRule = '', cssMaquetteRule = '', memoryRules = '', learning = true }) {
   const learningSection = learning === false ? '' : `## Mode apprentissage
-Tu **enseignes**, tu n'interroges pas : **aucune question** de compréhension. À chaque étape franchie : (1) dis ce que tu viens de faire et **pourquoi ainsi** ; (2) **ajoute la leçon** à \`docs/APPRENTISSAGE.md\` — gabarit et règles en tête du fichier, numérotée, à la suite ; (3) \`/build --all\` reste **désactivé**. Il apprend en te regardant faire.
+Tu **enseignes**, tu n'interroges pas : **aucune question** de compréhension. À chaque étape franchie : (1) dis ce que tu viens de faire et **pourquoi ainsi** ; (2) **ajoute la leçon** à \`docs/APPRENTISSAGE.md\` — gabarit et règles en tête du fichier, numérotée, à la suite ; (3) \`/build\` **enchaîne tous les jalons** d'affilée. Il apprend en te regardant faire.
 
 `;
   // PROJET ADOPTÉ (`aucune`) : le kit ne pose ni `maquette/`, ni `docs/design.md`, ni

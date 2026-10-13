@@ -284,9 +284,9 @@ test('D6ter — /doctor reste d\'un bloc, et son verdict ne laisse aucun item ho
   assert.deepEqual(morts, [], `renvoi(s) vers un item inexistant de /doctor : ${morts.join(', ')}`);
 });
 
-test('D7 — /build : arguments transmis, E2E délégué, tag annoté ET publié, --all désactivé en apprentissage', () => {
+test('D7 — /build : arguments transmis, E2E délégué, tag annoté ET publié, jalons enchaînés jusqu\'au bout', () => {
   const t = cmd('build');
-  assert.match(t, /\$ARGUMENTS/, 'sans cette ligne, `--all` est perdu sur Cursor');
+  assert.match(t, /\$ARGUMENTS/, 'sans cette ligne, `--step` est perdu sur Cursor');
   assert.match(t, /test-runner/, 'le test E2E est délégué, pas joué dans le fil principal');
 
   // Le point de restauration doit ARRIVER sur le remote. La 1re version de ce test acceptait
@@ -319,8 +319,13 @@ test('D7 — /build : arguments transmis, E2E délégué, tag annoté ET publié
   assert.ok(ligneRemote, 'aucun contrôle du remote : au 1er jalon, `git push` échoue sur un `fatal:` que personne n\'explique');
   assert.match(ligneRemote, /gh repo create/, 'le cas « pas de remote » doit dire quoi faire');
 
-  const ligneAll = t.split('\n').find((l) => l.includes('--all') && /désactiv/i.test(l));
-  assert.ok(ligneAll, '`--all` doit être annoncé désactivé tant que le mode apprentissage est actif');
+  // Décision d'Antoine (2026-10-13) : /build ne repasse plus la main à chaque jalon — il ENCHAÎNE
+  // tous les jalons jusqu'au bout, et `--step` existe pour qui veut s'arrêter. Ce que le runbook
+  // doit toujours dire : le visuel + la leçon à chaque jalon, et l'arrêt sur un vrai blocage.
+  const ligneEnchain = t.split('\n').find((l) => /encha[în]/i.test(l) && /jalon/i.test(l));
+  assert.ok(ligneEnchain, '/build doit dire qu\'il enchaîne tous les jalons jusqu\'au bout');
+  assert.match(t, /--step/, '`--step` (reprendre la main jalon par jalon) doit être documenté');
+  assert.match(t, /BLOQUÉ|blocage/i, '/build doit dire sur quoi il s\'arrête : un vrai blocage ou une décision humaine');
 });
 
 // POURQUOI `cmd('help')` ET PAS LE RUNBOOK ENTIER, alors que trois runbooks sont découpés :
