@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "La méthode vibecoding en plugin : les 10 commandes, les 7 agents de revue et les règles de stack — pour Cursor, Claude Code et Codex. (Pour créer un projet complet, `npm create vibecoding-kit`.)",
-    "version": "0.23.1"
+    "version": "0.24.0"
   },
   "plugins": [
     {
       "name": "vibecoding",
       "source": "plugin",
       "description": "La méthode vibecoding en plugin : les 10 commandes, les 7 agents de revue et les règles de stack — pour Cursor, Claude Code et Codex. (Pour créer un projet complet, `npm create vibecoding-kit`.)",
-      "version": "0.23.1",
+      "version": "0.24.0",
       "license": "MIT",
       "keywords": [
         "vibecoding",

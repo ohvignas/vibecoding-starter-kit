@@ -132,6 +132,10 @@ export function kitOwnedFiles(stack, assistant) {
     // Le skill de stack est un DOSSIER dans le kit → viser le FICHIER, jamais le dossier
     // (refresh.mjs lit le chemin : un dossier donnerait EISDIR).
     pairs.push({ from: `.claude/skills/stack-${stack}/SKILL.md`, to: `.claude/skills/stack-${stack}/SKILL.md` });
+    // Le skill d'exploitation Convex AUTO-HÉBERGÉ : utile seulement là où la stack utilise Convex.
+    if ((AI_CONTEXT[stack] ?? []).includes('convex')) {
+      pairs.push({ from: '.claude/skills/convex-self-hosted/SKILL.md', to: '.claude/skills/convex-self-hosted/SKILL.md' });
+    }
   }
   return pairs;
 }

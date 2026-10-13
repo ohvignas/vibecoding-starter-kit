@@ -36,6 +36,9 @@ fetch "https://www.convex.dev/llms.txt"          "$DEST/convex/llms.txt"
 fetch "https://docs.convex.dev/llms-full.txt"    "$DEST/convex/llms-full.txt"
 fetch "https://convex.link/convex_rules.txt"     "$DEST/convex/convex_rules.txt"
 fetch "https://convex.link/convex_rules.mdc"     "$DEST/convex/convex_rules.mdc"
+# Auto-hébergement (VPS, Docker) : le guide officiel du backend open-source. Le cloud ne le couvre
+# pas — et c'est là que se paient les erreurs d'index, de rétention et de mémoire.
+fetch "https://raw.githubusercontent.com/get-convex/convex-backend/main/self-hosted/README.md" "$DEST/convex/self-hosting.md"
 
 echo "▸ TanStack Start (stacks : saas · vitrine)"
 fetch "https://tanstack.com/start/latest/llms.txt" "$DEST/tanstack-start/llms.txt"
