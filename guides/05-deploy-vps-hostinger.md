@@ -32,6 +32,25 @@ Le wizard a installé les **skills officiels Hostinger** (`hostinger/hostinger-a
 
 Demande à ton assistant de **les charger** quand tu touches au serveur : il ne devinera pas l'API.
 
+## Caddy ou Traefik, pour le routage et le HTTPS ?
+
+Les deux **routent** (chaque domaine vers le bon conteneur) et **obtiennent le certificat HTTPS tout seuls** (Let's Encrypt). La différence n'est pas la qualité, c'est **le nombre de choses à faire tourner**.
+
+| | **Caddy** (le défaut du kit) | **Traefik** |
+|---|---|---|
+| Config | un `Caddyfile` de 3 lignes | **labels** dans `docker-compose.yml` |
+| Découverte des conteneurs | **non** — tu déclares chaque domaine | **oui** — il lit tes labels tout seul |
+| Tableau de bord | non | **oui** (routers, services, erreurs) |
+| Middlewares (headers, limite de débit, auth) | dans le Caddyfile | en labels, très riches |
+| Accès au Docker socket | **aucun** | **oui** (`/var/run/docker.sock` — accès root) |
+| Courbe d'apprentissage | faible | moyenne (5 concepts à assimiler) |
+
+**Le critère, en une phrase :** **un** projet sur le VPS → **Caddy** ; **plusieurs** projets qui cohabitent, chacun son domaine → **Traefik**, ses labels et son tableau de bord.
+
+> 🔴 **Traefik monte le Docker socket** — et le socket Docker, c'est **root sur la machine**. Garde `:ro`, ne l'expose jamais, et ne mets **pas** de données sensibles en labels (le dashboard les affiche).
+
+Les deux exemples (le `Caddyfile` et le `docker-compose.yml` Traefik complet) sont dans la commande **`/deploy`**, section « VPS Hostinger (SSH) ».
+
 ## La marche à suivre, en 7 temps
 
 Elle vit dans la commande **`/deploy`**, section « **VPS Hostinger (SSH)** » — avec les commandes
