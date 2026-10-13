@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 440" width="1000" height="440" role="img" aria-label="La boucle de travail : brainstormer, planifier, construire en TDD, tester en vrai, revue et sécurité, puis livrer — et on recommence">
+  <defs>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .h { font-size: 31px; font-weight: 800; fill: #0f172a; }
+      .s { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; fill: #9333ea; }
+      .lbl { font-size: 14px; font-weight: 700; fill: #1e293b; }
+      .emoji { font-size: 30px; }
+      .arrow { font-size: 22px; fill: #a78bfa; font-weight: 800; }
+      .back { font-size: 14px; font-weight: 700; fill: #7c3aed; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="438" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
+
+  <rect x="48" y="36" width="196" height="32" rx="16" fill="#f3e8ff"/>
+  <circle cx="68" cy="52" r="5" fill="#9333ea"/>
+  <text class="t eyebrow" x="84" y="57">LA BOUCLE DE TRAVAIL</text>
+
+  <text class="t h" x="48" y="108">Chaque morceau suit le même cycle.</text>
+  <text class="t s" x="48" y="140">C'est ce qui distingue un projet qui tient d'une démo qu'on jette.</text>
+
+  <!-- noeuds -->
+  <g>
+    <circle cx="100" cy="250" r="46" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2"/>
+    <text class="t emoji" x="100" y="262" text-anchor="middle">🧠</text>
+    <text class="t lbl" x="100" y="322" text-anchor="middle">Comprendre</text>
+
+    <circle cx="260" cy="250" r="46" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2"/>
+    <text class="t emoji" x="260" y="262" text-anchor="middle">🗺️</text>
+    <text class="t lbl" x="260" y="322" text-anchor="middle">Planifier</text>
+
+    <circle cx="420" cy="250" r="46" fill="#eef2ff" stroke="#c7d2fe" stroke-width="2"/>
+    <text class="t emoji" x="420" y="262" text-anchor="middle">🧱</text>
+    <text class="t lbl" x="420" y="322" text-anchor="middle">Construire (TDD)</text>
+
+    <circle cx="580" cy="250" r="46" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="2"/>
+    <text class="t emoji" x="580" y="262" text-anchor="middle">🧪</text>
+    <text class="t lbl" x="580" y="322" text-anchor="middle">Tester en vrai</text>
+
+    <circle cx="740" cy="250" r="46" fill="#fff1f2" stroke="#fecdd3" stroke-width="2"/>
+    <text class="t emoji" x="740" y="262" text-anchor="middle">🛡️</text>
+    <text class="t lbl" x="740" y="322" text-anchor="middle">Revue + sécurité</text>
+
+    <circle cx="900" cy="250" r="46" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2"/>
+    <text class="t emoji" x="900" y="262" text-anchor="middle">🚀</text>
+    <text class="t lbl" x="900" y="322" text-anchor="middle">Livrer</text>
+  </g>
+
+  <text class="t arrow" x="180" y="256" text-anchor="middle">→</text>
+  <text class="t arrow" x="340" y="256" text-anchor="middle">→</text>
+  <text class="t arrow" x="500" y="256" text-anchor="middle">→</text>
+  <text class="t arrow" x="660" y="256" text-anchor="middle">→</text>
+  <text class="t arrow" x="820" y="256" text-anchor="middle">→</text>
+
+  <!-- retour -->
+  <path d="M900 300 C900 400 100 400 100 300" fill="none" stroke="#c4b5fd" stroke-width="3" stroke-dasharray="8 8"/>
+  <path d="M92 312 L100 296 L108 312 Z" fill="#c4b5fd"/>
+  <text class="t back" x="500" y="396" text-anchor="middle">et on recommence pour le morceau suivant</text>
+</svg>

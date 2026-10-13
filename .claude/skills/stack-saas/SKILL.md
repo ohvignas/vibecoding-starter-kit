@@ -31,6 +31,15 @@ npm run dev         # terminal 2
 - **TanStack Start** : routing fichiers type-safe (`src/routes`), server functions (`createServerFn`). Utilise son `llms.txt` : https://tanstack.com/start/latest/llms.txt
 - **Better Auth** : ⚠️ installe la **version de `better-auth` imposée par la doc Convex** (ex. `~1.6.x`), **pas** `@latest`. Génère le schéma via `npx auth generate` (setup composant Convex).
 
+## 🧠 Skills officiels de la stack — à consulter AVANT de planifier
+Le wizard a installé les **skills officiels** de la stack. **Charge-les en premier** — avant d'écrire le schéma, la tech spec, la roadmap ou le plan d'un jalon :
+- **Schéma & données** : `convex-design` · `convex-expert` · `convex-crons` · `convex-seed`.
+- **Auth & permissions** : `convex-auth` · `convex-authz` (qui peut lire/écrire quoi).
+- **Better Auth** : `better-auth-best-practices` · `better-auth-security-best-practices` · `create-auth` · `organization-best-practices` · `email-and-password-best-practices` · `two-factor-authentication-best-practices`.
+- **Performance & coûts** : `convex-optimize` · `convex-insights` · `convex-cost`.
+- **Avant de livrer / auditer** : `convex-reviewer` · `convex-authz` · `convex-launch-readiness` · `convex-test` · `convex-verify` · `convex-monitor`.
+Le **skill officiel fait foi** (il est à jour) : si une règle de cette page et un skill se contredisent, **suis le skill** et corrige cette page.
+
 ## Pièges connus
 - ❌ Ne copie pas le `AGENTS.md` du dépôt GitHub TanStack (il vise les contributeurs du framework, pas l'app).
 - ❌ `docs.convex.dev/pricing` n'existe pas → c'est `www.convex.dev/pricing`.

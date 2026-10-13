@@ -36,6 +36,15 @@ Je débute. Explique tes choix simplement et avance **une étape à la fois**.
 - Génère le schéma d'auth avec `npx auth generate` (setup composant Convex), pas `@better-auth/cli generate`.
 - Protège les routes privées côté serveur (vérifie la session avant de rendre la page).
 
+## 🧠 Skills officiels de la stack — à consulter AVANT de planifier
+Le wizard a installé les **skills officiels** de la stack. **Charge-les en premier** — avant d'écrire le schéma, la tech spec, la roadmap ou le plan d'un jalon :
+- **Schéma & données** : `convex-design` (schéma, index, patterns) · `convex-expert` (règles de fond) · `convex-crons` (tâches planifiées) · `convex-seed`.
+- **Auth & permissions** : `convex-auth` (mise en place) · `convex-authz` (qui peut lire/écrire quoi, propriété des données).
+- **Better Auth** : `better-auth-best-practices` · `better-auth-security-best-practices` · `create-auth` · `organization-best-practices` · `email-and-password-best-practices` · `two-factor-authentication-best-practices`.
+- **Performance & coûts** : `convex-optimize` · `convex-insights` · `convex-cost`.
+- **Avant de livrer / auditer** : `convex-reviewer` · `convex-authz` · `convex-launch-readiness` (avant la prod) · `convex-test` · `convex-verify` · `convex-monitor`.
+Le **skill officiel fait foi** (il est à jour) : si une règle de cette page et un skill se contredisent, **suis le skill** et corrige cette page.
+
 ## Sécurité & bonnes pratiques
 - Ne mets jamais de secret (clés API, tokens) dans le code client. Les secrets d'auth (`BETTER_AUTH_SECRET`, `SITE_URL`, OAuth) vont dans **Convex** via `npx convex env set …`, **pas** dans `.env`.
 - Commit Git après chaque étape qui fonctionne.

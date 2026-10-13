@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" width="1000" height="400" role="img" aria-label="Un cerveau de projet : à chaque session l'IA note un piège dans docs/memory/, et le relit au démarrage suivant">
+  <defs>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .h { font-size: 31px; font-weight: 800; fill: #0f172a; }
+      .s { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; fill: #0f766e; }
+      .cardh { font-size: 18px; font-weight: 800; fill: #0f172a; }
+      .cardp { font-size: 14px; fill: #475569; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; fill: #0f766e; }
+      .emoji { font-size: 34px; }
+      .arrow { font-size: 24px; fill: #5eead4; font-weight: 800; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="398" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
+
+  <rect x="48" y="36" width="212" height="32" rx="16" fill="#ccfbf1"/>
+  <circle cx="68" cy="52" r="5" fill="#0d9488"/>
+  <text class="t eyebrow" x="84" y="57">LE PROJET N'OUBLIE PAS</text>
+
+  <text class="t h" x="48" y="108">Un cerveau de projet qui grandit tout seul.</text>
+  <text class="t s" x="48" y="140">Dès que l'IA découvre un piège, elle l'écrit. Au démarrage suivant, elle le relit.</text>
+
+  <!-- carte 1 -->
+  <rect x="40" y="172" width="280" height="164" rx="20" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1.5"/>
+  <text class="t emoji" x="80" y="232">🧠</text>
+  <text class="t cardh" x="72" y="272">Pendant la session</text>
+  <text class="t cardp" x="72" y="300">un piège, une règle, une</text>
+  <text class="t cardp" x="72" y="320">décision — l'IA les note.</text>
+
+  <text class="t arrow" x="338" y="256" text-anchor="middle">→</text>
+
+  <!-- carte 2 -->
+  <rect x="362" y="172" width="280" height="164" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text class="t emoji" x="402" y="228">📓</text>
+  <text class="t cardh" x="394" y="268">docs/memory/</text>
+  <text class="t mono" x="394" y="294">gotchas.md — les pièges</text>
+  <text class="t mono" x="394" y="316">conventions.md</text>
+  <text class="t mono" x="394" y="338">decisions.md</text>
+
+  <text class="t arrow" x="660" y="256" text-anchor="middle">→</text>
+
+  <!-- carte 3 -->
+  <rect x="684" y="172" width="276" height="164" rx="20" fill="#f0fdfa" stroke="#99f6e4" stroke-width="1.5"/>
+  <text class="t emoji" x="724" y="232">🔁</text>
+  <text class="t cardh" x="716" y="272">Au démarrage suivant</text>
+  <text class="t cardp" x="716" y="300">la mémoire est réinjectée :</text>
+  <text class="t cardp" x="716" y="320">l'IA ne refait pas l'erreur.</text>
+</svg>

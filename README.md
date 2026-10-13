@@ -5,9 +5,9 @@
 <p align="center">
   <a href="#-démarrage-rapide"><strong>Démarrage rapide »</strong></a>
   ·
-  <a href="#-comment-ça-marche">Comment ça marche</a>
+  <a href="#-les-commandes">Les commandes</a>
   ·
-  <a href="guides/glossaire.md">📖 Glossaire du vibecodeur</a>
+  <a href="guides/glossaire.md">📖 Le glossaire du vibecodeur</a>
   ·
   <a href="https://github.com/ohvignas/vibecoding-starter-kit/issues">Signaler un bug</a>
 </p>
@@ -23,74 +23,68 @@
 
 ---
 
-Une **méthode de travail avec l'IA**, installée pour toi : 10 commandes, mémoire persistante, revue de code et de sécurité, **test E2E** (design + fonctionnel), filet de sécurité — pour **Cursor, Claude Code et Codex**.
+## 🧭 C'est quoi ce kit, en une minute
 
-Elle s'installe de **deux façons**, et c'est la même méthode dans les deux cas :
+**Tu ne sais pas coder ? C'est fait pour toi.**
 
-| 🆕 Tu pars de zéro | 🧬 **Tu as déjà un projet** |
-|---|---|
-| `npm create vibecoding-kit@latest` | `npx create-vibecoding-kit@latest --adopt` |
-| Le kit choisit la stack, écrit le code de départ, la CI, la maquette | Le kit **n'écrit aucun code** et **ne revendique pas ta techno**. Il pose la méthode **à côté** du tien, et fusionne ses règles **dans** ton `AGENTS.md` / `CLAUDE.md` entre deux marqueurs — tout ce qui est en dehors reste **à la ligne près** |
-| 4 stacks au choix : SaaS · Mobile · Desktop · Vitrine | **N'importe quelle techno** : Rails, Django, Laravel, Next.js, Symfony, Flutter… le kit ne regarde pas |
+Le **vibecoding**, c'est décrire ce que tu veux dans ta langue, et laisser une IA écrire le code. Ça marche étonnamment bien… à une seule condition : que l'IA ait le **bon contexte**.
 
-> [!IMPORTANT]
-> **Sur un projet existant, rien de ce que tu as écrit n'est écrasé.** Aucun de tes fichiers n'est remplacé, ton `package.json` n'est pas touché, et les trois seules écritures qui s'imposeraient — hooks git, workflow de scan de secrets, `.gitignore` — te sont **demandées à l'écran** avant d'être faites. Interromps (Ctrl-C) pendant les questions : rien n'a encore été écrit.
+<p align="center">
+  <img src=".github/assets/probleme.svg" alt="Sans contexte, l'IA invente des API, du code périmé, et oublie tes décisions" width="880">
+</p>
 
-Ce dépôt est aussi le **kit pour débutants** de la formation **Vibe Coding** : 4 stacks expliquées + le contexte à donner à l'IA.
+**Le problème.** Laisse l'IA seule, et elle devine. Elle te sort une fonction qui n'existe plus depuis deux ans, elle oublie ce que vous avez décidé hier, elle dessine des écrans qui ne ressemblent à rien. Ce n'est pas qu'elle est mauvaise : elle n'a **aucun cadre**.
 
-> [!TIP]
-> Pas besoin de choisir un seul assistant : l'installeur configure celui que tu utilises, et le projet reste **portable** (les mêmes règles marchent partout).
+<p align="center">
+  <img src=".github/assets/rails.svg" alt="Le kit pose des rails : règles de la stack, mémoire, revue, tests" width="880">
+</p>
 
-<details>
-<summary><strong>📑 Table des matières</strong></summary>
+**La solution.** Ce kit installe ce cadre **à ta place**. D'un coup, ton assistant reçoit : les règles officielles de ta techno, une mémoire qui ne s'oublie pas, des vérifications automatiques, et une équipe d'agents qui relisent et testent. L'IA avance **guidée**, plus à l'aveugle.
 
-- [Pourquoi ce projet](#-pourquoi-ce-projet)
-- [Fonctionnalités](#-fonctionnalités)
-- [Démarrage rapide](#-démarrage-rapide)
-- [Projet existant : le parcours complet](#-projet-existant--le-parcours-complet)
-- [Comment ça marche](#-comment-ça-marche)
-- [Les commandes](#-les-commandes)
-- [Les 4 stacks](#-les-4-stacks)
-- [Ce qui est généré](#-ce-qui-est-généré)
-- [Mémoire du projet & journal du crew](#-mémoire-du-projet--journal-du-crew)
-- [Structure du dépôt](#-structure-du-dépôt)
-- [Contribuer](#-contribuer)
-- [Licence](#-licence)
+<p align="center">
+  <img src=".github/assets/parcours.svg" alt="De ton idée à une vraie app, en 5 temps" width="880">
+</p>
 
-</details>
+**Ce qui se passe.** Tu décris ton idée. L'IA comprend, écrit un plan, dessine les écrans, en tire une feuille de route — puis construit tout, **écran par écran**, en te montrant le résultat à chaque fois.
 
-## 💡 Pourquoi ce projet
+<p align="center">
+  <img src=".github/assets/deux-departs.svg" alt="Deux façons de commencer : de zéro, ou sur un projet existant" width="880">
+</p>
 
-Le vibecoding — décrire ce qu'on veut à une IA qui code — marche **si l'IA a le bon contexte**. Seule, elle invente des fonctions périmées, oublie les décisions, code des UI hors-charte. Ce kit fournit les **rails** : règles de stack officielles, mémoire qui ne s'oublie pas, boucle de livraison disciplinée, revue de code et de sécurité — tout posé **automatiquement** pour l'assistant de l'élève.
-
-Résultat : un débutant obtient un environnement de dev **niveau pro** sans savoir le configurer.
+> **Une seule commande à retenir : `/help`.** Elle te dit toujours par où continuer.
+>
+> Et c'est la **même méthode** pour Cursor, Claude Code et Codex : le projet reste portable d'un assistant à l'autre.
 
 ## ✨ Fonctionnalités
 
 | | Fonctionnalité | Ce que ça fait |
 |---|---|---|
-| 🚀 | **10 commandes** | `/init-vibecoding`, `/help`, `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor`, `/next`, `/sos`, `/deploy` — tout le cycle de vie |
-| 🪜 | **Runbooks en étapes** | les commandes longues ne sont plus un mur de texte : `/new-project` (9 étapes), `/new-feature` (5), `/init-vibecoding` (5) arrivent en **fichiers séparés**, un par étape, avec une **checklist d'entrée** qui dit ce que chacune produit. L'IA en ouvre une à la fois — elle n'en saute plus, et toi tu vois où tu en es |
-| 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework (`.mcp.json` mergé, checks warn-only, `docs/A-FAIRE.md` joué par l'IA) |
-| 💳 | **Catalogue de domaines** | paiement (Stripe/Polar…), email, storage, analytics, erreurs, push, cartes… **choisis d'après le PRD** (`docs/DOMAINS.md`) — pas tout d'un coup |
-| 🧠 | **Mémoire auto-croissante** | `docs/memory/` nourri à chaque session, rechargé au démarrage (+ le **prochain jalon roadmap**) → l'IA ne refait pas ses erreurs et sait où elle en est |
-| 🛡️ | **Revue + sécu + test** | Les **7 agents du crew** — `verificateur` (le juge : PROUVÉ / NON PROUVÉ / BLOQUÉ) · `code-reviewer` · `security-reviewer` · `test-runner` · `critique-produit` · `critique-donnees` · `critique-ux` — livrés aux **3 assistants**, plus scan de secrets, CI, hook pre-commit |
-| 🧪 | **Test complet (design + fonctionnel)** | après **chaque** implémentation : test auto + **navigateur & screenshot** (le rendu) **et** le **parcours E2E** de la feature refait en vrai (Playwright web · **Maestro** mobile · Chrome DevTools desktop), exécuté par un **sous-agent `test-runner` isolé** → économe en tokens |
-| 📏 | **Règles permanentes** | injectées dans `AGENTS.md` : **sous-agents** (quand/comment déléguer) · **vérification** · **secrets & coûts** · **CSS-maquette** (pas de slice, vrai CSS, couleur primaire) · design + **accessibilité** |
-| 🤖 | **Multi-assistant** | Cursor (règles `.mdc` typées + commandes + hooks sécu + Bugbot), Claude Code (CLAUDE.md + skills), Codex (AGENTS.md) |
-| 🎨 | **Design-first → maquette** | on fixe d'abord le **design system** (`design.md`, thème composé en visuel sur [shadcn/ui create](https://ui.shadcn.com/create)) **puis** la maquette (**un sous-agent par écran**, en shadcn/ui) ; **Stitch** ou tes exports marchent aussi. La **roadmap découle de la maquette validée** — le build réalise ce que tu as **dessiné** |
-| 🎓 | **Mode apprentissage** | l'IA **enseigne, elle ne t'interroge pas**. À chaque étape franchie elle dit ce qu'elle a fait et **pourquoi ainsi**, puis écrit la leçon dans **`docs/APPRENTISSAGE.md`** : *ce qu'on vient de faire · pourquoi comme ça · le mot du jour, expliqué sur TON projet · un fun fact*. Numéroté, chronologique, jamais écrasé — lu du bout en bout, ce carnet raconte la construction de ton app dans l'ordre où elle s'est faite |
-| 📐 | **Planif à fond** | PRD + tech spec + design (tokens via `design.md`, palette via [tweakcn](https://tweakcn.com)) détaillés avant la moindre ligne de code. Le PRD couvre les **12 sections** qu'un vrai cadrage réclame : le **problème** (énoncé sans sa solution), l'**entreprise et ses utilisateurs**, les **objectifs commerciaux** chiffrés et datés, les **parcours utilisateurs**, l'**arborescence** (écrans, navigation, URL) et le **périmètre du MVP** |
-| 🔀 | **Deux chantiers de front** | un **worktree par chantier**, la branche **synchronisée avant** de pousser ou de brancher (la cause n°1 des conflits git quand on ouvre deux chats), **un seul serveur de dev** partagé, et tout changement de schéma **annoncé avant**. Le kit pousse sur **la branche où tu es** — il ne présume pas de la façon dont tu organises ton dépôt |
-| 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` (revenir au dernier point vert) ; **Règle Preuve : 3 tentatives** puis `BLOQUÉ`, anti-boucle infernale ; tags git par jalon |
-| 🚫 | **Anti-flemme** | **Règle Réalité** : zéro mock, zéro `lorem`, zéro donnée en dur hors des fichiers de test — chaque écran lit et écrit dans le **vrai** backend, chaque bouton marche de bout en bout. Plus zéro placeholder / `// TODO` / stub, zéro report « plus tard ». Non négociable, dans `AGENTS.md` + `.cursor/rules/` |
-| 📓 | **Journal du crew** | trois fichiers partagés dans `docs/agents/` : **`JOURNAL.md`** (append-only — une ligne par mission, avec sa preuve), **`state.yaml`** (l'état courant : jalon, tâche, tentatives de réparation, motif de blocage — **un seul écrivain**, le juge), **`inventaire.md`** (le contrat de couverture : tout ce que la maquette et le PRD promettent, ligne par ligne). Chaque agent les lit **avant** de commencer |
-| 🪟 | **Fiable & multi-OS** | le wizard fait un `git init` + hooks actifs + commit initial ; rapport honnête (jamais d'écrasement) ; **testé en CI sur Windows/macOS/Linux × Node 20.12/22** |
-| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : **régénère** les règles (`AGENTS.md`, entre marqueurs) + runbooks **et leurs étapes** + agents + glossaire + les **docs officielles** de ta stack (`ai-context/`, les `llms.txt` que l'IA lit pour ne pas inventer d'API périmée) — ta zone perso, `src/` et **ce que tu as écrit** dans `docs/` (PRD, design, roadmap, mémoire) **jamais touchés** (`--dry-run` pour prévisualiser) |
-| 🧬 | **Projet existant (`--adopt`)** | `npx create-vibecoding-kit@latest --adopt`, lancé **depuis** ton projet : la méthode arrive **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs — tout ce qui est en dehors reste **à la ligne près**. Le kit ne **revendique aucune techno** (pas de règle Convex dans un projet Prisma) : ni stack, ni scaffold, ni CI, ni `maquette/`. Aucun de tes fichiers n'est écrasé, ton `.gitignore` est complété pour que `.env` cesse de partir au commit, et les trois écritures qui s'imposeraient (hooks git, workflow de scan de secrets, `.gitignore`) sont **demandées** à l'écran |
-| 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt du site, robots IA-friendly) |
+| 🚀 | **10 commandes** | `/init-vibecoding`, `/help`, `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor`, `/next`, `/sos`, `/deploy` — tout le cycle de vie, en français simple |
+| 🪜 | **Runbooks en étapes** | les commandes longues arrivent en **fichiers séparés**, un par étape, avec une checklist d'entrée. L'IA en ouvre une à la fois — elle n'en saute plus, et tu vois où tu en es |
+| 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework |
+| 💳 | **Catalogue de domaines** | paiement, email, storage, analytics, erreurs, push… **choisis d'après le PRD** (`docs/DOMAINS.md`), pas tout d'un coup |
+| 🧠 | **Mémoire auto-croissante** | un « cerveau du projet » dans `docs/memory/`, nourri à chaque session et rechargé au démarrage → l'IA ne refait pas ses erreurs |
+| 🛡️ | **Revue + sécu + test** | une **équipe de 7 agents** : `verificateur` (le juge : PROUVÉ / NON PROUVÉ / BLOQUÉ) · `code-reviewer` · `security-reviewer` · `test-runner` · `critique-produit` · `critique-donnees` · `critique-ux` |
+| 🧪 | **Test complet (design + fonctionnel)** | après **chaque** implémentation : test auto + navigateur & screenshot, **et** le parcours refait en vrai (Playwright web · Maestro mobile · Chrome DevTools desktop) |
+| 📏 | **Règles permanentes** | injectées dans `AGENTS.md` : sous-agents, vérification, secrets & coûts, CSS-maquette, design et accessibilité |
+| 🤖 | **Multi-assistant** | Cursor, Claude Code et Codex — les mêmes règles marchent partout |
+| 🎨 | **Design-first → maquette** | on fixe d'abord le design system (`docs/design.md`), **puis** la maquette (un sous-agent par écran). La **roadmap découle de la maquette validée** |
+| 🎓 | **Mode apprentissage** | l'IA t'**explique** ce qu'elle fait et **pourquoi**, et écrit la leçon dans `docs/APPRENTISSAGE.md` : ce qu'on a fait, pourquoi ainsi, le mot du jour |
+| 📐 | **On planifie à fond** | PRD + tech spec + design détaillés **avant** la moindre ligne de code, puis roadmap exhaustive |
+| 🔀 | **Deux chantiers de front** | un worktree par chantier, la branche synchronisée avant de pousser, un seul serveur de dev partagé |
+| 🆘 | **Filet de sécurité** | perdu → `/next` ; ça casse → `/sos` ; **3 tentatives** puis `BLOQUÉ` ; un point de restauration par jalon |
+| 🚫 | **Anti-flemme (Règle Réalité)** | zéro mock, zéro `lorem`, zéro donnée en dur hors des tests : chaque écran lit et écrit dans le **vrai** backend |
+| 📓 | **Journal du crew** | `docs/agents/JOURNAL.md`, `state.yaml` et `inventaire.md` : ce que les agents ont fait, où en est le projet, et ce qu'il reste à couvrir |
+| 🧬 | **Projet existant (`--adopt`)** | `npx create-vibecoding-kit@latest --adopt`, lancé **depuis** ton projet : la méthode arrive **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs. **Aucun fichier à toi n'est écrasé**, ton `package.json` non plus |
+| 🪟 | **Fiable & multi-OS** | `git init` + hooks actifs + commit initial ; testé en CI sur Windows/macOS/Linux × Node 20.12/22 |
+| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : régénère les règles, les runbooks et les docs officielles de ta stack — ta zone perso n'est **jamais** touchée |
+| 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
+
+<p align="center">
+  <img src=".github/assets/demarrer.svg" alt="Démarrer en 4 étapes : lancer le wizard, coller le prompt, installer superpowers, taper /help" width="880">
+</p>
 
 ### 🆕 Cas A — tu pars de zéro
 
@@ -100,9 +94,9 @@ Dans un **dossier vide** :
 npm create vibecoding-kit@latest
 ```
 
-> **Prérequis : Node.js ≥ 20.12 + git.** Le wizard demande stack/assistant/nom (+ Convex cloud/local pour le SaaS, + **mode apprentissage**) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills** (design + stack). Aucun compte, aucune clé, aucun code : quatre à cinq questions et c'est fini.
+> **Prérequis : Node.js ≥ 20.12 + git.** Le wizard (l'assistant qui pose les questions) demande stack/assistant/nom (+ Convex cloud ou local pour le SaaS, + **mode apprentissage**) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — puis **installe les skills** (design + stack). Aucun compte, aucune clé, aucun code : quatre à cinq questions et c'est fini.
 >
-> **Stack vitrine** : Astro 7 exige **Node ≥ 22.12** (il refuse de démarrer en dessous). Le wizard, lui, tourne dès 20.12.
+> **Stack vitrine** : Astro exige **Node ≥ 22.12** (il refuse de démarrer en dessous). Le wizard, lui, tourne dès 20.12.
 
 ### 🧬 Cas B — tu as déjà un projet
 
@@ -112,123 +106,30 @@ npm create vibecoding-kit@latest
 npx create-vibecoding-kit@latest --adopt
 ```
 
-> Même méthode — les 10 commandes, les 7 agents, la mémoire, les règles — mais le kit **ne revendique pas ta techno** : pas de stack, pas de code, pas de CI, pas de `maquette/`, pas de MCP de framework. Il ne sait pas si tu fais du Rails ou du Next.js, et il n'a pas besoin de le savoir.
+> Même méthode — les 10 commandes, les 7 agents, la mémoire, les règles — mais le kit **ne revendique aucune techno** : ni stack, ni scaffold, ni CI, ni `maquette/`. Il ne sait pas si tu fais du Rails ou du Next.js, et il n'en a pas besoin.
 >
-> Les règles arrivent **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs — le reste de ces fichiers n'est pas touché, à la ligne près, et **aucun fichier à toi n'est écrasé**. Ton `package.json` non plus. Le kit **demande** avant les trois écritures qui s'imposeraient : hooks git, workflow de scan de secrets, `.gitignore`.
+> Les règles arrivent **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs : tout ce qui est dehors reste **à la ligne près**, et **aucun fichier à toi n'est écrasé**.
 >
-> Et ensuite, ce n'est **pas** `/new-project` — il fonderait un PRD, une roadmap et un scaffold par-dessus un code qui existe déjà. C'est **`docs/ETAT-DES-LIEUX.md`** : ouvre-le, fais-le remplir par ton IA qui lit **ton** code, et tout part de là.
+> Et ensuite, ce n'est **pas** `/new-project` : il fonderait un PRD et une roadmap par-dessus un code qui existe déjà. Sur un projet existant, le point de départ c'est **`docs/ETAT-DES-LIEUX.md`** : ouvre-le, fais-le remplir par ton IA qui lit **ton** code, et tout part de là.
 
-**Le détail, étape par étape** : [Projet existant : le parcours complet](#-projet-existant--le-parcours-complet) ci-dessous.
+**2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (il est aussi dans `COLLE-MOI-DANS-L-IA.md`).
+Il te guide pour les **gestes manuels** — installer **superpowers**, le plugin de ta stack, autoriser les MCP. Ces trois familles sont détaillées plus bas et dans `docs/A-FAIRE.md`, écrit pour **ta** configuration.
 
-**2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (aussi sauvé dans `COLLE-MOI-DANS-L-IA.md`)
-
-Ton assistant te guide pour les **gestes manuels** (détaillés dans « [Après l'install](#-après-linstall--ce-quil-te-reste-à-faire) » ci-dessous et dans `docs/A-FAIRE.md`, adapté à ta stack) : installer **superpowers**, le **plugin de ta stack** s'il en existe un, et autoriser les **MCP**. Les skills, eux, sont déjà posés par le wizard. Ensuite, une seule commande à retenir :
+**3. Retiens une seule commande.**
 
 ```
 /help
 ```
 
-Elle liste les 10 runbooks et dit par où continuer. *(Sur Codex, les runbooks ne sont pas des slash-commandes : ouvre `docs/commands/help.md` et suis-le.)*
-
-> [!TIP]
-> La liste exacte des plugins/MCP à cocher est dans **`docs/A-FAIRE.md`**. Tout le reste est déjà posé.
-
-> [!NOTE]
-> **Windows** : lance avec `node` (pas de script `.sh`). Les hooks Git tournent sous **Git Bash**. Prérequis : Node.js ≥ 20.12 + git.
-
-<details>
-<summary>Préfères-tu tout comprendre à la main ? (chemin débutant)</summary>
-
-Clone le dépôt, lis [`guides/01-comment-parler-a-l-IA.md`](guides/01-comment-parler-a-l-IA.md), puis choisis ta stack dans [`stacks/`](stacks/). Chaque stack a un README débutant + un `AGENTS.md` à copier + des prompts prêts à coller.
-
-Un mot te bloque ? Le **[glossaire du vibe coding](guides/glossaire.md)** explique tout le vocabulaire (LLM, MCP, stack, MVP, hook…) simplement.
-
-</details>
-
-## 🧬 Projet existant : le parcours complet
-
-Tu as un projet qui tourne déjà — six mois de code, une équipe, une techno que tu n'as pas envie de changer. Le kit n'y touche pas. Il installe **la façon de travailler avec l'IA** par-dessus, et rien d'autre.
-
-### Les commandes, dans l'ordre
-
-**1. Mets ton travail au propre.** Le kit va écrire ; tu veux pouvoir tout annuler d'un `git checkout`.
-
-```bash
-git status
-```
-
-**2. Lance l'adoption, depuis le dossier de ton projet.**
-
-```bash
-npx create-vibecoding-kit@latest --adopt
-```
-
-Le wizard pose **toutes** ses questions avant d'écrire quoi que ce soit. Tu peux faire Ctrl-C tant que tu réponds : rien n'aura été écrit.
-
-| Il demande | Réponds | Ce que ça change |
-|---|---|---|
-| Installer la méthode dans CE projet ? | `O` | Sans ça, il ne fait rien |
-| Ton assistant | `1` Cursor · `2` Claude Code · `3` Codex | Où sont posées les commandes et les agents |
-| Scanner tes technos avec `autoskills` ? | `N` si tu hésites | Outil **tiers** (midudev, CC BY-NC 4.0), pas embarqué par le kit. Il installe des skills depuis **son** registre, non relus par le kit |
-| Compléter ton `.gitignore` ? | `O` | Empêche `.env` de partir au prochain commit |
-| Poser les hooks git (`core.hooksPath`) ? | `N` si tu as déjà husky/lefthook | Cette clé **remplace** `.git/hooks/`, elle ne s'y ajoute pas — le kit ne l'impose jamais |
-| Poser le workflow de scan de secrets ? | Comme tu veux | Un workflow GitHub qui tournera à chaque push sur **ton** compte |
-
-**3. Vérifie que rien à toi n'a bougé.** C'est la promesse du kit — exige la preuve :
-
-```bash
-git diff --stat
-```
-
-Tu dois voir **au plus deux fichiers modifiés** : `AGENTS.md` et `.gitignore` (les deux annoncés à l'écran). Tout le reste est en `??` — des fichiers **neufs**. Aucun de tes fichiers n'est réécrit.
-
-Pour lire ce qui a été ajouté dans ton `AGENTS.md`, cherche `vibecoding:start` — le bloc du kit va de là jusqu'à `vibecoding:end`. **Tout ce qui est en dehors n'a pas été touché, à la ligne près.**
-
-**4. Ouvre ton assistant IA** dans le dossier, et colle le prompt affiché par le wizard (il est aussi dans `COLLE-MOI-DANS-L-IA.md`).
-
-**5. Fais l'état des lieux.** ⚠️ **N'utilise pas `/new-project`** — il fonderait un PRD, une roadmap et un scaffold **par-dessus** un code qui existe déjà. Sur un projet adopté, le point de départ est :
-
-```
-Ouvre docs/ETAT-DES-LIEUX.md et remplis-le en lisant mon code.
-```
-
-Ton IA lit **ton** projet et écrit ce qu'elle y trouve : la techno réelle, comment on lance le projet, ce qui manque. C'est de là que tout part.
-
-**6. Vérifie l'installation.**
-
-```
-/doctor
-```
-
-Il passe 17 points et rend un verdict. Sur un projet adopté, plusieurs items sortent en « **choix, pas un ✗** » — CI, MCP de stack, skills de stack : le kit ne les a délibérément pas posés parce qu'il ne connaît pas ta techno. C'est normal, et le ✅ reste atteignable.
-
-**7. Ensuite, la méthode ne change plus.** `/help` liste les 10 runbooks. `/new-feature` pour ajouter quelque chose, `/next` si tu es perdu, `/sos` si ça casse.
-
-### Si tu veux annuler
-
-Tout ce que le kit a fait est visible dans git :
-
-```bash
-git checkout AGENTS.md .gitignore && git clean -nd
-```
-
-Le `-n` **liste sans supprimer** — lis la liste, et relance en `-fd` seulement si elle te convient.
-
-### Mettre à jour plus tard
-
-```bash
-npx create-vibecoding-kit@latest --refresh
-```
-
-Régénère ce qui appartient au kit (commandes, agents, règles). Il ne réécrit **jamais** un fichier où tu as pu écrire : il dépose la version du kit à côté, en `.new`, et te laisse choisir.
+Elle liste les 10 runbooks et te dit par où continuer.
 
 ## ✅ Après l'install — ce qu'il te reste à faire
 
-Le wizard a **déjà tout posé dans le projet**. Il reste trois familles de gestes **dans ton assistant IA** (impossible pour un scaffolder d'installer un plugin ou de connecter un compte à ta place) : la boucle superpowers, les plugins, les MCP.
+Le wizard a **déjà tout posé dans le projet**. Il reste trois familles de gestes **dans ton assistant IA** (impossible pour un installeur de brancher un plugin ou un compte à ta place) : la boucle superpowers, les plugins de stack, et les MCP.
 
-**Combien de cases exactement ? Ça dépend de ton couple stack × assistant** — de **0 à 2 plugins** (certains combos n'en ont aucun) et de **2 à 5 serveurs MCP**. Aucune promesse à l'aveugle ici : ta liste réelle, cochable, est dans **`docs/A-FAIRE.md`**, généré pour *ta* configuration.
+Combien de cases exactement ? Ça dépend de ton couple **stack × assistant** : de **0 à 2 plugins** et de **2 à 5 serveurs MCP**. Ta liste réelle, cochable, est dans **`docs/A-FAIRE.md`**, généré pour *ta* configuration.
 
-**Déjà fait automatiquement — n'y touche pas :** `AGENTS.md`/`CLAUDE.md`, les 10 commandes, les règles, la mémoire, git + hooks (scan de secrets), la CI, `.vibecoding.json`, les **skills** (design + stack) et les **fichiers** de config MCP.
+**Déjà fait automatiquement — n'y touche pas :** `AGENTS.md`/`CLAUDE.md`, les 10 commandes, les règles, la mémoire, git + hooks, la CI, les **skills** (design + stack) et les fichiers de config MCP.
 
 ### Geste 1 — installe superpowers (le pilote de la boucle)
 
@@ -242,35 +143,27 @@ Vérifie : tape `/brainstorm`. Si la commande est reconnue, c'est bon.
 
 ### Geste 2 — installe le plugin de ta stack *(seulement si ton combo en a un)*
 
-C'est le plugin propre à la techno de ta stack. Certaines combinaisons stack × assistant n'en ont **pas** (rien à faire alors) — sur **Codex**, seule la stack Mobile en a un.
+C'est le plugin propre à la techno de ta stack. Certaines combinaisons n'en ont **pas** (rien à faire alors) — sur **Codex**, seule la stack Mobile en a un.
 
-| Ta stack | Plugin | Disponible pour |
-|---|---|---|
-| **SaaS** | Convex | Cursor, Claude Code |
-| **Mobile** | Expo (+ Convex) | Claude Code, Codex |
-| **Desktop** | Electron | Claude Code |
-| **Vitrine** | Convex | Cursor, Claude Code |
+| Ta stack | Assistants qui ont un plugin |
+|---|---|
+| **SaaS** | Cursor, Claude Code |
+| **Mobile** | Claude Code, Codex |
+| **Desktop** | Claude Code |
+| **Vitrine** | Cursor, Claude Code |
 
-La **commande exacte** est dans `docs/A-FAIRE.md` § 1 (elle dépend de ton assistant). Exemple pour **Cursor + SaaS** :
-
-```bash
-git clone https://github.com/get-convex/convex-agent-plugins ~/.cursor/plugins/convex-agent-plugins
-```
+La commande exacte est dans `docs/A-FAIRE.md` § 1 (elle dépend de ton assistant).
 
 ### Geste 3 — autorise les MCP
 
-Tape `/mcp` (ou, sur Cursor, **Settings → MCP**). Les serveurs à activer selon ta stack :
+Ta stack a besoin de quelques serveurs MCP. Active-les :
 
 | Ta stack | Serveurs MCP |
 |---|---|
-| **SaaS** | Convex · Better Auth · shadcn · **Playwright** *(test E2E)* |
-| **Mobile** | Convex · Expo *(login requis)* · **Maestro** *(test E2E — installe le CLI d'abord, voir A-FAIRE)* |
+| **SaaS** | Convex · Better Auth · shadcn · Playwright *(test E2E)* |
+| **Mobile** | Convex · Expo *(login requis)* · Maestro *(test E2E)* |
 | **Desktop** | Chrome DevTools *(test E2E)* · shadcn |
-| **Vitrine** | Astro Docs · Convex · Better Auth · shadcn · **Playwright** *(test E2E)* |
-
-### Optionnel — design par IA (Stitch)
-
-Si tu n'as **pas** de maquette à fournir : crée une clé API sur [stitch.withgoogle.com](https://stitch.withgoogle.com) (Settings → Create API Key), puis branche le MCP Stitch **au niveau utilisateur** (pas dans le dépôt → la clé n'est jamais commitée). Étapes exactes dans `docs/A-FAIRE.md` § 5.
+| **Vitrine** | Astro Docs · Convex · Better Auth · shadcn · Playwright *(test E2E)* |
 
 ### Puis tu codes
 
@@ -278,157 +171,142 @@ Si tu n'as **pas** de maquette à fournir : crée une clé API sur [stitch.withg
 /help
 ```
 
-`/help` t'oriente ; pour démarrer un projet il t'enverra sur `/new-project « ton idée »`.
+`/help` t'oriente ; pour démarrer un projet il t'envoie sur `/new-project « ton idée »`. Bloqué ? Lance **`/doctor`** : il dit précisément ce qui manque.
 
-| Commande | Ce qu'elle fait |
-|---|---|
-| `/new-project` | **9 étapes** : problème + entreprise → PRD + tech spec → arborescence → **maquette** → roadmap dérivée |
-| `/build` | construit **jalon par jalon**, comparé à la maquette (visuel à chaque étape) |
-| `/doctor` | vérifie que plugins / MCP / skills sont bien branchés |
-| `/next` · `/sos` · `/deploy` | quoi faire ensuite · débloquer · mettre en ligne |
-
-Bloqué ? Lance **`/doctor`** : il te dit précisément ce qui manque.
-
-## 🔍 Comment ça marche
-
-<p align="center">
-  <img src=".github/assets/wizard.svg" alt="Aperçu du wizard : il génère AGENTS.md, .cursor/, docs/, CI et subagents, installe les skills, puis tu lances /new-project et /build" width="820">
-</p>
-
-```mermaid
-flowchart TD
-    A["Tu lances : npm create vibecoding-kit (ou node scripts/setup.mjs)"] --> C{"Réponds : stack ? assistant ? nom ? Convex cloud/local ?"}
-    C --> D["setup.mjs génère l'environnement"]
-    D --> E1["Cursor : .cursor/commands + rules .mdc + hooks + BUGBOT"]
-    D --> E2["Claude Code : CLAUDE.md + .claude/skills"]
-    D --> E3["Codex : AGENTS.md + docs/commands"]
-    E1 --> F["Skills (design + stack) + hooks + mémoire + CI + subagents posés auto"]
-    E2 --> F
-    E3 --> F
-    F --> G0["Gestes manuels : installe superpowers (/add-plugin) + autorise /mcp"]
-    G0 --> G["Dans ton assistant : /new-project « ton idée »"]
-    G --> DZ["design.md (thème shadcn) validé D'ABORD"]
-    DZ --> M["Maquette : 1 sous-agent par écran (shadcn/ui) — ou Stitch/la tienne"]
-    M --> R["Roadmap dérivée de la maquette (chaque écran = un jalon)"]
-    R --> H["/build : jalon par jalon, comparé à la maquette (visuel à chaque étape)"]
-    H -.->|jalon suivant| H
-```
-
-Le **pilote** est la boucle [superpowers](https://github.com/obra/superpowers) : `brainstorm → plan → exécution (sub-agents, TDD) → review → test live → sécu → commit → PR → CI → merge`. Elle est écrite dans l'`AGENTS.md`/`CLAUDE.md` généré, toujours en contexte.
+> [!TIP]
+> **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
+>
+> **Récupérer les nouveautés du kit dans un projet existant** — depuis le dossier du projet, rien à cloner : `npx create-vibecoding-kit --refresh`. Ajoute `--dry-run` pour prévisualiser. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — PRD, design, roadmap, mémoire, `docs/APPRENTISSAGE.md`.
 
 ## 🎛️ Les commandes
 
 | Commande | Rôle |
 |---|---|
-| **`/help`** | **L'entrée — la seule à retenir.** Les 10 commandes expliquées en français simple, et « par où continuer » selon ce que l'IA voit dans ton projet |
-| **`/init-vibecoding`** | Le tout-en-un : l'IA **installe l'environnement pour toi** (ou met à jour un projet existant) et te déroule `docs/A-FAIRE.md` pas à pas. À lancer quand rien n'est encore posé |
-| **`/new-project`** | La fondation, en **9 étapes** que l'IA ouvre une par une : cadrage (le **problème**, l'**entreprise**, les **objectifs commerciaux**) → **PRD** → **tech spec** → **arborescence** (écrans, navigation, URL) → **design system** (`design.md`, thème shadcn) **puis maquette** (un **sous-agent par écran** en shadcn/ui, ou **Stitch**/la tienne) → **roadmap dérivée de la maquette** (chaque jalon = un écran qui devient réel) → scaffold |
-| **`/build`** | Construit la roadmap **jalon par jalon** (subagent-driven, TDD) en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir. Gate « on continue ? » à chaque jalon (`--all` reste désactivé en mode apprentissage). Chaque jalon franchi ajoute sa **leçon** à `docs/APPRENTISSAGE.md` — ce qu'on a fait, **pourquoi comme ça**, et le mot du jour |
-| **`/new-feature`** | La livraison d'une feature isolée : **story + critères d'acceptation** → build TDD → **test live** → sécu → commit → PR → CI → merge sur `main` |
-| **`/edit-design`** | Charge les **4 skills design** + `design.md` **avant** de toucher l'UI (+ blocs pré-faits `@shadcnblocks` au besoin) |
-| **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité**, `.gitignore` correct |
-| **`/next`** | « Je fais quoi maintenant ? » — l'IA lit l'état du projet et te donne ta **prochaine action** |
-| **`/sos`** | Quelque chose casse : diagnostic **rassurant** + 3 sorties (réparer / mettre de côté / revenir au dernier point vert) |
-| **`/deploy`** | Mettre l'app **en ligne** selon la stack (Convex + Vercel/Netlify · Expo EAS · Electron Forge `npm run make` · Astro statique) — gate CI verte + revue sécu, secrets prod jamais commités |
+| **`/help`** | **L'entrée — la seule à retenir.** Les 10 commandes expliquées en français simple, et « par où continuer » selon ton projet |
+| **`/init-vibecoding`** | Le tout-en-un : l'IA **installe l'environnement pour toi** (ou met à jour un projet existant) et déroule `docs/A-FAIRE.md` pas à pas |
+| **`/new-project`** | La fondation, en **9 étapes** ouvertes une par une : cadrage → **PRD** → **tech spec** → arborescence → **design system puis maquette** → **roadmap dérivée de la maquette** → scaffold |
+| **`/build`** | Construit la roadmap **jalon par jalon** (TDD), en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir |
+| **`/new-feature`** | La livraison d'une feature isolée : story + critères d'acceptation → build TDD → **test live** → sécu → commit → PR → CI → merge |
+| **`/edit-design`** | Charge les **4 skills design** + `docs/design.md` **avant** de toucher à l'interface |
+| **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité** |
+| **`/next`** | « Je fais quoi maintenant ? » — l'IA lit l'état du projet et donne ta **prochaine action** |
+| **`/sos`** | Quelque chose casse : diagnostic, puis 3 sorties (réparer / mettre de côté / revenir au dernier point vert) |
+| **`/deploy`** | Mettre l'app **en ligne** selon la stack — gate CI verte + revue sécu, secrets jamais commités |
 
-Chaque commande est livrée au bon format : **commandes Cursor** (`.cursor/commands/`, typables au clavier), **commandes Claude Code** (`.claude/commands/`), ou référencée dans `AGENTS.md` (Codex).
-
-Les trois commandes longues arrivent en plus avec un **dossier d'étapes à côté d'elles** (`new-project/`, `new-feature/`, `init-vibecoding/`) — **19 fichiers** au total, un par étape. Chez **Codex**, où les runbooks ne sont pas des slash-commandes, le fichier que tu ouvres **contient déjà toutes ses étapes dans l'ordre** : un seul fichier à lire.
-
-> [!TIP]
-> **Après l'install** : `/doctor` doit dire « ✅ ton environnement est prêt ». Ensuite, `/help` t'oriente. **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
-
-> [!TIP]
-> **Récupérer les nouveautés du kit dans un vieux projet** — depuis le dossier du projet, **rien à cloner** :
-> - `npx create-vibecoding-kit --refresh` — **régénère** ce qui est 100 % kit et que tu n'édites pas : les règles (`AGENTS.md`, entre les marqueurs), les 10 runbooks **et leurs 19 étapes**, les 7 agents du crew, `docs/glossaire.md`, `docs/templates/` et les docs officielles d'`ai-context/`. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — `docs/PRD.md`, `docs/design.md`, `docs/ROADMAP.md`, `docs/memory/`, `docs/A-FAIRE.md`, **`docs/APPRENTISSAGE.md`** (tes leçons t'appartiennent : un refresh qui les écraserait détruirait exactement ce qu'on te promet de garder), et la mémoire du crew (`docs/agents/JOURNAL.md`, `state.yaml`, `inventaire.md`). Seule exception, voulue : sur Codex les 7 agents vivent dans `docs/agents/crew/` — ceux-là sont du kit, donc régénérés. Ajoute `--dry-run` pour prévisualiser.
-> - Si tu as le dépôt en local : `node <kit>/scripts/update.mjs` **ajoute** les fichiers neufs sans rien écraser, et `--refresh` fait la même régénération que ci-dessus.
-
-> [!TIP]
-> **Déjà un projet Cursor et tu veux juste les commandes ?** Installe le **plugin Cursor** `vibecoding` (`/add-plugin`, via une Team Marketplace ou la marketplace Cursor) — tu obtiens les 10 commandes + la règle de base sans rien scaffolder. Le plugin est dans [`cursor-plugin/`](cursor-plugin/) (voir [`PUBLISH.md`](PUBLISH.md)). Pour un **nouveau** projet complet, préfère `npm create vibecoding-kit`.
+Les trois commandes longues arrivent avec un **dossier d'étapes à côté d'elles** : l'IA ouvre les étapes une par une, dans l'ordre.
 
 ## 🧱 Les 4 stacks
+
+<p align="center">
+  <img src=".github/assets/stacks.svg" alt="Les 4 stacks : SaaS web, Mobile, Desktop, Vitrine" width="880">
+</p>
 
 | Type d'app | Stack |
 |---|---|
 | 💻 **SaaS / web** | Convex + TanStack Start + Better Auth |
 | 📱 **Mobile iOS/Android** | React Native (Expo) + Convex |
 | 🖥️ **Desktop** | Electron |
-| 🌐 **Vitrine** | Astro + shadcn/ui (site public) + TanStack Start + Convex + Better Auth (dashboard) — vitrine, portfolio, blog, SEO + GEO (cité par les IA) |
+| 🌐 **Vitrine** | Astro + shadcn/ui (site public) + TanStack Start + Convex + Better Auth (dashboard) — vitrine, portfolio, blog, SEO + GEO |
 
-Chaque stack : explication débutant, **docs officielles vérifiées**, `AGENTS.md`, `llms.txt` téléchargeables (`ai-context/`), et un **exemple de feature** (`docs/examples/`).
+Chaque stack a son README débutant : [`stacks/saas/README.md`](stacks/saas/README.md), [`stacks/mobile/README.md`](stacks/mobile/README.md), [`stacks/desktop/README.md`](stacks/desktop/README.md), [`stacks/vitrine/README.md`](stacks/vitrine/README.md) — plus des **docs officielles vérifiées** et des prompts prêts à coller.
 
 > [!IMPORTANT]
 > **La stack Vitrine, c'est deux applications et un serveur — à savoir avant de la choisir.**
 >
-> `site/` sert les pages au public, `dashboard/` sert à les écrire, et les deux parlent au même Convex. Ça demande donc un **compte Convex** et un **VPS** (Docker) : ce n'est **pas** un site gratuit posé sur un hébergement statique. En échange, quelqu'un qui ne code pas peut publier, avec des comptes et des rôles.
+> `site/` sert les pages au public, `dashboard/` sert à les écrire, et les deux parlent au même Convex. Ça demande donc un **compte Convex** et un **VPS** (Docker) : ce n'est **pas** un site gratuit posé sur un hébergement statique.
 >
-> Et une propriété qu'il vaut mieux connaître dès le départ : **le site public lit Convex au build, pas à chaque visite** — c'est ce qui le rend rapide et indexable. Publier depuis le dashboard ne suffit donc pas : la page concernée doit être **purgée** pour être re-rendue. Le kit livre la boucle qui le fait (outbox → purge par tag), mais c'est une pièce de plus à faire tourner.
+> Et une propriété qu'il vaut mieux connaître dès le départ : **le site public lit Convex au build**, pas à chaque visite — c'est ce qui le rend rapide et indexable. Publier depuis le dashboard ne suffit donc pas : la page concernée doit être **purgée** pour être re-rendue.
 >
-> Pour un site qui change rarement et doit rester gratuit, un Astro seul avec du contenu en Markdown reste le bon outil — le kit ne vous y oblige pas.
+> Pour un site qui change rarement et doit rester gratuit, un **Astro seul avec du contenu en Markdown** reste le bon outil.
 
-## 📦 Ce qui est généré
+## 🧠 La mémoire du projet & le journal du crew
 
-<details>
-<summary>Voir l'arbre d'un projet généré (assistant Claude Code)</summary>
-
-```text
-mon-app/
-├── AGENTS.md · CLAUDE.md          # règles + boucle + @import mémoire (toujours les deux)
-├── .claude/
-│   ├── commands/                  # /new-project /build /new-feature /edit-design /doctor
-│   │   └── new-project/           # ses 9 étapes, une par fichier (idem new-feature/, init-vibecoding/)
-│   ├── settings.json              # hooks PostToolUse (checks) + SessionStart (mémoire) + PreToolUse (garde-shell)
-│   ├── hooks/                     # inject-memory + guard-shell (format Claude Code)
-│   ├── skills/stack-*             # règles de la stack
-│   └── agents/                    # les 7 agents du crew : verificateur, code-reviewer, security-reviewer,
-│                                  #   test-runner, critique-produit, critique-donnees, critique-ux
-│                                  #   (Cursor : .cursor/agents/ · Codex : docs/agents/crew/)
-├── docs/
-│   ├── A-FAIRE.md                # plugins/skills/MCP à installer (joué par l'IA)
-│   ├── DOMAINS.md                 # catalogue des capacités métier de la stack
-│   ├── ROADMAP.md                 # jalons (✅ ce que tu vois) — piloté par /build
-│   ├── RUN.md                     # comment lancer l'app + ce que tu dois voir
-│   ├── APPRENTISSAGE.md           # ton carnet : une leçon par étape, dans l'ordre (jamais écrasé)
-│   ├── memory/                    # index + gotchas/conventions/decisions/archive
-│   └── examples/                  # une feature d'exemple, prête à copier
-├── .github/workflows/             # ci · secrets (gitleaks)
-├── .githooks/                     # pre-commit (secrets+lint) · pre-push (sécu) · checks.mjs
-├── ai-context/                    # llms.txt officiels
-├── .env.example · .gitignore · .mcp.json   # MCP mergé par stack
-└── maquette/
-```
-_(Cursor à la place : `.cursor/commands/` (mêmes slash-commands) · `.cursor/rules/*.mdc` typées (auto-attachées par framework) · `.cursor/hooks.json` + `.cursor/hooks/` (mémoire + `guard-shell` sécu) · `.cursor/BUGBOT.md` (review PR) · `.cursor/environment.json` (dev reproductible) · `.cursorignore` + `.cursorindexingignore`.)_
-
-</details>
-
-## 🧠 Mémoire du projet & journal du crew
+<p align="center">
+  <img src=".github/assets/memoire.svg" alt="Le projet n'oublie pas : l'IA note les pièges dans docs/memory/ et les relit au démarrage" width="880">
+</p>
 
 - **Mémoire** — un « cerveau du projet » dans `docs/memory/` : dès que l'IA découvre un piège, elle l'écrit ; au démarrage, un **hook** le réinjecte.
 - **Consolidation** — quand l'index grossit, tu demandes à l'IA de **consolider** (dédoublonner, archiver). Ça se passe **dans le fil**, tu vois le diff.
-- **Journal** — `docs/agents/JOURNAL.md` est **append-only** : une ligne par mission (`date · agent · mission · statut · preuve · décision`), jamais effacée. C'est la mémoire partagée des agents entre deux conversations.
-- **État** — `docs/agents/state.yaml` dit **où en est le projet** (`status`, jalon et tâche en cours, `repair_attempts`, `blocked_reason`, dernière preuve). Tout le monde le lit, **un seul agent l'écrit** — sinon l'état ne veut plus rien dire.
-- **Couverture** — `docs/agents/inventaire.md` liste **élément par élément** (un bouton, un champ, une modale) ce que la maquette et le PRD promettent, avec le jalon qui le rend fonctionnel. Ce qui n'y est pas ne sera pas construit.
+- **Journal** — `docs/agents/JOURNAL.md` est **append-only** : une ligne par mission (`date · agent · mission · statut · preuve · décision`), jamais effacée.
+- **État** — `docs/agents/state.yaml` dit **où en est le projet** (`status`, jalon et tâche en cours, `repair_attempts`, `blocked_reason`). Tout le monde le lit, **un seul agent l'écrit**.
+- **Couverture** — `docs/agents/inventaire.md` liste **élément par élément** ce que la maquette et le PRD promettent, avec le jalon qui le rend fonctionnel.
 
 ### Les deux règles qui gouvernent tout
 
-- **Règle Preuve** — on ne déclare pas, on **prouve**. Trois statuts et rien d'autre : `PROUVÉ` (commande écrite + **sortie brute collée** + code 0) · `NON PROUVÉ` · `BLOQUÉ`. « Ça marche » sans preuve est interdit. Un agent ne prononce jamais `PROUVÉ` sur du code qu'il a écrit lui-même, et **3 tentatives** sur le même bug suffisent : à la 3ᵉ, `BLOQUÉ`, le piège part dans `docs/memory/gotchas.md`. Fini la boucle infernale.
-- **Règle Réalité** — mieux vaut **lent et réel** que rapide et bidon : vraies données du vrai backend, chaque bouton câblé de bout en bout, la maquette reproduite à l'identique. Les mocks n'ont droit de cité que dans les fichiers de test.
+- **Règle Preuve** — on ne déclare pas, on **prouve**. Trois statuts : `PROUVÉ` (commande + sortie brute + code 0) · `NON PROUVÉ` · `BLOQUÉ`. Un agent ne prononce jamais `PROUVÉ` sur son propre code, et **3 tentatives** sur le même bug suffisent : à la 3ᵉ, `BLOQUÉ`.
+- **Règle Réalité** — mieux vaut **lent et réel** que rapide et bidon : vraies données du vrai backend, chaque bouton câblé de bout en bout, la maquette reproduite à l'identique. Les mocks n'ont droit de cité que dans les tests.
 
-> [!IMPORTANT]
-> Aucune tâche planifiée, aucune clé API en arrière-plan : rien ne tourne sans que tu l'aies lancé.
+## 👥 L'équipe d'agents qui vérifie ton travail
 
-## 🗂️ Structure du dépôt
+<p align="center">
+  <img src=".github/assets/equipe.svg" alt="Sept agents qui relisent, testent et critiquent" width="880">
+</p>
+
+Ils ne codent pas : ils **cherchent ce qui ne va pas**, et le prouvent. Tu peux les appeler n'importe quand (« lance `critique-ux` sur cet écran »), pas seulement à la fin.
+
+## 🔁 La boucle de travail
+
+<p align="center">
+  <img src=".github/assets/boucle.svg" alt="La boucle : comprendre, planifier, construire en TDD, tester en vrai, revue et sécurité, livrer" width="880">
+</p>
+
+Le pilote est la boucle [superpowers](https://github.com/obra/superpowers) : `brainstorm → plan → exécution (sub-agents, TDD) → review → test live → sécu → commit → PR → CI → merge`. Elle est écrite dans l'`AGENTS.md` généré, donc toujours en contexte.
+
+## 🆘 Le filet de sécurité
+
+<p align="center">
+  <img src=".github/assets/filet.svg" alt="Le filet : 3 tentatives maximum, un point de restauration, /next et /sos" width="880">
+</p>
+
+Perdu → **`/next`**. Ça casse → **`/sos`**. Bloqué trois fois sur le même bug → `BLOQUÉ`, et le piège part dans `docs/memory/gotchas.md`. Fini la boucle infernale.
+
+## 🚀 Lancer ton premier projet
+
+```bash
+npm create vibecoding-kit@latest
+```
+
+Puis, dans ton assistant :
+
+```
+/new-project « une appli qui réserve des terrains de padel »
+```
+
+L'IA te guide. À la fin de `/new-project`, tu as un **plan clair + un design + une roadmap** — pas encore de code, et c'est normal. Ensuite `/build` construit, écran par écran, en te montrant le résultat à chaque jalon.
+
+<p align="center">
+  <img src=".github/assets/wizard.svg" alt="Aperçu du wizard : il génère AGENTS.md, .cursor/, docs/ et la CI, installe les skills, puis tu lances /new-project et /build" width="820">
+</p>
+
+## 📚 Pour aller plus loin
+
+| Document | Pour quoi |
+|---|---|
+| [`guides/glossaire.md`](guides/glossaire.md) | Tous les mots du vibecoding, expliqués simplement |
+| [`guides/01-comment-parler-a-l-IA.md`](guides/01-comment-parler-a-l-IA.md) | Comment demander ce que tu veux, sans être développeur |
+| [`guides/02-installer-les-outils.md`](guides/02-installer-les-outils.md) | Installer les outils (Node, git…) une fois pour toutes |
+| [`guides/03-securite-et-couts.md`](guides/03-securite-et-couts.md) | Sécurité et maîtrise des coûts IA |
+| [`docs/COUTS.md`](docs/COUTS.md) | Combien coûte une session, et comment la garder légère |
+
+Un mot te bloque ? Le **[glossaire du vibecodeur](guides/glossaire.md)** explique tout le vocabulaire (LLM, MCP, stack, MVP, hook…).
+
+<details>
+<summary><strong>🧱 Structure du dépôt</strong></summary>
 
 ```text
 vibecoding-starter-kit/
 ├── guides/            # comment parler à l'IA · installer les outils · sécurité & coûts
 ├── stacks/            # saas · mobile · desktop · vitrine (README + AGENTS.md + prompts)
-├── ai-context/        # llms.txt + règles officielles (via scripts/download-ai-context.sh)
+├── ai-context/        # llms.txt officiels (les docs que l'IA lit pour ne rien inventer)
 ├── playbook/          # le runbook que l'IA suit pour installer
 ├── templates/         # commandes, agents, mémoire, CI, env, exemples
-├── scripts/           # setup.mjs (moteur) + lib/ (testé, node --test)
-└── docs/superpowers/  # specs & plans (design du système)
+├── scripts/           # setup.mjs (le moteur) + lib/ (testé, node --test)
+└── docs/superpowers/  # specs & plans (le design du système)
 ```
+
+Les specs/plans du système sont dans [`docs/superpowers/`](docs/superpowers/).
+
+</details>
 
 ## 🤝 Contribuer
 
@@ -440,7 +318,7 @@ cd vibecoding-starter-kit
 node --test        # toute la suite
 ```
 
-Les specs/plans du système sont dans [`docs/superpowers/`](docs/superpowers/). PRs bienvenues.
+PRs bienvenues. Tu veux juste les commandes dans un projet Cursor déjà en place ? Le **plugin Cursor** `vibecoding` est dans [`cursor-plugin/`](cursor-plugin/) (voir [`PUBLISH.md`](PUBLISH.md)).
 
 ## 📄 Licence
 

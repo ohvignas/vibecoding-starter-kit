@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" width="1000" height="420" role="img" aria-label="Une équipe de 7 agents qui vérifient le travail : vérificateur, code-reviewer, security-reviewer, test-runner et trois critiques">
+  <defs>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .h { font-size: 31px; font-weight: 800; fill: #0f172a; }
+      .s { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; fill: #be123c; }
+      .name { font-size: 13px; font-weight: 800; fill: #0f172a; }
+      .role { font-size: 12px; fill: #64748b; }
+      .emoji { font-size: 28px; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="418" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
+
+  <rect x="48" y="36" width="292" height="32" rx="16" fill="#ffe4e6"/>
+  <circle cx="68" cy="52" r="5" fill="#e11d48"/>
+  <text class="t eyebrow" x="84" y="57">UNE ÉQUIPE QUI VÉRIFIE</text>
+
+  <text class="t h" x="48" y="108">Sept agents qui relisent, testent et critiquent.</text>
+  <text class="t s" x="48" y="140">Ils ne codent pas. Ils cherchent ce qui ne va pas — et le prouvent.</text>
+
+  <g>
+    <circle cx="80" cy="240" r="46" fill="#eef2ff" stroke="#c7d2fe" stroke-width="2"/>
+    <text class="t emoji" x="80" y="251" text-anchor="middle">🧐</text>
+    <text class="t name" x="80" y="314" text-anchor="middle">verificateur</text>
+    <text class="t role" x="80" y="332" text-anchor="middle">prouve, ou bloque</text>
+
+    <circle cx="220" cy="240" r="46" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2"/>
+    <text class="t emoji" x="220" y="251" text-anchor="middle">👀</text>
+    <text class="t name" x="220" y="314" text-anchor="middle">code-reviewer</text>
+    <text class="t role" x="220" y="332" text-anchor="middle">relit le code</text>
+
+    <circle cx="360" cy="240" r="46" fill="#fff1f2" stroke="#fecdd3" stroke-width="2"/>
+    <text class="t emoji" x="360" y="251" text-anchor="middle">🔒</text>
+    <text class="t name" x="360" y="314" text-anchor="middle">security-reviewer</text>
+    <text class="t role" x="360" y="332" text-anchor="middle">chasse les failles</text>
+
+    <circle cx="500" cy="240" r="46" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="2"/>
+    <text class="t emoji" x="500" y="251" text-anchor="middle">🧪</text>
+    <text class="t name" x="500" y="314" text-anchor="middle">test-runner</text>
+    <text class="t role" x="500" y="332" text-anchor="middle">rejoue le parcours</text>
+
+    <circle cx="640" cy="240" r="46" fill="#fff7ed" stroke="#fed7aa" stroke-width="2"/>
+    <text class="t emoji" x="640" y="251" text-anchor="middle">🧭</text>
+    <text class="t name" x="640" y="314" text-anchor="middle">critique-produit</text>
+    <text class="t role" x="640" y="332" text-anchor="middle">trouve l'oubli</text>
+
+    <circle cx="780" cy="240" r="46" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2"/>
+    <text class="t emoji" x="780" y="251" text-anchor="middle">🗃️</text>
+    <text class="t name" x="780" y="314" text-anchor="middle">critique-donnees</text>
+    <text class="t role" x="780" y="332" text-anchor="middle">vraies données ?</text>
+
+    <circle cx="920" cy="240" r="46" fill="#fdf2f8" stroke="#fbcfe8" stroke-width="2"/>
+    <text class="t emoji" x="920" y="251" text-anchor="middle">🎯</text>
+    <text class="t name" x="920" y="314" text-anchor="middle">critique-ux</text>
+    <text class="t role" x="920" y="332" text-anchor="middle">états, mobile</text>
+  </g>
+
+  <rect x="48" y="362" width="904" height="34" rx="17" fill="#fef2f2" stroke="#fecaca" stroke-width="1.5"/>
+  <text class="t" x="500" y="384" text-anchor="middle" font-size="14" font-weight="700" fill="#b91c1c">« Ça marche » sans preuve est refusé : PROUVÉ, NON PROUVÉ, ou BLOQUÉ.</text>
+</svg>
