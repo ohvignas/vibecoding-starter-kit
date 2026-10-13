@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isCliEntry } from './lib/cli-entry.mjs';
-import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
+import { readVibecodingManifest, refreshProject, refreshSkills } from './lib/refresh.mjs';
 // Source unique : refreshProject + readVibecodingManifest vivent dans lib/refresh.mjs (partagé avec setup.mjs).
 // Re-export pour compat : update.test.mjs importe encore readVibecodingManifest depuis ce module.
 export { readVibecodingManifest, refreshProject };
@@ -35,8 +35,20 @@ if (isCliEntry(import.meta.url)) {
       for (const c of changed) console.log(`  ~ ${c}`);
       if (!changed.length) console.log('  (rien à changer — déjà à jour)');
       if (migrated.length) console.log(`\n⚠️ Projet d'une ancienne version (sans marqueurs) : les nouvelles règles ont été ajoutées EN HAUT de ${migrated.join(', ')}. Ouvre le(s) fichier(s) et supprime l'ancien bloc de règles en double sous « vibecoding:end » (garde tes notes perso).`);
-      console.log('\nZone « Tes règles à toi », src/, docs/ (PRD/design/mémoire) : NON touchés.');
-      if (!dryRun) console.log('Astuce : relance avec `--dry-run` d\'abord pour prévisualiser.');
+      console.log('\nZone « Tes règles à toi », src/, docs/ (PRD/design/mémoire), tes documents : NON touchés.');
+      // Les skills font partie de l'environnement du kit : on les met à jour ici aussi.
+      const noSkills = process.argv.includes('--no-skills');
+      if (noSkills) console.log('(--no-skills : skills non touchés.)');
+      else if (dryRun) console.log('\n[dry-run] Mettrait aussi à jour les skills (design + crew + stack). Relance sans --dry-run.');
+      else {
+        console.log('\nMise à jour des skills (npx skills add — peut prendre ~1-2 min)…');
+        try {
+          const s = refreshSkills({ stack: manifest.stack, assistant: manifest.assistant, projectDir });
+          for (const d of s.done) console.log(`  ↻ ${d}`);
+          if (s.failed.length) console.log(`  ⚠ ${s.failed.length} skill(s) non mis à jour (réseau ?) — rien n'en dépend.`);
+        } catch (e) { console.log(`  ⚠ skills non mis à jour (${e.message}).`); }
+      }
+      if (!dryRun) console.log('\nAstuce : relance avec `--dry-run` d\'abord pour prévisualiser.');
     } else {
       execFileSync(process.execPath, buildUpdateArgs(manifest, projectDir, kitRoot), { stdio: 'inherit' });
       console.log('\nÀ jour (fichiers neufs ajoutés). Pour aussi rafraîchir les règles/runbooks du kit : relance avec `--refresh`.');

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { refreshProject, readVibecodingManifest } from './refresh.mjs';
+import { refreshProject, readVibecodingManifest, refreshSkills } from './refresh.mjs';
 import { renderAgentsFile } from './agents-file.mjs';
 import { MARK_START_PREFIX } from './managed-section.mjs';
 
@@ -237,4 +237,41 @@ test('refresh : un refus ne laisse AUCUNE écriture derrière lui, pas même sur
   const r = refreshProject({ source: KIT, projectDir: dir, manifest: { stack: 'saas', assistant: 'cursor' }, dryRun: false });
   assert.ok(r.changed.includes('AGENTS.md'), 'montage : AGENTS.md doit bien être un fichier que ce refresh RÉÉCRIT');
   assert.notEqual(fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8'), agentsAvant);
+});
+
+// ── LE KIT, C'EST AUSSI LES SKILLS ET COLLE-MOI ────────────────────────────────────────────────
+// `--refresh` ne régénérait que des FICHIERS. Or les skills (design + crew + stack) sont posés par
+// le kit et n'étaient JAMAIS rafraîchis : un projet gardait à vie les skills de sa date de
+// création. Et COLLE-MOI-DANS-L-IA.md, 100 % kit (un prompt à coller, jamais édité par
+// l'utilisateur), restait figé lui aussi. Les deux sont désormais couverts — ce qui appartient au
+// kit se met à jour, tes documents à toi ne sont pas touchés.
+
+test('refresh — réinstalle les skills du kit (design + crew + stack)', () => {
+  const seen = [];
+  const run = (_cmd, args) => { seen.push(args.join(' ')); };
+  const r = refreshSkills({ stack: 'saas', assistant: 'claude-code', projectDir: '/tmp/x', run });
+  assert.ok(seen.length >= 3, `design + crew + stack attendus, vu ${seen.length} commande(s)`);
+  assert.ok(seen.some((a) => /anthropics\/skills/.test(a)), 'les skills design doivent être réinstallés');
+  assert.ok(seen.some((a) => /get-convex\/agent-skills/.test(a)), 'le skill de stack (Convex) doit être réinstallé');
+  assert.deepEqual(r.failed, [], 'run factice → aucun échec');
+  assert.equal(r.done.length, seen.length, 'chaque spec installée est comptée');
+});
+
+test('refresh — régénère COLLE-MOI-DANS-L-IA.md, sans jamais le créer de nulle part', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'refresh-colle-'));
+  fs.writeFileSync(path.join(dir, 'AGENTS.md'), `${MARK_START_PREFIX} v -->\nX\n<!-- vibecoding:end -->`);
+  const manifest = { stack: 'saas', assistant: 'claude-code' };
+
+  // 1. Absent → NON créé : c'est le rôle du scaffold, pas du refresh.
+  refreshProject({ source: KIT, projectDir: dir, manifest, dryRun: false });
+  assert.ok(!fs.existsSync(path.join(dir, 'COLLE-MOI-DANS-L-IA.md')), 'un refresh ne crée pas COLLE-MOI');
+
+  // 2. Présent mais périmé → régénéré à la version du kit, et le changement est ANNONCÉ.
+  fs.writeFileSync(path.join(dir, 'COLLE-MOI-DANS-L-IA.md'), 'VIEUX PROMPT\n');
+  const r = refreshProject({ source: KIT, projectDir: dir, manifest, dryRun: false });
+  const t = fs.readFileSync(path.join(dir, 'COLLE-MOI-DANS-L-IA.md'), 'utf8');
+  assert.doesNotMatch(t, /VIEUX PROMPT/, 'l\'ancien prompt est remplacé');
+  assert.match(t, /Finalise l'install/, 'la version du kit est bien écrite');
+  assert.match(t, /fais le point/i, 'et elle porte le point d\'étape du jour');
+  assert.ok(r.changed.includes('COLLE-MOI-DANS-L-IA.md'), 'le changement est affiché');
 });

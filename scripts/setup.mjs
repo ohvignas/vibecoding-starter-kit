@@ -6,7 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { isCliEntry } from './lib/cli-entry.mjs';
 import { parseArgs, validateArgs, expandHome, resolveProjectDir, projectBaseDir } from './lib/args.mjs';
-import { readVibecodingManifest, refreshProject } from './lib/refresh.mjs';
+import { readVibecodingManifest, refreshProject, refreshSkills } from './lib/refresh.mjs';
 import { AGENTS_DIR, CREW } from './lib/kit-owned.mjs';
 import { COMMANDS, cheminRunbook, cheminEtape, etapesDuRunbook, runbookConcatene } from './lib/commands-list.mjs';
 import { resolveAssets, resolveStackManifest, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS } from './lib/matrix.mjs';
@@ -68,7 +68,20 @@ async function main() {
     for (const c of changed) console.log(`  ~ ${c}`);
     if (!changed.length) console.log('  (déjà à jour)');
     if (migrated.length) console.log(`\n⚠️ Ancienne version détectée : nouvelles règles ajoutées en haut de ${migrated.join(', ')} — supprime l'ancien bloc en double sous « vibecoding:end ».`);
-    console.log('\nsrc/, docs/ (PRD/design/mémoire), ta zone perso : NON touchés.');
+    console.log('\nsrc/, docs/ (PRD/design/mémoire), tes documents : NON touchés.');
+    // LES SKILLS SONT DE L'ENVIRONNEMENT DU KIT : « mets le kit à jour » les inclut. Posés une
+    // seule fois au scaffold, ils n'étaient jamais rafraîchis — un projet gardait à vie les skills
+    // de sa date de création. `--no-skills` les laisse tranquilles.
+    if (a.noSkills) console.log('(--no-skills : skills non touchés.)');
+    else if (a.dryRun) console.log('\n[dry-run] Mettrait aussi à jour les skills (design + crew + stack). Relance sans --dry-run.');
+    else {
+      console.log('\nMise à jour des skills (npx skills add — peut prendre ~1-2 min)…');
+      try {
+        const s = refreshSkills({ stack: manifest.stack, assistant: manifest.assistant, projectDir });
+        for (const d of s.done) console.log(`  ↻ ${d}`);
+        if (s.failed.length) console.log(`  ⚠ ${s.failed.length} skill(s) non mis à jour (réseau ?) — relance plus tard, rien n'en dépend.`);
+      } catch (e) { console.log(`  ⚠ skills non mis à jour (${e.message}) — sans effet sur le reste.`); }
+    }
     return;
   }
   let args;

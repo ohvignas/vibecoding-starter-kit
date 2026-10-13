@@ -8,8 +8,31 @@ import { mergeManagedSection, MARK_START_PREFIX } from './managed-section.mjs';
 import { kitOwnedFiles, kitOwnedGenerated } from './kit-owned.mjs';
 import { collerRunbook } from './commands-list.mjs';
 import { toCursorAgent } from './agent-frontmatter.mjs';
-import { resolveAssets } from './matrix.mjs';
+import { resolveAssets, DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, resolveStackManifest } from './matrix.mjs';
+import { installSkills } from './external.mjs';
+import { renderColleMoi } from './colle-moi.mjs';
 import { adapterGlossaireAdopte } from './adoption.mjs';
+
+// ── LES SKILLS : DU KIT AUSSI, ET ILS N'ÉTAIENT JAMAIS RAFRAÎCHIS ───────────────────────────────
+// Posés une fois par le wizard puis oubliés : un projet gardait à vie les skills de sa date de
+// création — l'inverse de ce que « mets à jour le kit » veut dire. On les réinstalle donc (design +
+// crew + stack), comme au scaffold. `--no-skills` les laisse tranquilles.
+export function refreshSkills({ stack, assistant, projectDir, run }) {
+  const specs = [...DESIGN_SKILL_SPECS, ...AGENT_SKILL_SPECS, ...resolveStackManifest(stack, assistant).skills];
+  return installSkills(specs, assistant, run, projectDir);
+}
+
+// COLLE-MOI-DANS-L-IA.md : 100 % kit, jamais édité par l'utilisateur (c'est un prompt à coller).
+// On le régénère donc — il doit citer les bonnes commandes. S'il a été supprimé, on ne le recrée
+// pas ici (c'est le rôle du scaffold) : on ne fait que remettre à jour ce qui est là.
+function refreshColleMoi({ projectDir, stack, assistant, dryRun, changed }) {
+  const dest = path.join(projectDir, 'COLLE-MOI-DANS-L-IA.md');
+  if (!fs.existsSync(dest)) return;
+  const next = ['# À coller dans ton assistant IA', '', ...renderColleMoi({ assistant, stack }), ''].join('\n');
+  if (fs.readFileSync(dest, 'utf8') === next) return;
+  if (!dryRun) fs.writeFileSync(dest, next);
+  changed.push('COLLE-MOI-DANS-L-IA.md');
+}
 
 export function readVibecodingManifest(projectDir) {
   const mf = path.join(projectDir, '.vibecoding.json');
@@ -104,5 +127,7 @@ export function refreshProject({ source, projectDir, manifest, dryRun = false })
     }
     changed.push(cible);
   }
+  // COLLE-MOI-DANS-L-IA.md — régénéré en dernier, il n'a aucune dépendance sur le reste.
+  refreshColleMoi({ projectDir, stack, assistant, dryRun, changed });
   return { changed, skipped, migrated };
 }
