@@ -1,0 +1,36 @@
+# Pentest IA (Shannon) — OPTIONNEL, non posé par le kit.
+#
+# Ce fichier vit dans le kit, PAS dans ton projet : un workflow qui exige un secret échouerait
+# à chaque push. Pour l'activer : copie-le dans `.github/workflows/shannon.yml` et pose le secret
+# `SHANNON_AI_API_KEY` (Settings → Secrets and variables → Actions).
+#
+# 🔴 Shannon exécute de VRAIS exploits et MODIFIE l'état de la cible : pointe-le vers du
+#    STAGING, jamais la production. Doc : guides/04-pentest-shannon.md
+name: Pentest IA (Shannon)
+
+on:
+  workflow_dispatch:
+  # Décommente pour un scan hebdomadaire :
+  # schedule:
+  #   - cron: '0 4 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  pentest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run Shannon (pentest IA)
+        uses: KeygraphHQ/shannon-action@v1
+        with:
+          # ⚠️ Remplace par l'adresse de TON environnement de staging.
+          url: https://ton-staging.example.com
+          api-key: ${{ secrets.SHANNON_AI_API_KEY }}
+          # Seul un exploit PROUVÉ peut bloquer : c'est la règle du rapport.
+          fail-on-severity: high
+          # Remonte les findings validés dans GitHub code scanning.
+          upload-sarif: true

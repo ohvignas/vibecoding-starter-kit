@@ -25,27 +25,31 @@ export function renderColleMoi({ assistant, stack, skillsInstalled = true }) {
   const cmd = (c) => refCommande(assistant, c);
   const L = ["Finalise l'install et démarre :"];
   if (assistant === 'codex') L.push(`⚠️ ${NOTE_CODEX_COMMANDES}`);
+  // LE POINT D'ÉTAPE, EN PREMIER. C'est le tout premier texte que l'utilisateur colle, et le seul
+  // frein qui empêche l'IA d'enchaîner les commandes en sautant ce qui manque. Sans lui, « installe
+  // le projet » se lit « lance tout, vite » — et les cases non cochées ne se voient nulle part.
+  L.push("1. **Fais le point d'abord** : liste ce qui est **déjà là** et ce qui **manque** (.vibecoding.json, AGENTS.md, docs/, .mcp.json, CI, hooks…), montre-moi la liste, et **attends mon accord** avant d'installer quoi que ce soit — ne saute aucune étape.");
   // Sur un projet adopté, `docs/A-FAIRE.md` n'a plus ni section « Plugins », ni « Skills portables
   // (stack) », ni « MCP à autoriser » : la stack `aucune` n'en déclare aucun (setup-ai.mjs ne rend
   // pas une section vide). Citer ces gestes — ou pire, des NUMÉROS de section — serait un renvoi
   // mort dès la première ligne. On renvoie donc au fichier, pas à son sommaire.
   if (adopte) {
     L.push(skillsInstalled
-      ? '1. Ouvre docs/A-FAIRE.md → fais chaque case. (Les skills — design + crew — sont déjà installés par le wizard.)'
-      : '1. Ouvre docs/A-FAIRE.md → fais chaque case, et lance les commandes de skills qui y sont listées.');
+      ? '2. Ouvre docs/A-FAIRE.md → fais chaque case. (Les skills — design + crew — sont déjà installés par le wizard.)'
+      : '2. Ouvre docs/A-FAIRE.md → fais chaque case, et lance les commandes de skills qui y sont listées.');
   } else {
     L.push(skillsInstalled
-      ? `1. Ouvre docs/A-FAIRE.md → installe les plugins et autorise les MCP (${mcp.court}). (Les skills — design + stack — sont déjà installés par le wizard.)`
-      : `1. Ouvre docs/A-FAIRE.md → installe les plugins, lance les commandes de skills listées (sections 2 et 5), autorise les MCP (${mcp.court}).`);
+      ? `2. Ouvre docs/A-FAIRE.md → installe les plugins et autorise les MCP (${mcp.court}). (Les skills — design + stack — sont déjà installés par le wizard.)`
+      : `2. Ouvre docs/A-FAIRE.md → installe les plugins, lance les commandes de skills listées (sections 2 et 5), autorise les MCP (${mcp.court}).`);
   }
-  L.push(`2. Boucle superpowers : ${SUPERPOWERS[assistant]}`);
-  L.push(`3. ${cmd('help')} — l'aide-mémoire : les 10 runbooks et par où continuer. C'est le seul à retenir.`);
-  L.push(`4. ${cmd('doctor')} — vérifie que tout est branché.`);
+  L.push(`3. Boucle superpowers : ${SUPERPOWERS[assistant]}`);
+  L.push(`4. ${cmd('help')} — l'aide-mémoire : les 10 runbooks et par où continuer. C'est le seul à retenir.`);
+  L.push(`5. ${cmd('doctor')} — vérifie que tout est branché.`);
   // LA DERNIÈRE LIGNE, celle qui dit « et maintenant ? ». Sur un projet neuf c'est `/new-project`
   // (il n'y a rien) ; sur un projet adopté c'est `docs/ETAT-DES-LIEUX.md` (il y a déjà tout, et
   // c'est ce fichier — posé vide, jamais régénéré — qui apprend le projet à l'IA).
   L.push(adopte
-    ? '5. Ouvre docs/ETAT-DES-LIEUX.md → fais-le remplir par ton IA, qui lit TON code : c\'est le point de départ ici, tout part de là.'
-    : `5. ${cmd('new-project')} (PRD + tech spec + design), puis ${cmd('build')}.`);
+    ? '6. Ouvre docs/ETAT-DES-LIEUX.md → fais-le remplir par ton IA, qui lit TON code : c\'est le point de départ ici, tout part de là.'
+    : `6. ${cmd('new-project')} (PRD + tech spec + design), puis ${cmd('build')}.`);
   return L;
 }

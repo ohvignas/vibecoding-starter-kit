@@ -2,6 +2,17 @@
 
 > Étape 00/04 de `/init-vibecoding` — savoir où on met les pieds avant de toucher à quoi que ce soit. **Les règles de conduite** (une question / une action à la fois, dire ce que tu vas faire avant, jamais de secret en clair) valent ici comme partout : elles sont dans le sommaire, `../init-vibecoding.md`.
 
+## Avant tout — le POINT D'ÉTAPE (obligatoire, AVANT la moindre commande)
+
+Tu ne lances **aucune** commande avant d'avoir fait le point **avec** l'utilisateur. C'est le garde-fou qui empêche d'aller trop vite et de sauter des étapes importantes.
+
+1. **Inventorie — regarde, ne suppose pas.** Passe en revue : `.vibecoding.json`, `AGENTS.md`, `CLAUDE.md`, le dossier de commandes de l'assistant (`.cursor/`, `.claude/`, `docs/commands/`), `docs/` (dont `docs/A-FAIRE.md`, `docs/ETAT-DES-LIEUX.md`), `.mcp.json`, `.github/workflows/`, `.githooks/`, `ai-context/`, `maquette/`, `src/`, `node_modules/`, `package.json`. Pour chacun : **présent** ou **manquant**.
+2. **Montre la liste** à l'utilisateur — deux colonnes, « ✅ déjà là » et « ❌ à construire » — et dis en une phrase ce que ça implique : projet **neuf** à créer, projet **existant** à équiper, ou projet **déjà initialisé** à mettre à jour.
+3. **Demande le feu vert** : « On part là-dessus ? » et **attends sa réponse**. Tant qu'il n'a pas répondu, tu ne scaffolds rien, tu n'installes rien, tu ne modifies rien.
+4. **Puis construis ce qui manque, une étape à la fois** — et refais le point à la fin (étape 04), sur la même liste.
+
+**Ne saute jamais une étape** parce que « ça a l'air déjà bon ». Une étape sautée est une case que personne ne cochera, et le projet part à moitié installé sans qu'on le sache. Si quelque chose manque, **dis-le et construis-le** — que le projet soit **neuf** ou **déjà existant**.
+
 ## Étape 0 — Détecte l'état
 Regarde si **`.vibecoding.json`** existe dans le dossier courant.
 

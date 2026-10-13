@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" width="1000" height="430" role="img" aria-label="Le point d'étape : l'IA liste ce qui est déjà là et ce qui manque, puis attend l'accord avant d'installer">
+  <defs>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .h { font-size: 31px; font-weight: 800; fill: #0f172a; }
+      .s { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; fill: #0369a1; }
+      .cardh { font-size: 19px; font-weight: 800; }
+      .item { font-size: 15px; fill: #334155; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="428" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
+
+  <rect x="48" y="36" width="180" height="32" rx="16" fill="#e0f2fe"/>
+  <circle cx="68" cy="52" r="5" fill="#0284c7"/>
+  <text class="t eyebrow" x="84" y="57">LE POINT D'ÉTAPE</text>
+
+  <text class="t h" x="48" y="108">Avant d'installer, on fait le point.</text>
+  <text class="t s" x="48" y="140">L'IA liste ce qui est là et ce qui manque. Rien ne part sans ton accord.</text>
+
+  <!-- Déjà là -->
+  <rect x="40" y="172" width="440" height="182" rx="20" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text class="t cardh" x="72" y="212" fill="#047857">✅ Déjà là</text>
+  <text class="t item" x="72" y="248">AGENTS.md · CLAUDE.md — les règles</text>
+  <text class="t item" x="72" y="280">docs/ — PRD, roadmap, mémoire</text>
+  <text class="t item" x="72" y="312">.mcp.json — les serveurs MCP</text>
+  <text class="t item" x="72" y="344" fill="#94a3b8">…et ce que le wizard a posé</text>
+
+  <!-- À construire -->
+  <rect x="520" y="172" width="440" height="182" rx="20" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+  <text class="t cardh" x="552" y="212" fill="#b45309">❌ À construire</text>
+  <text class="t item" x="552" y="248">le code de départ (scaffold)</text>
+  <text class="t item" x="552" y="280">superpowers · plugins · MCP</text>
+  <text class="t item" x="552" y="312">les skills manquants</text>
+  <text class="t item" x="552" y="344" fill="#94a3b8">…puis on coche, un par un</text>
+
+  <rect x="40" y="372" width="920" height="36" rx="18" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text class="t" x="500" y="396" text-anchor="middle" font-size="15" font-weight="700" fill="#1d4ed8">« On part là-dessus ? » — l'IA attend ta réponse avant de lancer quoi que ce soit.</text>
+</svg>

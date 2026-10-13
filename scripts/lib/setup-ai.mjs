@@ -45,6 +45,11 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skil
   L.push(adopte
     ? 'Le **seul** fichier « à installer ». Ouvre-le dans ton assistant, fais chaque case, coche au fur et à mesure.'
     : `Le **seul** fichier « à installer ». Ouvre-le dans ton assistant, fais chaque case, coche au fur et à mesure. (${cmd('new-project')} y ajoutera une section « Pour ton projet ».)`);
+  // LE POINT D'ÉTAPE, LÀ AUSSI. C'est le premier contact avec la liste à cocher : sans cette ligne,
+  // l'IA déroule tout d'un trait et saute les cases qui demandent un clic (ou qui échouent). Dire
+  // « montre-moi d'abord ce qui est là et ce qui manque » change le rythme — c'est ce qu'on veut.
+  L.push('');
+  L.push("> **Fais le point d'abord.** Avant d'installer quoi que ce soit, parcours ce fichier et **dis-moi ce qui est déjà là** et **ce qui manque** ; coche au fur et à mesure, **sans sauter** les cases qui demandent mon clic. Une case qui ne s'applique pas se **signale** — elle ne disparaît pas en silence.");
   if (assistant === 'codex') L.push(`\n> ⚠️ ${NOTE_CODEX_COMMANDES}`);
 
   // ── LES TROIS SECTIONS QUI PEUVENT N'AVOIR RIEN À DIRE ────────────────────────────────────────
@@ -144,6 +149,14 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skil
   // HORS de la condition ci-dessus : mobile a autant besoin des scanners que le web.
   sousSection('Outils de preuve (optionnels — toutes les stacks)');
   L.push(`- [ ] ${VERIF_TOOLS_NOTE}`);
+  // PENTEST IA — optionnel, et seulement là où il a un sens : Shannon teste des applications WEB
+  // (source + cible qui tourne). Ni mobile ni desktop. Il exige Docker + une clé de modèle (payant)
+  // — c'est précisément pourquoi il n'est PAS un prérequis, et pourquoi il vit ici, en option.
+  if (stack === 'saas' || stack === 'vitrine') {
+    sousSection('Pentest avancé (optionnel — web) : Shannon');
+    L.push('- [ ] **Jamais obligatoire.** Un **pentest IA** : il lit ton code, attaque une cible et ne rapporte **que ce qu\'il prouve**. `npx @keygraph/shannon@latest setup`, puis `npx @keygraph/shannon@latest start -u https://ton-staging -r .`. Exige **Docker** + une **clé de modèle** (BYOK, payant) → d\'où l\'option. Demande à ton assistant de te préparer un **workflow CI** si tu veux le jouer à chaque mise en staging.');
+    L.push("  - ⚠️ **Jamais sur la production** : il exécute de **vrais exploits**. Staging uniquement, avec des données jetables. Rien d'autre dans le kit n'en dépend.");
+  }
 
   // Le projet n'a AUCUN `package.json` à ce stade — le kit n'en crée pas. La section listait
   // des scripts « à ajouter si absents » dans un fichier qui n'existe pas encore : on dit
