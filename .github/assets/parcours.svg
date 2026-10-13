@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 390" width="1000" height="390" role="img" aria-label="De ton idée à une vraie app en 5 temps : comprendre l'idée, écrire le plan, dessiner les écrans, faire la feuille de route, puis construire écran par écran">
+  <defs>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .h { font-size: 31px; font-weight: 800; fill: #0f172a; }
+      .s { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; fill: #6d28d9; }
+      .step { font-size: 14px; font-weight: 700; fill: #1e293b; }
+      .num { font-size: 14px; font-weight: 800; fill: #ffffff; }
+      .emoji { font-size: 40px; }
+      .arrow { font-size: 24px; fill: #a78bfa; font-weight: 800; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="388" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
+
+  <rect x="48" y="36" width="150" height="32" rx="16" fill="#ede9fe"/>
+  <circle cx="68" cy="52" r="5" fill="#7c3aed"/>
+  <text class="t eyebrow" x="84" y="57">CE QUI SE PASSE</text>
+
+  <text class="t h" x="48" y="108">De ton idée à une vraie app, en 5 temps.</text>
+  <text class="t s" x="48" y="140">Tu réponds à quelques questions. L'IA fait le reste — et tu valides chaque étape.</text>
+
+  <!-- cartes -->
+  <g>
+    <rect x="40" y="176" width="168" height="140" rx="18" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1.5"/>
+    <circle cx="64" cy="200" r="15" fill="#7c3aed"/>
+    <text class="t num" x="64" y="205" text-anchor="middle">1</text>
+    <text class="t emoji" x="124" y="228" text-anchor="middle">💬</text>
+    <text class="t step" x="124" y="264" text-anchor="middle">On comprend</text>
+    <text class="t step" x="124" y="284" text-anchor="middle">ton idée</text>
+  </g>
+  <text class="t arrow" x="218" y="252" text-anchor="middle">→</text>
+
+  <g>
+    <rect x="228" y="176" width="168" height="140" rx="18" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1.5"/>
+    <circle cx="252" cy="200" r="15" fill="#7c3aed"/>
+    <text class="t num" x="252" y="205" text-anchor="middle">2</text>
+    <text class="t emoji" x="312" y="228" text-anchor="middle">📄</text>
+    <text class="t step" x="312" y="264" text-anchor="middle">Le plan écrit</text>
+    <text class="t step" x="312" y="284" text-anchor="middle">(PRD)</text>
+  </g>
+  <text class="t arrow" x="406" y="252" text-anchor="middle">→</text>
+
+  <g>
+    <rect x="416" y="176" width="168" height="140" rx="18" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1.5"/>
+    <circle cx="440" cy="200" r="15" fill="#7c3aed"/>
+    <text class="t num" x="440" y="205" text-anchor="middle">3</text>
+    <text class="t emoji" x="500" y="228" text-anchor="middle">🎨</text>
+    <text class="t step" x="500" y="264" text-anchor="middle">Les écrans</text>
+    <text class="t step" x="500" y="284" text-anchor="middle">(maquette)</text>
+  </g>
+  <text class="t arrow" x="594" y="252" text-anchor="middle">→</text>
+
+  <g>
+    <rect x="604" y="176" width="168" height="140" rx="18" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1.5"/>
+    <circle cx="628" cy="200" r="15" fill="#7c3aed"/>
+    <text class="t num" x="628" y="205" text-anchor="middle">4</text>
+    <text class="t emoji" x="688" y="228" text-anchor="middle">🗺️</text>
+    <text class="t step" x="688" y="264" text-anchor="middle">La feuille</text>
+    <text class="t step" x="688" y="284" text-anchor="middle">de route</text>
+  </g>
+  <text class="t arrow" x="782" y="252" text-anchor="middle">→</text>
+
+  <g>
+    <rect x="792" y="176" width="168" height="140" rx="18" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
+    <circle cx="816" cy="200" r="15" fill="#4f46e5"/>
+    <text class="t num" x="816" y="205" text-anchor="middle">5</text>
+    <text class="t emoji" x="876" y="228" text-anchor="middle">🧱</text>
+    <text class="t step" x="876" y="264" text-anchor="middle">/build construit,</text>
+    <text class="t step" x="876" y="284" text-anchor="middle">écran par écran</text>
+  </g>
+
+  <rect x="40" y="338" width="920" height="34" rx="17" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+  <text class="t" x="500" y="360" text-anchor="middle" font-size="15" font-weight="700" fill="#047857">Tu valides chaque étape — l'IA n'avance jamais sans toi.</text>
+</svg>
