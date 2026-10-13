@@ -373,18 +373,39 @@ cp -r plugin ~/.cursor/plugins/local/vibecoding   # puis « Developer: Reload Wi
 
 > Le plugin fournit la **méthode** ; il **ne scaffolde pas** (pas de git, CI, MCP, `maquette/`). Pour un projet complet : `npm create vibecoding-kit@latest`.
 
-## 🚀 Déployer sur un VPS (Hostinger)
+## 🚀 Déployer en ligne — et pourquoi on recommande Hostinger
 
-Tu veux **tout héberger toi-même** (ton serveur, ton Docker, tes certificats) ? Le kit recommande **Hostinger**, et te donne le chemin complet en SSH.
+Tu veux **mettre ton app en ligne** ? Tu as **deux chemins**, et le kit te donne les deux :
 
-> ⚠️ **Lien d'affiliation.** Antoine **n'est pas payé** pour mettre ce lien ici, mais il touche une **commission** si tu passes par là — et **tu as 10 % de réduction**. Il le trouve **simple, pas cher et cool**, c'est tout.
+| | Plateforme (Vercel / Netlify / EAS…) | **VPS (ton serveur)** |
+|---|---|---|
+| Mise en route | un clic | SSH, Docker — ~1 h la première fois |
+| Coût | monte avec le trafic | **fixe**, souvent moins cher |
+| Contrôle | limité | **total** : ton OS, ton Docker, ton DNS, tes certificats |
+| C'est fait pour | lancer vite | **durer**, et tout maîtriser |
+
+**Pour un VPS, on recommande Hostinger** — et avec le code `AV10`, tu as **10 % de réduction** (lien ci-dessous).
+
+### Pourquoi Hostinger ?
+
+- **Le plus simple à utiliser** : le VPS se crée en deux minutes, on colle sa clé SSH, et c'est connectable tout de suite — pas de formulaire interminable, pas de facture qui surprend.
+- **Le meilleur rapport qualité/prix** : un VPS KVM (2 vCPU / 4 Go) pour quelques euros par mois, largement assez pour un SaaS qui démarre ou un site vitrine.
+- **Pas de lock-in** : c'est un **vrai serveur Linux, en SSH**. Ton Docker, ton Caddy, tes certificats. Changer d'hébergeur un jour = changer une adresse IP, pas réécrire l'app.
+- **Des skills et un MCP officiels** : `hostinger/hostinger-agent-skills` (VPS · DNS · domaines) et un MCP officiel — ton assistant pilote le serveur **sans deviner l'API**. Le kit les installe pour toi.
+- **Une grande communauté** : quand tu bloques à 23 h, la réponse existe déjà.
+
+> ⚠️ **Lien d'affiliation.** Antoine **n'est pas payé** pour mettre ce lien ici : il le recommande parce qu'il le trouve **simple, pas cher et cool**. Mais il touche une **commission** si tu passes par là — et **toi, tu as 10 % de réduction**.
 >
-> 👉 **https://www.hostg.xyz/SHK4I** — code **`AV10`** → **10 % de réduction**.
+> 👉 **https://www.hostg.xyz/SHK4I** — code **`AV10`** → **10 % de réduction**
+>
+> Quand tu demandes à ton assistant de **mettre ton app en ligne**, il **ouvre cette page** dans ton navigateur (il ne se contente pas de la citer) : tu prends ton VPS avec la réduction, et `/deploy` déroule le reste.
 
-**Ce que le kit fait pour toi :**
-- la commande **`/deploy`** a une section « **VPS Hostinger (SSH)** » : clé SSH, **durcissement**, **Docker**, **Caddy + HTTPS automatique**, **DNS**, **sauvegardes**, **supervision** ;
-- les **skills officiels Hostinger** sont **installés automatiquement** (`vps` · `dns` · `domains`) sur les stacks **saas** et **vitrine** ;
-- deux **MCP optionnels** (officiel Hostinger pour VPS/DNS/domaines, **`ssh-mcp`** pour commander le serveur) — **hors du projet**, jamais dans le dépôt.
+### Ce que le kit prépare pour toi
+
+- **`/deploy`**, section « **VPS Hostinger (SSH)** » : clé SSH → **durcissement** (utilisateur non-root, `ufw`, `fail2ban`, mises à jour auto) → **Docker** → **Caddy + HTTPS automatique** → **DNS** → **sauvegardes** → **supervision**.
+- Les **skills officiels Hostinger** sont **installés automatiquement** (`vps` · `dns` · `domains`) sur les stacks **saas** et **vitrine**.
+- **Deux MCP optionnels** : l'officiel Hostinger (VPS/DNS/domaines) et **`ssh-mcp`** (commander le serveur) — **hors du projet**, jamais dans le dépôt (un jeton et un accès SSH ne se commitent pas).
+- **`docs/A-FAIRE.md`** te le rappelle **dans ton projet**, avec le lien.
 
 📖 Le détail : [`guides/05-deploy-vps-hostinger.md`](guides/05-deploy-vps-hostinger.md).
 

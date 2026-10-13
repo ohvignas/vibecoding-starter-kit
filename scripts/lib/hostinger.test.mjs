@@ -30,11 +30,12 @@ test('Hostinger — la source du lien : affiliation déclarée, code et réducti
 });
 
 // Un lien affilié publié sans sa mention = tromperie. Le contrôle est de PROXIMITÉ : la mention
-// doit se trouver dans les ~500 caractères qui précèdent le lien, pas perdue ailleurs dans la page.
+// doit se trouver dans les ~900 caractères qui précèdent le lien (la section qui le publie), pas
+// perdue ailleurs dans la page.
 function verifieLienDeclare(rel, texte) {
   const i = texte.indexOf(HOSTINGER.url);
   assert.ok(i > -1, `${rel} : le lien ${HOSTINGER.url} n'est pas publié`);
-  const avant = texte.slice(Math.max(0, i - 500), i);
+  const avant = texte.slice(Math.max(0, i - 900), i);
   assert.match(avant, /affiliation/i, `${rel} : le lien est publié SANS sa mention d'affiliation juste avant`);
   assert.ok(texte.includes(HOSTINGER.code), `${rel} : le code de réduction (${HOSTINGER.code}) n'accompagne pas le lien`);
 }
@@ -89,5 +90,31 @@ test('Hostinger — le projet reçoit le lien (web seulement), avec la mention',
   }
   for (const s of ['mobile', 'desktop']) {
     assert.doesNotMatch(aFaire(s, 'cursor'), /hostg\.xyz|Hostinger/, `${s} : pas de déploiement VPS (pas de serveur pour cette stack)`);
+  }
+});
+
+// ── « METTRE EN LIVE » = OUVRIR LA PAGE ────────────────────────────────────────────────────────
+// Exigence d'Antoine (2026-10-13) : quand l'utilisateur demande de mettre son app en ligne, l'IA
+// ne se contente pas de citer le lien — elle OUVRE la page. Sur les trois surfaces qui la pilotent
+// (`/deploy`, le guide, et `docs/A-FAIRE.md` dans le projet), l'ordre doit être explicite, avec les
+// commandes d'ouverture des trois OS. Sans cette exigence, « voici le lien » reprend le dessus.
+test('Hostinger — déployer OUVRE la page (exigence explicite sur les 3 surfaces)', () => {
+  const nu = (t) => t.replace(/[*_`]/g, ''); // la mise en forme ne doit pas casser le contrôle
+  const surfaces = [
+    ['/deploy', read(cheminRunbook('deploy'))],
+    ['guide', read('guides/05-deploy-vps-hostinger.md')],
+    ['A-FAIRE', aFaire('saas', 'cursor')],
+  ];
+  for (const [nom, brut] of surfaces) {
+    const t = nu(brut);
+    assert.match(t, /ouvre/i, `${nom} : doit dire d'OUVRIR la page`);
+    assert.match(t, /\bopen\b/, `${nom} : la commande « open » (macOS) doit être donnée`);
+    assert.match(t, /xdg-open/, `${nom} : la commande « xdg-open » (Linux) doit être donnée`);
+    assert.match(t, /hostg\.xyz\/SHK4I/, `${nom} : le lien exact`);
+  }
+  // L'interdit de « simplement citer » : porté par les surfaces qui dictent le geste à l'IA.
+  for (const [nom, brut] of [surfaces[0], surfaces[2]]) {
+    assert.match(nu(brut), /contentes?\s+(?:pas|jamais)\s+de\s+(?:la\s+)?citer|citation/i,
+      `${nom} : interdire de se contenter de citier/citer le lien`);
   }
 });
