@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460" width="1000" height="460" role="img" aria-label="Deux chemins pour mettre en ligne : une plateforme, ou un VPS Hostinger en SSH avec Docker et HTTPS">
+  <defs>
+    <style>
+      .t { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      .h { font-size: 31px; font-weight: 800; fill: #0f172a; }
+      .s { font-size: 17px; fill: #475569; }
+      .eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; fill: #b45309; }
+      .ph { font-size: 17px; font-weight: 800; fill: #0f172a; }
+      .li { font-size: 14px; fill: #334155; }
+      .step { font-size: 12px; font-weight: 700; fill: #065f46; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="458" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
+
+  <rect x="48" y="34" width="128" height="32" rx="16" fill="#fef3c7"/>
+  <circle cx="68" cy="50" r="5" fill="#d97706"/>
+  <text class="t eyebrow" x="84" y="55">DÉPLOYER</text>
+
+  <text class="t h" x="48" y="106">Plateforme ou ton VPS : deux chemins.</text>
+  <text class="t s" x="48" y="138">Le kit donne les deux — à toi de choisir selon le coût et le contrôle que tu veux.</text>
+
+  <!-- Plateforme -->
+  <rect x="40" y="164" width="440" height="150" rx="18" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text class="t ph" x="68" y="198">☁️ Une plateforme</text>
+  <text class="t li" x="68" y="228">• Prêt en un clic (Vercel, Netlify, Expo EAS…)</text>
+  <text class="t li" x="68" y="252">• Le coût monte avec le trafic</text>
+  <text class="t li" x="68" y="276">• Tu ne contrôles ni l'OS ni le réseau</text>
+  <text class="t li" x="68" y="300" fill="#1d4ed8">Idéal pour lancer vite et voir.</text>
+
+  <!-- VPS -->
+  <rect x="520" y="164" width="440" height="150" rx="18" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text class="t ph" x="548" y="198">🖥️ Ton VPS (SSH)</text>
+  <text class="t li" x="548" y="228">• Coût <tspan font-weight="700">fixe</tspan>, souvent moins cher</text>
+  <text class="t li" x="548" y="252">• Contrôle total : OS, Docker, DNS, certificats</text>
+  <text class="t li" x="548" y="276">• Pas de lock-in : ton serveur reste ton serveur</text>
+  <text class="t li" x="548" y="300" fill="#047857">Recommandé pour durer — et 10 % de réduction.</text>
+
+  <!-- les 4 temps du VPS -->
+  <g>
+    <rect x="40" y="330" width="200" height="44" rx="12" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text class="t step" x="140" y="357" text-anchor="middle">1. SSH par clé</text>
+    <text class="t" x="252" y="357" font-size="18" fill="#6ee7b7" font-weight="800">→</text>
+
+    <rect x="272" y="330" width="210" height="44" rx="12" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text class="t step" x="377" y="357" text-anchor="middle">2. Durcir (ufw, fail2ban)</text>
+    <text class="t" x="494" y="357" font-size="18" fill="#6ee7b7" font-weight="800">→</text>
+
+    <rect x="514" y="330" width="180" height="44" rx="12" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text class="t step" x="604" y="357" text-anchor="middle">3. Docker</text>
+    <text class="t" x="706" y="357" font-size="18" fill="#6ee7b7" font-weight="800">→</text>
+
+    <rect x="726" y="330" width="234" height="44" rx="12" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text class="t step" x="843" y="357" text-anchor="middle">4. Caddy → HTTPS auto</text>
+  </g>
+
+  <rect x="40" y="396" width="920" height="50" rx="16" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+  <text class="t" x="500" y="418" text-anchor="middle" font-size="15" font-weight="700" fill="#b45309">VPS recommandé : Hostinger — skills officiels (vps · dns · domains) + MCP.</text>
+  <text class="t" x="500" y="438" text-anchor="middle" font-size="13" fill="#92400e">Lien d'affiliation : www.hostg.xyz/SHK4I — code AV10 → 10 % de réduction.</text>
+</svg>

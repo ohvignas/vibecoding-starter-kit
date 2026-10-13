@@ -111,6 +111,12 @@ export const PINS = {
 const MCP_CONVEX = { command: 'npx', args: ['-y', 'convex@latest', 'mcp', 'start'] };
 const MCP_BETTER_AUTH = { type: 'http', url: 'https://mcp.better-auth.com/mcp' };
 const MCP_SHADCN = { command: 'npx', args: ['-y', 'shadcn@latest', 'mcp'] };
+// Context7 : la doc À JOUR de N'IMPORTE QUELLE bibliothèque (résout un id de lib puis rend la doc).
+// C'est le filet universel — il couvre ce qu'aucun MCP dédié ne couvre (le CLI TanStack, par
+// exemple, a RETIRÉ son serveur MCP : `tanstack mcp` n'existe plus).
+const MCP_CONTEXT7 = { command: 'npx', args: ['-y', '@upstash/context7-mcp'] };
+// Electron (desktop) : piloter/observer l'app Electron depuis l'agent (dépôt communautaire).
+const MCP_ELECTRON = { command: 'npx', args: ['-y', '@laststance/electron-mcp-server@latest'] };
 // Test E2E fonctionnel : pilote un vrai navigateur (navigate/click/fill/assert) + tests rejouables en CI.
 const MCP_PLAYWRIGHT = { command: 'npx', args: ['-y', '@playwright/mcp@latest'] };
 const PLUGINS_CONVEX = {
@@ -124,6 +130,12 @@ const SKILL_CONVEX_AGENT = { label: 'convex-agent-skills', repo: 'get-convex/age
 // prend que les trois domaines utiles au déploiement (vps · dns · domaines), jamais `--all` : le
 // dépôt en porte d'autres (billing, ecommerce…) qui parlent de tout autre chose.
 const SKILL_HOSTINGER = { label: 'hostinger (VPS · DNS · domaines)', repo: 'hostinger/hostinger-agent-skills', skills: ['vps', 'dns', 'domains'] };
+// TanStack : Router/Start/Query. Le dépôt COMMUNAUTAIRE `deckardger/tanstack-agent-skills` est le
+// seul qui couvre Start ET Router — TanStack n'en publie pas d'officiel pour ces paquets (le CLI
+// embarque des skills DANS les paquets npm, mais pas de SKILL.md téléchargeable).
+const SKILL_TANSTACK = { label: 'tanstack (router · start · query)', repo: 'deckardger/tanstack-agent-skills', skills: ['tanstack-start', 'tanstack-router', 'tanstack-query'] };
+// Astro (vitrine) : bonnes pratiques, composants, collections de contenu. Dépôt communautaire.
+const SKILL_ASTRO = { label: 'astro (bonnes pratiques · composants · collections)', repo: 'incluud/astro-agent-skills', skills: ['astro-best-practices', 'create-component', 'content-collection', 'add-integration'] };
 
 // Le VPS recommandé par le kit — UNE SEULE source. `disclosure` est OBLIGATOIRE : c'est un lien
 // d'affiliation, et le dire est la condition pour le publier. Jamais de lien sans sa mention.
@@ -148,10 +160,12 @@ export const STACKS = {
       'better-auth': MCP_BETTER_AUTH,
       shadcn: MCP_SHADCN,
       playwright: MCP_PLAYWRIGHT,
+      context7: MCP_CONTEXT7,
     },
     skills: [
       SKILL_BETTER_AUTH,
       SKILL_CONVEX_AGENT,
+      SKILL_TANSTACK,
       SKILL_HOSTINGER,
       STITCH_SKILL,
     ],
@@ -186,6 +200,7 @@ export const STACKS = {
     },
     mcp: {
       convex: MCP_CONVEX,
+      context7: MCP_CONTEXT7,
       expo: { type: 'http', url: 'https://mcp.expo.dev/mcp', needsAuth: true },
       // Test E2E fonctionnel mobile : pilote le simulateur iOS / émulateur Android + flows Maestro.
       // Bundlé dans le Maestro CLI (pas npx) → prérequis à installer une fois.
@@ -231,6 +246,8 @@ export const STACKS = {
     mcp: {
       'chrome-devtools': { command: 'npx', args: ['chrome-devtools-mcp@latest', '--browser-url=http://127.0.0.1:9222'] },
       shadcn: MCP_SHADCN,
+      electron: MCP_ELECTRON,
+      context7: MCP_CONTEXT7,
     },
     skills: [STITCH_SKILL],
     // `security` (npx @doyensec/electronegativity) a été RETIRÉ : son paquet npm n'a pas bougé
@@ -263,12 +280,15 @@ export const STACKS = {
       'better-auth': MCP_BETTER_AUTH,
       shadcn: MCP_SHADCN,
       playwright: MCP_PLAYWRIGHT,
+      context7: MCP_CONTEXT7,
     },
     skills: [
       { label: 'shadcn/ui (officiel : CLI, thèmes, registry)', repo: 'shadcn/ui' },
       { label: 'seo+geo (audit · schema · programmatic · contenu)', repo: 'boraoztunc/skills', skills: ['seo-audit', 'schema-markup', 'programmatic-seo', 'content-strategy'] },
+      SKILL_ASTRO,
       SKILL_BETTER_AUTH,
       SKILL_CONVEX_AGENT,
+      SKILL_TANSTACK,
       SKILL_HOSTINGER,
       STITCH_SKILL,
     ],

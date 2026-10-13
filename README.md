@@ -71,7 +71,7 @@ Le **vibecoding**, c'est décrire ce que tu veux dans ta langue, et laisser une 
 
 | | Fonctionnalité | Ce que ça fait |
 |---|---|---|
-| 🚀 | **10 commandes** | `/init-vibecoding`, `/help`, `/new-project`, `/build`, `/new-feature`, `/edit-design`, `/doctor`, `/next`, `/sos`, `/deploy` — tout le cycle de vie, en français simple |
+| 🚀 | **10 commandes** | de l'idée (`/new-project`) à la mise en ligne (`/deploy`) — la liste complète est plus bas |
 | 🪜 | **Runbooks en étapes** | les commandes longues arrivent en **fichiers séparés**, un par étape, avec une checklist d'entrée. L'IA en ouvre une à la fois — elle n'en saute plus, et tu vois où tu en es |
 | 🧩 | **Environnement par stack** | selon la stack, le projet est câblé auto avec les **plugins + MCP + skills + hooks** du framework |
 | 💳 | **Catalogue de domaines** | paiement, email, storage, analytics, erreurs, push… **choisis d'après le PRD** (`docs/DOMAINS.md`), pas tout d'un coup |
@@ -135,7 +135,7 @@ npx create-vibecoding-kit@latest --adopt
 
 ## ✅ Après l'install — les 2-3 gestes qui restent
 
-Le wizard a **déjà tout posé** (règles, 10 commandes, agents, skills, git + hooks, CI, config MCP). Il reste **trois gestes** dans ton assistant : un installeur ne peut pas brancher un plugin ni un compte à ta place. Ta liste exacte, cochable, est dans **`docs/A-FAIRE.md`** — selon ton couple **stack × assistant**, c'est de **0 à 2 plugins** et **2 à 5 serveurs MCP**.
+Le wizard a **déjà tout posé** (règles, 10 commandes, agents, skills, git + hooks, CI, config MCP). Il reste **trois gestes** dans ton assistant : un installeur ne peut pas brancher un plugin ni un compte à ta place. Ta liste exacte, cochable, est dans **`docs/A-FAIRE.md`** — selon ton couple **stack × assistant**, c'est de **0 à 2 plugins** et **4 à 6 serveurs MCP**.
 
 ### Geste 1 — installe superpowers (le pilote de la boucle)
 
@@ -164,10 +164,10 @@ La commande exacte est dans `docs/A-FAIRE.md` § 1 (elle dépend de ton assistan
 
 | Ta stack | Serveurs MCP |
 |---|---|
-| **SaaS** | Convex · Better Auth · shadcn · Playwright *(test E2E)* |
-| **Mobile** | Convex · Expo *(login requis)* · Maestro *(test E2E)* |
-| **Desktop** | Chrome DevTools *(test E2E)* · shadcn |
-| **Vitrine** | Astro Docs · Convex · Better Auth · shadcn · Playwright *(test E2E)* |
+| **SaaS** | Convex · Better Auth · shadcn · Playwright *(test E2E)* · Context7 *(doc à jour, n'importe quelle lib)* |
+| **Mobile** | Convex · Expo *(login requis)* · Maestro *(test E2E)* · Context7 *(doc à jour)* |
+| **Desktop** | Chrome DevTools *(test E2E)* · shadcn · Electron · Context7 *(doc à jour)* |
+| **Vitrine** | Astro Docs · Convex · Better Auth · shadcn · Playwright *(test E2E)* · Context7 *(doc à jour)* |
 
 > [!TIP]
 > **Bloqué ?** `/doctor` dit ce qui manque. **Coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
@@ -217,6 +217,10 @@ Chaque stack a son README débutant : [`stacks/saas/README.md`](stacks/saas/READ
 
 ## 🧠 Pourquoi ces technos ? (et ce qui t'aide)
 
+<p align="center">
+  <img src=".github/assets/pourquoi.svg" alt="Moins d'outils, moins d'erreurs : cinq outils à assembler contre une seule brique Convex" width="900">
+</p>
+
 Chaque brique est choisie pour une raison **de débutant** : moins d'outils à assembler, et plus de choses que l'IA **ne peut pas casser**.
 
 ### 🗄️ Convex — la base de données ET le backend
@@ -233,7 +237,9 @@ Chaque brique est choisie pour une raison **de débutant** : moins d'outils à a
 
 **Pourquoi pas Next.js ?** Même famille (React full-stack, SSR). TanStack Start est plus **« le type d'abord »** — précisément l'avantage qui compte quand c'est une IA qui écrit.
 
-**Ce qui t'aide :** `ai-context/tanstack-start/llms.txt` et les règles de stack livrées dans ton projet (`.cursor/rules/stack-saas.mdc` sur Cursor, `AGENTS-stack.md` sur Claude Code et Codex).
+**Ce qui t'aide :** le skill **`deckardger/tanstack-agent-skills`** (`tanstack-start`, `tanstack-router`, `tanstack-query` — **installé pour toi**), `ai-context/tanstack-start/llms.txt`, et les règles de stack livrées dans ton projet.
+
+> ⚠️ **Pas de MCP TanStack** : le CLI a **retiré** son serveur MCP (`tanstack mcp` n'existe plus). À la place : `npx @tanstack/cli search-docs "…" --library start` pour la doc, et le MCP **Context7** pour tout le reste.
 
 ### 🔐 Better Auth — l'authentification
 
@@ -243,9 +249,9 @@ Chaque brique est choisie pour une raison **de débutant** : moins d'outils à a
 
 ### 🌐 Astro · 📱 Expo · 🖥️ Electron
 
-- **Astro** (vitrine) : des pages **statiques par défaut** — rapides, indexables par Google **et** par les IA. C'est toute la raison d'être de cette stack.
-- **Expo** (mobile) : **une** base de code pour **iOS et Android** (React Native) — rien à apprendre en Swift ou Kotlin.
-- **Electron** (desktop) : une appli **installable** (Windows, Mac, Linux) à partir de web — le chemin le plus court vers le bureau.
+- **Astro** (vitrine) : des pages **statiques par défaut** — rapides, indexables par Google **et** par les IA. *Aide :* skill **`incluud/astro-agent-skills`** (bonnes pratiques, composants, collections) + **MCP Astro Docs** (officiel).
+- **Expo** (mobile) : **une** base de code pour **iOS et Android** (React Native) — rien à apprendre en Swift ou Kotlin. *Aide :* skill **officiel `expo/skills`** (EAS, notifications, caméra…) + **MCP Expo**.
+- **Electron** (desktop) : une appli **installable** (Windows, Mac, Linux) à partir de web — le chemin le plus court vers le bureau. *Aide :* skills **communautaires** Electron *(Claude Code)* + **MCP Chrome DevTools** et **Electron**.
 
 > **La règle du kit, à chaque brique :** on ne cherche pas « la meilleure techno », mais **celle où toi et l'IA faites le moins d'erreurs**. D'où **TypeScript partout**, des **règles officielles** livrées dans `ai-context/`, et des **skills par techno** — installés pour toi.
 
@@ -329,6 +335,10 @@ cp -r plugin ~/.cursor/plugins/local/vibecoding   # puis « Developer: Reload Wi
 > Le plugin fournit la **méthode** ; il **ne scaffolde pas** (pas de git, CI, MCP, `maquette/`). Pour un projet complet : `npm create vibecoding-kit@latest`.
 
 ## 🚀 Déployer en ligne — et pourquoi on recommande Hostinger
+
+<p align="center">
+  <img src=".github/assets/deployer.svg" alt="Deux chemins pour mettre en ligne : une plateforme, ou un VPS Hostinger en SSH avec Docker et HTTPS" width="900">
+</p>
 
 Tu veux **mettre ton app en ligne** ? Tu as **deux chemins**, et le kit te donne les deux :
 
