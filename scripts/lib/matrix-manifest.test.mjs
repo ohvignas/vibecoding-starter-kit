@@ -47,9 +47,9 @@ test('resolveStackManifest(desktop, claude-code) : MCP chrome-devtools, audit en
 // La vitrine n'est plus « Astro + un CMS dans git » : c'est `site/` (Astro) + `dashboard/`
 // (TanStack Start + Better Auth) sur Convex. Le manifeste doit porter les DEUX applications —
 // et rien de ce qui faisait la stack précédente ne doit y survivre en douce.
-test('vitrine : les 5 MCP des deux applications, et rien de Keystatic', () => {
+test('vitrine : les 6 MCP des deux applications, et rien de Keystatic', () => {
   const m = resolveStackManifest('vitrine', 'claude-code');
-  assert.deepEqual(Object.keys(m.mcp).sort(), ['astro-docs', 'better-auth', 'convex', 'playwright', 'shadcn']);
+  assert.deepEqual(Object.keys(m.mcp).sort(), ['astro-docs', 'better-auth', 'context7', 'convex', 'playwright', 'shadcn']);
   // Repris de `saas`, pas réinventés : deux définitions du même serveur finissent par diverger.
   assert.deepEqual(m.mcp.convex, resolveStackManifest('saas', 'claude-code').mcp.convex);
   assert.deepEqual(m.mcp['better-auth'], resolveStackManifest('saas', 'claude-code').mcp['better-auth']);

@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "vibecoding",
   "description": "La méthode vibecoding en plugin : les 10 commandes, les 7 agents de revue et les règles de stack — pour Cursor, Claude Code et Codex. (Pour créer un projet complet, `npm create vibecoding-kit`.)",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "author": {
     "name": "ohvignas",
     "url": "https://github.com/ohvignas"
