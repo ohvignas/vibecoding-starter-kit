@@ -15,7 +15,7 @@
 
   <rect x="1" y="1" width="998" height="398" rx="24" fill="#ffffff" stroke="#e5e9f2" stroke-width="1.5"/>
 
-  <rect x="48" y="36" width="212" height="32" rx="16" fill="#ccfbf1"/>
+  <rect x="48" y="36" width="262" height="32" rx="16" fill="#ccfbf1"/>
   <circle cx="68" cy="52" r="5" fill="#0d9488"/>
   <text class="t eyebrow" x="84" y="57">LE PROJET N'OUBLIE PAS</text>
 
