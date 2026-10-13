@@ -215,6 +215,40 @@ Chaque stack a son README débutant : [`stacks/saas/README.md`](stacks/saas/READ
 >
 > Pour un site qui change rarement et doit rester gratuit, un **Astro seul avec du contenu en Markdown** reste le bon outil.
 
+## 🧠 Pourquoi ces technos ? (et ce qui t'aide)
+
+Chaque brique est choisie pour une raison **de débutant** : moins d'outils à assembler, et plus de choses que l'IA **ne peut pas casser**.
+
+### 🗄️ Convex — la base de données ET le backend
+
+**Pourquoi.** Convex remplace **cinq** outils par **un seul** : base de données + API + temps réel + tâches planifiées + stockage de fichiers. Tout s'écrit en **TypeScript** — la même langue que le front — donc l'IA a **un seul modèle en tête** au lieu de quatre. Et c'est **réactif** : une donnée change en base, ton écran se met à jour **tout seul**, sans code de rafraîchissement.
+
+**Pourquoi pas Firebase ou Supabase ?** Ils te donnent une base *à côté* du backend — à toi d'ajouter les règles, les fonctions, le temps réel. Convex **fusionne** les deux : ta logique serveur *est* du TypeScript typé, déployé pour toi.
+
+**Ce qui t'aide :** les **skills officiels Convex** (`convex-design` pour le schéma, `convex-authz` pour qui a le droit à quoi, `convex-optimize` pour la vitesse…), le **MCP Convex** (l'IA interroge ta **vraie** base), les règles officielles dans `ai-context/convex/`, et le skill **`convex-self-hosted`** si tu héberges sur ton VPS.
+
+### 🧩 TanStack Start — le front (et le serveur web)
+
+**Pourquoi.** C'est du **React** (le standard du métier) avec un **routing typé de bout en bout** : le routeur **vérifie** tes liens, tes paramètres d'URL et tes appels serveur. En vibecoding c'est décisif — une route mal orthographiée **ne compile pas**, au lieu de casser plus tard. SSR et fonctions serveur inclus.
+
+**Pourquoi pas Next.js ?** Même famille (React full-stack, SSR). TanStack Start est plus **« le type d'abord »** — précisément l'avantage qui compte quand c'est une IA qui écrit.
+
+**Ce qui t'aide :** `ai-context/tanstack-start/llms.txt` et les règles de stack livrées dans ton projet (`.cursor/rules/stack-saas.mdc` sur Cursor, `AGENTS-stack.md` sur Claude Code et Codex).
+
+### 🔐 Better Auth — l'authentification
+
+**Pourquoi.** Écrire l'authentification à la main est le chemin classique vers une **faille**. Better Auth donne comptes, sessions, 2FA, connexion Google/GitHub, organisations — **clé en main**, et **auto-hébergé** : tes utilisateurs vivent dans **ta** base Convex, pas chez un tiers payant.
+
+**Ce qui t'aide :** le skill officiel **`better-auth/skills`** (bonnes pratiques, sécurité, email/mot de passe, organisations) et le **MCP Better Auth** (la doc en direct).
+
+### 🌐 Astro · 📱 Expo · 🖥️ Electron
+
+- **Astro** (vitrine) : des pages **statiques par défaut** — rapides, indexables par Google **et** par les IA. C'est toute la raison d'être de cette stack.
+- **Expo** (mobile) : **une** base de code pour **iOS et Android** (React Native) — rien à apprendre en Swift ou Kotlin.
+- **Electron** (desktop) : une appli **installable** (Windows, Mac, Linux) à partir de web — le chemin le plus court vers le bureau.
+
+> **La règle du kit, à chaque brique :** on ne cherche pas « la meilleure techno », mais **celle où toi et l'IA faites le moins d'erreurs**. D'où **TypeScript partout**, des **règles officielles** livrées dans `ai-context/`, et des **skills par techno** — installés pour toi.
+
 ## 🧠 La mémoire du projet & le journal du crew
 
 <p align="center">
