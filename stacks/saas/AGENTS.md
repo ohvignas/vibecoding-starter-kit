@@ -43,7 +43,7 @@ Le wizard a installé les **skills officiels** de la stack. **Charge-les en prem
 - **Better Auth** : `better-auth-best-practices` · `better-auth-security-best-practices` · `create-auth` · `organization-best-practices` · `email-and-password-best-practices` · `two-factor-authentication-best-practices`.
 - **Performance & coûts** : `convex-optimize` · `convex-insights` · `convex-cost`.
 - **Avant de livrer / auditer** : `convex-reviewer` · `convex-authz` · `convex-launch-readiness` (avant la prod) · `convex-test` · `convex-verify` · `convex-monitor`.
-- **Convex auto-hébergé (VPS, Docker)** : charge le skill **`convex-self-hosted`** — index sur table qui grossit, rétention, `.collect()` non borné, sauvegardes, mémoire, mises à jour. Les **pièges payés** y sont ; le guide officiel est dans `ai-context/convex/self-hosting.md`.
+- **Convex auto-hébergé (VPS, Docker)** : lis **`ai-context/convex/self-hosting.md`** (le guide officiel, livré dans tout projet Convex) et, s'il est installé, le skill **`convex-self-hosted`** — index sur table qui grossit, rétention, `.collect()` non borné, sauvegardes, mémoire, mises à jour. Les **pièges payés** y sont.
 
 Le **skill officiel fait foi** (il est à jour) : si une règle de cette page et un skill se contredisent, **suis le skill** et corrige cette page.
 
