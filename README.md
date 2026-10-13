@@ -23,6 +23,46 @@
 
 ---
 
+## 🧰 Installer — le guide débutant (2 minutes)
+
+<p align="center">
+  <img src=".github/assets/installer.svg" alt="Installer en 4 gestes : ouvrir un terminal, coller la commande, répondre aux questions, ouvrir son assistant" width="900">
+</p>
+
+**Avant de commencer** : il te faut **Node.js ≥ 20.12** et **git**. C'est tout — pas de Docker, pas de compte, pas de clé.
+
+**1. Ouvre un terminal.** Sur Mac, c'est l'application **Terminal** (⌘ + espace, tape « Terminal »). Crée un dossier vide et entre dedans :
+
+```bash
+mkdir mon-app && cd mon-app
+```
+
+**2. Colle cette commande, puis appuie sur Entrée** :
+
+```bash
+npm create vibecoding-kit@latest
+```
+
+Il te pose **4 à 5 questions** en français (type d'app, assistant, nom du projet…). Réponds comme ça vient : il n'y a pas de mauvaise réponse, et rien n'est écrit tant que tu n'as pas tout répondu (Ctrl-C pour tout annuler).
+
+**3. Ouvre ton assistant IA** — **Cursor**, **Claude Code** ou **Codex** — **dans ce dossier**, et **colle le prompt** qu'il t'a affiché (il est aussi enregistré dans `COLLE-MOI-DANS-L-IA.md`).
+
+**4. Il te reste deux gestes**, guidés par l'assistant : installer **superpowers** et **autoriser les MCP**. Puis tape :
+
+```
+/help
+```
+
+`/help` liste les 10 commandes et te dit **par où continuer**.
+
+> **Tu as déjà du code ?** Ne lance **pas** la commande ci-dessus. Va **dans le dossier de ton projet** et lance `npx create-vibecoding-kit@latest --adopt` : le kit installe la méthode **à côté** de ton code, sans écraser un seul fichier. C'est le **Cas B** de « Démarrage rapide », plus bas.
+
+> **Windows** : lance la commande avec `node` (pas de script `.sh`). Les hooks Git tournent sous **Git Bash**.
+
+> **Tu veux juste les commandes dans ton assistant, sans créer de projet ?** Installe le **plugin** — voir « [Installer la méthode en plugin](#-installer-la-méthode-en-plugin-sans-créer-de-projet) » plus bas.
+
+---
+
 ## 🧭 C'est quoi ce kit, en une minute
 
 **Tu ne sais pas coder ? C'est fait pour toi.**
