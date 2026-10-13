@@ -23,46 +23,6 @@
 
 ---
 
-## 🧰 Installer — le guide débutant (2 minutes)
-
-<p align="center">
-  <img src=".github/assets/installer.svg" alt="Installer en 4 gestes : ouvrir un terminal, coller la commande, répondre aux questions, ouvrir son assistant" width="900">
-</p>
-
-**Avant de commencer** : il te faut **Node.js ≥ 20.12** et **git**. C'est tout — pas de Docker, pas de compte, pas de clé.
-
-**1. Ouvre un terminal.** Sur Mac, c'est l'application **Terminal** (⌘ + espace, tape « Terminal »). Crée un dossier vide et entre dedans :
-
-```bash
-mkdir mon-app && cd mon-app
-```
-
-**2. Colle cette commande, puis appuie sur Entrée** :
-
-```bash
-npm create vibecoding-kit@latest
-```
-
-Il te pose **4 à 5 questions** en français (type d'app, assistant, nom du projet…). Réponds comme ça vient : il n'y a pas de mauvaise réponse, et rien n'est écrit tant que tu n'as pas tout répondu (Ctrl-C pour tout annuler).
-
-**3. Ouvre ton assistant IA** — **Cursor**, **Claude Code** ou **Codex** — **dans ce dossier**, et **colle le prompt** qu'il t'a affiché (il est aussi enregistré dans `COLLE-MOI-DANS-L-IA.md`).
-
-**4. Il te reste deux gestes**, guidés par l'assistant : installer **superpowers** et **autoriser les MCP**. Puis tape :
-
-```
-/help
-```
-
-`/help` liste les 10 commandes et te dit **par où continuer**.
-
-> **Tu as déjà du code ?** Ne lance **pas** la commande ci-dessus. Va **dans le dossier de ton projet** et lance `npx create-vibecoding-kit@latest --adopt` : le kit installe la méthode **à côté** de ton code, sans écraser un seul fichier. C'est le **Cas B** de « Démarrage rapide », plus bas.
-
-> **Windows** : lance la commande avec `node` (pas de script `.sh`). Les hooks Git tournent sous **Git Bash**.
-
-> **Tu veux juste les commandes dans ton assistant, sans créer de projet ?** Installe le **plugin** — voir « [Installer la méthode en plugin](#-installer-la-méthode-en-plugin-sans-créer-de-projet) » plus bas.
-
----
-
 ## 🧭 C'est quoi ce kit, en une minute
 
 **Tu ne sais pas coder ? C'est fait pour toi.**
@@ -140,7 +100,7 @@ Le **vibecoding**, c'est décrire ce que tu veux dans ta langue, et laisser une 
 ## ⚡ Démarrage rapide
 
 <p align="center">
-  <img src=".github/assets/demarrer.svg" alt="Démarrer en 4 étapes : lancer le wizard, coller le prompt, installer superpowers, taper /help" width="880">
+  <img src=".github/assets/installer.svg" alt="Installer en 4 gestes : ouvrir un terminal, coller la commande, répondre aux questions, ouvrir son assistant" width="900">
 </p>
 
 ### 🆕 Cas A — tu pars de zéro
@@ -151,9 +111,9 @@ Dans un **dossier vide** :
 npm create vibecoding-kit@latest
 ```
 
-> **Prérequis : Node.js ≥ 20.12 + git.** Le wizard (l'assistant qui pose les questions) demande stack/assistant/nom (+ Convex cloud ou local pour le SaaS, + **mode apprentissage**) et pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — puis **installe les skills** (design + stack). Aucun compte, aucune clé, aucun code : quatre à cinq questions et c'est fini.
+> **Prérequis : Node.js ≥ 20.12 + git.** Le wizard (l'assistant qui pose les questions) demande stack/assistant/nom (+ Convex cloud ou local pour le SaaS, + **mode apprentissage**), puis pose **tout** — fichiers, hooks, règles, commandes, mémoire, CI — et **installe les skills**. Aucun compte, aucune clé : quatre à cinq questions.
 >
-> **Stack vitrine** : Astro exige **Node ≥ 22.12** (il refuse de démarrer en dessous). Le wizard, lui, tourne dès 20.12.
+> **Stack vitrine** : Astro exige **Node ≥ 22.12**. Le wizard, lui, tourne dès 20.12.
 
 ### 🧬 Cas B — tu as déjà un projet
 
@@ -163,30 +123,19 @@ npm create vibecoding-kit@latest
 npx create-vibecoding-kit@latest --adopt
 ```
 
-> Même méthode — les 10 commandes, les 7 agents, la mémoire, les règles — mais le kit **ne revendique aucune techno** : ni stack, ni scaffold, ni CI, ni `maquette/`. Il ne sait pas si tu fais du Rails ou du Next.js, et il n'en a pas besoin.
+> Même méthode — les 10 commandes, les 7 agents, la mémoire, les règles — mais le kit **ne revendique aucune techno** : ni stack, ni scaffold, ni CI, ni `maquette/`.
 >
-> Les règles arrivent **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs : tout ce qui est dehors reste **à la ligne près**, et **aucun fichier à toi n'est écrasé**.
+> Les règles arrivent **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs : tout ce qui est dehors reste **à la ligne près**, et **aucun fichier à toi n'est écrasé**, ton `package.json` non plus.
 >
-> Et ensuite, ce n'est **pas** `/new-project` : il fonderait un PRD et une roadmap par-dessus un code qui existe déjà. Sur un projet existant, le point de départ c'est **`docs/ETAT-DES-LIEUX.md`** : ouvre-le, fais-le remplir par ton IA qui lit **ton** code, et tout part de là.
+> Et ensuite, ce n'est **pas** `/new-project` (il fonderait un PRD par-dessus un code qui existe déjà) : le point de départ, c'est **`docs/ETAT-DES-LIEUX.md`** — ton IA le remplit en lisant **ton** code.
 
-**2. Ouvre ton assistant IA** dans le dossier du projet et **colle le prompt affiché par le wizard** (il est aussi dans `COLLE-MOI-DANS-L-IA.md`).
-Il te guide pour les **gestes manuels** — installer **superpowers**, le plugin de ta stack, autoriser les MCP. Ces trois familles sont détaillées plus bas et dans `docs/A-FAIRE.md`, écrit pour **ta** configuration.
+**2. Ouvre ton assistant IA** dans le dossier et **colle le prompt** affiché par le wizard (aussi enregistré dans `COLLE-MOI-DANS-L-IA.md`).
 
-**3. Retiens une seule commande.**
+**3. Tape `/help`** — l'aide-mémoire : les 10 commandes, et par où continuer.
 
-```
-/help
-```
+## ✅ Après l'install — les 2-3 gestes qui restent
 
-Elle liste les 10 runbooks et te dit par où continuer.
-
-## ✅ Après l'install — ce qu'il te reste à faire
-
-Le wizard a **déjà tout posé dans le projet**. Il reste trois familles de gestes **dans ton assistant IA** (impossible pour un installeur de brancher un plugin ou un compte à ta place) : la boucle superpowers, les plugins de stack, et les MCP.
-
-Combien de cases exactement ? Ça dépend de ton couple **stack × assistant** : de **0 à 2 plugins** et de **2 à 5 serveurs MCP**. Ta liste réelle, cochable, est dans **`docs/A-FAIRE.md`**, généré pour *ta* configuration.
-
-**Déjà fait automatiquement — n'y touche pas :** `AGENTS.md`/`CLAUDE.md`, les 10 commandes, les règles, la mémoire, git + hooks, la CI, les **skills** (design + stack) et les fichiers de config MCP.
+Le wizard a **déjà tout posé** (règles, 10 commandes, agents, skills, git + hooks, CI, config MCP). Il reste **trois gestes** dans ton assistant : un installeur ne peut pas brancher un plugin ni un compte à ta place. Ta liste exacte, cochable, est dans **`docs/A-FAIRE.md`** — selon ton couple **stack × assistant**, c'est de **0 à 2 plugins** et **2 à 5 serveurs MCP**.
 
 ### Geste 1 — installe superpowers (le pilote de la boucle)
 
@@ -198,9 +147,9 @@ Combien de cases exactement ? Ça dépend de ton couple **stack × assistant** :
 
 Vérifie : tape `/brainstorm`. Si la commande est reconnue, c'est bon.
 
-### Geste 2 — installe le plugin de ta stack *(seulement si ton combo en a un)*
+### Geste 2 — le plugin de ta stack *(si ton combo en a un)*
 
-C'est le plugin propre à la techno de ta stack. Certaines combinaisons n'en ont **pas** (rien à faire alors) — sur **Codex**, seule la stack Mobile en a un.
+C'est le plugin propre à ta techno. Certains combos n'en ont **pas** — sur **Codex**, seule la stack Mobile en a un.
 
 | Ta stack | Assistants qui ont un plugin |
 |---|---|
@@ -213,8 +162,6 @@ La commande exacte est dans `docs/A-FAIRE.md` § 1 (elle dépend de ton assistan
 
 ### Geste 3 — autorise les MCP
 
-Ta stack a besoin de quelques serveurs MCP. Active-les :
-
 | Ta stack | Serveurs MCP |
 |---|---|
 | **SaaS** | Convex · Better Auth · shadcn · Playwright *(test E2E)* |
@@ -222,35 +169,27 @@ Ta stack a besoin de quelques serveurs MCP. Active-les :
 | **Desktop** | Chrome DevTools *(test E2E)* · shadcn |
 | **Vitrine** | Astro Docs · Convex · Better Auth · shadcn · Playwright *(test E2E)* |
 
-### Puis tu codes
-
-```
-/help
-```
-
-`/help` t'oriente ; pour démarrer un projet il t'envoie sur `/new-project « ton idée »`. Bloqué ? Lance **`/doctor`** : il dit précisément ce qui manque.
-
 > [!TIP]
-> **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
+> **Bloqué ?** `/doctor` dit ce qui manque. **Coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
 >
-> **Récupérer les nouveautés du kit dans un projet existant** — depuis le dossier du projet, rien à cloner : `npx create-vibecoding-kit --refresh` (avec `@latest` pour être sûr d'avoir la dernière version). Il **régénère tout ce qui appartient au kit** — règles, runbooks **et leurs étapes**, agents du crew, glossaire, `ai-context/`, hooks, `.mcp.json` — **et remet à jour tes skills** (design + stack + crew). Ajoute `--dry-run` pour prévisualiser. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — PRD, design, roadmap, mémoire, `docs/APPRENTISSAGE.md`.
+> **Mettre à jour un projet existant** : `npx create-vibecoding-kit --refresh` (`@latest` conseillé) — régénère **tout ce qui est du kit** (règles, runbooks **et leurs étapes**, agents, glossaire, `ai-context/`, hooks, `.mcp.json`) **et tes skills**. Tes docs et `src/` ne sont **jamais** touchés. `--dry-run` pour voir avant.
 
 ## 🎛️ Les commandes
 
 | Commande | Rôle |
 |---|---|
-| **`/help`** | **L'entrée — la seule à retenir.** Les 10 commandes expliquées en français simple, et « par où continuer » selon ton projet |
-| **`/init-vibecoding`** | Le tout-en-un : l'IA **installe l'environnement pour toi** (ou met à jour un projet existant) et déroule `docs/A-FAIRE.md` pas à pas |
-| **`/new-project`** | La fondation, en **9 étapes** ouvertes une par une : cadrage → **PRD** → **tech spec** → arborescence → **design system puis maquette** → **roadmap dérivée de la maquette** → scaffold |
-| **`/build`** | Construit la roadmap **jalon par jalon** (TDD), en **relançant la vraie app à chaque étape** et en la **comparant à la maquette** — tu vois ton produit grandir |
-| **`/new-feature`** | La livraison d'une feature isolée : story + critères d'acceptation → build TDD → **test live** → sécu → commit → PR → CI → merge |
-| **`/edit-design`** | Charge les **4 skills design** + `docs/design.md` **avant** de toucher à l'interface |
-| **`/doctor`** | Auto-diagnostic : fichiers présents, **MCP de la stack** OK, hooks câblés, **aucun secret commité** |
-| **`/next`** | « Je fais quoi maintenant ? » — l'IA lit l'état du projet et donne ta **prochaine action** |
-| **`/sos`** | Quelque chose casse : diagnostic, puis 3 sorties (réparer / mettre de côté / revenir au dernier point vert) |
-| **`/deploy`** | Mettre l'app **en ligne** selon la stack — gate CI verte + revue sécu, secrets jamais commités |
+| **`/help`** | **L'entrée.** Les 10 commandes et « par où continuer » |
+| **`/init-vibecoding`** | L'IA installe l'environnement (ou met à jour un projet existant) et déroule `docs/A-FAIRE.md` |
+| **`/new-project`** | La fondation, en **9 étapes** : cadrage → **PRD** → **tech spec** → arborescence → **design + maquette** → roadmap → scaffold |
+| **`/build`** | Construit la roadmap **jalon par jalon** (TDD), en relançant la vraie app et en la comparant à la maquette |
+| **`/new-feature`** | Une feature isolée : story + critères → TDD → **test live** → sécu → PR |
+| **`/edit-design`** | Charge les skills design + `docs/design.md` **avant** de toucher à l'interface |
+| **`/doctor`** | Diagnostic : fichiers, MCP de la stack, hooks, secrets commités |
+| **`/next`** | Ta **prochaine action**, d'après l'état du projet |
+| **`/sos`** | Ça casse : réparer, mettre de côté, ou revenir au dernier point vert |
+| **`/deploy`** | Mettre en ligne (gate CI verte + revue sécu) |
 
-Les trois commandes longues arrivent avec un **dossier d'étapes à côté d'elles** : l'IA ouvre les étapes une par une, dans l'ordre.
+Les trois commandes longues ont un **dossier d'étapes** à côté : l'IA les ouvre une par une, jamais de mémoire.
 
 ## 🧱 Les 4 stacks
 
@@ -328,24 +267,6 @@ Le pilote est la boucle [superpowers](https://github.com/obra/superpowers) : `br
 </p>
 
 Perdu → **`/next`**. Ça casse → **`/sos`**. Bloqué trois fois sur le même bug → `BLOQUÉ`, et le piège part dans `docs/memory/gotchas.md`. Fini la boucle infernale.
-
-## 🚀 Lancer ton premier projet
-
-```bash
-npm create vibecoding-kit@latest
-```
-
-Puis, dans ton assistant :
-
-```
-/new-project « une appli qui réserve des terrains de padel »
-```
-
-L'IA te guide. À la fin de `/new-project`, tu as un **plan clair + un design + une roadmap** — pas encore de code, et c'est normal. Ensuite `/build` construit, écran par écran, en te montrant le résultat à chaque jalon.
-
-<p align="center">
-  <img src=".github/assets/wizard.svg" alt="Aperçu du wizard : il génère AGENTS.md, .cursor/, docs/ et la CI, installe les skills, puis tu lances /new-project et /build" width="820">
-</p>
 
 ## 🧩 Installer la méthode en plugin (sans créer de projet)
 
