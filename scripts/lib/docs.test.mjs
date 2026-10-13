@@ -335,7 +335,7 @@ test('H4bis — `npx <paquet> --refresh` est documenté ET JOUÉ (bin symlinké,
     const AMOI = '# Mon PRD à moi\nNe pas écraser.\n';
     fs.writeFileSync(path.join(proj, 'docs/PRD.md'), AMOI);
     fs.appendFileSync(path.join(proj, 'docs/A-FAIRE.md'), '\n- [x] coché par moi\n');
-    const out = execFileSync(process.execPath, [lien, '--refresh'], { cwd: proj, stdio: 'pipe', env: GIT_ENV }).toString();
+    const out = execFileSync(process.execPath, [lien, '--refresh', '--no-skills'], { cwd: proj, stdio: 'pipe', env: GIT_ENV }).toString();
     assert.ok(fs.existsSync(cible), `\`npx ${pkg.name} --refresh\` n'a rien régénéré depuis le projet — sortie : ${out}`);
     assert.equal(fs.readFileSync(path.join(proj, 'docs/PRD.md'), 'utf8'), AMOI, 'le refresh a écrasé docs/PRD.md — le README promet le contraire');
     assert.match(fs.readFileSync(path.join(proj, 'docs/A-FAIRE.md'), 'utf8'), /coché par moi/, 'le refresh a écrasé docs/A-FAIRE.md — le README promet le contraire');

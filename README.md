@@ -89,7 +89,7 @@ Le **vibecoding**, c'est décrire ce que tu veux dans ta langue, et laisser une 
 | 📓 | **Journal du crew** | `docs/agents/JOURNAL.md`, `state.yaml` et `inventaire.md` : ce que les agents ont fait, où en est le projet, et ce qu'il reste à couvrir |
 | 🧬 | **Projet existant (`--adopt`)** | `npx create-vibecoding-kit@latest --adopt`, lancé **depuis** ton projet : la méthode arrive **dans** ton `AGENTS.md` et ton `CLAUDE.md`, entre deux marqueurs. **Aucun fichier à toi n'est écrasé**, ton `package.json` non plus |
 | 🪟 | **Fiable & multi-OS** | `git init` + hooks actifs + commit initial ; testé en CI sur Windows/macOS/Linux × Node 20.12/22 |
-| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh`, depuis ton projet : régénère les règles, les runbooks et les docs officielles de ta stack — ta zone perso n'est **jamais** touchée |
+| 🔄 | **Mise à jour pro** | `npx create-vibecoding-kit --refresh` (avec `@latest`), depuis ton projet : régénère **tout ce qui est du kit** — règles, runbooks, agents, glossaire, docs de stack — **et met à jour tes skills** (design + stack + crew). Ta zone perso n'est **jamais** touchée |
 | 🧭 | **Point d'étape** | avant d'installer, l'IA **liste ce qui est là et ce qui manque**, le montre, et **attend ton accord** — neuf comme projet existant : aucune étape sautée en silence |
 | 🗺️ | **Tous les plans d'un coup** | la fin de la roadmap génère **un plan par jalon** (toute l'app), chacun avec **skills + docs à jour + maquette** ; puis `/build` enchaîne jusqu'au bout (`--step` pour reprendre la main) |
 | 🎯 | **Pentest IA (optionnel)** | **Shannon** : un pentest IA web, en option — Action CI + SARIF, « pas d'exploit, pas de rapport ». **Jamais un prérequis** |
@@ -191,7 +191,7 @@ Ta stack a besoin de quelques serveurs MCP. Active-les :
 > [!TIP]
 > **Maîtrise tes coûts IA** → [`docs/COUTS.md`](docs/COUTS.md).
 >
-> **Récupérer les nouveautés du kit dans un projet existant** — depuis le dossier du projet, rien à cloner : `npx create-vibecoding-kit --refresh`. Ajoute `--dry-run` pour prévisualiser. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — PRD, design, roadmap, mémoire, `docs/APPRENTISSAGE.md`.
+> **Récupérer les nouveautés du kit dans un projet existant** — depuis le dossier du projet, rien à cloner : `npx create-vibecoding-kit --refresh` (avec `@latest` pour être sûr d'avoir la dernière version). Il **régénère tout ce qui appartient au kit** — règles, runbooks **et leurs étapes**, agents du crew, glossaire, `ai-context/`, hooks, `.mcp.json` — **et remet à jour tes skills** (design + stack + crew). Ajoute `--dry-run` pour prévisualiser. **Ce que tu as écrit n'est jamais touché** : ta zone « Tes règles à toi », `src/`, et tes propres docs — PRD, design, roadmap, mémoire, `docs/APPRENTISSAGE.md`.
 
 ## 🎛️ Les commandes
 
