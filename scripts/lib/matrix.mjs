@@ -118,6 +118,25 @@ const PLUGINS_CONVEX = {
 };
 const SKILL_BETTER_AUTH = { label: 'better-auth', repo: 'better-auth/skills' };
 const SKILL_CONVEX_AGENT = { label: 'convex-agent-skills', repo: 'get-convex/agent-skills', all: true };
+// Déploiement sur un VPS (Hostinger) — skills OFFICIELS de l'hébergeur (dépôt hostinger/*). On ne
+// prend que les trois domaines utiles au déploiement (vps · dns · domaines), jamais `--all` : le
+// dépôt en porte d'autres (billing, ecommerce…) qui parlent de tout autre chose.
+const SKILL_HOSTINGER = { label: 'hostinger (VPS · DNS · domaines)', repo: 'hostinger/hostinger-agent-skills', skills: ['vps', 'dns', 'domains'] };
+
+// Le VPS recommandé par le kit — UNE SEULE source. `disclosure` est OBLIGATOIRE : c'est un lien
+// d'affiliation, et le dire est la condition pour le publier. Jamais de lien sans sa mention.
+export const HOSTINGER = {
+  url: 'https://www.hostg.xyz/SHK4I',
+  code: 'AV10',
+  reduction: '10 %',
+  disclosure: "lien d'affiliation : Antoine n'est pas payé pour le mettre, mais il touche une commission si tu passes par là — et tu as 10 % de réduction. Il le trouve simplement simple, pas cher, et cool à utiliser.",
+  // MCP officiels, OPTIONNELS et HORS du projet (jeton / accès SSH : jamais dans `.mcp.json`).
+  mcp: {
+    hosted: 'https://mcp.hostinger.com',
+    localPkg: '@hostinger/mcp',
+    ssh: 'ssh-mcp',
+  },
+};
 
 export const STACKS = {
   saas: {
@@ -131,6 +150,7 @@ export const STACKS = {
     skills: [
       SKILL_BETTER_AUTH,
       SKILL_CONVEX_AGENT,
+      SKILL_HOSTINGER,
       STITCH_SKILL,
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: [] },
@@ -247,6 +267,7 @@ export const STACKS = {
       { label: 'seo+geo (audit · schema · programmatic · contenu)', repo: 'boraoztunc/skills', skills: ['seo-audit', 'schema-markup', 'programmatic-seo', 'content-strategy'] },
       SKILL_BETTER_AUTH,
       SKILL_CONVEX_AGENT,
+      SKILL_HOSTINGER,
       STITCH_SKILL,
     ],
     checks: { onEdit: ['typecheck'], preCommit: ['typecheck', 'lint'], prePush: [] },
