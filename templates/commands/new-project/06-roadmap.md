@@ -31,4 +31,12 @@
    **Deux passes MAXIMUM** (la 2ᵉ ne relit que ce qui vient d'être ajouté). Ne boucle pas au-delà : au-delà de 2 tours, une revue multi-agents produit surtout des **faux positifs** et des sur-corrections — on gagne du bruit, pas de la qualité. S'il reste un doute après la 2ᵉ passe, **tranche avec l'utilisateur**, pas avec un 3ᵉ tour.
 
    > Ces agents vivent dans le dossier d'agents de ton assistant : `.cursor/agents/ (Cursor) · .claude/agents/ (Claude Code) · docs/agents/crew/ (Codex)` — tu peux les **appeler n'importe quand** (« lance `critique-ux` sur cet écran »), pas seulement ici.
-6. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.
+6. **Génère MAINTENANT tous les plans — un par jalon, toute l'application.** Pour **chaque** jalon de `docs/ROADMAP.md`, écris `docs/superpowers/plans/NN-<slug>.md` avec `superpowers:writing-plans`. La feuille de route **complète** est posée d'un coup, avant la moindre ligne de code — ce n'est pas « le premier plan, puis on verra ».
+
+   **Chaque plan suit le même protocole de recherche, à chaque fois** (jamais de mémoire) :
+   - charge les **skills officiels de la stack** (voir étape `03-stack-et-architecture.md`) : Convex `convex-design` / `convex-authz` / `convex-crons`…, Better Auth `better-auth-best-practices` / `better-auth-security-best-practices`… ;
+   - lis les **docs à jour** : `ai-context/`, le MCP de la stack, ses `llms.txt` — aucune API inventée ;
+   - **selon la maquette** : s'il y a un `maquette/` (cas a/b/c de l'étape `05-design-maquette.md`), le plan cite l'**écran exact** à reproduire et `docs/design.md` ; s'il n'y en a pas, il s'appuie sur `docs/design.md` seul ;
+   - découpe en tâches **TDD de bout en bout** : données réelles, câblage backend, états (vide / chargement / erreur), tests, et le `✅ Ce que tu vois` du jalon comme critère de fin.
+
+   Fais **valider l'ensemble des plans en un seul passage**, puis **enchaîne sur `/build`**, qui exécute les jalons **jusqu'au bout** — sans repasser la main à chaque tour.

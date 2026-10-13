@@ -1,7 +1,8 @@
 # /build — Construire la roadmap, jalon par jalon (runbook IA)
 
-Argument : `$ARGUMENTS` = l'option éventuelle (`--all`).
-> Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), traite l'appel comme un `/build` nu : **un** jalon, puis on redemande.
+Argument : `$ARGUMENTS` = l'option éventuelle (`--step` pour t'arrêter et rendre la main à chaque jalon).
+> Par défaut, tu **enchaînes TOUS les jalons jusqu'au bout, sans redemander** : tu montres le visuel et écris la leçon de chaque jalon, puis tu continues seul. Si `$ARGUMENTS` est vide (certains assistants comme Cursor ne substituent pas les arguments), c'est ce comportement-là qui s'applique.
+> Avec `--step`, tu t'arrêtes après chaque jalon et tu attends « continue ».
 
 > **Deux chantiers en même temps ?** Un **worktree par chantier** (`superpowers:using-git-worktrees`) — jamais deux agents dans le même dossier. **Un seul serveur de dev** partagé : avant d'en lancer un, regarde s'il tourne déjà (`docs/RUN.md`). Et si tu touches au **schéma** de la base, **dis-le avant de le faire** — l'autre chantier travaille dessus.
 
@@ -10,7 +11,7 @@ Tu exécutes `docs/ROADMAP.md` **une tranche à la fois**, en montrant un résul
 ## Un tour = un jalon
 0. **Pas de `docs/ROADMAP.md` ? Tu t'arrêtes ici.** C'est le cas d'un projet **existant** que le kit a adopté (`npx create-vibecoding-kit@latest --adopt`) : il a déjà son code, et le kit n'y pose ni PRD, ni roadmap, ni jalons. **Ne scaffolde rien, ne crée aucun fichier de fondation, n'invente aucun jalon** — tu écraserais un projet qui tourne. Dis-le en une phrase, puis renvoie à **`/next`** : c'est lui qui lit `docs/ETAT-DES-LIEUX.md` et propose la prochaine action sur CE projet-là. Tout ce qui suit — **« Jalon 0 » compris** — suppose une roadmap, et ne s'applique donc pas.
 1. **Lis `docs/ROADMAP.md`** → prends le **1er jalon non coché** dont les dépendances sont cochées. (Rien n'est en mémoire volatile : la roadmap est la source de vérité, relue à chaque tour.)
-2. **Plan** : si `docs/superpowers/plans/NN-*.md` du jalon n'existe pas → crée-le avec `superpowers:writing-plans` (dérivé du PRD + `docs/design.md` + la **maquette** `maquette/` (l'écran cible du jalon) + `docs/DOMAINS.md` pour les domaines).
+2. **Plan** : **tous les plans ont déjà été générés à l'étape `06-roadmap.md`** — relis celui du jalon et mets-le à jour si le code a bougé. S'il manque, crée-le avec `superpowers:writing-plans` (dérivé du PRD + `docs/design.md` + la **maquette** `maquette/` (l'écran cible du jalon) + `docs/DOMAINS.md` pour les domaines), en suivant le même protocole de recherche qu'à cette étape.
    - **Best practices d'abord** : avant d'écrire le plan, charge le(s) **skill(s) officiels de best practices** de la stack (Convex : `convex-design`, `convex-authz`, `convex-crons`… ; Better Auth : `better-auth-best-practices`, `better-auth-security-best-practices`…) et fais-en des tâches du plan. Le jalon respecte les règles officielles **dès le plan** — pas au moment de la revue.
 3. **Exécute** le plan avec `superpowers:subagent-driven-development` (TDD + review + fix). C'est la **boucle** du projet.
 4. **Montre le visuel** (voir **« Règle de vérification »** dans `AGENTS.md`) : lance l'app (`docs/RUN.md`) et vérifie le `✅ Ce que tu vois` du jalon — navigateur (web), simulateur (mobile), fenêtre (desktop), screenshot à l'appui. **Compare à l'écran correspondant de `maquette/`** : le rendu doit s'en approcher. Non atteint → `superpowers:systematic-debugging`, on ne passe pas au suivant.
@@ -21,7 +22,9 @@ Tu exécutes `docs/ROADMAP.md` **une tranche à la fois**, en montrant un résul
    - **Ensuite seulement, pousse** : `git push -u origin HEAD --follow-tags`. **`HEAD`, pas un nom de branche écrit d'avance** : il désigne la branche où tu es. Un projet neuf n'a que `main` ; un projet qui a plusieurs branches travaille sur celle que l'utilisateur a choisie, et le kit n'en décide pas à sa place.
    - **Si la course est perdue quand même** (un autre chantier a poussé entre ton `fetch` et ton `push`), git répond `Updates were rejected because the tip of your current branch is behind`. Ce n'est pas une casse : `git pull --rebase` puis repousse. **Jamais `--force`** — tu écraserais le travail de l'autre chantier.
    - **Avant de pousser, vérifie qu'il y a où pousser** : `git remote`. Un projet qui sort du scaffold n'a **aucun** dépôt distant, et le push ci-dessus répondrait `fatal: 'origin' does not appear to be a git repository` — un débutant ne doit pas découvrir ça au 1er jalon. Réponse vide → propose `gh repo create` (+ `gh auth status` si besoin) et relie le projet. S'il préfère rester en local, dis-le en une phrase — le point de restauration existe, mais il **ne survivra pas** à la perte de la machine — coche le jalon et continue.
-8. **Gate** : demande « on continue au jalon suivant ? ». **`--all` (enchaîner toute la roadmap sans repasser par l'utilisateur) est désactivé** tant que le mode apprentissage est actif : le but est qu'il **voie** chaque jalon marcher. Si on te le demande quand même, dis-le et continue jalon par jalon, en montrant le visuel + une ligne de progrès à chaque tour.
+8. **Enchaîne — sans redemander.** Une fois le jalon coché, **passe seul au jalon suivant** (retour à l'étape 1) et continue jusqu'à ce que **tous** les jalons de `docs/ROADMAP.md` soient cochés et prouvés. À chaque tour, montre quand même le **visuel** et écris la **leçon** : `--step` existe pour qui veut reprendre la main jalon par jalon, mais **par défaut tu ne t'arrêtes pas**.
+   - **Une seule chose t'arrête** : un jalon `BLOQUÉ` (Règle Preuve : 3 tentatives) ou une **décision humaine** que tu ne peux pas trancher. Tu le dis clairement, tu consignes `blocked_reason` dans `docs/agents/state.yaml`, et tu t'arrêtes **là** — jamais au milieu d'un jalon.
+   - « Fini » veut dire : **tous** les jalons cochés, chaque `✅ Ce que tu vois` constaté en vrai, et le dernier plan exécuté. Tant qu'il reste un jalon, tu continues.
 
 ## Jalon 0 (fondations)
 Joue `docs/A-FAIRE.md` (plugins/skills/MCP), scaffold la stack, fais **démarrer** l'app. Visuel = l'app boote.

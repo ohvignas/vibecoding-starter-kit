@@ -25,9 +25,9 @@ const FICHIERS = () => fichiersDuRunbook(ROOT, 'new-project');
 // portait quand il pesait 170 lignes d'un bloc. Extraites AVANT le commit qui l'a découpé : la
 // référence n'existe plus nulle part ailleurs, ni sur le disque ni dans un test.
 //
-// DIX-NEUF DE CES LIGNES ONT ÉTÉ RÉÉCRITES DEPUIS, et le dire fait partie du contrat que le
+// VINGT DE CES LIGNES ONT ÉTÉ RÉÉCRITES DEPUIS, et le dire fait partie du contrat que le
 // message d'échec ci-dessous impose (« dis laquelle et pourquoi ») — il avait été tenu pour
-// `/new-feature` (3 lignes) et `/init-vibecoding` (0), jamais ici. Les 92 autres sont mot pour mot
+// `/new-feature` (3 lignes) et `/init-vibecoding` (0), jamais ici. Les 91 autres sont mot pour mot
 // celles de `3ca5ecf^`. Les 19, toutes du même lot P4 (« une étape se nomme par son fichier ») :
 //   · 7 TITRES qui perdent leur préfixe (`## Phase 2 — PRD complète…` → `## PRD complète…`) ;
 //   · 2 lignes de cadre où le MOT change (« va phase par phase » → « va étape par étape ») ;
@@ -39,6 +39,14 @@ const FICHIERS = () => fichiersDuRunbook(ROOT, 'new-project');
 //     section « Arborescence » vide », qui donne sa raison d'être à l'étape `04-…`.
 // Aucune consigne n'a été retirée : vérifié ligne à ligne contre `3ca5ecf^`, les 19 s'apparient
 // une à une avec les 19 lignes d'origine, et rien ne reste orphelin d'un côté ou de l'autre.
+//
+// ── LA VINGTIÈME (2026-10-13), ET ELLE NE VIENT PAS DE P4 ──────────────────────────────────────
+// La ligne du runbook de roadmap (`06-…`, étape 6). Elle disait « Propose ensuite de générer tous
+// les plans » ; elle dit maintenant « Génère MAINTENANT tous les plans, un par jalon ». Décision
+// d'Antoine : la feuille de route doit produire **tous** les plans d'un coup, chacun chargeant les
+// skills officiels et les docs à jour (selon la maquette), puis `/build` enchaîne jusqu'au bout.
+// La ligne de l'inventaire ci-dessous a donc été remplacée dans le même commit — c'est le contrat
+// que ce fichier impose, et il a été tenu.
 //
 // POURQUOI CETTE FORME. Une liste de « marqueurs » (chemins, commandes, mots-clés) ne prouve
 // rien : une consigne entière sans backtick ni chemin — « Ne saute aucune section : ce que le PRD
@@ -144,7 +152,7 @@ const LIGNES_AVANT_DECOUPAGE = [
   "Donne à chacun les quatre mêmes chemins : `maquette/`, `docs/PRD.md`, l'inventaire `docs/agents/inventaire.md` et `docs/ROADMAP.md`. Chaque `MANQUE` doit citer sa **preuve** (l'écran/élément de la maquette ou la ligne du PRD) — **sans preuve, jette-le**. Puis **dédoublonne** les rapports (les lentilles se recoupent) et intègre dans la roadmap.",
   "**Deux passes MAXIMUM** (la 2ᵉ ne relit que ce qui vient d'être ajouté). Ne boucle pas au-delà : au-delà de 2 tours, une revue multi-agents produit surtout des **faux positifs** et des sur-corrections — on gagne du bruit, pas de la qualité. S'il reste un doute après la 2ᵉ passe, **tranche avec l'utilisateur**, pas avec un 3ᵉ tour.",
   "> Ces agents vivent dans le dossier d'agents de ton assistant : `.cursor/agents/ (Cursor) · .claude/agents/ (Claude Code) · docs/agents/crew/ (Codex)` — tu peux les **appeler n'importe quand** (« lance `critique-ux` sur cet écran »), pas seulement ici.",
-  "6. Propose ensuite de **générer tous les plans** (un par jalon, `superpowers:writing-plans`) pour que toute la roadmap soit posée, puis d'enchaîner sur **`/build`**.",
+  "6. **Génère MAINTENANT tous les plans — un par jalon, toute l'application.** Pour **chaque** jalon de `docs/ROADMAP.md`, écris `docs/superpowers/plans/NN-<slug>.md` avec `superpowers:writing-plans`. La feuille de route **complète** est posée d'un coup, avant la moindre ligne de code — ce n'est pas « le premier plan, puis on verra ».",
   "## Mise en place du projet",
   "1. Scaffold la stack choisie, **avec le preset shadcn** noté à l'étape `05-design-maquette.md` :",
   // ⚠️ CES DEUX LIGNES ONT ÉTÉ RÉÉCRITES PAR LE LOT « vitrine → Astro + Convex » (tâche 3), et

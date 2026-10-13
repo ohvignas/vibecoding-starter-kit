@@ -116,10 +116,10 @@ test('adoption — aucune phrase gardée ne cite un fichier absent', () => {
 
 test('adoption — le rendu des 4 stacks offertes ne bouge pas d\'un mot', () => {
   // Les substitutions du parcours adopté ne doivent RIEN coûter aux stacks offertes : elles n'ont
-  // que 4 mots de marge sous le plafond de 2 200 (standing-rules.test.mjs B12). Un chiffre en dur
+  // que 2 mots de marge sous le plafond de 2 200 (standing-rules.test.mjs B12). Un chiffre en dur
   // ici rend visible, dans le diff, toute substitution qui aurait fui hors de `aucune`.
   const mots = (stack) => renderAgentsFile({ source: process.cwd(), stack, assistant: 'claude-code', commandsDir: '.claude/commands', learning: true }).trim().split(/\s+/).length;
-  assert.deepEqual(['saas', 'mobile', 'desktop', 'vitrine'].map(mots), [2196, 2184, 2196, 2196]);
+  assert.deepEqual(['saas', 'mobile', 'desktop', 'vitrine'].map(mots), [2198, 2186, 2198, 2198]);
 });
 
 test('adoption — la règle Cursor « CSS maquette » suit sa source : retirée elle aussi', () => {
