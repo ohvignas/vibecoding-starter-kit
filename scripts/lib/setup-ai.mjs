@@ -10,7 +10,7 @@
 // Et trois de ses six sections sortaient VIDES (`aucune` ne déclare ni plugin, ni skill de stack,
 // ni MCP) : « ## 3. MCP à autoriser » n'était qu'un titre, suivi de rien.
 import { buildSkillAddArgs } from './external.mjs';
-import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE, VERIF_TOOLS_NOTE, MCP_CONNECT, uiBlocksNote } from './matrix.mjs';
+import { DESIGN_SKILL_SPECS, AGENT_SKILL_SPECS, STITCH, VISUAL_CHECK_STACKS, PIXELRAG_NOTE, VERIF_TOOLS_NOTE, MCP_CONNECT, uiBlocksNote, HOSTINGER } from './matrix.mjs';
 import { refCommande, NOTE_CODEX_COMMANDES } from './commands-list.mjs';
 import { cursorDeeplink } from './deeplink.mjs';
 import { estAdopte } from './adoption.mjs';
@@ -156,6 +156,17 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skil
     sousSection('Pentest avancé (optionnel — web) : Shannon');
     L.push('- [ ] **Jamais obligatoire.** Un **pentest IA** : il lit ton code, attaque une cible et ne rapporte **que ce qu\'il prouve**. `npx @keygraph/shannon@latest setup`, puis `npx @keygraph/shannon@latest start -u https://ton-staging -r .`. Exige **Docker** + une **clé de modèle** (BYOK, payant) → d\'où l\'option. Demande à ton assistant de te préparer un **workflow CI** si tu veux le jouer à chaque mise en staging.');
     L.push("  - ⚠️ **Jamais sur la production** : il exécute de **vrais exploits**. Staging uniquement, avec des données jetables. Rien d'autre dans le kit n'en dépend.");
+  }
+  // DÉPLOIEMENT SUR UN VPS (Hostinger) — optionnel, web uniquement. Le kit livre les SKILLS
+  // officiels Hostinger (vps · dns · domaines) et documente les MCP ; le VPS lui-même est un
+  // choix de l'utilisateur. Le lien est AFFILIÉ : on le dit, sinon on ne le publie pas.
+  if (stack === 'saas' || stack === 'vitrine') {
+    sousSection('Déploiement sur un VPS (Hostinger — optionnel)');
+    L.push(`- ℹ️ Le VPS recommandé : **Hostinger**. ${HOSTINGER.disclosure}`);
+    L.push(`- [ ] **Le serveur** : ouvre la page **${HOSTINGER.url}** (demande à ton assistant de l'ouvrir dans ton navigateur), choisis un VPS, et saisis le code **${HOSTINGER.code}** → **${HOSTINGER.reduction} de réduction**.`);
+    L.push('- [ ] **Les skills de déploiement sont DÉJÀ installés** par le wizard (`vps` · `dns` · `domains`, dépôt officiel Hostinger) : ils connaissent l\'API, le SSH et les DNS de l\'hébergeur.');
+    L.push(`- [ ] **Optionnel — les MCP** : le **MCP officiel Hostinger** (\`${HOSTINGER.mcp.hosted}\`, gestion VPS/DNS/domaines) et un **MCP SSH** (\`${HOSTINGER.mcp.ssh}\`, exécuter des commandes sur ton serveur). Tous deux se branchent **hors du projet** (jeton, clés, accès SSH : jamais commités) — demande à ton assistant de te les configurer quand tu déploieras.`);
+    L.push(`- La marche à suivre complète (SSH, durcissement, Docker, TLS, sauvegardes, supervision) est dans ${cmd('deploy')}, section « VPS Hostinger ».`);
   }
 
   // Le projet n'a AUCUN `package.json` à ce stade — le kit n'en crée pas. La section listait

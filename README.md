@@ -134,6 +134,7 @@ Le **vibecoding**, c'est décrire ce que tu veux dans ta langue, et laisser une 
 | 🗺️ | **Tous les plans d'un coup** | la fin de la roadmap génère **un plan par jalon** (toute l'app), chacun avec **skills + docs à jour + maquette** ; puis `/build` enchaîne jusqu'au bout (`--step` pour reprendre la main) |
 | 🎯 | **Pentest IA (optionnel)** | **Shannon** : un pentest IA web, en option — Action CI + SARIF, « pas d'exploit, pas de rapport ». **Jamais un prérequis** |
 | 🧩 | **Installable en plugin** | le dépôt est aussi un **plugin** (dossier `plugin/`, trois formats) : Claude Code, Codex, Cursor — les 10 commandes + 7 agents + règles, sans scaffolder |
+| 🚀 | **Déploiement VPS (Hostinger)** | un chemin **SSH complet** (durcissement, Docker, Caddy + HTTPS, DNS, sauvegardes) + les **skills officiels Hostinger** (`vps · dns · domains`) et les MCP optionnels. **Lien d'affiliation** : `AV10` = **10 % de réduction** |
 | 🔎 | **SEO + GEO** | la stack vitrine sort optimisée Google **et** IA (sitemap, JSON-LD, llms.txt, robots IA-friendly) |
 
 ## ⚡ Démarrage rapide
@@ -372,6 +373,21 @@ cp -r plugin ~/.cursor/plugins/local/vibecoding   # puis « Developer: Reload Wi
 
 > Le plugin fournit la **méthode** ; il **ne scaffolde pas** (pas de git, CI, MCP, `maquette/`). Pour un projet complet : `npm create vibecoding-kit@latest`.
 
+## 🚀 Déployer sur un VPS (Hostinger)
+
+Tu veux **tout héberger toi-même** (ton serveur, ton Docker, tes certificats) ? Le kit recommande **Hostinger**, et te donne le chemin complet en SSH.
+
+> ⚠️ **Lien d'affiliation.** Antoine **n'est pas payé** pour mettre ce lien ici, mais il touche une **commission** si tu passes par là — et **tu as 10 % de réduction**. Il le trouve **simple, pas cher et cool**, c'est tout.
+>
+> 👉 **https://www.hostg.xyz/SHK4I** — code **`AV10`** → **10 % de réduction**.
+
+**Ce que le kit fait pour toi :**
+- la commande **`/deploy`** a une section « **VPS Hostinger (SSH)** » : clé SSH, **durcissement**, **Docker**, **Caddy + HTTPS automatique**, **DNS**, **sauvegardes**, **supervision** ;
+- les **skills officiels Hostinger** sont **installés automatiquement** (`vps` · `dns` · `domains`) sur les stacks **saas** et **vitrine** ;
+- deux **MCP optionnels** (officiel Hostinger pour VPS/DNS/domaines, **`ssh-mcp`** pour commander le serveur) — **hors du projet**, jamais dans le dépôt.
+
+📖 Le détail : [`guides/05-deploy-vps-hostinger.md`](guides/05-deploy-vps-hostinger.md).
+
 ## 📚 Pour aller plus loin
 
 | Document | Pour quoi |
@@ -381,6 +397,7 @@ cp -r plugin ~/.cursor/plugins/local/vibecoding   # puis « Developer: Reload Wi
 | [`guides/02-installer-les-outils.md`](guides/02-installer-les-outils.md) | Installer les outils (Node, git…) une fois pour toutes |
 | [`guides/03-securite-et-couts.md`](guides/03-securite-et-couts.md) | Sécurité et maîtrise des coûts IA |
 | [`guides/04-pentest-shannon.md`](guides/04-pentest-shannon.md) | Le pentest IA optionnel (Shannon) : quand, comment, prérequis |
+| [`guides/05-deploy-vps-hostinger.md`](guides/05-deploy-vps-hostinger.md) | Déployer sur un VPS Hostinger (SSH, Docker, HTTPS) — lien d'affiliation |
 | [`docs/COUTS.md`](docs/COUTS.md) | Combien coûte une session, et comment la garder légère |
 
 Un mot te bloque ? Le **[glossaire du vibecodeur](guides/glossaire.md)** explique tout le vocabulaire (LLM, MCP, stack, MVP, hook…).
