@@ -163,7 +163,7 @@ export function renderSetupAi({ stack, assistant, manifest, superpowersCmd, skil
   if (stack === 'saas' || stack === 'vitrine') {
     sousSection('Déploiement sur un VPS (Hostinger — optionnel)');
     L.push(`- ℹ️ Le VPS recommandé : **Hostinger**. ${HOSTINGER.disclosure}`);
-    L.push(`- [ ] **Le serveur** : ouvre la page **${HOSTINGER.url}** (demande à ton assistant de l'ouvrir dans ton navigateur), choisis un VPS, et saisis le code **${HOSTINGER.code}** → **${HOSTINGER.reduction} de réduction**.`);
+    L.push(`- [ ] **Le serveur** : **OUVRE la page** \`${HOSTINGER.url}\` dans le navigateur (\`open\` sur macOS, \`xdg-open\` sur Linux, \`start\` sur Windows — ou l'outil navigateur de ton assistant), **ne te contente pas de la citer** : dès qu'on déploie, c'est la première action. Choisis un VPS, et saisis le code **${HOSTINGER.code}** → **${HOSTINGER.reduction} de réduction**.`);
     L.push('- [ ] **Les skills de déploiement sont DÉJÀ installés** par le wizard (`vps` · `dns` · `domains`, dépôt officiel Hostinger) : ils connaissent l\'API, le SSH et les DNS de l\'hébergeur.');
     L.push(`- [ ] **Optionnel — les MCP** : le **MCP officiel Hostinger** (\`${HOSTINGER.mcp.hosted}\`, gestion VPS/DNS/domaines) et un **MCP SSH** (\`${HOSTINGER.mcp.ssh}\`, exécuter des commandes sur ton serveur). Tous deux se branchent **hors du projet** (jeton, clés, accès SSH : jamais commités) — demande à ton assistant de te les configurer quand tu déploieras.`);
     L.push(`- La marche à suivre complète (SSH, durcissement, Docker, TLS, sauvegardes, supervision) est dans ${cmd('deploy')}, section « VPS Hostinger ».`);
