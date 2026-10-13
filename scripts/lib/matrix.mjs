@@ -59,6 +59,8 @@ export function resolveAssets(stack, assistant) {
     } else {
       copies.push({ from: `stacks/${stack}/AGENTS.md`, to: `AGENTS-stack.md`, transform: 'raw' });
       if (isClaude) copies.push({ from: `.claude/skills/stack-${stack}`, to: `.claude/skills/stack-${stack}`, transform: 'dir' });
+      // Skill d'exploitation Convex auto-hébergé — seulement là où la stack utilise Convex.
+      if (isClaude && (AI_CONTEXT[stack] ?? []).includes('convex')) copies.push({ from: '.claude/skills/convex-self-hosted', to: '.claude/skills/convex-self-hosted', transform: 'dir' });
     }
     copies.push({ from: 'ai-context/README.md', to: 'ai-context/README.md', transform: 'raw' });
     for (const d of AI_CONTEXT[stack]) copies.push({ from: `ai-context/${d}`, to: `ai-context/${d}`, transform: 'dir' });

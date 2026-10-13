@@ -41,11 +41,12 @@ export function pluginVersion(kitRoot) {
 const ecrire = (fichier, contenu) => { fs.mkdirSync(path.dirname(fichier), { recursive: true }); fs.writeFileSync(fichier, contenu); };
 const json = (fichier, objet) => ecrire(fichier, JSON.stringify(objet, null, 2) + '\n');
 
-// Les stacks qui portent un skill de stack (`.claude/skills/stack-<stack>/SKILL.md`).
-function skillsDeStack(kitRoot) {
+// Les skills du kit (`.claude/skills/`) : les règles de stack ET les skills d'exploitation
+// (ex. `convex-self-hosted`). Tous partent dans le plugin — c'est ce qui le rend utile hors projet.
+function skillsDuKit(kitRoot) {
   const racine = path.join(kitRoot, '.claude/skills');
   return fs.readdirSync(racine, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && d.name.startsWith('stack-'))
+    .filter((d) => d.isDirectory())
     .map((d) => d.name).sort();
 }
 
@@ -83,7 +84,7 @@ export function buildPlugin(kitRoot, outDir = path.join(kitRoot, 'plugin')) {
   // Les 7 agents du crew.
   for (const a of CREW) cp(path.join(kitRoot, 'templates/agents/subagents', `${a}.md`), path.join(outDir, 'agents', `${a}.md`));
   // Les skills de stack (découverts par sous-dossier `skills/<nom>/SKILL.md`).
-  for (const s of skillsDeStack(kitRoot)) cp(path.join(kitRoot, '.claude/skills', s, 'SKILL.md'), path.join(outDir, 'skills', s, 'SKILL.md'));
+  for (const s of skillsDuKit(kitRoot)) cp(path.join(kitRoot, '.claude/skills', s, 'SKILL.md'), path.join(outDir, 'skills', s, 'SKILL.md'));
   // Les règles génériques (Cursor les lit ; les autres hôtes les ignorent).
   for (const r of ['00-project.mdc', '10-css-maquette.mdc']) cp(path.join(kitRoot, 'templates/cursor/rules', r), path.join(outDir, 'rules', r));
 
