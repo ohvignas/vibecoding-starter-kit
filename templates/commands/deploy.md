@@ -71,6 +71,43 @@ ton-domaine.fr {
 }
 ```
 
+**4 bis. Caddy ou Traefik ?** Les deux font **le routage et le HTTPS automatique**. Le choix tient à **une** question :
+
+- **Caddy — le défaut du kit.** Trois lignes de config, HTTPS automatique, et **aucun accès à ton Docker socket**. Le bon choix pour **un projet** (une ou deux applications).
+- **Traefik — quand PLUSIEURS projets cohabitent sur le même VPS.** Sa force : il **découvre tes conteneurs tout seul** et fabrique les routes depuis les **labels** de ton `docker-compose.yml` — tu déclares `ton-domaine.fr` **à côté du service**, sans jamais toucher au proxy. Plus un **tableau de bord** (routers, services, erreurs) et des **middlewares** (redirection HTTPS, en-têtes de sécurité, limite de débit, auth). En échange : plus de concepts (providers, entrypoints, routers, services, middlewares), un **label mal orthographié échoue en silence** (regarde le dashboard), et il **faut monter `/var/run/docker.sock`** — ⚠️ **accès équivalent root** : `:ro` au minimum, et on ne l'expose jamais.
+
+```yaml
+services:
+  traefik:
+    image: traefik:v3
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.email=toi@exemple.fr
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+    ports: ["80:80", "443:443"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # ⚠️ accès root : lecture seule au minimum
+      - traefik_letsencrypt:/letsencrypt
+
+  app:
+    build: .
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.app.rule=Host(`ton-domaine.fr`)
+      - traefik.http.routers.app.entrypoints=websecure
+      - traefik.http.routers.app.tls.certresolver=le
+      - traefik.http.services.app.loadbalancer.server.port=3000
+volumes:
+  traefik_letsencrypt:
+```
+
+> **Le critère, en une phrase :** **un** projet sur le VPS → **Caddy** ; **plusieurs** projets qui cohabitent, chacun son domaine → **Traefik**, ses labels et son tableau de bord.
+
 **5. DNS (chez Hostinger).** Panneau → **DNS** du domaine → un enregistrement **A** vers l'**IP du VPS** (`@` et `www`). Vérifie : `dig +short ton-domaine.fr`. Les skills `dns`/`domains` déroulent ça avec toi.
 
 **6. Sauvegardes et supervision — le jour 1, pas « plus tard ».** Un `cron` qui sauvegarde base + fichiers vers un stockage distant (`rclone`) ; **une sauvegarde jamais restaurée n'existe pas**, teste la restauration. Un contrôle uptime externe (Uptime Kuma, BetterStack) pour être prévenu quand ça tombe. Nouvelle version : `docker compose pull && docker compose up -d`.
